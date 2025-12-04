@@ -1,4 +1,4 @@
-# 🔐 React Clerk Authentication Starter
+# 🔐 Language App
 
 A production-ready React web application with **Clerk authentication**, persistent sessions, and protected routes. Built with **React 18**, **TypeScript**, **Vite**, and **Tailwind CSS**.
 
@@ -33,7 +33,7 @@ A production-ready React web application with **Clerk authentication**, persiste
 ### 1. Clone the Repository
 
 \`\`\`bash
-git clone https://github.com/yourusername/react-clerk-starter.git
+git clone https://github.com/jdbuild26-dev/language-app.git
 cd react-clerk-starter
 \`\`\`
 
@@ -172,7 +172,7 @@ react-clerk-starter/
 
 ### Deploy to Vercel
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/yourusername/react-clerk-starter)
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/jdbuild26-dev/language-app)
 
 1. Click the button above or visit [vercel.com](https://vercel.com)
 2. Import your repository
@@ -181,7 +181,7 @@ react-clerk-starter/
 
 ### Deploy to Netlify
 
-[![Deploy to Netlify](https://www.netlify.com/img/deploy/button.svg)](https://app.netlify.com/start/deploy?repository=https://github.com/yourusername/react-clerk-starter)
+[![Deploy to Netlify](https://www.netlify.com/img/deploy/button.svg)](https://app.netlify.com/start/deploy?repository=https://github.com/jdbuild26-dev/language-app)
 
 1. Click the button above or visit [netlify.com](https://netlify.com)
 2. Connect your repository
