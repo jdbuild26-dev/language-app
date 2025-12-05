@@ -1,11 +1,7 @@
 import { useAuth } from "@clerk/clerk-react";
 import { Navigate } from "react-router-dom";
 
-interface ProtectedRouteProps {
-  children: React.ReactNode;
-}
-
-export default function ProtectedRoute({ children }: ProtectedRouteProps) {
+export default function ProtectedRoute({ children }) {
   const { isLoaded, isSignedIn } = useAuth();
 
   // Show loading state while Clerk is initializing

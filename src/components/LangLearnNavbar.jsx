@@ -1,5 +1,3 @@
-"use client";
-
 import { Fragment, useState } from "react";
 import { Menu, Transition, Dialog, Popover, Tab } from "@headlessui/react";
 import {
@@ -107,6 +105,7 @@ const FlagSpainSVG = () => (
 
 export default function LangLearnNavbar() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [activeMobileSection, setActiveMobileSection] = useState(null);
 
   return (
     <nav className="sticky top-0 z-50 h-[72px] w-full bg-white/95 backdrop-blur-sm shadow-sm border-b border-gray-100 transition-all">
@@ -483,7 +482,19 @@ export default function LangLearnNavbar() {
                   <SignedIn>
                     <div className="space-y-8">
                       {/* Streaks Mobile */}
-                      <div className="flex items-center justify-between rounded-xl bg-brand-yellow-1 p-4 border border-brand-yellow-2 shadow-sm">
+                      <button
+                        onClick={() =>
+                          setActiveMobileSection(
+                            activeMobileSection === "streak" ? null : "streak"
+                          )
+                        }
+                        className={cn(
+                          "w-full flex items-center justify-between rounded-xl p-4 border shadow-sm transition-all",
+                          activeMobileSection === "streak"
+                            ? "bg-brand-yellow-1 border-brand-yellow-2 ring-2 ring-brand-yellow-2"
+                            : "bg-white border-gray-100 hover:bg-gray-50"
+                        )}
+                      >
                         <span className="font-semibold text-gray-700">
                           Daily Streak
                         </span>
@@ -493,11 +504,38 @@ export default function LangLearnNavbar() {
                             {streaks}
                           </span>
                         </div>
-                      </div>
+                      </button>
 
-                      {/* Actions Mobile */}
+                      {/* Streak Expanded Content */}
+                      {activeMobileSection === "streak" && (
+                        <div className="animate-fade-in rounded-xl bg-brand-yellow-1/30 p-4 text-center border border-brand-yellow-1">
+                          <p className="text-sm text-gray-700 mb-3">
+                            You're on fire! Keep the streak alive! 🔥
+                          </p>
+                          <Button
+                            size="sm"
+                            className="w-full bg-brand-yellow-2 text-gray-900 hover:bg-brand-yellow-3 border-none"
+                          >
+                            Keep it up!
+                          </Button>
+                        </div>
+                      )}
+
+                      {/* Actions Mobile Buttons */}
                       <div className="grid grid-cols-3 gap-4">
-                        <button className="flex flex-col items-center gap-3 rounded-xl border border-gray-100 p-4 hover:bg-brand-blue-3/30 hover:border-brand-blue-3 transition-colors">
+                        <button
+                          onClick={() =>
+                            setActiveMobileSection(
+                              activeMobileSection === "add" ? null : "add"
+                            )
+                          }
+                          className={cn(
+                            "flex flex-col items-center gap-3 rounded-xl border p-4 transition-all",
+                            activeMobileSection === "add"
+                              ? "bg-brand-blue-3/20 border-brand-blue-2 ring-1 ring-brand-blue-2"
+                              : "border-gray-100 hover:bg-brand-blue-3/10 hover:border-brand-blue-3"
+                          )}
+                        >
                           <div className="rounded-full bg-brand-blue-3/50 p-2 text-brand-blue-1">
                             <UserPlusIcon className="h-6 w-6" />
                           </div>
@@ -505,7 +543,22 @@ export default function LangLearnNavbar() {
                             Add
                           </span>
                         </button>
-                        <button className="flex flex-col items-center gap-3 rounded-xl border border-gray-100 p-4 hover:bg-brand-blue-3/30 hover:border-brand-blue-3 transition-colors">
+
+                        <button
+                          onClick={() =>
+                            setActiveMobileSection(
+                              activeMobileSection === "friends"
+                                ? null
+                                : "friends"
+                            )
+                          }
+                          className={cn(
+                            "flex flex-col items-center gap-3 rounded-xl border p-4 transition-all",
+                            activeMobileSection === "friends"
+                              ? "bg-brand-blue-3/20 border-brand-blue-2 ring-1 ring-brand-blue-2"
+                              : "border-gray-100 hover:bg-brand-blue-3/10 hover:border-brand-blue-3"
+                          )}
+                        >
                           <div className="rounded-full bg-brand-blue-3/50 p-2 text-brand-blue-1">
                             <UsersIcon className="h-6 w-6" />
                           </div>
@@ -513,7 +566,20 @@ export default function LangLearnNavbar() {
                             Friends
                           </span>
                         </button>
-                        <button className="flex flex-col items-center gap-3 rounded-xl border border-gray-100 p-4 hover:bg-brand-blue-3/30 hover:border-brand-blue-3 transition-colors">
+
+                        <button
+                          onClick={() =>
+                            setActiveMobileSection(
+                              activeMobileSection === "alerts" ? null : "alerts"
+                            )
+                          }
+                          className={cn(
+                            "flex flex-col items-center gap-3 rounded-xl border p-4 transition-all",
+                            activeMobileSection === "alerts"
+                              ? "bg-brand-blue-3/20 border-brand-blue-2 ring-1 ring-brand-blue-2"
+                              : "border-gray-100 hover:bg-brand-blue-3/10 hover:border-brand-blue-3"
+                          )}
+                        >
                           <div className="rounded-full bg-brand-blue-3/50 p-2 text-brand-blue-1">
                             <BellIcon className="h-6 w-6" />
                           </div>
@@ -521,6 +587,98 @@ export default function LangLearnNavbar() {
                             Alerts
                           </span>
                         </button>
+                      </div>
+
+                      {/* Mobile Action Panels */}
+                      <div className="space-y-4">
+                        {/* Add Friend Panel */}
+                        {activeMobileSection === "add" && (
+                          <div className="animate-fade-in rounded-xl border border-gray-100 bg-white p-4 shadow-sm">
+                            <h3 className="mb-3 text-sm font-bold text-gray-900">
+                              Find Friend
+                            </h3>
+                            <div className="flex gap-2">
+                              <Input
+                                placeholder="Username"
+                                className="h-10 text-sm"
+                              />
+                              <Button className="h-10 bg-brand-blue-1 text-white">
+                                <MagnifyingGlassIcon className="h-5 w-5" />
+                              </Button>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Friends List Panel */}
+                        {activeMobileSection === "friends" && (
+                          <div className="animate-fade-in rounded-xl border border-gray-100 bg-white shadow-sm overflow-hidden">
+                            <div className="flex border-b border-gray-100 bg-gray-50/50">
+                              <div className="w-1/2 py-2 text-center text-sm font-bold text-brand-blue-1 border-b-2 border-brand-blue-1">
+                                Friends
+                              </div>
+                              <div className="w-1/2 py-2 text-center text-sm font-medium text-gray-500">
+                                Requests
+                              </div>
+                            </div>
+                            <div className="p-2 space-y-1">
+                              {friends.map((friend) => (
+                                <div
+                                  key={friend.id}
+                                  className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-50"
+                                >
+                                  <div className="relative">
+                                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-brand-blue-1 text-xs font-bold text-white">
+                                      {friend.avatar}
+                                    </div>
+                                    <span
+                                      className={cn(
+                                        "absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border-2 border-white",
+                                        friend.status === "online"
+                                          ? "bg-green-400"
+                                          : "bg-gray-300"
+                                      )}
+                                    />
+                                  </div>
+                                  <span className="text-sm font-medium text-gray-700">
+                                    {friend.name}
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Notifications Panel */}
+                        {activeMobileSection === "alerts" && (
+                          <div className="animate-fade-in rounded-xl border border-gray-100 bg-white shadow-sm overflow-hidden">
+                            <div className="flex items-center justify-between px-4 py-2 bg-gray-50/50 border-b border-gray-100">
+                              <span className="text-xs font-bold text-gray-500 uppercase">
+                                Recent
+                              </span>
+                              <span className="text-xs text-brand-blue-1 font-medium">
+                                Clear all
+                              </span>
+                            </div>
+                            <div className="divide-y divide-gray-50">
+                              {notifications.map((notif) => (
+                                <div
+                                  key={notif.id}
+                                  className={cn(
+                                    "px-4 py-3",
+                                    notif.unread ? "bg-brand-blue-3/5" : ""
+                                  )}
+                                >
+                                  <p className="text-sm text-gray-700">
+                                    {notif.text}
+                                  </p>
+                                  <p className="mt-1 text-xs text-gray-400">
+                                    {notif.time}
+                                  </p>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
                       </div>
 
                       {/* Languages Mobile */}

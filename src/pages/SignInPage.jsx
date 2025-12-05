@@ -13,27 +13,27 @@ export default function SignInPage() {
             Sign in to continue your learning streak
           </p>
         </div>
-        <div className="bg-white rounded-2xl p-8 shadow-xl border border-gray-100">
-          <SignIn
-            appearance={{
-              elements: {
-                rootBox: "w-full",
-                card: "bg-transparent shadow-none p-0",
-                headerTitle: "hidden",
-                headerSubtitle: "hidden",
-                formButtonPrimary:
-                  "bg-brand-blue-1 hover:bg-brand-blue-2 text-white shadow-none",
-                footerActionLink: "text-brand-blue-1 hover:text-brand-blue-2",
-                formFieldInput:
-                  "border-gray-200 focus:border-brand-blue-1 focus:ring-brand-blue-1",
-              },
-            }}
-            routing="path"
-            path="/sign-in"
-            signUpUrl="/sign-up"
-            afterSignInUrl="/dashboard"
-          />
-        </div>
+
+        <SignIn
+          appearance={{
+            elements: {
+              rootBox: "w-full",
+              card: "bg-white shadow-xl border border-gray-100 rounded-2xl mx-auto",
+              headerTitle: "hidden",
+              headerSubtitle: "hidden",
+              formButtonPrimary:
+                "bg-brand-blue-1 hover:bg-brand-blue-2 text-white shadow-none",
+              footerActionLink: "text-brand-blue-1 hover:text-brand-blue-2",
+              formFieldInput:
+                "border-gray-200 focus:border-brand-blue-1 focus:ring-brand-blue-1",
+            },
+          }}
+          routing="path"
+          path="/sign-in"
+          signUpUrl="/sign-up"
+          afterSignInUrl="/dashboard"
+        />
+
         <div className="mt-8 text-center">
           <Link
             to="/"

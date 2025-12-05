@@ -13,27 +13,27 @@ export default function SignUpPage() {
             Start your language learning journey today
           </p>
         </div>
-        <div className="bg-white rounded-2xl p-8 shadow-xl border border-gray-100">
-          <SignUp
-            appearance={{
-              elements: {
-                rootBox: "w-full",
-                card: "bg-transparent shadow-none p-0",
-                headerTitle: "hidden",
-                headerSubtitle: "hidden",
-                formButtonPrimary:
-                  "bg-brand-blue-1 hover:bg-brand-blue-2 text-white shadow-none",
-                footerActionLink: "text-brand-blue-1 hover:text-brand-blue-2",
-                formFieldInput:
-                  "border-gray-200 focus:border-brand-blue-1 focus:ring-brand-blue-1",
-              },
-            }}
-            routing="path"
-            path="/sign-up"
-            signInUrl="/sign-in"
-            afterSignUpUrl="/dashboard"
-          />
-        </div>
+
+        <SignUp
+          appearance={{
+            elements: {
+              rootBox: "w-full",
+              card: "bg-white shadow-xl border border-gray-100 rounded-2xl mx-auto",
+              headerTitle: "hidden",
+              headerSubtitle: "hidden",
+              formButtonPrimary:
+                "bg-brand-blue-1 hover:bg-brand-blue-2 text-white shadow-none",
+              footerActionLink: "text-brand-blue-1 hover:text-brand-blue-2",
+              formFieldInput:
+                "border-gray-200 focus:border-brand-blue-1 focus:ring-brand-blue-1",
+            },
+          }}
+          routing="path"
+          path="/sign-up"
+          signInUrl="/sign-in"
+          afterSignUpUrl="/dashboard"
+        />
+
         <div className="mt-8 text-center">
           <Link
             to="/"
