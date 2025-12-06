@@ -4,10 +4,10 @@ export default function LanguageSelector() {
   return (
     <div className="flex items-center gap-5">
       <div className="flex flex-col items-center gap-1 group cursor-pointer">
-        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider group-hover:text-gray-600 transition-colors">
+        <span className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider group-hover:text-gray-600 dark:group-hover:text-gray-300 transition-colors">
           Known
         </span>
-        <div className="relative rounded-full p-0.5 ring-2 ring-gray-100 group-hover:ring-brand-blue-2 transition-all">
+        <div className="relative rounded-full p-0.5 ring-2 ring-gray-100 dark:ring-slate-600 group-hover:ring-brand-blue-2 transition-all">
           <FlagUKSVG />
         </div>
       </div>

@@ -3,13 +3,13 @@ import { Link } from "react-router-dom";
 
 export default function SignInPage() {
   return (
-    <div className="min-h-[calc(100vh-4rem)] flex flex-col items-center justify-center py-12 px-4 sm:px-6 lg:px-8 bg-gray-50/50">
+    <div className="min-h-[calc(100vh-4rem)] flex flex-col items-center justify-center py-12 px-4 sm:px-6 lg:px-8 bg-gray-50/50 dark:bg-body-dark">
       <div className="w-full max-w-md animate-fade-in">
         <div className="text-center mb-8">
-          <h2 className="text-3xl font-bold text-gray-900 tracking-tight">
+          <h2 className="text-3xl font-bold text-gray-900 dark:text-primary-dark tracking-tight">
             Welcome Back
           </h2>
-          <p className="text-gray-500 mt-2">
+          <p className="text-gray-500 dark:text-secondary-dark mt-2">
             Sign in to continue your learning streak
           </p>
         </div>
@@ -37,7 +37,7 @@ export default function SignInPage() {
         <div className="mt-8 text-center">
           <Link
             to="/"
-            className="text-sm font-medium text-gray-500 hover:text-brand-blue-1 transition-colors"
+            className="text-sm font-medium text-gray-500 dark:text-slate-400 hover:text-brand-blue-1 transition-colors"
           >
             &larr; Back to Home
           </Link>

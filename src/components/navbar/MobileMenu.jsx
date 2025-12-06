@@ -49,17 +49,17 @@ export default function MobileMenu({
             leaveFrom="translate-x-0"
             leaveTo="translate-x-full"
           >
-            <Dialog.Panel className="relative w-full max-w-xs overflow-y-auto bg-white pb-12 shadow-2xl">
-              <div className="flex items-center justify-between px-6 pt-6 pb-4 border-b border-gray-100">
+            <Dialog.Panel className="relative w-full max-w-xs overflow-y-auto bg-white dark:bg-slate-900 pb-12 shadow-2xl">
+              <div className="flex items-center justify-between px-6 pt-6 pb-4 border-b border-gray-100 dark:border-slate-800">
                 <div className="flex items-center gap-2">
                   <LogoSVG />
-                  <span className="text-xl font-bold text-gray-900">
+                  <span className="text-xl font-bold text-gray-900 dark:text-white">
                     LangLearn
                   </span>
                 </div>
                 <button
                   type="button"
-                  className="-m-2 inline-flex items-center justify-center rounded-md p-2 text-gray-500 hover:bg-brand-blue-3 hover:text-brand-blue-1 focus:outline-none"
+                  className="-m-2 inline-flex items-center justify-center rounded-md p-2 text-gray-500 dark:text-slate-400 hover:bg-brand-blue-3 hover:text-brand-blue-1 focus:outline-none"
                   onClick={() => setIsOpen(false)}
                 >
                   <span className="sr-only">Close menu</span>
@@ -81,15 +81,15 @@ export default function MobileMenu({
                         "w-full flex items-center justify-between rounded-xl p-4 border shadow-sm transition-all",
                         activeSection === "streak"
                           ? "bg-brand-yellow-1 border-brand-yellow-2 ring-2 ring-brand-yellow-2"
-                          : "bg-white border-gray-100 hover:bg-gray-50"
+                          : "bg-white dark:bg-slate-800 border-gray-100 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-700"
                       )}
                     >
-                      <span className="font-semibold text-gray-700">
+                      <span className="font-semibold text-gray-700 dark:text-slate-200">
                         Daily Streak
                       </span>
                       <div className="flex items-center gap-2">
                         <FireIcon className="h-6 w-6 text-brand-yellow-3" />
-                        <span className="text-xl font-bold text-gray-800">
+                        <span className="text-xl font-bold text-gray-800 dark:text-slate-100">
                           {streaks}
                         </span>
                       </div>
@@ -98,7 +98,7 @@ export default function MobileMenu({
                     {/* Streak Expanded Content */}
                     {activeSection === "streak" && (
                       <div className="animate-fade-in rounded-xl bg-brand-yellow-1/30 p-4 text-center border border-brand-yellow-1">
-                        <p className="text-sm text-gray-700 mb-3">
+                        <p className="text-sm text-gray-700 dark:text-slate-300 mb-3">
                           You're on fire! Keep the streak alive! 🔥
                         </p>
                         <Button
@@ -122,13 +122,13 @@ export default function MobileMenu({
                           "flex flex-col items-center gap-3 rounded-xl border p-4 transition-all",
                           activeSection === "add"
                             ? "bg-brand-blue-3/20 border-brand-blue-2 ring-1 ring-brand-blue-2"
-                            : "border-gray-100 hover:bg-brand-blue-3/10 hover:border-brand-blue-3"
+                            : "border-gray-100 dark:border-slate-700 hover:bg-brand-blue-3/10 hover:border-brand-blue-3 transition-colors"
                         )}
                       >
                         <div className="rounded-full bg-brand-blue-3/50 p-2 text-brand-blue-1">
                           <UserPlusIcon className="h-6 w-6" />
                         </div>
-                        <span className="text-xs font-semibold text-gray-600">
+                        <span className="text-xs font-semibold text-gray-600 dark:text-slate-400">
                           Add
                         </span>
                       </button>
@@ -149,7 +149,7 @@ export default function MobileMenu({
                         <div className="rounded-full bg-brand-blue-3/50 p-2 text-brand-blue-1">
                           <UsersIcon className="h-6 w-6" />
                         </div>
-                        <span className="text-xs font-semibold text-gray-600">
+                        <span className="text-xs font-semibold text-gray-600 dark:text-slate-400">
                           Friends
                         </span>
                       </button>
@@ -170,7 +170,7 @@ export default function MobileMenu({
                         <div className="rounded-full bg-brand-blue-3/50 p-2 text-brand-blue-1">
                           <BellIcon className="h-6 w-6" />
                         </div>
-                        <span className="text-xs font-semibold text-gray-600">
+                        <span className="text-xs font-semibold text-gray-600 dark:text-slate-400">
                           Alerts
                         </span>
                       </button>
@@ -180,14 +180,14 @@ export default function MobileMenu({
                     <div className="space-y-4">
                       {/* Add Friend Panel */}
                       {activeSection === "add" && (
-                        <div className="animate-fade-in rounded-xl border border-gray-100 bg-white p-4 shadow-sm">
-                          <h3 className="mb-3 text-sm font-bold text-gray-900">
+                        <div className="animate-fade-in rounded-xl border border-gray-100 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 shadow-sm">
+                          <h3 className="mb-3 text-sm font-bold text-gray-900 dark:text-white">
                             Find Friend
                           </h3>
                           <div className="flex gap-2">
                             <Input
                               placeholder="Username"
-                              className="h-10 text-sm"
+                              className="h-10 text-sm bg-transparent dark:text-white border-gray-200 dark:border-slate-600"
                             />
                             <Button className="h-10 bg-brand-blue-1 text-white">
                               <MagnifyingGlassIcon className="h-5 w-5" />
@@ -198,12 +198,12 @@ export default function MobileMenu({
 
                       {/* Friends List Panel */}
                       {activeSection === "friends" && (
-                        <div className="animate-fade-in rounded-xl border border-gray-100 bg-white shadow-sm overflow-hidden">
-                          <div className="flex border-b border-gray-100 bg-gray-50/50">
+                        <div className="animate-fade-in rounded-xl border border-gray-100 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-sm overflow-hidden">
+                          <div className="flex border-b border-gray-100 dark:border-slate-700 bg-gray-50/50 dark:bg-slate-800/50">
                             <div className="w-1/2 py-2 text-center text-sm font-bold text-brand-blue-1 border-b-2 border-brand-blue-1">
                               Friends
                             </div>
-                            <div className="w-1/2 py-2 text-center text-sm font-medium text-gray-500">
+                            <div className="w-1/2 py-2 text-center text-sm font-medium text-gray-500 dark:text-slate-400">
                               Requests
                             </div>
                           </div>
@@ -211,7 +211,7 @@ export default function MobileMenu({
                             {friends.map((friend) => (
                               <div
                                 key={friend.id}
-                                className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-50"
+                                className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700"
                               >
                                 <div className="relative">
                                   <div className="flex h-8 w-8 items-center justify-center rounded-full bg-brand-blue-1 text-xs font-bold text-white">
@@ -226,7 +226,7 @@ export default function MobileMenu({
                                     )}
                                   />
                                 </div>
-                                <span className="text-sm font-medium text-gray-700">
+                                <span className="text-sm font-medium text-gray-700 dark:text-slate-200">
                                   {friend.name}
                                 </span>
                               </div>
@@ -237,16 +237,16 @@ export default function MobileMenu({
 
                       {/* Notifications Panel */}
                       {activeSection === "alerts" && (
-                        <div className="animate-fade-in rounded-xl border border-gray-100 bg-white shadow-sm overflow-hidden">
-                          <div className="flex items-center justify-between px-4 py-2 bg-gray-50/50 border-b border-gray-100">
-                            <span className="text-xs font-bold text-gray-500 uppercase">
+                        <div className="animate-fade-in rounded-xl border border-gray-100 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-sm overflow-hidden">
+                          <div className="flex items-center justify-between px-4 py-2 bg-gray-50/50 dark:bg-slate-800/50 border-b border-gray-100 dark:border-slate-700">
+                            <span className="text-xs font-bold text-gray-500 dark:text-slate-400 uppercase">
                               Recent
                             </span>
                             <span className="text-xs text-brand-blue-1 font-medium">
                               Clear all
                             </span>
                           </div>
-                          <div className="divide-y divide-gray-50">
+                          <div className="divide-y divide-gray-50 dark:divide-slate-700">
                             {notifications.map((notif) => (
                               <div
                                 key={notif.id}
@@ -255,10 +255,10 @@ export default function MobileMenu({
                                   notif.unread ? "bg-brand-blue-3/5" : ""
                                 )}
                               >
-                                <p className="text-sm text-gray-700">
+                                <p className="text-sm text-gray-700 dark:text-slate-200">
                                   {notif.text}
                                 </p>
-                                <p className="mt-1 text-xs text-gray-400">
+                                <p className="mt-1 text-xs text-gray-400 dark:text-slate-500">
                                   {notif.time}
                                 </p>
                               </div>
@@ -269,12 +269,12 @@ export default function MobileMenu({
                     </div>
 
                     {/* Languages Mobile */}
-                    <div className="space-y-4 border-t border-gray-100 pt-6">
-                      <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider">
+                    <div className="space-y-4 border-t border-gray-100 dark:border-slate-700 pt-6">
+                      <h3 className="text-xs font-bold text-gray-400 dark:text-slate-500 uppercase tracking-wider">
                         Languages
                       </h3>
-                      <div className="flex items-center justify-between rounded-lg p-2 hover:bg-gray-50">
-                        <span className="text-sm font-medium text-gray-600">
+                      <div className="flex items-center justify-between rounded-lg p-2 hover:bg-gray-50 dark:hover:bg-slate-800">
+                        <span className="text-sm font-medium text-gray-600 dark:text-slate-300">
                           Known (English)
                         </span>
                         <FlagUKSVG />
@@ -287,8 +287,10 @@ export default function MobileMenu({
                       </div>
                     </div>
 
-                    <div className="py-4 border-t border-gray-100 flex items-center justify-between">
-                      <span className="font-medium text-gray-700">Account</span>
+                    <div className="py-4 border-t border-gray-100 dark:border-slate-700 flex items-center justify-between">
+                      <span className="font-medium text-gray-700 dark:text-slate-200">
+                        Account
+                      </span>
                       <UserButton afterSignOutUrl="/" />
                     </div>
                   </div>

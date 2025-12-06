@@ -14,28 +14,30 @@ import StreaksDropdown from "./navbar/StreaksDropdown";
 import ActionsGroup from "./navbar/ActionsGroup";
 import LanguageSelector from "./navbar/LanguageSelector";
 import MobileMenu from "./navbar/MobileMenu";
+import { DarkModeToggle } from "./navbar/DarkModeToggle";
 
 export default function LangLearnNavbar() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [activeMobileSection, setActiveMobileSection] = useState(null);
 
   return (
-    <nav className="sticky top-0 z-50 h-[72px] w-full bg-white/95 backdrop-blur-sm shadow-sm border-b border-gray-100 transition-all">
+    <nav className="sticky top-0 z-50 h-[72px] w-full bg-white/95 dark:bg-slate-900/95 backdrop-blur-sm shadow-sm dark:shadow-slate-950 border-b border-gray-100 dark:border-slate-700 transition-all">
       <div className="mx-auto flex h-full max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
         {/* Left: Logo + Brand */}
         <Link to="/" className="flex items-center gap-3.5">
           <LogoSVG />
-          <span className="text-2xl font-bold tracking-tight text-gray-900">
+          <span className="text-2xl font-bold tracking-tight text-gray-900 dark:text-white">
             LangLearn
           </span>
         </Link>
 
         {/* Right: Actions (Desktop) */}
         <div className="hidden md:flex md:items-center md:gap-5">
+          <DarkModeToggle />
           <SignedIn>
             <StreaksDropdown streaks={streaks} />
 
-            <div className="h-6 w-px bg-gray-200" />
+            <div className="h-6 w-px bg-gray-200 dark:bg-slate-600" />
 
             <ActionsGroup
               friends={friends}
@@ -43,11 +45,11 @@ export default function LangLearnNavbar() {
               notifications={notifications}
             />
 
-            <div className="h-6 w-px bg-gray-200" />
+            <div className="h-6 w-px bg-gray-200 dark:bg-slate-600" />
 
             <LanguageSelector />
 
-            <div className="h-6 w-px bg-gray-200" />
+            <div className="h-6 w-px bg-gray-200 dark:bg-slate-600" />
 
             {/* User Button */}
             <UserButton
@@ -66,7 +68,7 @@ export default function LangLearnNavbar() {
               <Link to="/sign-in">
                 <Button
                   variant="ghost"
-                  className="text-gray-600 hover:text-brand-blue-1 hover:bg-brand-blue-3/10 font-medium"
+                  className="text-gray-600 dark:text-slate-300 hover:text-brand-blue-1 hover:bg-brand-blue-3/10 font-medium"
                 >
                   Sign In
                 </Button>
@@ -80,11 +82,12 @@ export default function LangLearnNavbar() {
           </SignedOut>
         </div>
 
-        {/* Mobile Menu Button */}
-        <div className="flex md:hidden">
+        {/* Mobile Menu Button + Dark Mode Toggle */}
+        <div className="flex md:hidden items-center gap-2">
+          <DarkModeToggle />
           <button
             type="button"
-            className="inline-flex items-center justify-center rounded-md p-2 text-gray-500 hover:bg-brand-blue-3 hover:text-brand-blue-1 focus:outline-none"
+            className="inline-flex items-center justify-center rounded-md p-2 text-gray-500 dark:text-slate-300 hover:bg-brand-blue-3 dark:hover:bg-slate-700 hover:text-brand-blue-1 focus:outline-none"
             onClick={() => setIsMobileMenuOpen(true)}
           >
             <span className="sr-only">Open main menu</span>

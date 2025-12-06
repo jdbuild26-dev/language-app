@@ -11,6 +11,9 @@ import Dashboard from "./pages/Dashboard";
 import SignInPage from "./pages/SignInPage";
 import SignUpPage from "./pages/SignUpPage";
 import NotFound from "./pages/NotFound";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
+import RefundPolicy from "./pages/RefundPolicy";
+import TermsConditions from "./pages/TermsConditions";
 
 function App() {
   return (
@@ -21,6 +24,9 @@ function App() {
           <Route index element={<Home />} />
           <Route path="sign-in/*" element={<SignInPage />} />
           <Route path="sign-up/*" element={<SignUpPage />} />
+          <Route path="privacy-policy" element={<PrivacyPolicy />} />
+          <Route path="refund-policy" element={<RefundPolicy />} />
+          <Route path="terms-conditions" element={<TermsConditions />} />
 
           {/* Protected routes */}
           <Route
