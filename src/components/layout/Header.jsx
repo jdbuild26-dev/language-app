@@ -3,20 +3,20 @@ import { Link } from "react-router-dom";
 import { SignedIn, SignedOut, UserButton } from "@clerk/clerk-react";
 import { Bars3Icon } from "@heroicons/react/24/outline";
 import { Button } from "@/components/ui/button";
-import { LogoSVG } from "./navbar/NavbarIcons";
+import { LogoSVG } from "./header/NavbarIcons";
 import {
   streaks,
   friends,
   friendRequests,
   notifications,
-} from "./navbar/navbar-data";
-import StreaksDropdown from "./navbar/StreaksDropdown";
-import ActionsGroup from "./navbar/ActionsGroup";
-import LanguageSelector from "./navbar/LanguageSelector";
-import MobileMenu from "./navbar/MobileMenu";
-import { DarkModeToggle } from "./navbar/DarkModeToggle";
+} from "@/constants/nav-items";
+import StreaksDropdown from "./header/StreaksDropdown";
+import ActionsGroup from "./header/ActionsGroup";
+import LanguageSelector from "./header/LanguageSelector";
+import MobileMenu from "./header/MobileMenu";
+import { DarkModeToggle } from "@/components/shared/DarkModeToggle";
 
-export default function LangLearnNavbar() {
+export default function Header() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [activeMobileSection, setActiveMobileSection] = useState(null);
 
