@@ -14,6 +14,14 @@ import NotFound from "./pages/NotFound";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import RefundPolicy from "./pages/RefundPolicy";
 import TermsConditions from "./pages/TermsConditions";
+// Secondary nav pages
+import VocabularyPage from "./pages/VocabularyPage";
+import GrammarPage from "./pages/GrammarPage";
+import StoriesPage from "./pages/StoriesPage";
+import PracticePage from "./pages/PracticePage";
+import BlogsPage from "./pages/BlogsPage";
+import AIPracticePage from "./pages/AIPracticePage";
+import ProgressReportPage from "./pages/ProgressReportPage";
 
 function App() {
   return (
@@ -34,6 +42,64 @@ function App() {
             element={
               <ProtectedRoute>
                 <Dashboard />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Secondary Navigation Routes (Protected) */}
+          <Route
+            path="vocabulary"
+            element={
+              <ProtectedRoute>
+                <VocabularyPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="grammar"
+            element={
+              <ProtectedRoute>
+                <GrammarPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="stories"
+            element={
+              <ProtectedRoute>
+                <StoriesPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="practice"
+            element={
+              <ProtectedRoute>
+                <PracticePage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="blogs"
+            element={
+              <ProtectedRoute>
+                <BlogsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="ai-practice"
+            element={
+              <ProtectedRoute>
+                <AIPracticePage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="progress-report"
+            element={
+              <ProtectedRoute>
+                <ProgressReportPage />
               </ProtectedRoute>
             }
           />
