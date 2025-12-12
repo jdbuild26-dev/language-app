@@ -64,6 +64,25 @@ export default {
         sans: ["Noto Sans", "system-ui", "sans-serif"],
       },
     },
+    animation: {
+      "fade-in": "fade-in 0.5s ease-out",
+      marquee: "marquee var(--duration) linear infinite",
+      "marquee-vertical": "marquee-vertical var(--duration) linear infinite",
+    },
+    keyframes: {
+      "fade-in": {
+        "0%": { opacity: "0", transform: "translateY(10px)" },
+        "100%": { opacity: "1", transform: "translateY(0)" },
+      },
+      marquee: {
+        from: { transform: "translateX(0)" },
+        to: { transform: "translateX(calc(-100% - var(--gap)))" },
+      },
+      "marquee-vertical": {
+        from: { transform: "translateY(0)" },
+        to: { transform: "translateY(calc(-100% - var(--gap)))" },
+      },
+    },
   },
   plugins: [],
 };

@@ -11,6 +11,17 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 
+const IconWrapper = ({ children, className }) => (
+  <div
+    className={cn(
+      "h-10 w-10 flex items-center justify-center rounded-full hover:bg-white/10 transition-colors focus-within:ring-2 focus-within:ring-white/50",
+      className
+    )}
+  >
+    {children}
+  </div>
+);
+
 export default function ActionsGroup({
   friends,
   friendRequests,
@@ -20,8 +31,8 @@ export default function ActionsGroup({
     <div className="flex items-center gap-3">
       {/* Add Friend Popover */}
       <Popover className="relative">
-        <Popover.Button className="group relative rounded-full bg-brand-blue-3/30 dark:bg-sky-900/30 p-2.5 text-brand-blue-1 dark:text-sky-400 hover:bg-brand-blue-1 hover:text-white transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-brand-blue-2 focus:ring-offset-2 dark:focus:ring-offset-slate-900">
-          <UserPlusIcon className="h-5 w-5" />
+        <Popover.Button className="group relative rounded-full p-2 text-white hover:bg-white/10 transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/50 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent">
+          <UserPlusIcon className="h-[22px] w-[22px]" strokeWidth={1.5} />
         </Popover.Button>
 
         <Transition
@@ -58,8 +69,8 @@ export default function ActionsGroup({
 
       {/* Friends Dropdown with Tabs */}
       <Menu as="div" className="relative">
-        <Menu.Button className="rounded-full bg-brand-blue-3/30 dark:bg-sky-900/30 p-2.5 text-brand-blue-1 dark:text-sky-400 hover:bg-brand-blue-1 hover:text-white transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-brand-blue-2 focus:ring-offset-2 dark:focus:ring-offset-slate-900">
-          <UsersIcon className="h-5 w-5" />
+        <Menu.Button className="group relative rounded-full p-2 text-white hover:bg-white/10 transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/50 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent">
+          <UsersIcon className="h-[22px] w-[22px]" strokeWidth={1.5} />
         </Menu.Button>
         <Transition
           as={Fragment}
@@ -171,9 +182,9 @@ export default function ActionsGroup({
 
       {/* Notifications Dropdown */}
       <Menu as="div" className="relative">
-        <Menu.Button className="relative rounded-full bg-brand-blue-3/30 dark:bg-sky-900/30 p-2.5 text-brand-blue-1 dark:text-sky-400 hover:bg-brand-blue-1 hover:text-white transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-brand-blue-2 focus:ring-offset-2 dark:focus:ring-offset-slate-900">
-          <BellIcon className="h-5 w-5" />
-          <span className="absolute top-2 right-2.5 h-2 w-2 rounded-full bg-brand-yellow-3 ring-2 ring-white" />
+        <Menu.Button className="group relative rounded-full p-2 text-white hover:bg-white/10 transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/50 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent">
+          <BellIcon className="h-[22px] w-[22px]" strokeWidth={1.5} />
+          <span className="absolute top-2.5 right-2.5 h-2 w-2 rounded-full bg-brand-yellow-3 ring-2 ring-transparent" />
         </Menu.Button>
         <Transition
           as={Fragment}
