@@ -8,6 +8,8 @@ import {
   DevicePhoneMobileIcon,
   ArrowRightIcon,
 } from "@heroicons/react/24/outline";
+import { LanguageMarquee } from "@/components/home/LanguageMarquee";
+import { CommunitySection } from "@/components/home/CommunitySection";
 
 export default function Home() {
   return (
@@ -70,6 +72,9 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      {/* Language Marquee Section */}
+      <LanguageMarquee />
 
       {/* Features Section */}
       <section className="py-24 bg-gray-50/50 dark:bg-elevated-2 border-t border-gray-100 dark:border-subtle-dark">
@@ -174,6 +179,9 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      {/* Community Section */}
+      <CommunitySection />
     </div>
   );
 }

@@ -6,8 +6,8 @@ import { Button } from "@/components/ui/button";
 export default function StreaksDropdown({ streaks }) {
   return (
     <Menu as="div" className="relative">
-      <Menu.Button className="flex items-center gap-2 rounded-full bg-brand-yellow-1/50 dark:bg-yellow-900/20 px-4 py-1.5 text-sm font-bold text-gray-700 dark:text-yellow-400 border border-brand-yellow-2 dark:border-yellow-700 hover:bg-brand-yellow-1 dark:hover:bg-yellow-900/40 transition-colors focus:outline-none focus:ring-2 focus:ring-brand-yellow-2 focus:ring-offset-2 dark:focus:ring-offset-slate-900">
-        <FireIcon className="h-5 w-5 text-brand-yellow-3 dark:text-yellow-400 drop-shadow-sm" />
+      <Menu.Button className="flex items-center gap-2 rounded-full px-4 py-1.5 text-sm font-bold text-white hover:bg-white/10 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-white/50 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent">
+        <FireIcon className="h-5 w-5 text-brand-yellow-2 drop-shadow-sm" />
         <span>{streaks}</span>
       </Menu.Button>
       <Transition

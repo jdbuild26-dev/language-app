@@ -1,19 +1,12 @@
 export const LogoSVG = () => (
   <svg
-    width="36"
-    height="36"
+    width="32"
+    height="32"
     viewBox="0 0 32 32"
     fill="none"
     xmlns="http://www.w3.org/2000/svg"
-    className="text-brand-blue-1"
+    className="text-white drop-shadow-sm"
   >
-    <rect
-      width="32"
-      height="32"
-      rx="10"
-      fill="currentColor"
-      fillOpacity="0.15"
-    />
     <path
       d="M16 4L28 28H4L16 4Z"
       fill="currentColor"
@@ -21,16 +14,16 @@ export const LogoSVG = () => (
       strokeWidth="2"
       strokeLinejoin="round"
     />
-    <circle cx="16" cy="18" r="4" fill="white" />
   </svg>
 );
 
 export const FlagUKSVG = () => (
   <svg
-    width="28"
-    height="28"
+    width="22"
+    height="22"
     viewBox="0 0 60 30"
-    className="rounded-full shadow-sm object-cover"
+    className="rounded-full shadow-sm object-cover ring-2 ring-white/30"
+    preserveAspectRatio="xMidYMid slice"
   >
     <clipPath id="t">
       <path d="M30,15 h30 v15 z v15 h-30 z h-30 v-15 z v-15 h30 z" />
@@ -50,10 +43,11 @@ export const FlagUKSVG = () => (
 
 export const FlagSpainSVG = () => (
   <svg
-    width="28"
-    height="28"
+    width="22"
+    height="22"
     viewBox="0 0 750 500"
-    className="rounded-full shadow-sm object-cover"
+    className="rounded-full shadow-sm object-cover ring-2 ring-white/30"
+    preserveAspectRatio="xMidYMid slice"
   >
     <rect width="750" height="500" fill="#c60b1e" />
     <rect y="125" width="750" height="250" fill="#ffc400" />

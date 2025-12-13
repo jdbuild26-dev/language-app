@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { LogoSVG } from "@/components/navbar/NavbarIcons";
+import { LogoSVG } from "@/components/layout/header/NavbarIcons";
 
 const links = [
   {

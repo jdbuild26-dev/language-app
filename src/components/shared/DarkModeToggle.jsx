@@ -6,7 +6,7 @@ export function DarkModeToggle() {
   return (
     <button
       onClick={toggleTheme}
-      className="p-2 mr-2 text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-slate-400 dark:focus:ring-slate-600"
+      className="group relative rounded-full p-2 text-white bg-white/10 hover:bg-white/20 transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/50 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent mr-2"
       aria-label="Toggle dark mode"
     >
       {theme === "dark" ? (

@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
-import { LogoSVG } from "@/components/navbar/NavbarIcons";
+import { LogoSVG } from "@/components/layout/header/NavbarIcons";
 
-export default function TermsConditions() {
+export default function RefundPolicy() {
   return (
     <div className="min-h-[calc(100vh-4rem)] bg-white dark:bg-slate-900 py-16 px-4 sm:px-6 lg:px-8">
       <div className="max-w-3xl mx-auto">
@@ -13,7 +13,7 @@ export default function TermsConditions() {
             </span>
           </Link>
           <h1 className="text-4xl font-extrabold text-gray-900 dark:text-white tracking-tight">
-            Terms & Conditions
+            Refund Policy
           </h1>
           <p className="mt-4 text-gray-500 dark:text-slate-400">
             Last updated: December 2024
@@ -23,81 +23,72 @@ export default function TermsConditions() {
         <div className="prose prose-lg dark:prose-invert max-w-none">
           <section className="mb-8">
             <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
-              1. Acceptance of Terms
+              1. Refund Eligibility
             </h2>
             <p className="text-gray-600 dark:text-slate-300 leading-relaxed">
-              By accessing and using LangLearn's services, you accept and agree
-              to be bound by the terms and provisions of this agreement. If you
-              do not agree to these terms, please do not use our services.
+              At LangLearn, we want you to be completely satisfied with your
+              purchase. If you are not satisfied with your subscription or
+              purchase, you may be eligible for a refund under the following
+              conditions.
             </p>
           </section>
 
           <section className="mb-8">
             <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
-              2. Use of Services
+              2. Subscription Refunds
             </h2>
             <p className="text-gray-600 dark:text-slate-300 leading-relaxed mb-4">
-              You agree to use our services only for lawful purposes and in
-              accordance with these Terms. You agree not to:
+              For subscription-based purchases:
             </p>
             <ul className="list-disc list-inside text-gray-600 dark:text-slate-300 space-y-2">
-              <li>Use the service in any way that violates applicable laws</li>
-              <li>Attempt to gain unauthorized access to our systems</li>
-              <li>Share your account credentials with others</li>
-              <li>Reproduce, duplicate, or resell any part of our service</li>
+              <li>Full refund available within 7 days of initial purchase</li>
+              <li>Partial refunds may be available for annual subscriptions</li>
+              <li>
+                No refunds for monthly subscriptions after the billing period
+                has started
+              </li>
+              <li>
+                Refund requests must be submitted through our support portal
+              </li>
             </ul>
           </section>
 
           <section className="mb-8">
             <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
-              3. User Accounts
+              3. How to Request a Refund
             </h2>
             <p className="text-gray-600 dark:text-slate-300 leading-relaxed">
-              When you create an account with us, you must provide accurate on
-              information. You are responsible for safeguarding your password
-              and for all activities that occur under your account. You must
-              notify us immediately of any unauthorized use of your account.
+              To request a refund, please contact our support team with your
+              account email, order number, and reason for the refund request. We
+              will process your request within 5-7 business days.
             </p>
           </section>
 
           <section className="mb-8">
             <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
-              4. Intellectual Property
+              4. Processing Time
             </h2>
             <p className="text-gray-600 dark:text-slate-300 leading-relaxed">
-              The service and its original content, features, and functionality
-              are owned by LangLearn Inc. and are protected by international
-              copyright, trademark, patent, trade secret, and other intellectual
-              property laws.
+              Once approved, refunds will be processed to your original payment
+              method within 5-10 business days. Please note that your bank may
+              take additional time to reflect the refund in your account.
             </p>
           </section>
 
           <section className="mb-8">
             <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
-              5. Limitation of Liability
+              5. Contact Us
             </h2>
             <p className="text-gray-600 dark:text-slate-300 leading-relaxed">
-              In no event shall LangLearn Inc., nor its directors, employees,
-              partners, agents, suppliers, or affiliates, be liable for any
-              indirect, incidental, special, consequential, or punitive damages
-              resulting from your use of the service.
-            </p>
-          </section>
-
-          <section className="mb-8">
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
-              6. Contact Us
-            </h2>
-            <p className="text-gray-600 dark:text-slate-300 leading-relaxed">
-              If you have any questions about these Terms, please contact us at:
+              For refund-related inquiries, please contact us at:
             </p>
             <div className="mt-4 p-4 bg-gray-50 dark:bg-slate-800 rounded-lg">
               <p className="text-gray-700 dark:text-slate-300">
                 <strong>LangLearn Inc.</strong>
                 <br />
-                Email: legal@langlearn.com
+                Email: refunds@langlearn.com
                 <br />
-                Address: 123 Learning Street, Education City, EC 12345
+                Support Portal: support.langlearn.com
               </p>
             </div>
           </section>
