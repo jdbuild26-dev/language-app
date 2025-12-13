@@ -81,18 +81,15 @@ export default function PageTabs({
             <NavLink
               key={tab.path}
               to={tabPath}
-              className={`relative px-6 py-4 text-lg font-semibold transition-colors
+              className={`relative px-6 py-4 text-lg font-semibold transition-colors rounded-t-lg flex items-center justify-center gap-2
                 ${
                   isActive
-                    ? "text-gray-900 dark:text-white"
-                    : "text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-300"
+                    ? "text-sky-600 dark:text-sky-400 bg-sky-50 dark:bg-sky-900/20 border-t-2 border-t-sky-500 border-l border-r border-gray-200 dark:border-slate-600 border-b-transparent -mb-px"
+                    : "text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-300 border border-transparent"
                 }
               `}
             >
-              {/* Left border indicator for active tab */}
-              {isActive && (
-                <span className="absolute left-0 top-3 bottom-3 w-1 bg-sky-500 dark:bg-sky-400 rounded-r" />
-              )}
+              {tab.icon && <tab.icon className="w-5 h-5" />}
               {tab.label}
             </NavLink>
           );
@@ -110,7 +107,7 @@ export default function PageTabs({
               <NavLink
                 key={subTab.path}
                 to={subTabPath}
-                className={`relative pb-3 text-sm font-medium transition-colors
+                className={`relative pb-3 text-sm font-medium transition-colors flex items-center gap-2
                   ${
                     isActive
                       ? "text-sky-600 dark:text-sky-400"
@@ -118,6 +115,7 @@ export default function PageTabs({
                   }
                 `}
               >
+                {subTab.icon && <subTab.icon className="w-4 h-4" />}
                 {subTab.label}
                 {/* Blue underline for active sub-tab */}
                 {isActive && (
