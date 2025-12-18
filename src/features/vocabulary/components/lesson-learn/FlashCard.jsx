@@ -1,7 +1,13 @@
 import { SpeakerWaveIcon } from "@heroicons/react/24/outline";
 import BookmarkIcon from "./BookmarkIcon";
 
+// Placeholder image for words without images
+const PLACEHOLDER_IMAGE =
+  "https://images.unsplash.com/photo-1546410531-bb4caa6b424d?auto=format&fit=crop&q=80&w=500";
+
 export default function FlashCard({ word }) {
+  const imageUrl = word.image || PLACEHOLDER_IMAGE;
+
   return (
     <div className="bg-white dark:bg-slate-800 rounded-[2rem] shadow-sm border border-gray-100 dark:border-slate-700 w-full max-w-5xl mx-auto relative overflow-hidden">
       {/* "New" Badge - Triangle style approximated */}
@@ -24,7 +30,7 @@ export default function FlashCard({ word }) {
         <div className="md:w-5/12 p-8 flex items-center justify-center">
           <div className="relative w-full aspect-square max-w-[280px]">
             <img
-              src={word.image}
+              src={imageUrl}
               alt={word.english}
               className="w-full h-full object-contain drop-shadow-xl"
             />
@@ -97,13 +103,13 @@ export default function FlashCard({ word }) {
         </div>
       </div>
 
-      {/* A1 Badge */}
+      {/* Level Badge - Dynamic */}
       <div
         className="absolute bottom-0 right-0 w-20 h-20 bg-gray-200 dark:bg-slate-700 flex items-end justify-end p-4"
         style={{ clipPath: "polygon(100% 0, 0 100%, 100% 100%)" }}
       >
         <span className="text-xl font-bold text-gray-900 dark:text-white mr-1 mb-1">
-          A1
+          {word.level || "A1"}
         </span>
       </div>
     </div>

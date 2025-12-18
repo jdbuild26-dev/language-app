@@ -22,11 +22,18 @@ export async function fetchVocabulary({ level, category, limit } = {}) {
 }
 
 /**
- * Fetch words for a specific lesson
+ * Fetch words for a specific lesson, optionally filtered by CEFR level
  */
-export async function fetchLessonWords(lessonId, wordsPerLesson = 10) {
+export async function fetchLessonWords(
+  lessonId,
+  { level, wordsPerLesson = 10 } = {}
+) {
+  const params = new URLSearchParams();
+  params.append("words_per_lesson", wordsPerLesson);
+  if (level) params.append("level", level);
+
   const response = await fetch(
-    `${API_BASE_URL}/api/vocabulary/lesson/${lessonId}?words_per_lesson=${wordsPerLesson}`
+    `${API_BASE_URL}/api/vocabulary/lesson/${lessonId}?${params}`
   );
 
   if (!response.ok) {
