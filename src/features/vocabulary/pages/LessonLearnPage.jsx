@@ -11,22 +11,31 @@ import { fetchVocabulary } from "../../../services/vocabularyApi";
 
 export default function LessonLearnPage() {
   const navigate = useNavigate();
-  const { level, category } = useParams();
+  const { level, category, topic } = useParams();
   const [words, setWords] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isCompleted, setIsCompleted] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  // Determine the category to use (from level/category route or topic route)
+  const categoryToUse = category || topic;
+  const displayName = categoryToUse
+    ? categoryToUse
+        .split("-")
+        .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(" ")
+    : "";
+
   useEffect(() => {
     async function loadWords() {
       try {
         setIsLoading(true);
         setError(null);
-        // Fetch vocabulary filtered by level and category
+        // Fetch vocabulary filtered by level and/or category
         const data = await fetchVocabulary({
           level: level?.toUpperCase(),
-          category: category,
+          category: categoryToUse,
         });
         setWords(data.words || []);
       } catch (err) {
@@ -37,7 +46,7 @@ export default function LessonLearnPage() {
       }
     }
     loadWords();
-  }, [level, category]);
+  }, [level, categoryToUse]);
 
   const handleNext = () => {
     if (currentIndex < words.length - 1) {

@@ -8,21 +8,16 @@ import {
 } from "lucide-react";
 import PageTabs from "@/components/ui/PageTabs";
 import LearnContent from "../components/LearnContent";
+import ReviewContent from "../components/ReviewContent";
 import LevelBasedPage from "./LevelBasedPage";
 import LessonLearnPage from "./LessonLearnPage";
 import CEFRLevelPage from "./CEFRLevelPage";
+import ReviewWordsPage from "./ReviewWordsPage";
+import MyWordlistsPage from "./MyWordlistsPage";
+import TopicsPage from "./TopicsPage";
+import TopicCategoryPage from "./TopicCategoryPage";
 
 // Placeholder content components
-function ReviewContent() {
-  return (
-    <div className="text-gray-600 dark:text-slate-400">
-      <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
-        Review
-      </h2>
-      <p>Review previously learned vocabulary with spaced repetition.</p>
-    </div>
-  );
-}
 
 function ActivitiesContent() {
   return (
@@ -42,20 +37,6 @@ function PracticeContent() {
         Practice
       </h2>
       <p>Test your vocabulary skills with quizzes and challenges.</p>
-    </div>
-  );
-}
-
-// Topics Placeholder Page
-function TopicsPage() {
-  return (
-    <div className="min-h-[40vh] flex flex-col items-center justify-center">
-      <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-4">
-        Topical Vocabulary
-      </h2>
-      <p className="text-gray-500 dark:text-slate-400">
-        Placeholder for topics vocabulary content.
-      </p>
     </div>
   );
 }
@@ -93,6 +74,8 @@ export default function VocabularyPage() {
       <Routes>
         <Route path="lessons/learn" element={<LearnContent />} />
         <Route path="lessons/review" element={<ReviewContent />} />
+        <Route path="lessons/review/words" element={<ReviewWordsPage />} />
+        <Route path="lessons/review/wordlists" element={<MyWordlistsPage />} />
         <Route path="lessons/activities" element={<ActivitiesContent />} />
         <Route path="practice" element={<PracticeContent />} />
 
@@ -108,8 +91,12 @@ export default function VocabularyPage() {
         {/* Level-Based route */}
         <Route path="lessons/learn/level-based" element={<LevelBasedPage />} />
 
-        {/* Topics route */}
-        <Route path="topics" element={<TopicsPage />} />
+        {/* Topics routes */}
+        <Route path="lessons/learn/topics" element={<TopicsPage />} />
+        <Route
+          path="lessons/learn/topic/:topic"
+          element={<LessonLearnPage />}
+        />
 
         <Route path="*" element={<Navigate to="lessons/learn" replace />} />
       </Routes>

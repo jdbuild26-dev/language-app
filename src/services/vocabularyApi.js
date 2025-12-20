@@ -88,6 +88,19 @@ export async function fetchCategoriesByLevel(level) {
 }
 
 /**
+ * Fetch all topics with word counts (across all levels)
+ */
+export async function fetchAllTopics() {
+  const response = await fetch(`${API_BASE_URL}/api/vocabulary/topics`);
+
+  if (!response.ok) {
+    throw new Error("Failed to fetch topics");
+  }
+
+  return response.json();
+}
+
+/**
  * Check if API is healthy
  */
 export async function checkApiHealth() {

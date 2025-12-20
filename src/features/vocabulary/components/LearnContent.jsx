@@ -56,37 +56,37 @@ const levelData = [
 
 const topicData = [
   {
-    title: "Travel & Transport",
-    subtitle: "120 words",
-    to: "/vocabulary/topics",
+    title: "Travel & Transportation",
+    subtitle: "Explore",
+    to: "/vocabulary/lessons/learn/topic/travel-and-transportation",
     image:
       "https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?auto=format&fit=crop&q=80&w=500",
   },
   {
-    title: "Business & Work",
-    subtitle: "85 words",
-    to: "/vocabulary/topics",
+    title: "Work, Business & Economics",
+    subtitle: "Explore",
+    to: "/vocabulary/lessons/learn/topic/work-business-and-economics",
     image:
       "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&q=80&w=500",
   },
   {
-    title: "Food & Dining",
-    subtitle: "95 words",
-    to: "/vocabulary/topics",
+    title: "Food, Beverage & Sports",
+    subtitle: "Explore",
+    to: "/vocabulary/lessons/learn/topic/food-and-beverage-and-sports",
     image:
       "https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&q=80&w=500",
   },
   {
-    title: "Health & Fitness",
-    subtitle: "60 words",
-    to: "/vocabulary/topics",
+    title: "Body & Health",
+    subtitle: "Explore",
+    to: "/vocabulary/lessons/learn/topic/body-and-health",
     image:
       "https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?auto=format&fit=crop&q=80&w=500",
   },
   {
-    title: "Technology",
-    subtitle: "100 words",
-    to: "/vocabulary/topics",
+    title: "Technology & Science",
+    subtitle: "Explore",
+    to: "/vocabulary/lessons/learn/topic/technology-and-science",
     image:
       "https://images.unsplash.com/photo-1519389950473-47ba0277781c?auto=format&fit=crop&q=80&w=500",
   },
@@ -129,7 +129,7 @@ export default function LearnContent() {
         className="bg-sky-50 dark:bg-slate-800/50 border-sky-100 dark:border-slate-700"
         action={
           <Link
-            to="/vocabulary/topics"
+            to="/vocabulary/lessons/learn/topics"
             className="inline-flex h-12 w-12 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-600 shadow-sm transition-all hover:bg-gray-50 hover:text-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-300 dark:hover:bg-slate-600 dark:hover:text-sky-400"
             aria-label="View all topics"
           >
