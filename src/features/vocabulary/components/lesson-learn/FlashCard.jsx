@@ -1,12 +1,52 @@
+import { useState, useEffect } from "react";
+import { useUser } from "@clerk/clerk-react";
 import { SpeakerWaveIcon } from "@heroicons/react/24/outline";
 import BookmarkIcon from "./BookmarkIcon";
+import {
+  addToReview,
+  removeFromReview,
+  checkIsBookmarked,
+} from "../../../../services/reviewCardsApi";
 
 // Placeholder image for words without images
 const PLACEHOLDER_IMAGE =
   "https://images.unsplash.com/photo-1546410531-bb4caa6b424d?auto=format&fit=crop&q=80&w=500";
 
 export default function FlashCard({ word }) {
+  const { user } = useUser();
+  const [isBookmarked, setIsBookmarked] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const imageUrl = word.image || PLACEHOLDER_IMAGE;
+
+  // Check if card is already bookmarked when component mounts or word changes
+  useEffect(() => {
+    async function checkBookmarkStatus() {
+      if (user && word?.id) {
+        const bookmarked = await checkIsBookmarked(user.id, word.id);
+        setIsBookmarked(bookmarked);
+      }
+    }
+    checkBookmarkStatus();
+  }, [user, word?.id]);
+
+  const handleBookmarkToggle = async () => {
+    if (!user || isLoading) return;
+
+    setIsLoading(true);
+    try {
+      if (isBookmarked) {
+        await removeFromReview(user.id, word.id);
+        setIsBookmarked(false);
+      } else {
+        await addToReview(user.id, word);
+        setIsBookmarked(true);
+      }
+    } catch (error) {
+      console.error("Failed to toggle bookmark:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <div className="bg-white dark:bg-slate-800 rounded-[2rem] shadow-sm border border-gray-100 dark:border-slate-700 w-full max-w-5xl mx-auto relative overflow-hidden">
@@ -22,7 +62,15 @@ export default function FlashCard({ word }) {
 
       {/* Bookmark */}
       <div className="absolute top-6 right-6 z-10">
-        <BookmarkIcon className="w-6 h-6 text-gray-400 dark:text-slate-500 hover:text-sky-500 cursor-pointer" />
+        <BookmarkIcon
+          className={`w-6 h-6 ${isLoading ? "opacity-50" : ""} ${
+            isBookmarked
+              ? "text-yellow-500"
+              : "text-gray-400 dark:text-slate-500 hover:text-sky-500"
+          }`}
+          isActive={isBookmarked}
+          onClick={handleBookmarkToggle}
+        />
       </div>
 
       <div className="flex flex-col md:flex-row h-full">

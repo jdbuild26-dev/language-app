@@ -1,12 +1,15 @@
-export default function BookmarkIcon({ className }) {
+export default function BookmarkIcon({ className, isActive = false, onClick }) {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
-      fill="none"
+      fill={isActive ? "currentColor" : "none"}
       viewBox="0 0 24 24"
       strokeWidth={1.5}
       stroke="currentColor"
-      className={className}
+      className={`${className} ${
+        isActive ? "text-yellow-500" : ""
+      } cursor-pointer transition-all duration-200 hover:scale-110`}
+      onClick={onClick}
     >
       <path
         strokeLinecap="round"
