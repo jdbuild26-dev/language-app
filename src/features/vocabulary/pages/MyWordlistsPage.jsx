@@ -117,7 +117,7 @@ export default function MyWordlistsPage() {
       <div className="max-w-7xl mx-auto px-4 py-6">
         <div className="text-center py-12">
           <p className="text-gray-500 dark:text-slate-400">
-            Please sign in to view your wordlist.
+            Please sign in to view your review words.
           </p>
         </div>
       </div>
@@ -136,7 +136,7 @@ export default function MyWordlistsPage() {
           Back to Review
         </Link>
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-1">
-          My Wordlist
+          Review Words
         </h1>
         <p className="text-gray-500 dark:text-slate-400">
           {cards.length > 0
@@ -172,11 +172,11 @@ export default function MyWordlistsPage() {
             <BookOpen className="w-8 h-8 text-sky-500" />
           </div>
           <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-            No Words Yet
+            No Words Learned
           </h2>
           <p className="text-gray-500 dark:text-slate-400 text-center max-w-md mb-6">
-            Start learning vocabulary and save your progress to build your
-            wordlist.
+            Complete lessons and save your progress to review the words you've
+            learned.
           </p>
           <Link
             to="/vocabulary/lessons/learn"

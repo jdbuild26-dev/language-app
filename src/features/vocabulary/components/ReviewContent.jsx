@@ -4,16 +4,16 @@ import { RectangleStackIcon, BookmarkIcon } from "@heroicons/react/24/outline";
 
 const reviewSections = [
   {
-    title: "Review Words",
-    description:
-      "Review vocabulary marked for learning with spaced repetition.",
-    icon: RectangleStackIcon,
+    title: "My Wordlist",
+    description: "View and practice words you've saved for learning.",
+    icon: BookmarkIcon,
     to: "/vocabulary/lessons/review/words",
   },
   {
-    title: "My Wordlists",
-    description: "View and manage your custom vocabulary collections.",
-    icon: BookmarkIcon,
+    title: "Review Words",
+    description:
+      "Review all the vocabulary you've learned and track your progress.",
+    icon: RectangleStackIcon,
     to: "/vocabulary/lessons/review/wordlists",
   },
 ];

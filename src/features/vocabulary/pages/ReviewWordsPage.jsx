@@ -85,7 +85,7 @@ export default function ReviewWordsPage() {
       <div className="max-w-7xl mx-auto px-4 py-6">
         <div className="text-center py-12">
           <p className="text-gray-500 dark:text-slate-400">
-            Please sign in to view your review cards.
+            Please sign in to view your wordlist.
           </p>
         </div>
       </div>
@@ -106,14 +106,14 @@ export default function ReviewWordsPage() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-1">
-              Review Words
+              My Wordlist
             </h1>
             <p className="text-gray-500 dark:text-slate-400">
               {cards.length > 0
-                ? `${cards.length} card${
+                ? `${cards.length} word${
                     cards.length !== 1 ? "s" : ""
-                  } marked for review`
-                : "No cards to review yet"}
+                  } saved for practice`
+                : "No words saved yet"}
             </p>
           </div>
 
@@ -157,11 +157,11 @@ export default function ReviewWordsPage() {
             <Clock className="w-8 h-8 text-sky-500" />
           </div>
           <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-            No Words to Review
+            No Words Saved
           </h2>
           <p className="text-gray-500 dark:text-slate-400 text-center max-w-md mb-6">
-            Mark vocabulary cards for review while learning to build your review
-            list.
+            Save words while learning by clicking the bookmark icon on
+            flashcards.
           </p>
           <Link
             to="/vocabulary/lessons/learn"
