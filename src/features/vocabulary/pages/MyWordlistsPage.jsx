@@ -1,13 +1,14 @@
 import { useState, useEffect, useCallback } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useUser } from "@clerk/clerk-react";
-import { ArrowLeft, BookOpen, Loader2, Trash2 } from "lucide-react";
+import { ArrowLeft, BookOpen, Loader2, Trash2, Play } from "lucide-react";
 import {
   getWordlist,
   resetLessonProgress,
 } from "../../../services/progressApi";
 
 export default function MyWordlistsPage() {
+  const navigate = useNavigate();
   const { user, isLoaded } = useUser();
   const [cards, setCards] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -135,14 +136,31 @@ export default function MyWordlistsPage() {
           <ArrowLeft className="w-4 h-4" />
           Back to Review
         </Link>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-1">
-          Review Words
-        </h1>
-        <p className="text-gray-500 dark:text-slate-400">
-          {cards.length > 0
-            ? `${cards.length} word${cards.length !== 1 ? "s" : ""} learned`
-            : "Words you learn will appear here"}
-        </p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-1">
+              Review Words
+            </h1>
+            <p className="text-gray-500 dark:text-slate-400">
+              {cards.length > 0
+                ? `${cards.length} word${cards.length !== 1 ? "s" : ""} learned`
+                : "Words you learn will appear here"}
+            </p>
+          </div>
+
+          {/* Start Review Button */}
+          {cards.length > 0 && !isLoading && (
+            <button
+              onClick={() =>
+                navigate("/vocabulary/lessons/review/wordlists/session")
+              }
+              className="flex items-center gap-2 px-4 py-2 bg-sky-500 hover:bg-sky-600 text-white rounded-lg transition-colors shadow-sm"
+            >
+              <Play className="w-4 h-4" />
+              Start Review
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Loading state */}
