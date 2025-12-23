@@ -12,7 +12,7 @@ import {
 const PLACEHOLDER_IMAGE =
   "https://images.unsplash.com/photo-1546410531-bb4caa6b424d?auto=format&fit=crop&q=80&w=500";
 
-export default function FlashCard({ word }) {
+export default function FlashCard({ word, showBookmark = true }) {
   const { user } = useUser();
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -21,13 +21,13 @@ export default function FlashCard({ word }) {
   // Check if card is already bookmarked when component mounts or word changes
   useEffect(() => {
     async function checkBookmarkStatus() {
-      if (user && word?.id) {
+      if (showBookmark && user && word?.id) {
         const bookmarked = await checkIsBookmarked(user.id, word.id);
         setIsBookmarked(bookmarked);
       }
     }
     checkBookmarkStatus();
-  }, [user, word?.id]);
+  }, [showBookmark, user, word?.id]);
 
   const handleBookmarkToggle = async () => {
     if (!user || isLoading) return;
@@ -60,18 +60,20 @@ export default function FlashCard({ word }) {
         </span>
       </div>
 
-      {/* Bookmark */}
-      <div className="absolute top-6 right-6 z-10">
-        <BookmarkIcon
-          className={`w-6 h-6 ${isLoading ? "opacity-50" : ""} ${
-            isBookmarked
-              ? "text-yellow-500"
-              : "text-gray-400 dark:text-slate-500 hover:text-sky-500"
-          }`}
-          isActive={isBookmarked}
-          onClick={handleBookmarkToggle}
-        />
-      </div>
+      {/* Bookmark - conditionally rendered */}
+      {showBookmark && (
+        <div className="absolute top-6 right-6 z-10">
+          <BookmarkIcon
+            className={`w-6 h-6 ${isLoading ? "opacity-50" : ""} ${
+              isBookmarked
+                ? "text-yellow-500"
+                : "text-gray-400 dark:text-slate-500 hover:text-sky-500"
+            }`}
+            isActive={isBookmarked}
+            onClick={handleBookmarkToggle}
+          />
+        </div>
+      )}
 
       <div className="flex flex-col md:flex-row h-full">
         {/* Left: Image */}

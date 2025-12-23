@@ -13,6 +13,7 @@ import LevelBasedPage from "./LevelBasedPage";
 import LessonLearnPage from "./LessonLearnPage";
 import CEFRLevelPage from "./CEFRLevelPage";
 import ReviewWordsPage from "./ReviewWordsPage";
+import ReviewSessionPage from "./ReviewSessionPage";
 import MyWordlistsPage from "./MyWordlistsPage";
 import TopicsPage from "./TopicsPage";
 import TopicCategoryPage from "./TopicCategoryPage";
@@ -75,6 +76,10 @@ export default function VocabularyPage() {
         <Route path="lessons/learn" element={<LearnContent />} />
         <Route path="lessons/review" element={<ReviewContent />} />
         <Route path="lessons/review/words" element={<ReviewWordsPage />} />
+        <Route
+          path="lessons/review/words/session"
+          element={<ReviewSessionPage />}
+        />
         <Route path="lessons/review/wordlists" element={<MyWordlistsPage />} />
         <Route path="lessons/activities" element={<ActivitiesContent />} />
         <Route path="practice" element={<PracticeContent />} />

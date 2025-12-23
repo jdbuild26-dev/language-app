@@ -1,57 +1,44 @@
 import { useState, useEffect, useCallback } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useUser } from "@clerk/clerk-react";
-import { ArrowLeft, Clock, Trash2, Loader2 } from "lucide-react";
+import {
+  ArrowLeft,
+  Clock,
+  Trash2,
+  Loader2,
+  ChevronRight,
+  Play,
+} from "lucide-react";
 import {
   fetchReviewCards,
   removeFromReview,
 } from "../../../services/reviewCardsApi";
 
 export default function ReviewWordsPage() {
+  const navigate = useNavigate();
   const { user, isLoaded } = useUser();
   const [cards, setCards] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [nextCursor, setNextCursor] = useState(null);
-  const [hasMore, setHasMore] = useState(false);
-  const [loadingMore, setLoadingMore] = useState(false);
   const [removingCardId, setRemovingCardId] = useState(null);
 
   // Fetch review cards
-  const loadCards = useCallback(
-    async (cursor = null) => {
-      if (!user) return;
+  const loadCards = useCallback(async () => {
+    if (!user) return;
 
-      try {
-        if (cursor) {
-          setLoadingMore(true);
-        } else {
-          setIsLoading(true);
-        }
-        setError(null);
+    try {
+      setIsLoading(true);
+      setError(null);
 
-        const data = await fetchReviewCards(user.id, { limit: 20, cursor });
-
-        if (cursor) {
-          // Append to existing cards
-          setCards((prev) => [...prev, ...data.cards]);
-        } else {
-          // Replace cards
-          setCards(data.cards);
-        }
-
-        setNextCursor(data.nextCursor);
-        setHasMore(data.hasMore);
-      } catch (err) {
-        console.error("Failed to fetch review cards:", err);
-        setError("Failed to load review cards. Please try again.");
-      } finally {
-        setIsLoading(false);
-        setLoadingMore(false);
-      }
-    },
-    [user]
-  );
+      const data = await fetchReviewCards(user.id, { limit: 100 });
+      setCards(data.cards);
+    } catch (err) {
+      console.error("Failed to fetch review cards:", err);
+      setError("Failed to load review cards. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
+  }, [user]);
 
   // Load cards when user is available
   useEffect(() => {
@@ -61,7 +48,8 @@ export default function ReviewWordsPage() {
   }, [isLoaded, user, loadCards]);
 
   // Handle remove card
-  const handleRemoveCard = async (cardId) => {
+  const handleRemoveCard = async (e, cardId) => {
+    e.stopPropagation();
     if (!user || removingCardId) return;
 
     setRemovingCardId(cardId);
@@ -75,11 +63,9 @@ export default function ReviewWordsPage() {
     }
   };
 
-  // Handle load more
-  const handleLoadMore = () => {
-    if (nextCursor && !loadingMore) {
-      loadCards(nextCursor);
-    }
+  // Start review session
+  const handleStartReview = () => {
+    navigate("/vocabulary/lessons/review/words/session");
   };
 
   // Loading state (waiting for auth)
@@ -109,7 +95,7 @@ export default function ReviewWordsPage() {
   return (
     <div className="max-w-7xl mx-auto px-4 py-6">
       {/* Header */}
-      <div className="mb-8">
+      <div className="mb-6">
         <Link
           to="/vocabulary/lessons/review"
           className="inline-flex items-center gap-2 text-gray-500 dark:text-slate-400 hover:text-sky-500 dark:hover:text-sky-400 transition-colors mb-4"
@@ -117,16 +103,31 @@ export default function ReviewWordsPage() {
           <ArrowLeft className="w-4 h-4" />
           Back to Review
         </Link>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-          Review Words
-        </h1>
-        <p className="text-gray-500 dark:text-slate-400">
-          {cards.length > 0
-            ? `You have ${cards.length} card${
-                cards.length !== 1 ? "s" : ""
-              } marked for review.`
-            : "Review vocabulary cards you've marked for learning."}
-        </p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-1">
+              Review Words
+            </h1>
+            <p className="text-gray-500 dark:text-slate-400">
+              {cards.length > 0
+                ? `${cards.length} card${
+                    cards.length !== 1 ? "s" : ""
+                  } marked for review`
+                : "No cards to review yet"}
+            </p>
+          </div>
+
+          {/* Start Review Button */}
+          {cards.length > 0 && !isLoading && (
+            <button
+              onClick={handleStartReview}
+              className="flex items-center gap-2 px-4 py-2 bg-sky-500 hover:bg-sky-600 text-white rounded-lg transition-colors shadow-sm"
+            >
+              <Play className="w-4 h-4" />
+              Start Review
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Loading state */}
@@ -158,105 +159,75 @@ export default function ReviewWordsPage() {
           <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
             No Words to Review
           </h2>
-          <p className="text-gray-500 dark:text-slate-400 text-center max-w-md">
-            Words you mark for review while learning will appear here. Start
-            learning vocabulary and mark cards to build your review list.
+          <p className="text-gray-500 dark:text-slate-400 text-center max-w-md mb-6">
+            Mark vocabulary cards for review while learning to build your review
+            list.
           </p>
           <Link
             to="/vocabulary/lessons/learn"
-            className="mt-6 px-6 py-2 bg-sky-500 text-white rounded-lg hover:bg-sky-600 transition-colors"
+            className="px-6 py-2 bg-sky-500 text-white rounded-lg hover:bg-sky-600 transition-colors"
           >
             Start Learning
           </Link>
         </div>
       )}
 
-      {/* Cards grid */}
+      {/* Cards List */}
       {!isLoading && !error && cards.length > 0 && (
-        <>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {cards.map((card) => (
-              <div
-                key={card.id}
-                className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-4 hover:shadow-md transition-shadow"
-              >
-                {/* Card Header */}
-                <div className="flex items-start justify-between mb-3">
-                  <div>
-                    <span className="inline-block px-2 py-0.5 text-xs font-medium bg-sky-100 dark:bg-sky-900/30 text-sky-600 dark:text-sky-400 rounded-full mb-2">
-                      {card.cardData.level}
-                    </span>
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+        <div className="space-y-2">
+          {cards.map((card, index) => (
+            <div
+              key={card.id}
+              onClick={handleStartReview}
+              className="flex items-center justify-between p-4 bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 hover:border-sky-200 dark:hover:border-sky-800 hover:shadow-sm transition-all cursor-pointer group"
+            >
+              {/* Left: Number + Content */}
+              <div className="flex items-center gap-4 flex-1 min-w-0">
+                {/* Number */}
+                <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gray-100 dark:bg-slate-700 flex items-center justify-center">
+                  <span className="text-sm font-medium text-gray-600 dark:text-slate-300">
+                    {index + 1}
+                  </span>
+                </div>
+
+                {/* Content */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-3 mb-1">
+                    <h3 className="text-base font-medium text-gray-900 dark:text-white truncate">
                       {card.cardData.english}
                     </h3>
+                    <span className="flex-shrink-0 px-2 py-0.5 text-xs font-medium bg-sky-100 dark:bg-sky-900/30 text-sky-600 dark:text-sky-400 rounded-full">
+                      {card.cardData.level}
+                    </span>
                   </div>
-                  <button
-                    onClick={() => handleRemoveCard(card.cardId)}
-                    disabled={removingCardId === card.cardId}
-                    className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors disabled:opacity-50"
-                    title="Remove from review"
-                  >
-                    {removingCardId === card.cardId ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : (
-                      <Trash2 className="w-4 h-4" />
-                    )}
-                  </button>
-                </div>
-
-                {/* French Forms */}
-                <div className="space-y-2 mb-3">
-                  {card.cardData.forms.map((form, idx) => (
-                    <div key={idx} className="flex items-center gap-2">
-                      <span className="text-base font-medium text-gray-900 dark:text-white">
-                        {form.word}
-                      </span>
-                      <span className={`text-xs ${form.genderColor}`}>
-                        {form.gender}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Example */}
-                {card.cardData.exampleTarget && (
-                  <div className="border-t border-gray-100 dark:border-slate-700 pt-3">
-                    <p className="text-sm text-gray-600 dark:text-slate-300 italic">
-                      "{card.cardData.exampleTarget}"
-                    </p>
-                    <p className="text-xs text-gray-400 dark:text-slate-500 mt-1">
-                      {card.cardData.exampleNative}
-                    </p>
-                  </div>
-                )}
-
-                {/* Category & Date */}
-                <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-100 dark:border-slate-700">
-                  <span className="text-xs text-gray-400 dark:text-slate-500">
-                    {card.cardData.category}
-                  </span>
-                  <span className="text-xs text-gray-400 dark:text-slate-500">
-                    {new Date(card.markedAt).toLocaleDateString()}
-                  </span>
+                  <p className="text-sm text-gray-500 dark:text-slate-400 truncate">
+                    {card.cardData.forms.map((f) => f.word).join(" / ")}
+                  </p>
                 </div>
               </div>
-            ))}
-          </div>
 
-          {/* Load More Button */}
-          {hasMore && (
-            <div className="flex justify-center mt-8">
-              <button
-                onClick={handleLoadMore}
-                disabled={loadingMore}
-                className="px-6 py-2 bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-slate-300 rounded-lg hover:bg-gray-200 dark:hover:bg-slate-600 transition-colors disabled:opacity-50 flex items-center gap-2"
-              >
-                {loadingMore && <Loader2 className="w-4 h-4 animate-spin" />}
-                {loadingMore ? "Loading..." : "Load More"}
-              </button>
+              {/* Right: Actions */}
+              <div className="flex items-center gap-2 ml-4">
+                {/* Remove Button */}
+                <button
+                  onClick={(e) => handleRemoveCard(e, card.cardId)}
+                  disabled={removingCardId === card.cardId}
+                  className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors disabled:opacity-50"
+                  title="Remove from review"
+                >
+                  {removingCardId === card.cardId ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Trash2 className="w-4 h-4" />
+                  )}
+                </button>
+
+                {/* Arrow */}
+                <ChevronRight className="w-5 h-5 text-gray-300 dark:text-slate-600 group-hover:text-sky-500 transition-colors" />
+              </div>
             </div>
-          )}
-        </>
+          ))}
+        </div>
       )}
     </div>
   );
