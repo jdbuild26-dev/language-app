@@ -8,8 +8,18 @@ import {
   Squares2X2Icon,
   LanguageIcon,
 } from "@heroicons/react/24/outline";
-import { fetchCategoriesByLevel } from "../../../services/vocabularyApi";
+import { BookmarkIcon as BookmarkSolidIcon } from "@heroicons/react/24/solid";
+import {
+  fetchCategoriesByLevel,
+  fetchVocabulary,
+} from "../../../services/vocabularyApi";
 import { getLessonProgress } from "../../../services/progressApi";
+import {
+  bulkAddToReview,
+  bulkRemoveFromReview,
+  checkCategoryBookmarked,
+} from "../../../services/reviewCardsApi";
+import ConfirmationModal from "../../../components/ui/ConfirmationModal";
 
 // Level colors config
 const levelColors = {
@@ -67,12 +77,27 @@ function ActionButton({ icon: Icon, label, onClick }) {
 }
 
 // Category Card component with progress
-function CategoryCard({ category, levelColor, level, learnedCount = 0 }) {
+function CategoryCard({
+  category,
+  levelColor,
+  level,
+  learnedCount = 0,
+  isBookmarked = false,
+  onBookmarkClick,
+}) {
   const totalWords = category.wordCount || 1;
   const progressPercent = Math.min(
     Math.round((learnedCount / totalWords) * 100),
     100
   );
+
+  const handleBookmarkClick = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (onBookmarkClick) {
+      onBookmarkClick(category, isBookmarked);
+    }
+  };
 
   return (
     <Link
@@ -89,10 +114,19 @@ function CategoryCard({ category, levelColor, level, learnedCount = 0 }) {
         </div>
         {/* Bookmark */}
         <button
-          onClick={(e) => e.preventDefault()}
-          className="absolute top-2 right-2 p-1.5 bg-white/80 dark:bg-slate-700/80 rounded-lg hover:bg-white dark:hover:bg-slate-700 transition-colors"
+          onClick={handleBookmarkClick}
+          className={`absolute top-2 right-2 p-1.5 rounded-lg transition-colors ${
+            isBookmarked
+              ? "bg-sky-500 hover:bg-sky-600"
+              : "bg-white/80 dark:bg-slate-700/80 hover:bg-white dark:hover:bg-slate-700"
+          }`}
+          title={isBookmarked ? "Remove from wordlist" : "Add to wordlist"}
         >
-          <BookmarkIcon className="w-4 h-4 text-gray-400 dark:text-slate-500" />
+          {isBookmarked ? (
+            <BookmarkSolidIcon className="w-4 h-4 text-white" />
+          ) : (
+            <BookmarkIcon className="w-4 h-4 text-gray-400 dark:text-slate-500" />
+          )}
         </button>
       </div>
 
@@ -156,9 +190,16 @@ export default function CEFRLevelPage() {
   const { user } = useUser();
   const [categories, setCategories] = useState([]);
   const [progressMap, setProgressMap] = useState({});
+  const [bookmarkMap, setBookmarkMap] = useState({});
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const colors = levelColors[level] || levelColors.a1;
+
+  // Modal state
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalLoading, setModalLoading] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState(null);
+  const [isRemoveAction, setIsRemoveAction] = useState(false);
 
   useEffect(() => {
     async function loadCategories() {
@@ -205,6 +246,88 @@ export default function CEFRLevelPage() {
 
     loadProgress();
   }, [user, categories, level]);
+
+  // Check bookmark status for each category
+  useEffect(() => {
+    async function loadBookmarkStatus() {
+      if (!user || categories.length === 0) return;
+
+      const bookmarkPromises = categories.map(async (category) => {
+        try {
+          const result = await checkCategoryBookmarked(
+            user.id,
+            level?.toUpperCase(),
+            category.name
+          );
+          return { slug: category.slug, isBookmarked: result.isBookmarked };
+        } catch {
+          return { slug: category.slug, isBookmarked: false };
+        }
+      });
+
+      const results = await Promise.all(bookmarkPromises);
+      const map = {};
+      results.forEach((r) => {
+        map[r.slug] = r.isBookmarked;
+      });
+      setBookmarkMap(map);
+    }
+
+    loadBookmarkStatus();
+  }, [user, categories, level]);
+
+  // Handle bookmark click - show modal
+  const handleBookmarkClick = (category, isCurrentlyBookmarked) => {
+    setSelectedCategory(category);
+    setIsRemoveAction(isCurrentlyBookmarked);
+    setModalOpen(true);
+  };
+
+  // Handle modal confirm
+  const handleConfirm = async () => {
+    if (!user || !selectedCategory) return;
+
+    setModalLoading(true);
+    try {
+      if (isRemoveAction) {
+        // Remove all cards from this category
+        await bulkRemoveFromReview(
+          user.id,
+          level?.toUpperCase(),
+          selectedCategory.name
+        );
+        setBookmarkMap((prev) => ({
+          ...prev,
+          [selectedCategory.slug]: false,
+        }));
+      } else {
+        // Fetch all words for this category and add them
+        const vocabData = await fetchVocabulary({
+          level: level?.toUpperCase(),
+          category: selectedCategory.slug,
+        });
+
+        if (vocabData.words && vocabData.words.length > 0) {
+          await bulkAddToReview(
+            user.id,
+            level?.toUpperCase(),
+            selectedCategory.slug,
+            vocabData.words
+          );
+          setBookmarkMap((prev) => ({
+            ...prev,
+            [selectedCategory.slug]: true,
+          }));
+        }
+      }
+    } catch (err) {
+      console.error("Failed to update bookmark:", err);
+    } finally {
+      setModalLoading(false);
+      setModalOpen(false);
+      setSelectedCategory(null);
+    }
+  };
 
   // Loading state
   if (isLoading) {
@@ -263,9 +386,31 @@ export default function CEFRLevelPage() {
             levelColor={colors}
             level={level}
             learnedCount={progressMap[category.slug] || 0}
+            isBookmarked={bookmarkMap[category.slug] || false}
+            onBookmarkClick={handleBookmarkClick}
           />
         ))}
       </div>
+
+      {/* Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={modalOpen}
+        onClose={() => setModalOpen(false)}
+        onConfirm={handleConfirm}
+        isLoading={modalLoading}
+        title={isRemoveAction ? "Remove from Wordlist" : "Add to Wordlist"}
+        message={
+          isRemoveAction
+            ? `Are you sure you want to remove all ${
+                selectedCategory?.wordCount || 0
+              } words from "${selectedCategory?.name}" from your wordlist?`
+            : `Add all ${selectedCategory?.wordCount || 0} words from "${
+                selectedCategory?.name
+              }" to your wordlist for practice?`
+        }
+        confirmLabel={isRemoveAction ? "Remove All" : "Add All"}
+        variant={isRemoveAction ? "danger" : "primary"}
+      />
     </div>
   );
 }

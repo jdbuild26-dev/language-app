@@ -137,3 +137,85 @@ export async function updateReviewStatus(userId, cardId, status) {
 
   return response.json();
 }
+
+/**
+ * Bulk add all cards from a category to user's review list
+ */
+export async function bulkAddToReview(userId, level, category, cards) {
+  const response = await fetch(`${API_BASE_URL}/api/review-cards/bulk`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      userId,
+      level,
+      category,
+      cards: cards.map((card) => ({
+        id: card.id || "", // Unique ID from vocabulary source
+        english: card.english,
+        forms: card.forms,
+        exampleTarget: card.exampleTarget,
+        exampleNative: card.exampleNative,
+        phonetic: card.phonetic,
+        level: card.level,
+        category: card.category,
+        subCategory: card.subCategory || "",
+        image: card.image || "",
+      })),
+    }),
+  });
+
+  if (!response.ok) {
+    throw new Error("Failed to bulk add cards to review");
+  }
+
+  return response.json();
+}
+
+/**
+ * Bulk remove all cards from a category from user's review list
+ */
+export async function bulkRemoveFromReview(userId, level, category) {
+  const params = new URLSearchParams();
+  params.append("user_id", userId);
+  params.append("level", level);
+  params.append("category", category);
+
+  const response = await fetch(
+    `${API_BASE_URL}/api/review-cards/bulk?${params.toString()}`,
+    {
+      method: "DELETE",
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error("Failed to bulk remove cards from review");
+  }
+
+  return response.json();
+}
+
+/**
+ * Check if a category is bookmarked (has any cards in review)
+ */
+export async function checkCategoryBookmarked(userId, level, category) {
+  const params = new URLSearchParams();
+  params.append("user_id", userId);
+  params.append("level", level);
+  params.append("category", category);
+
+  try {
+    const response = await fetch(
+      `${API_BASE_URL}/api/review-cards/check-category?${params.toString()}`
+    );
+
+    if (!response.ok) {
+      return { isBookmarked: false, bookmarkedCount: 0 };
+    }
+
+    return response.json();
+  } catch {
+    return { isBookmarked: false, bookmarkedCount: 0 };
+  }
+}
