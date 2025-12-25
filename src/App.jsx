@@ -97,7 +97,7 @@ function App() {
             }
           />
           <Route
-            path="ai-practice"
+            path="ai-practice/*"
             element={
               <ProtectedRoute>
                 <AIPracticePage />
