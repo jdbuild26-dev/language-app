@@ -26,7 +26,7 @@ export default function ChatTopicCard({ topic }) {
 
   return (
     <Link
-      to={`/ai-practice/scenarios/chats/${topic.slug}`}
+      to={`/ai-practice/scenarios/chats/${topic.slug}/chat`}
       className="group bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-700 overflow-hidden hover:shadow-lg hover:border-sky-200 dark:hover:border-sky-800 transition-all duration-300"
     >
       {/* Image/Icon Header */}

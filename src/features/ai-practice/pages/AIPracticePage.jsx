@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import PageTabs from "@/components/ui/PageTabs";
 import ChatsContent from "../components/ChatsContent";
+import ChatPage from "./ChatPage";
 
 // Placeholder content components
 function MissionsContent() {
@@ -79,6 +80,7 @@ export default function AIPracticePage() {
       {/* Nested routes for tab content */}
       <Routes>
         <Route path="scenarios/chats" element={<ChatsContent />} />
+        <Route path="scenarios/chats/:topicSlug/chat" element={<ChatPage />} />
         <Route path="scenarios/missions" element={<MissionsContent />} />
         <Route path="scenarios/profession" element={<ProfessionContent />} />
         <Route path="general" element={<GeneralContent />} />

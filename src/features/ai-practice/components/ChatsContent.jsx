@@ -1,123 +1,37 @@
-import { useState } from "react";
-import { Search, Filter, SlidersHorizontal } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Search, Filter, SlidersHorizontal, Loader2 } from "lucide-react";
 import ChatTopicCard from "./ChatTopicCard";
-
-// Dummy data - will be replaced with API calls later
-const chatTopics = [
-  {
-    id: 1,
-    slug: "introducing-yourself",
-    title: "Introducing Yourself",
-    description:
-      "Practice introducing yourself in French, sharing your name, age, and where you're from.",
-    difficulty: "beginner",
-    icon: "👋",
-    estimatedTime: "5 min",
-    messageCount: 8,
-    rating: 4.8,
-    category: "daily-life",
-  },
-  {
-    id: 2,
-    slug: "ordering-at-restaurant",
-    title: "Ordering at a Restaurant",
-    description:
-      "Learn how to order food, ask for recommendations, and request the bill in French.",
-    difficulty: "beginner",
-    icon: "🍽️",
-    estimatedTime: "8 min",
-    messageCount: 12,
-    rating: 4.9,
-    category: "daily-life",
-  },
-  {
-    id: 3,
-    slug: "hotel-check-in",
-    title: "Hotel Check-in",
-    description:
-      "Practice checking into a hotel, asking about amenities, and making special requests.",
-    difficulty: "beginner",
-    icon: "🏨",
-    estimatedTime: "7 min",
-    messageCount: 10,
-    rating: 4.7,
-    category: "travel",
-  },
-  {
-    id: 4,
-    slug: "asking-for-directions",
-    title: "Asking for Directions",
-    description:
-      "Learn to ask for and understand directions to navigate streets and public transport.",
-    difficulty: "beginner",
-    icon: "🗺️",
-    estimatedTime: "6 min",
-    messageCount: 9,
-    rating: 4.6,
-    category: "travel",
-  },
-  {
-    id: 5,
-    slug: "shopping-for-clothes",
-    title: "Shopping for Clothes",
-    description:
-      "Practice asking about sizes, colors, prices, and making purchases at clothing stores.",
-    difficulty: "intermediate",
-    icon: "👕",
-    estimatedTime: "10 min",
-    messageCount: 14,
-    rating: 4.5,
-    category: "shopping",
-  },
-  {
-    id: 6,
-    slug: "doctors-appointment",
-    title: "At the Doctor's Office",
-    description:
-      "Learn medical vocabulary and how to describe symptoms to a doctor in French.",
-    difficulty: "intermediate",
-    icon: "🏥",
-    estimatedTime: "12 min",
-    messageCount: 15,
-    rating: 4.8,
-    category: "health",
-  },
-  {
-    id: 7,
-    slug: "job-interview",
-    title: "Job Interview",
-    description:
-      "Practice common job interview questions and learn professional vocabulary.",
-    difficulty: "advanced",
-    icon: "💼",
-    estimatedTime: "15 min",
-    messageCount: 20,
-    rating: 4.9,
-    category: "professional",
-  },
-  {
-    id: 8,
-    slug: "apartment-hunting",
-    title: "Apartment Hunting",
-    description:
-      "Learn to discuss rental terms, ask about features, and negotiate in French.",
-    difficulty: "intermediate",
-    icon: "🏠",
-    estimatedTime: "12 min",
-    messageCount: 16,
-    rating: 4.7,
-    category: "daily-life",
-  },
-];
+import { fetchChatTopics } from "../../../services/aiPracticeApi";
 
 const difficultyFilters = ["all", "beginner", "intermediate", "advanced"];
 
 export default function ChatsContent() {
+  const [topics, setTopics] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedDifficulty, setSelectedDifficulty] = useState("all");
 
+  // Fetch topics from API
+  useEffect(() => {
+    async function loadTopics() {
+      try {
+        setIsLoading(true);
+        setError(null);
+        const data = await fetchChatTopics();
+        setTopics(data.topics || []);
+      } catch (err) {
+        console.error("Failed to fetch chat topics:", err);
+        setError("Failed to load topics. Please try again.");
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    loadTopics();
+  }, []);
+
   // Filter topics based on search and difficulty
-  const filteredTopics = chatTopics.filter((topic) => {
+  const filteredTopics = topics.filter((topic) => {
     const matchesSearch =
       topic.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       topic.description.toLowerCase().includes(searchQuery.toLowerCase());
@@ -125,6 +39,35 @@ export default function ChatsContent() {
       selectedDifficulty === "all" || topic.difficulty === selectedDifficulty;
     return matchesSearch && matchesDifficulty;
   });
+
+  // Loading state
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[40vh]">
+        <div className="text-center">
+          <Loader2 className="w-10 h-10 text-sky-500 animate-spin mx-auto mb-4" />
+          <p className="text-gray-600 dark:text-slate-400">Loading topics...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <div className="flex items-center justify-center min-h-[40vh]">
+        <div className="text-center">
+          <p className="text-red-500 mb-4">{error}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="px-4 py-2 bg-sky-500 text-white rounded-lg hover:bg-sky-600 transition-colors"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div>
