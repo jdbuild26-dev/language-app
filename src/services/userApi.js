@@ -62,3 +62,51 @@ export async function getPlacementTest(language) {
   }
   return response.json();
 }
+
+/**
+ * Check if the user has completed teacher onboarding.
+ * @param {string} userId - Clerk User ID
+ * @returns {Promise<{isComplete: boolean, teacherId: string | null, role: string | null}>}
+ */
+export async function checkTeacherOnboardingStatus(userId) {
+  const response = await fetch(
+    `${API_URL}/api/teachers/check?user_id=${userId}`
+  );
+  if (!response.ok) {
+    throw new Error("Failed to check teacher onboarding status");
+  }
+  return response.json();
+}
+
+/**
+ * Create a new teacher profile.
+ * @param {Object} profileData - The teacher profile data
+ * @returns {Promise<Object>} The created profile
+ */
+export async function createTeacherProfile(profileData) {
+  const response = await fetch(`${API_URL}/api/teachers`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(profileData),
+  });
+
+  if (!response.ok) {
+    throw new Error("Failed to create teacher profile");
+  }
+  return response.json();
+}
+
+/**
+ * Get the current teacher's profile.
+ * @param {string} userId - Clerk User ID
+ * @returns {Promise<Object>} The teacher profile
+ */
+export async function getTeacherProfile(userId) {
+  const response = await fetch(`${API_URL}/api/teachers/me?user_id=${userId}`);
+  if (!response.ok) {
+    throw new Error("Failed to fetch teacher profile");
+  }
+  return response.json();
+}

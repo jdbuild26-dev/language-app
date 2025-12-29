@@ -1,5 +1,8 @@
+import { useState } from "react";
 import { useUser } from "@clerk/clerk-react";
 import { useStudentProfile } from "@/hooks/useStudentProfile";
+import { useTeacherProfile } from "@/hooks/useTeacherProfile";
+import TeacherOnboardingModal from "@/features/auth/components/TeacherOnboardingModal";
 import {
   Card,
   CardContent,
@@ -15,11 +18,18 @@ import {
   Cog6ToothIcon,
   BookOpenIcon,
   PencilSquareIcon,
+  UserGroupIcon,
 } from "@heroicons/react/24/outline";
 
 export default function Dashboard() {
   const { user } = useUser();
   const { profile } = useStudentProfile();
+  const {
+    profile: teacherProfile,
+    needsOnboarding: needsTeacherOnboarding,
+    refreshProfile: refreshTeacherProfile,
+  } = useTeacherProfile();
+  const [showTeacherOnboarding, setShowTeacherOnboarding] = useState(false);
 
   return (
     <div className="min-h-[calc(100vh-4rem)] py-12 px-4 sm:px-6 lg:px-8 bg-gray-50/50 dark:bg-body-dark">
@@ -119,6 +129,11 @@ export default function Dashboard() {
                   <span>{profile.level}</span>
                 </div>
               )}
+              {teacherProfile && (
+                <div className="flex items-center gap-2 bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm font-semibold">
+                  <span className="uppercase">Teacher</span>
+                </div>
+              )}
             </div>
           </CardHeader>
           <CardContent className="space-y-6">
@@ -162,16 +177,25 @@ export default function Dashboard() {
             </div>
 
             <div className="grid md:grid-cols-2 gap-4 pt-4 border-t border-gray-100 dark:border-subtle-dark">
-              <div className="space-y-1">
-                <p className="text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-muted-dark">
-                  User ID
-                </p>
-                <p className="font-mono text-xs bg-gray-50 dark:bg-elevated-2 p-2 rounded-md text-gray-600 dark:text-secondary-dark break-all border border-gray-100 dark:border-subtle-dark">
-                  {profile?.studentId || user?.id}{" "}
-                  <span className="opacity-50 ml-1">
-                    ({profile ? "Student" : "Clerk"})
-                  </span>
-                </p>
+              <div className="space-y-3">
+                <div className="space-y-1">
+                  <p className="text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-muted-dark">
+                    Student ID
+                  </p>
+                  <p className="font-mono text-xs bg-gray-50 dark:bg-elevated-2 p-2 rounded-md text-gray-600 dark:text-secondary-dark break-all border border-gray-100 dark:border-subtle-dark">
+                    {profile?.studentId || "N/A"}
+                  </p>
+                </div>
+                {teacherProfile && (
+                  <div className="space-y-1">
+                    <p className="text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-muted-dark">
+                      Teacher ID
+                    </p>
+                    <p className="font-mono text-xs bg-green-50 dark:bg-green-900/10 p-2 rounded-md text-green-700 dark:text-green-400 break-all border border-green-100 dark:border-green-800/20">
+                      {teacherProfile.teacherId}
+                    </p>
+                  </div>
+                )}
               </div>
               <div className="space-y-1">
                 <p className="text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-muted-dark">
@@ -247,8 +271,47 @@ export default function Dashboard() {
                 </p>
               </div>
             </Button>
+
+            {/* Teacher Action */}
+            <Button
+              variant="outline"
+              onClick={() => {
+                if (needsTeacherOnboarding) {
+                  setShowTeacherOnboarding(true);
+                } else {
+                  // Navigate to teacher dashboard (future) or show toast
+                  console.log("Already a teacher:", teacherProfile);
+                }
+              }}
+              className="h-auto p-6 flex flex-col items-start gap-4 hover:border-brand-blue-1 hover:bg-brand-blue-3/10 transition-all border-dashed dark:border-subtle-dark dark:hover:border-accent-primary"
+            >
+              <div className="p-2 rounded-full bg-green-100 text-green-600 dark:bg-green-900/40 dark:text-green-300">
+                <UserGroupIcon className="h-6 w-6" />
+              </div>
+              <div className="text-left">
+                <h3 className="font-semibold text-gray-900 dark:text-primary-dark">
+                  {needsTeacherOnboarding
+                    ? "Become a Teacher"
+                    : "Teacher Dashboard"}
+                </h3>
+                <p className="text-xs text-gray-500 dark:text-secondary-dark mt-1">
+                  {needsTeacherOnboarding
+                    ? "Start teaching on platform"
+                    : "Manage your classes"}
+                </p>
+              </div>
+            </Button>
           </div>
         </div>
+
+        {showTeacherOnboarding && (
+          <TeacherOnboardingModal
+            onComplete={() => {
+              setShowTeacherOnboarding(false);
+              refreshTeacherProfile();
+            }}
+          />
+        )}
       </div>
     </div>
   );

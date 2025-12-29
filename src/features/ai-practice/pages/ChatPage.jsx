@@ -115,17 +115,35 @@ export default function ChatPage() {
       });
 
       // Add AI response to messages
-      const aiMessage = {
-        id: messages.length + 2,
-        sender: "ai",
-        text: response.ai_response,
-        correction: response.correction,
-        timestamp: new Date().toLocaleTimeString([], {
-          hour: "2-digit",
-          minute: "2-digit",
-        }),
-      };
-      setMessages((prev) => [...prev, aiMessage]);
+      // Update user message with correction and add AI response
+      setMessages((prev) => {
+        const newMessages = [...prev];
+        const lastMessageIndex = newMessages.length - 1;
+
+        // Update functionality: attach correction to the user's message
+        if (
+          lastMessageIndex >= 0 &&
+          newMessages[lastMessageIndex].sender === "user"
+        ) {
+          newMessages[lastMessageIndex] = {
+            ...newMessages[lastMessageIndex],
+            correction: response.correction,
+          };
+        }
+
+        const aiMessage = {
+          id: messages.length + 2,
+          sender: "ai",
+          text: response.ai_response,
+          // Correction is now attached to the user message
+          timestamp: new Date().toLocaleTimeString([], {
+            hour: "2-digit",
+            minute: "2-digit",
+          }),
+        };
+
+        return [...newMessages, aiMessage];
+      });
     } catch (err) {
       console.error("Failed to send message:", err);
       setError("Failed to get response. Please try again.");

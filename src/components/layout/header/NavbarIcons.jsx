@@ -8,11 +8,8 @@ export const LogoSVG = () => (
     className="text-white drop-shadow-sm"
   >
     <path
-      d="M16 4L28 28H4L16 4Z"
+      d="M20.65 19.46a8 8 0 1 0-8.65 3V28l5.8-4.35a8 8 0 0 0 2.85-4.19z"
       fill="currentColor"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinejoin="round"
     />
   </svg>
 );

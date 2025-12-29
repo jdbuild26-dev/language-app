@@ -11,31 +11,31 @@ export default function MessageBubble({ message }) {
   return (
     <div className={`flex ${isAI ? "justify-start" : "justify-end"} mb-4`}>
       <div className={`max-w-[80%] ${isAI ? "order-1" : "order-1"}`}>
-        {/* Grammar Correction (only for AI messages responding to user errors) */}
-        {isAI && message.correction && (
-          <div className="mb-2 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl">
-            <div className="flex items-center gap-2 mb-1">
-              <Check className="w-4 h-4 text-amber-600 dark:text-amber-400" />
-              <span className="text-xs font-semibold text-amber-700 dark:text-amber-400">
-                Correction
-              </span>
-            </div>
-            <p className="text-sm text-amber-800 dark:text-amber-300">
-              {message.correction}
-            </p>
-          </div>
-        )}
-
         {/* Message Bubble */}
         <div
           className={`rounded-2xl px-4 py-3 ${
             isAI
-              ? "bg-gray-100 dark:bg-slate-800 text-gray-900 dark:text-white rounded-tl-sm"
-              : "bg-sky-500 text-white rounded-tr-sm"
+              ? "bg-sky-50 dark:bg-sky-900/20 text-sky-800 dark:text-sky-100 rounded-tl-sm"
+              : "bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-gray-200 rounded-tr-sm"
           }`}
         >
           <p className="text-sm leading-relaxed">{message.text}</p>
         </div>
+
+        {/* Correction (for user messages) */}
+        {!isAI && message.correction && (
+          <div className="mt-2 p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl">
+            <div className="flex items-center gap-2 mb-1">
+              <Check className="w-4 h-4 text-green-600 dark:text-green-400" />
+              <span className="text-xs font-semibold text-green-700 dark:text-green-400">
+                Correction
+              </span>
+            </div>
+            <p className="text-sm text-green-800 dark:text-green-300">
+              {message.correction}
+            </p>
+          </div>
+        )}
 
         {/* Translation (toggleable) */}
         {showTranslation && message.translation && (
