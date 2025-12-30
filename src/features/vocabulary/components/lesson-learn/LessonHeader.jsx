@@ -22,7 +22,7 @@ export default function LessonHeader({
 
   return (
     <div className="bg-white dark:bg-slate-900 border-b border-gray-100 dark:border-slate-800 sticky top-0 z-10">
-      <div className="max-w-6xl mx-auto px-4 py-3">
+      <div className="max-w-6xl mx-auto px-4 py-2">
         {/* Top Row: Breadcrumb, Progress, Controls */}
         <div className="flex items-center justify-between gap-4 mb-4">
           {/* Breadcrumb */}
@@ -86,7 +86,7 @@ export default function LessonHeader({
         </div>
 
         {/* Bottom Row: Pills */}
-        <div className="flex items-center gap-2 overflow-x-auto hide-scrollbar pb-1">
+        <div className="flex items-center gap-2 overflow-x-auto hide-scrollbar pb-4">
           {words.map((word, idx) => {
             const isActive = idx === currentIndex;
             return (

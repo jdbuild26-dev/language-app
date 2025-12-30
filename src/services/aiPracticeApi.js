@@ -105,3 +105,27 @@ export async function getInitialGreeting(scenario) {
   }
   return response.json();
 }
+
+/**
+ * Translate text using the backend API.
+ * @param {string} text - Text to translate
+ * @param {string} targetLang - Target language code (default: 'en')
+ * @returns {Promise<{text: string, translation: string}>}
+ */
+export async function translateText(text, targetLang = "en") {
+  const url = `${API_URL}/api/ai-practice/translate`;
+
+  const response = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      text,
+      target_lang: targetLang,
+    }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Translation request failed: ${response.statusText}`);
+  }
+  return response.json();
+}

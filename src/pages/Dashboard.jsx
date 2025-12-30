@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useUser } from "@clerk/clerk-react";
 import { useStudentProfile } from "@/hooks/useStudentProfile";
 import { useTeacherProfile } from "@/hooks/useTeacherProfile";
@@ -23,6 +24,7 @@ import {
 
 export default function Dashboard() {
   const { user } = useUser();
+  const navigate = useNavigate();
   const { profile } = useStudentProfile();
   const {
     profile: teacherProfile,
@@ -279,8 +281,7 @@ export default function Dashboard() {
                 if (needsTeacherOnboarding) {
                   setShowTeacherOnboarding(true);
                 } else {
-                  // Navigate to teacher dashboard (future) or show toast
-                  console.log("Already a teacher:", teacherProfile);
+                  navigate("/teacher-dashboard");
                 }
               }}
               className="h-auto p-6 flex flex-col items-start gap-4 hover:border-brand-blue-1 hover:bg-brand-blue-3/10 transition-all border-dashed dark:border-subtle-dark dark:hover:border-accent-primary"

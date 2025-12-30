@@ -31,6 +31,7 @@ import PracticePage from "@/features/practice/pages/PracticePage";
 import BlogsPage from "@/features/blogs/pages/BlogsPage";
 import AIPracticePage from "@/features/ai-practice/pages/AIPracticePage";
 import ProgressReportPage from "@/features/progress-report/pages/ProgressReportPage";
+import TeacherDashboard from "@/pages/TeacherDashboard";
 
 function App() {
   return (
@@ -109,6 +110,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <ProgressReportPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="teacher-dashboard"
+            element={
+              <ProtectedRoute>
+                <TeacherDashboard />
               </ProtectedRoute>
             }
           />

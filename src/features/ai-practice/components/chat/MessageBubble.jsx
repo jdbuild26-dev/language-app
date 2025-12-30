@@ -1,10 +1,38 @@
 import { useState } from "react";
-import { Languages, Shuffle, Check } from "lucide-react";
+import { Languages, Shuffle, Check, Loader2 } from "lucide-react";
 import AudioPlayer from "./AudioPlayer";
+import { translateText } from "../../../../services/aiPracticeApi";
 
 export default function MessageBubble({ message }) {
   const [showTranslation, setShowTranslation] = useState(false);
   const [showAlternatives, setShowAlternatives] = useState(false);
+  const [translation, setTranslation] = useState(message.translation || null);
+  const [isTranslating, setIsTranslating] = useState(false);
+
+  const handleTranslate = async () => {
+    if (showTranslation) {
+      setShowTranslation(false);
+      return;
+    }
+
+    if (translation) {
+      setShowTranslation(true);
+      return;
+    }
+
+    try {
+      setIsTranslating(true);
+      const result = await translateText(message.text);
+      setTranslation(result.translation);
+      setShowTranslation(true);
+    } catch (error) {
+      console.error("Translation failed:", error);
+      setTranslation("Translation unavailable. Please try again.");
+      setShowTranslation(true);
+    } finally {
+      setIsTranslating(false);
+    }
+  };
 
   const isAI = message.sender === "ai";
 
@@ -20,28 +48,25 @@ export default function MessageBubble({ message }) {
           }`}
         >
           <p className="text-sm leading-relaxed">{message.text}</p>
+
+          {/* Correction (inside bubble for user messages) */}
+          {!isAI && message.correction && (
+            <div className="mt-3 pt-3 border-t border-gray-200 dark:border-slate-700">
+              <div className="flex items-start gap-2">
+                <Check className="w-4 h-4 text-green-500 mt-0.5" />
+                <p className="text-sm text-green-600 dark:text-green-400 font-medium">
+                  {message.correction}
+                </p>
+              </div>
+            </div>
+          )}
         </div>
 
-        {/* Correction (for user messages) */}
-        {!isAI && message.correction && (
-          <div className="mt-2 p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl">
-            <div className="flex items-center gap-2 mb-1">
-              <Check className="w-4 h-4 text-green-600 dark:text-green-400" />
-              <span className="text-xs font-semibold text-green-700 dark:text-green-400">
-                Correction
-              </span>
-            </div>
-            <p className="text-sm text-green-800 dark:text-green-300">
-              {message.correction}
-            </p>
-          </div>
-        )}
-
         {/* Translation (toggleable) */}
-        {showTranslation && message.translation && (
-          <div className="mt-2 p-3 bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-800 rounded-xl">
-            <p className="text-sm text-indigo-700 dark:text-indigo-300">
-              {message.translation}
+        {showTranslation && translation && (
+          <div className="mt-2 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl">
+            <p className="text-sm text-amber-800 dark:text-amber-300">
+              {translation}
             </p>
           </div>
         )}
@@ -72,17 +97,22 @@ export default function MessageBubble({ message }) {
           {/* AI Messages: Audio + Translate */}
           {isAI && (
             <>
-              <AudioPlayer />
+              <AudioPlayer text={message.text} />
               <button
-                onClick={() => setShowTranslation(!showTranslation)}
+                onClick={handleTranslate}
                 className={`p-1.5 rounded-lg transition-colors ${
                   showTranslation
                     ? "bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400"
                     : "hover:bg-gray-100 dark:hover:bg-slate-700 text-gray-500 dark:text-slate-400"
                 }`}
                 title="Translate"
+                disabled={isTranslating}
               >
-                <Languages className="w-4 h-4" />
+                {isTranslating ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Languages className="w-4 h-4" />
+                )}
               </button>
             </>
           )}
@@ -91,15 +121,20 @@ export default function MessageBubble({ message }) {
           {!isAI && (
             <>
               <button
-                onClick={() => setShowTranslation(!showTranslation)}
+                onClick={handleTranslate}
                 className={`p-1.5 rounded-lg transition-colors ${
                   showTranslation
                     ? "bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400"
                     : "hover:bg-gray-100 dark:hover:bg-slate-700 text-gray-500 dark:text-slate-400"
                 }`}
                 title="Translate"
+                disabled={isTranslating}
               >
-                <Languages className="w-4 h-4" />
+                {isTranslating ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Languages className="w-4 h-4" />
+                )}
               </button>
               <button
                 onClick={() => setShowAlternatives(!showAlternatives)}

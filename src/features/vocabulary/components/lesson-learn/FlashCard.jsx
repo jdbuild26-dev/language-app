@@ -68,62 +68,55 @@ export default function FlashCard({ word, showBookmark = true }) {
   };
 
   return (
-    <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-lg border border-gray-100 dark:border-slate-700 w-full max-w-4xl mx-auto overflow-hidden">
-      <div className="flex flex-col md:flex-row">
-        {/* Left: Image Section */}
-        <div className="md:w-5/12 p-6 bg-gray-50 dark:bg-slate-900/50 relative">
-          {/* Review Button */}
-          <button
-            onClick={handleBookmarkToggle}
-            disabled={isLoading || !showBookmark}
-            className={`absolute top-4 left-4 px-4 py-1.5 rounded-full text-sm font-semibold transition-all ${
-              isBookmarked
-                ? "bg-purple-600 text-white"
-                : "bg-purple-600 text-white hover:bg-purple-700"
-            } ${isLoading ? "opacity-50 cursor-not-allowed" : ""} ${
-              !showBookmark ? "hidden" : ""
-            }`}
-          >
-            {isBookmarked ? "Reviewing" : "Review"}
-          </button>
+    <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-xl border border-gray-100 dark:border-slate-700 w-full mx-auto overflow-hidden relative group">
+      {/* Review Badge - Positioned Top Right */}
+      <button
+        onClick={handleBookmarkToggle}
+        disabled={isLoading || !showBookmark}
+        className={`absolute top-6 right-6 z-10 px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider transition-all shadow-sm ${
+          isBookmarked
+            ? "bg-purple-600 text-white hover:bg-purple-700"
+            : "bg-gray-100 text-gray-500 hover:bg-gray-200 dark:bg-slate-700 dark:text-slate-300"
+        } ${isLoading ? "opacity-50 cursor-not-allowed" : ""} ${
+          !showBookmark ? "hidden" : ""
+        }`}
+      >
+        {isBookmarked ? "Reviewing" : "Mark for Review"}
+      </button>
 
-          {/* Category & Level Tags */}
-          <div className="flex gap-2 mt-12 mb-4">
-            <span className="px-3 py-1 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-600 rounded-full text-sm text-gray-700 dark:text-slate-300">
-              {word.category || "General"} • {word.level || "A1"}
+      <div className="flex flex-col md:flex-row min-h-[400px]">
+        {/* Left: Image Section (~40%) */}
+        <div className="md:w-2/5 p-6 md:p-8 bg-gray-50 dark:bg-slate-900/50 flex flex-col items-center justify-center relative border-b md:border-b-0 md:border-r border-gray-100 dark:border-slate-700">
+          {/* Category & Level Tags - Floating top left of image area */}
+          <div className="absolute top-6 left-6">
+            <span className="px-2.5 py-1 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-600 rounded-lg text-xs font-medium text-gray-500 dark:text-slate-400 shadow-sm">
+              {word.level || "A1"}
             </span>
           </div>
 
-          {/* Image */}
-          <div className="relative w-full aspect-square max-w-[280px] mx-auto rounded-2xl overflow-hidden shadow-md">
+          <div className="relative w-full aspect-square max-w-[260px] rounded-2xl overflow-hidden shadow-lg ring-1 ring-gray-900/5 dark:ring-white/10">
             <img
               src={imageUrl}
               alt={word.english}
-              className="w-full h-full object-cover"
+              className="w-full h-full object-cover transform transition-transform duration-500 group-hover:scale-105"
             />
+          </div>
+
+          {/* Category tag below image */}
+          <div className="mt-6 text-center">
+            <span className="text-sm font-medium text-gray-400 dark:text-slate-500 uppercase tracking-widest">
+              {word.category || "General"}
+            </span>
           </div>
         </div>
 
-        {/* Right: Content Section */}
-        <div className="md:w-7/12 p-6 md:p-8 flex flex-col">
-          {/* Header: English Word + Bookmark */}
-          <div className="flex items-start justify-between mb-6">
+        {/* Right: Content Section (~60%) */}
+        <div className="md:w-3/5 p-6 md:p-10 flex flex-col justify-center">
+          {/* Header: English Word */}
+          <div className="mb-6">
             <h2 className="text-3xl font-bold text-gray-900 dark:text-white">
               {word.english}
             </h2>
-            {showBookmark && (
-              <BookmarkIcon
-                className={`w-7 h-7 cursor-pointer transition-colors ${
-                  isLoading ? "opacity-50" : ""
-                } ${
-                  isBookmarked
-                    ? "text-purple-600 fill-purple-600"
-                    : "text-gray-300 dark:text-slate-500 hover:text-purple-500"
-                }`}
-                isActive={isBookmarked}
-                onClick={handleBookmarkToggle}
-              />
-            )}
           </div>
 
           {/* French Forms */}
@@ -131,31 +124,21 @@ export default function FlashCard({ word, showBookmark = true }) {
             {word.forms.map((form, idx) => (
               <div
                 key={idx}
-                className="flex items-center gap-3 px-4 py-3 bg-gray-50 dark:bg-slate-700/50 rounded-xl border border-gray-100 dark:border-slate-600"
+                className="flex items-center gap-3 px-4 py-3 bg-gray-50 dark:bg-slate-700/50 rounded-xl border border-gray-100 dark:border-slate-600 shadow-sm"
               >
-                {/* Speaker Icon with TTS */}
+                {/* Audio Button */}
                 <button
                   onClick={() => handleSpeak(form.word, `form-${idx}`)}
-                  disabled={isSpeaking}
+                  disabled={isSpeaking || !isSupported}
                   className={`p-2 rounded-full shadow-sm transition-all ${
                     speakingId === `form-${idx}`
-                      ? "bg-purple-100 dark:bg-purple-900/50 animate-pulse"
-                      : "bg-white dark:bg-slate-600 hover:bg-gray-100 dark:hover:bg-slate-500"
-                  } ${!isSupported ? "opacity-50 cursor-not-allowed" : ""}`}
-                  title={
-                    isSupported
-                      ? "Listen to pronunciation"
-                      : "TTS not supported"
-                  }
+                      ? "bg-purple-100 dark:bg-purple-900/50 animate-pulse text-purple-600"
+                      : "bg-white dark:bg-slate-600 hover:bg-gray-100 dark:hover:bg-slate-500 text-purple-600 dark:text-purple-400"
+                  }`}
                 >
-                  <Volume2
-                    className={`w-4 h-4 ${
-                      speakingId === `form-${idx}`
-                        ? "text-purple-600 dark:text-purple-300"
-                        : "text-purple-600 dark:text-purple-400"
-                    }`}
-                  />
+                  <Volume2 className={`w-4 h-4`} />
                 </button>
+
                 <div>
                   <p className="text-xl font-semibold text-gray-900 dark:text-white">
                     {form.word}
@@ -173,31 +156,21 @@ export default function FlashCard({ word, showBookmark = true }) {
             <h3 className="text-sm font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wide mb-3">
               Example
             </h3>
-            <div className="bg-gray-50 dark:bg-slate-700/30 rounded-xl p-4 border border-gray-100 dark:border-slate-600">
-              {/* French Sentence with Speaker */}
+            <div className="bg-gray-50 dark:bg-slate-700/30 rounded-xl p-5 border border-gray-100 dark:border-slate-600">
               <div className="flex items-start gap-3 mb-2">
                 <button
                   onClick={() => handleSpeak(word.exampleTarget, "example")}
-                  disabled={isSpeaking}
+                  disabled={isSpeaking || !isSupported}
                   className={`p-2 rounded-full shadow-sm transition-all flex-shrink-0 mt-0.5 ${
                     speakingId === "example"
-                      ? "bg-purple-100 dark:bg-purple-900/50 animate-pulse"
-                      : "bg-white dark:bg-slate-600 hover:bg-gray-100 dark:hover:bg-slate-500"
-                  } ${!isSupported ? "opacity-50 cursor-not-allowed" : ""}`}
-                  title={
-                    isSupported ? "Listen to sentence" : "TTS not supported"
-                  }
+                      ? "bg-purple-100 dark:bg-purple-900/50 animate-pulse text-purple-600"
+                      : "bg-white dark:bg-slate-600 hover:bg-gray-100 dark:hover:bg-slate-500 text-purple-600 dark:text-purple-400"
+                  }`}
                 >
-                  <Volume2
-                    className={`w-4 h-4 ${
-                      speakingId === "example"
-                        ? "text-purple-600 dark:text-purple-300"
-                        : "text-purple-600 dark:text-purple-400"
-                    }`}
-                  />
+                  <Volume2 className="w-4 h-4" />
                 </button>
                 <div>
-                  <p className="text-lg font-semibold text-gray-900 dark:text-white">
+                  <p className="text-lg font-semibold text-gray-900 dark:text-white leading-relaxed">
                     {word.exampleTarget}
                   </p>
                   {/* Phonetic */}
@@ -208,7 +181,6 @@ export default function FlashCard({ word, showBookmark = true }) {
                   )}
                 </div>
               </div>
-              {/* English Translation */}
               <p className="text-base text-gray-600 dark:text-slate-300 italic ml-11">
                 {word.exampleNative}
               </p>
