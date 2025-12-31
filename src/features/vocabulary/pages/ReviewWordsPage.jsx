@@ -1,18 +1,12 @@
 import { useState, useEffect, useCallback } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useUser } from "@clerk/clerk-react";
-import {
-  ArrowLeft,
-  Clock,
-  Trash2,
-  Loader2,
-  ChevronRight,
-  Play,
-} from "lucide-react";
+import { ArrowLeft, Clock, Trash2, Loader2, Play } from "lucide-react";
 import {
   fetchReviewCards,
   removeFromReview,
 } from "../../../services/reviewCardsApi";
+import VocabularyListRow from "../components/VocabularyListRow";
 
 export default function ReviewWordsPage() {
   const navigate = useNavigate();
@@ -48,8 +42,7 @@ export default function ReviewWordsPage() {
   }, [isLoaded, user, loadCards]);
 
   // Handle remove card
-  const handleRemoveCard = async (e, cardId) => {
-    e.stopPropagation();
+  const handleRemoveCard = async (cardId) => {
     if (!user || removingCardId) return;
 
     setRemovingCardId(cardId);
@@ -93,7 +86,7 @@ export default function ReviewWordsPage() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-6">
+    <div className="max-w-[1400px] mx-auto px-4 py-6">
       {/* Header */}
       <div className="mb-6">
         <Link
@@ -172,75 +165,42 @@ export default function ReviewWordsPage() {
         </div>
       )}
 
-      {/* Cards List */}
+      {/* Cards List Table */}
       {!isLoading && !error && cards.length > 0 && (
-        <div className="space-y-2">
-          {cards.map((card, index) => (
-            <div
-              key={card.id}
-              onClick={handleStartReview}
-              className="flex items-center justify-between p-4 bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 hover:border-sky-200 dark:hover:border-sky-800 hover:shadow-sm transition-all cursor-pointer group"
-            >
-              {/* Left: Number + Content */}
-              <div className="flex items-center gap-4 flex-1 min-w-0">
-                {/* Number */}
-                <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gray-100 dark:bg-slate-700 flex items-center justify-center">
-                  <span className="text-sm font-medium text-gray-600 dark:text-slate-300">
-                    {index + 1}
-                  </span>
-                </div>
-
-                {/* Content */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-3 mb-1">
-                    <h3 className="text-base font-medium text-gray-900 dark:text-white truncate">
-                      {card.cardData.english}
-                    </h3>
-                    <span className="flex-shrink-0 px-2 py-0.5 text-xs font-medium bg-sky-100 dark:bg-sky-900/30 text-sky-600 dark:text-sky-400 rounded-full">
-                      {card.cardData.level}
-                    </span>
-                    {card.cardData.category && (
-                      <span className="flex-shrink-0 px-2 py-0.5 text-xs font-medium bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-slate-400 rounded-full">
-                        {card.cardData.category}
-                      </span>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <p className="text-sm text-gray-500 dark:text-slate-400 truncate">
-                      {card.cardData.forms.map((f) => f.word).join(" / ")}
-                    </p>
-                    <span className="text-xs text-gray-400 dark:text-slate-500 flex-shrink-0">
-                      Added{" "}
-                      {new Date(card.markedAt).toLocaleDateString("en-US", {
-                        month: "short",
-                        day: "numeric",
-                      })}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Right: Actions */}
-              <div className="flex items-center gap-2 ml-4">
-                {/* Remove Button */}
-                <button
-                  onClick={(e) => handleRemoveCard(e, card.cardId)}
-                  disabled={removingCardId === card.cardId}
-                  className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors disabled:opacity-50"
-                  title="Remove from review"
-                >
-                  {removingCardId === card.cardId ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <Trash2 className="w-4 h-4" />
-                  )}
-                </button>
-
-                {/* Arrow */}
-                <ChevronRight className="w-5 h-5 text-gray-300 dark:text-slate-600 group-hover:text-sky-500 transition-colors" />
-              </div>
+        <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 shadow-sm overflow-hidden">
+          <div className="overflow-x-auto">
+            {/* Header */}
+            <div className="flex items-center min-w-full border-b border-gray-200 dark:border-slate-600 bg-gray-50 dark:bg-slate-700/50 px-4 py-3 text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wider">
+              <div className="w-12 flex-shrink-0">CEFR level</div>
+              <div className="w-32 flex-shrink-0 pr-2">Category</div>
+              <div className="w-24 flex-shrink-0 pr-2">Sub-Category</div>
+              <div className="w-20 flex-shrink-0">Grammar</div>
+              <div className="w-28 flex-shrink-0">English</div>
+              <div className="w-28 flex-shrink-0">Masculine</div>
+              <div className="w-28 flex-shrink-0">Feminine</div>
+              <div className="w-20 flex-shrink-0">Neutral</div>
+              <div className="w-20 flex-shrink-0">Frequency</div>
+              <div className="w-20 flex-shrink-0">Accuracy</div>
+              <div className="flex-1 text-right">Action</div>
             </div>
-          ))}
+
+            {/* Rows */}
+            <div className="divide-y divide-gray-100 dark:divide-slate-700">
+              {cards.map((card, index) => (
+                <VocabularyListRow
+                  key={card.cardId || card.id}
+                  word={{
+                    ...card.cardData,
+                    id: card.cardId,
+                  }}
+                  index={index}
+                  ActionIcon={Trash2}
+                  onAction={() => handleRemoveCard(card.cardId)}
+                  isActionLoading={removingCardId === card.cardId}
+                />
+              ))}
+            </div>
+          </div>
         </div>
       )}
     </div>

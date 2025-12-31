@@ -106,6 +106,28 @@ export async function resetLessonProgress(userId, level, category) {
 }
 
 /**
+ * Remove a single learned card
+ */
+export async function deleteLearnedCard(userId, cardId) {
+  const params = new URLSearchParams();
+  params.append("user_id", userId);
+  params.append("card_id", cardId);
+
+  const response = await fetch(
+    `${API_BASE_URL}/api/progress/card?${params.toString()}`,
+    {
+      method: "DELETE",
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error("Failed to delete card");
+  }
+
+  return response.json();
+}
+
+/**
  * Get total learned cards count
  */
 export async function getTotalLearnedCount(userId) {

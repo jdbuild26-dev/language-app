@@ -1,11 +1,21 @@
 import { useState, useEffect, useCallback } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useUser } from "@clerk/clerk-react";
-import { ArrowLeft, BookOpen, Loader2, Trash2, Play } from "lucide-react";
 import {
-  getWordlist,
-  resetLessonProgress,
-} from "../../../services/progressApi";
+  ArrowLeft,
+  BookOpen,
+  Loader2,
+  Bookmark,
+  Play,
+  Trash2,
+} from "lucide-react";
+import { getWordlist, deleteLearnedCard } from "../../../services/progressApi";
+import {
+  addToReview,
+  removeFromReview,
+  fetchReviewCards,
+} from "../../../services/reviewCardsApi";
+import VocabularyListRow from "../components/VocabularyListRow";
 
 export default function MyWordlistsPage() {
   const navigate = useNavigate();
@@ -17,8 +27,26 @@ export default function MyWordlistsPage() {
   const [hasMore, setHasMore] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
 
-  // For reset functionality
-  const [resettingLesson, setResettingLesson] = useState(null);
+  // Track booked marked IDs
+  const [bookmarkedIds, setBookmarkedIds] = useState(new Set());
+  const [actionLoadingId, setActionLoadingId] = useState(null);
+
+  // Track deleting ID for trash action
+  const [deletingId, setDeletingId] = useState(null);
+
+  // Fetch initial bookmarked IDs (to show correct state)
+  const fetchBookmarks = useCallback(async () => {
+    if (!user) return;
+    try {
+      // Fetch user's review list to know what's already bookmarked
+      // Limit 1000 to get most/all
+      const data = await fetchReviewCards(user.id, { limit: 1000 });
+      const ids = new Set(data.cards.map((c) => c.cardId));
+      setBookmarkedIds(ids);
+    } catch (err) {
+      console.error("Failed to fetch bookmarks:", err);
+    }
+  }, [user]);
 
   // Fetch learned cards
   const loadCards = useCallback(
@@ -30,6 +58,8 @@ export default function MyWordlistsPage() {
           setLoadingMore(true);
         } else {
           setIsLoading(true);
+          // Fetch bookmarks on initial load
+          fetchBookmarks();
         }
         setError(null);
 
@@ -51,7 +81,7 @@ export default function MyWordlistsPage() {
         setLoadingMore(false);
       }
     },
-    [user]
+    [user, fetchBookmarks]
   );
 
   useEffect(() => {
@@ -60,23 +90,67 @@ export default function MyWordlistsPage() {
     }
   }, [isLoaded, user, loadCards]);
 
-  // Handle reset lesson progress
-  const handleResetLesson = async (level, category) => {
-    if (!user || resettingLesson) return;
+  // Handle bookmark toggle (Add/Remove from Review)
+  const handleBookmark = async (card) => {
+    if (!user || actionLoadingId) return;
 
-    const lessonKey = `${level}-${category}`;
-    setResettingLesson(lessonKey);
+    const cardId = card.cardId || card.id;
+    setActionLoadingId(cardId);
+
+    const isBookmarked = bookmarkedIds.has(cardId);
 
     try {
-      await resetLessonProgress(user.id, level, category);
-      // Remove cards from this lesson from state
-      setCards((prev) =>
-        prev.filter((c) => !(c.level === level && c.category === category))
-      );
+      if (isBookmarked) {
+        // REMOVE bookmark
+        await removeFromReview(user.id, cardId);
+        setBookmarkedIds((prev) => {
+          const newSet = new Set(prev);
+          newSet.delete(cardId);
+          return newSet;
+        });
+      } else {
+        // ADD bookmark
+        await addToReview(user.id, {
+          english: card.cardData.english,
+          forms: card.cardData.forms,
+          exampleTarget: card.cardData.exampleTarget,
+          exampleNative: card.cardData.exampleNative,
+          phonetic: card.cardData.phonetic,
+          level: card.cardData.level,
+          category: card.cardData.category,
+          subCategory: card.cardData.subCategory,
+          image: card.cardData.image,
+          id: cardId,
+        });
+        setBookmarkedIds((prev) => new Set(prev).add(cardId));
+      }
     } catch (err) {
-      console.error("Failed to reset lesson:", err);
+      console.error("Failed to toggle bookmark:", err);
     } finally {
-      setResettingLesson(null);
+      setActionLoadingId(null);
+    }
+  };
+
+  // Handle delete learned card (Remove from Learned)
+  const handleDeleteLearned = async (cardId) => {
+    if (!user || deletingId) return;
+
+    if (
+      !window.confirm(
+        "Are you sure you want to remove this word from your learned list?"
+      )
+    ) {
+      return;
+    }
+
+    setDeletingId(cardId);
+    try {
+      await deleteLearnedCard(user.id, cardId);
+      setCards((prev) => prev.filter((c) => (c.cardId || c.id) !== cardId));
+    } catch (err) {
+      console.error("Failed to delete learned card:", err);
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -86,20 +160,6 @@ export default function MyWordlistsPage() {
       loadCards(nextCursor);
     }
   };
-
-  // Group cards by lesson (level + category)
-  const groupedCards = cards.reduce((acc, card) => {
-    const key = `${card.level}-${card.category}`;
-    if (!acc[key]) {
-      acc[key] = {
-        level: card.level,
-        category: card.category,
-        cards: [],
-      };
-    }
-    acc[key].cards.push(card);
-    return acc;
-  }, {});
 
   // Loading state
   if (!isLoaded) {
@@ -126,7 +186,7 @@ export default function MyWordlistsPage() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-6">
+    <div className="max-w-[1400px] mx-auto px-4 py-6">
       {/* Header */}
       <div className="mb-6">
         <Link
@@ -205,82 +265,98 @@ export default function MyWordlistsPage() {
         </div>
       )}
 
-      {/* Cards List - Grouped by Lesson */}
+      {/* Cards List Table */}
       {!isLoading && !error && cards.length > 0 && (
-        <div className="space-y-6">
-          {Object.values(groupedCards).map((group) => {
-            const lessonKey = `${group.level}-${group.category}`;
-            const isResetting = resettingLesson === lessonKey;
+        <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 shadow-sm overflow-hidden">
+          <div className="overflow-x-auto">
+            {/* Header */}
+            <div className="flex items-center min-w-full border-b border-gray-200 dark:border-slate-600 bg-gray-50 dark:bg-slate-700/50 px-4 py-3 text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wider">
+              <div className="w-12 flex-shrink-0">CEFR level</div>
+              <div className="w-32 flex-shrink-0 pr-2">Category</div>
+              <div className="w-24 flex-shrink-0 pr-2">Sub-Category</div>
+              <div className="w-20 flex-shrink-0">Grammar</div>
+              <div className="w-28 flex-shrink-0">English</div>
+              <div className="w-28 flex-shrink-0">Masculine</div>
+              <div className="w-28 flex-shrink-0">Feminine</div>
+              <div className="w-20 flex-shrink-0">Neutral</div>
+              <div className="w-20 flex-shrink-0">Frequency</div>
+              <div className="w-20 flex-shrink-0">Accuracy</div>
+              <div className="flex-1 text-right">Action</div>
+            </div>
 
-            return (
-              <div
-                key={lessonKey}
-                className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 overflow-hidden"
-              >
-                {/* Lesson Header */}
-                <div className="flex items-center justify-between px-4 py-3 bg-gray-50 dark:bg-slate-700/50 border-b border-gray-100 dark:border-slate-700">
-                  <div className="flex items-center gap-3">
-                    <span className="px-2 py-0.5 text-xs font-medium bg-sky-100 dark:bg-sky-900/30 text-sky-600 dark:text-sky-400 rounded-full">
-                      {group.level}
-                    </span>
-                    <h3 className="font-medium text-gray-900 dark:text-white">
-                      {group.category
-                        .replace(/-/g, " ")
-                        .replace(/\b\w/g, (c) => c.toUpperCase())}
-                    </h3>
-                    <span className="text-sm text-gray-400 dark:text-slate-500">
-                      ({group.cards.length} words)
-                    </span>
-                  </div>
-                  <button
-                    onClick={() =>
-                      handleResetLesson(group.level, group.category)
-                    }
-                    disabled={isResetting}
-                    className="flex items-center gap-1.5 px-2 py-1 text-xs text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors disabled:opacity-50"
-                  >
-                    {isResetting ? (
-                      <Loader2 className="w-3 h-3 animate-spin" />
-                    ) : (
-                      <Trash2 className="w-3 h-3" />
-                    )}
-                    Reset
-                  </button>
-                </div>
+            {/* Rows */}
+            <div className="divide-y divide-gray-100 dark:divide-slate-700">
+              {cards.map((card, index) => {
+                const cardId = card.cardId || card.id;
+                const isBookmarked = bookmarkedIds.has(cardId);
+                const isActionLoading = actionLoadingId === cardId;
+                const isDeleting = deletingId === cardId;
 
-                {/* Cards */}
-                <div className="divide-y divide-gray-100 dark:divide-slate-700">
-                  {group.cards.map((card) => (
-                    <div
-                      key={card.id}
-                      className="flex items-center justify-between px-4 py-3"
-                    >
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-3 mb-0.5">
-                          <span className="font-medium text-gray-900 dark:text-white">
-                            {card.cardData.english}
-                          </span>
-                        </div>
-                        <p className="text-sm text-gray-500 dark:text-slate-400 truncate">
-                          {card.cardData.forms.map((f) => f.word).join(" / ")}
-                        </p>
+                return (
+                  <VocabularyListRow
+                    key={cardId}
+                    word={{
+                      ...card.cardData,
+                      id: cardId,
+                    }}
+                    index={index}
+                    renderActions={() => (
+                      <div className="flex items-center justify-end gap-1">
+                        {/* Bookmark Action */}
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleBookmark(card);
+                          }}
+                          disabled={isActionLoading}
+                          className={`p-2 rounded-lg transition-colors disabled:opacity-50 ${
+                            isBookmarked
+                              ? "text-sky-500 bg-sky-50 dark:bg-sky-900/20"
+                              : "text-gray-400 hover:text-sky-500 hover:bg-sky-50 dark:hover:bg-sky-900/20"
+                          }`}
+                          title={
+                            isBookmarked
+                              ? "Remove from Review"
+                              : "Add to Review"
+                          }
+                        >
+                          {isActionLoading ? (
+                            <Loader2 className="w-5 h-5 animate-spin" />
+                          ) : (
+                            <Bookmark
+                              className="w-5 h-5"
+                              fill={isBookmarked ? "currentColor" : "none"}
+                            />
+                          )}
+                        </button>
+
+                        {/* Delete Action */}
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteLearned(cardId);
+                          }}
+                          disabled={isDeleting}
+                          className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors disabled:opacity-50"
+                          title="Remove from Learned List"
+                        >
+                          {isDeleting ? (
+                            <Loader2 className="w-5 h-5 animate-spin" />
+                          ) : (
+                            <Trash2 className="w-5 h-5" />
+                          )}
+                        </button>
                       </div>
-                      <span className="text-xs text-gray-400 dark:text-slate-500 flex-shrink-0">
-                        {new Date(card.learnedAt).toLocaleDateString("en-US", {
-                          month: "short",
-                          day: "numeric",
-                        })}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            );
-          })}
+                    )}
+                  />
+                );
+              })}
+            </div>
+          </div>
 
           {/* Load More */}
           {hasMore && (
-            <div className="flex justify-center mt-6">
+            <div className="flex justify-center p-4 border-t border-gray-100 dark:border-slate-700">
               <button
                 onClick={handleLoadMore}
                 disabled={loadingMore}

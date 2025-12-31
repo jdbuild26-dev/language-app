@@ -1,22 +1,73 @@
-import { useState } from "react";
-import { Play, Pause, Volume2 } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { Play, Pause, Volume2, Loader2 } from "lucide-react";
 
 const SPEED_OPTIONS = ["0.5x", "0.7x", "0.8x", "1x"];
 
-export default function AudioPlayer() {
+export default function AudioPlayer({ text }) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [speed, setSpeed] = useState("1x");
   const [showSpeedMenu, setShowSpeedMenu] = useState(false);
+  const utteranceRef = useRef(null);
+
+  useEffect(() => {
+    // Cleanup on unmount or text change
+    return () => {
+      window.speechSynthesis.cancel();
+      setIsPlaying(false);
+    };
+  }, [text]);
 
   const togglePlay = () => {
-    setIsPlaying(!isPlaying);
-    // TODO: Actual audio playback logic will be added later
+    if (isPlaying) {
+      window.speechSynthesis.cancel();
+      setIsPlaying(false);
+    } else {
+      playAudio();
+    }
+  };
+
+  const playAudio = () => {
+    window.speechSynthesis.cancel(); // Stop any current playback
+
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = "fr-FR"; // Set language to French
+
+    // Parse speed string to number (e.g., "0.5x" -> 0.5)
+    const rate = parseFloat(speed.replace("x", ""));
+    utterance.rate = rate;
+
+    utterance.onend = () => {
+      setIsPlaying(false);
+    };
+
+    utterance.onerror = (event) => {
+      console.error("Speech synthesis error", event);
+      setIsPlaying(false);
+    };
+
+    console.log("Speaking text:", text); // Debugging
+    utteranceRef.current = utterance;
+    window.speechSynthesis.speak(utterance);
+    setIsPlaying(true);
   };
 
   const handleSpeedChange = (newSpeed) => {
     setSpeed(newSpeed);
     setShowSpeedMenu(false);
-    // TODO: Actual speed change logic will be added later
+
+    // If getting blocked by previous utterance, cancel it
+    window.speechSynthesis.cancel();
+    if (isPlaying) {
+      // Small timeout to ensure cancellation completes
+      setTimeout(() => {
+        // Replay with new speed if was already playing
+        // We need to update the rate logic inside playAudio,
+        // but since playAudio uses state 'speed', and state update is async,
+        // we might need to pass the new speed directly or rely on effect.
+        // Simpler: Just stop playback. User clicks play again.
+        setIsPlaying(false);
+      }, 50);
+    }
   };
 
   return (
@@ -25,7 +76,7 @@ export default function AudioPlayer() {
       <button
         onClick={togglePlay}
         className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors"
-        title={isPlaying ? "Pause" : "Play"}
+        title={isPlaying ? "Stop" : "Play"}
       >
         {isPlaying ? (
           <Pause className="w-4 h-4 text-sky-500" />
