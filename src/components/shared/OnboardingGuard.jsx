@@ -1,10 +1,29 @@
+import { useState } from "react";
 import { useStudentProfile } from "@/hooks/useStudentProfile";
+import { useTeacherProfile } from "@/hooks/useTeacherProfile";
 import StudentOnboardingModal from "@/features/auth/components/StudentOnboardingModal";
+import TeacherOnboardingModal from "@/features/auth/components/TeacherOnboardingModal";
+import RoleSelectionModal from "@/features/auth/components/RoleSelectionModal";
 
 export default function OnboardingGuard({ children }) {
-  const { needsOnboarding, isLoading, refreshProfile } = useStudentProfile();
+  const {
+    needsOnboarding: needsStudentOnboarding,
+    isLoading: isStudentLoading,
+    refreshProfile: refreshStudent,
+    profile: studentProfile,
+  } = useStudentProfile();
 
-  if (isLoading) {
+  const {
+    needsOnboarding: needsTeacherOnboarding,
+    isLoading: isTeacherLoading,
+    refreshProfile: refreshTeacher,
+    profile: teacherProfile,
+  } = useTeacherProfile();
+
+  const [selectedRole, setSelectedRole] = useState(null);
+
+  // Wait for both to load
+  if (isStudentLoading || isTeacherLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-body-dark">
         <div className="text-center">
@@ -17,15 +36,37 @@ export default function OnboardingGuard({ children }) {
     );
   }
 
-  if (needsOnboarding) {
+  // If user has ANY profile (Student OR Teacher), allow access
+  const hasProfile = !needsStudentOnboarding || !needsTeacherOnboarding;
+
+  if (hasProfile) {
+    return <>{children}</>;
+  }
+
+  // If user has NO profile, show Role Selection or specific Onboarding
+  if (selectedRole === "student") {
     return (
       <StudentOnboardingModal
         onComplete={() => {
-          refreshProfile();
+          refreshStudent();
+          // Also refresh teacher just in case, though not strictly needed
+          refreshTeacher();
         }}
       />
     );
   }
 
-  return <>{children}</>;
+  if (selectedRole === "teacher") {
+    return (
+      <TeacherOnboardingModal
+        onComplete={() => {
+          refreshTeacher();
+          refreshStudent();
+        }}
+      />
+    );
+  }
+
+  // Default: Show Role Selection
+  return <RoleSelectionModal onSelect={(role) => setSelectedRole(role)} />;
 }

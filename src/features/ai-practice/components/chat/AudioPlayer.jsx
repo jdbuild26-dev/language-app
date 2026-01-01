@@ -3,11 +3,17 @@ import { Play, Pause, Volume2, Loader2 } from "lucide-react";
 
 const SPEED_OPTIONS = ["0.5x", "0.7x", "0.8x", "1x"];
 
-export default function AudioPlayer({ text }) {
+export default function AudioPlayer({ text, autoPlay = false }) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [speed, setSpeed] = useState("1x");
   const [showSpeedMenu, setShowSpeedMenu] = useState(false);
   const utteranceRef = useRef(null);
+
+  useEffect(() => {
+    if (autoPlay && text) {
+      playAudio();
+    }
+  }, [autoPlay, text]);
 
   useEffect(() => {
     // Cleanup on unmount or text change

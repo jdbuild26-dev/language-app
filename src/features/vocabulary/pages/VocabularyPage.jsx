@@ -18,19 +18,11 @@ import MyWordlistsPage from "./MyWordlistsPage";
 import LearnedCardsSessionPage from "./LearnedCardsSessionPage";
 import TopicsPage from "./TopicsPage";
 import TopicCategoryPage from "./TopicCategoryPage";
+import ActivitiesPage from "./ActivitiesPage";
+import FlashcardsSetupPage from "./FlashcardsSetupPage";
+import FlashcardsActivityGamePage from "./FlashcardsActivityGamePage";
 
 // Placeholder content components
-
-function ActivitiesContent() {
-  return (
-    <div className="text-gray-600 dark:text-slate-400">
-      <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
-        Activities
-      </h2>
-      <p>Practice vocabulary through fun games and activities.</p>
-    </div>
-  );
-}
 
 function PracticeContent() {
   return (
@@ -59,6 +51,7 @@ const vocabularyTabs = [
     label: "Practice",
     path: "practice",
     icon: Dumbbell,
+    // Add subTabs if needed for unified layout
   },
 ];
 
@@ -86,7 +79,7 @@ export default function VocabularyPage() {
           path="lessons/review/wordlists/session"
           element={<LearnedCardsSessionPage />}
         />
-        <Route path="lessons/activities" element={<ActivitiesContent />} />
+        <Route path="lessons/activities" element={<ActivitiesPage />} />
         <Route path="practice" element={<PracticeContent />} />
 
         {/* Level wordlist page - shows categories for a level */}
@@ -106,6 +99,16 @@ export default function VocabularyPage() {
         <Route
           path="lessons/learn/topic/:topic"
           element={<LessonLearnPage />}
+        />
+
+        {/* Activity Routes */}
+        <Route
+          path="lessons/activities/flashcards"
+          element={<FlashcardsSetupPage />}
+        />
+        <Route
+          path="lessons/activities/flashcards/game"
+          element={<FlashcardsActivityGamePage />}
         />
 
         <Route path="*" element={<Navigate to="lessons/learn" replace />} />

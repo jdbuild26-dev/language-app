@@ -58,6 +58,7 @@ export default function ChatPage() {
               hour: "2-digit",
               minute: "2-digit",
             }),
+            autoPlay: true,
           },
         ]);
       } catch (err) {

@@ -97,7 +97,7 @@ export default function MessageBubble({ message }) {
           {/* AI Messages: Audio + Translate */}
           {isAI && (
             <>
-              <AudioPlayer text={message.text} />
+              <AudioPlayer text={message.text} autoPlay={message.autoPlay} />
               <button
                 onClick={handleTranslate}
                 className={`p-1.5 rounded-lg transition-colors ${

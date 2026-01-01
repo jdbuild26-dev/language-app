@@ -3,11 +3,22 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
 /**
  * Fetch vocabulary with optional filtering
  */
-export async function fetchVocabulary({ level, category, limit } = {}) {
+export async function fetchVocabulary({
+  level,
+  category,
+  subCategory,
+  limit,
+} = {}) {
   const params = new URLSearchParams();
   if (level) params.append("level", level);
   if (category) params.append("category", category);
   if (limit) params.append("limit", limit);
+  // Handle subCategory array
+  if (subCategory && Array.isArray(subCategory)) {
+    subCategory.forEach((sc) => params.append("sub_category", sc));
+  } else if (subCategory) {
+    params.append("sub_category", subCategory);
+  }
 
   const url = `${API_BASE_URL}/api/vocabulary${
     params.toString() ? "?" + params : ""

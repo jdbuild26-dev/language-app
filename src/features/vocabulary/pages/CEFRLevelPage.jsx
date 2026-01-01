@@ -176,7 +176,9 @@ function CategoryCard({
         className="flex items-center justify-between"
         onClick={(e) => e.preventDefault()}
       >
-        <ActionButton icon={RectangleStackIcon} label="Word Card" />
+        <Link to={`/vocabulary/flashcards/${level}/${category.slug}`}>
+          <ActionButton icon={RectangleStackIcon} label="Flashcards" />
+        </Link>
         <ActionButton icon={Squares2X2Icon} label="Learning Card" />
         <ActionButton icon={LanguageIcon} label="Match the pairs" />
         <ActionButton icon={BookOpenIcon} label="Spelling" />
