@@ -5,10 +5,12 @@ const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
  * @param {string} userId - Clerk User ID
  * @returns {Promise<{isComplete: boolean, studentId: string | null, role: string | null}>}
  */
-export async function checkOnboardingStatus(userId) {
-  const response = await fetch(
-    `${API_URL}/api/students/check?user_id=${userId}`
-  );
+export async function checkOnboardingStatus(token) {
+  const response = await fetch(`${API_URL}/api/students/check`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
   if (!response.ok) {
     throw new Error("Failed to check onboarding status");
   }
@@ -20,11 +22,12 @@ export async function checkOnboardingStatus(userId) {
  * @param {Object} profileData - The student profile data
  * @returns {Promise<Object>} The created profile
  */
-export async function createStudentProfile(profileData) {
+export async function createStudentProfile(profileData, token) {
   const response = await fetch(`${API_URL}/api/students`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
     },
     body: JSON.stringify(profileData),
   });
@@ -40,8 +43,12 @@ export async function createStudentProfile(profileData) {
  * @param {string} userId - Clerk User ID
  * @returns {Promise<Object>} The student profile
  */
-export async function getStudentProfile(userId) {
-  const response = await fetch(`${API_URL}/api/students/me?user_id=${userId}`);
+export async function getStudentProfile(token) {
+  const response = await fetch(`${API_URL}/api/students/me`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
   if (!response.ok) {
     throw new Error("Failed to fetch student profile");
   }
@@ -68,10 +75,12 @@ export async function getPlacementTest(language) {
  * @param {string} userId - Clerk User ID
  * @returns {Promise<{isComplete: boolean, teacherId: string | null, role: string | null}>}
  */
-export async function checkTeacherOnboardingStatus(userId) {
-  const response = await fetch(
-    `${API_URL}/api/teachers/check?user_id=${userId}`
-  );
+export async function checkTeacherOnboardingStatus(token) {
+  const response = await fetch(`${API_URL}/api/teachers/check`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
   if (!response.ok) {
     throw new Error("Failed to check teacher onboarding status");
   }
@@ -83,11 +92,12 @@ export async function checkTeacherOnboardingStatus(userId) {
  * @param {Object} profileData - The teacher profile data
  * @returns {Promise<Object>} The created profile
  */
-export async function createTeacherProfile(profileData) {
+export async function createTeacherProfile(profileData, token) {
   const response = await fetch(`${API_URL}/api/teachers`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
     },
     body: JSON.stringify(profileData),
   });
@@ -103,8 +113,12 @@ export async function createTeacherProfile(profileData) {
  * @param {string} userId - Clerk User ID
  * @returns {Promise<Object>} The teacher profile
  */
-export async function getTeacherProfile(userId) {
-  const response = await fetch(`${API_URL}/api/teachers/me?user_id=${userId}`);
+export async function getTeacherProfile(token) {
+  const response = await fetch(`${API_URL}/api/teachers/me`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
   if (!response.ok) {
     throw new Error("Failed to fetch teacher profile");
   }

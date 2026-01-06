@@ -2,10 +2,14 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { useTeacherProfile } from "@/hooks/useTeacherProfile";
 import { useTeacherStudents } from "@/hooks/useTeacherStudents";
-import { updateRelationshipStatus } from "@/services/vocabularyApi";
-import { UserPlus } from "lucide-react";
+import {
+  updateRelationshipStatus,
+  deleteRelationship,
+} from "@/services/vocabularyApi";
+import { UserPlus, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
+import { useAuth } from "@clerk/clerk-react";
 
 export default function MyStudentsPage() {
   const { profile } = useTeacherProfile();
@@ -22,10 +26,12 @@ export default function MyStudentsPage() {
 
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { getToken } = useAuth();
 
   const handleUpdateStatus = async (relationshipId, status) => {
     try {
-      await updateRelationshipStatus(relationshipId, status);
+      const token = await getToken();
+      await updateRelationshipStatus(relationshipId, status, token);
       toast({
         title: status === "active" ? "Request Approved" : "Request Rejected",
         description:
@@ -41,6 +47,26 @@ export default function MyStudentsPage() {
       toast({
         title: "Error",
         description: "Failed to update request status.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleRemoveStudent = async (relationshipId) => {
+    if (!confirm("Are you sure you want to remove this student?")) return;
+    try {
+      const token = await getToken();
+      await deleteRelationship(relationshipId, token);
+      toast({
+        title: "Student Removed",
+        description: "Student has been removed from your roster.",
+      });
+      refetchActive();
+    } catch (error) {
+      console.error("Failed to remove student", error);
+      toast({
+        title: "Error",
+        description: "Failed to remove student.",
         variant: "destructive",
       });
     }
@@ -200,6 +226,14 @@ export default function MyStudentsPage() {
                 </div>
                 <Button variant="outline" size="sm">
                   View Profile
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                  onClick={() => handleRemoveStudent(student.id)}
+                >
+                  <Trash2 className="h-4 w-4" />
                 </Button>
               </div>
             </CardContent>

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useUser } from "@clerk/clerk-react";
+import { useUser, useAuth } from "@clerk/clerk-react";
 import { Volume2, Bookmark, BookmarkCheck } from "lucide-react";
 import { useSpeechSynthesis } from "../../../../hooks/useSpeechSynthesis";
 import {
@@ -14,6 +14,7 @@ const PLACEHOLDER_IMAGE =
 
 export default function LearningCard({ word }) {
   const { user } = useUser();
+  const { getToken } = useAuth();
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [speakingId, setSpeakingId] = useState(null);
@@ -24,12 +25,17 @@ export default function LearningCard({ word }) {
   useEffect(() => {
     async function checkBookmarkStatus() {
       if (user && word?.id) {
-        const bookmarked = await checkIsBookmarked(user.id, word.id);
-        setIsBookmarked(bookmarked);
+        try {
+          const token = await getToken();
+          const bookmarked = await checkIsBookmarked(token, word.id);
+          setIsBookmarked(bookmarked);
+        } catch (e) {
+          console.error("Failed to check bookmark", e);
+        }
       }
     }
     checkBookmarkStatus();
-  }, [user, word?.id]);
+  }, [user, word?.id, getToken]);
 
   // Reset speaking state when speech ends
   useEffect(() => {
@@ -43,11 +49,12 @@ export default function LearningCard({ word }) {
 
     setIsLoading(true);
     try {
+      const token = await getToken();
       if (isBookmarked) {
-        await removeFromReview(user.id, word.id);
+        await removeFromReview(token, word.id);
         setIsBookmarked(false);
       } else {
-        await addToReview(user.id, word);
+        await addToReview(token, word);
         setIsBookmarked(true);
       }
     } catch (error) {

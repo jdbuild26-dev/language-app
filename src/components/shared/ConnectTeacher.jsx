@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useUser } from "@clerk/clerk-react";
+import { useAuth } from "@clerk/clerk-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -9,48 +9,23 @@ import {
   CardContent,
   CardDescription,
 } from "@/components/ui/card";
+
 import {
   UserPlusIcon,
   CheckCircleIcon,
   ExclamationCircleIcon,
   AcademicCapIcon,
+  ClockIcon,
+  TrashIcon,
 } from "@heroicons/react/24/outline";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useStudentProfile } from "@/hooks/useStudentProfile";
 import { useStudentTeachers } from "@/hooks/useStudentTeachers";
 
-// We need a service function to call the API
-// Ideally this should be in a service file
-async function linkTeacher(studentId, teacherId) {
-  const apiUrl = import.meta.env.VITE_API_URL;
-  console.log("Linking Teacher:", { apiUrl, studentId, teacherId });
-
-  const response = await fetch(
-    `${import.meta.env.VITE_API_URL}/api/relationships/link`,
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ studentId, teacherId }),
-    }
-  );
-
-  if (!response.ok) {
-    const text = await response.text();
-    let errorDetail = "Failed to link teacher";
-    try {
-      const error = JSON.parse(text);
-      errorDetail = error.detail || error.message || errorDetail;
-    } catch (e) {
-      console.error("Non-JSON error response:", text);
-      errorDetail = `Server error (${response.status}): ${text.slice(0, 100)}`;
-    }
-    throw new Error(errorDetail);
-  }
-
-  return response.json();
-}
+import {
+  deleteRelationship,
+  linkStudentToTeacher,
+} from "@/services/vocabularyApi";
 
 export default function ConnectTeacher() {
   const { profile } = useStudentProfile();
@@ -63,9 +38,13 @@ export default function ConnectTeacher() {
   const [status, setStatus] = useState("idle"); // idle, loading, success, error
   const [errorMessage, setErrorMessage] = useState("");
   const queryClient = useQueryClient();
+  const { getToken } = useAuth();
 
   const mutation = useMutation({
-    mutationFn: () => linkTeacher(profile.studentId, teacherId),
+    mutationFn: async () => {
+      const token = await getToken();
+      return linkStudentToTeacher(profile.studentId, teacherId, token);
+    },
     onSuccess: () => {
       setStatus("success");
       setTeacherId("");
@@ -83,6 +62,18 @@ export default function ConnectTeacher() {
     if (!teacherId || !profile?.studentId) return;
     setStatus("loading");
     mutation.mutate();
+  };
+
+  const handleDelete = async (relationshipId) => {
+    if (!confirm("Are you sure you want to remove this connection?")) return;
+    try {
+      const token = await window.Clerk.session.getToken();
+      await deleteRelationship(relationshipId, token);
+      refetchTeachers();
+    } catch (error) {
+      console.error("Failed to delete", error);
+      alert("Failed to remove connection");
+    }
   };
 
   if (!profile) return null;
@@ -114,7 +105,7 @@ export default function ConnectTeacher() {
                   <div className="p-2 bg-white dark:bg-card-dark rounded-full shadow-sm">
                     <AcademicCapIcon className="h-4 w-4 text-brand-blue-1" />
                   </div>
-                  <div>
+                  <div className="flex-1">
                     <p className="text-sm font-semibold text-gray-900 dark:text-primary-dark">
                       Teacher {teacher.teacherId}
                     </p>
@@ -123,10 +114,26 @@ export default function ConnectTeacher() {
                       {new Date(teacher.createdAt).toLocaleDateString()}
                     </p>
                   </div>
-                  <div className="ml-auto">
-                    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300">
-                      Active
-                    </span>
+                  <div className="flex items-center gap-2">
+                    {teacher.status === "pending" ? (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300">
+                        <ClockIcon className="h-3 w-3" />
+                        Pending
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300">
+                        Active
+                      </span>
+                    )}
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7 text-gray-400 hover:text-red-500"
+                      onClick={() => handleDelete(teacher.id)}
+                      title="Remove connection"
+                    >
+                      <TrashIcon className="h-4 w-4" />
+                    </Button>
                   </div>
                 </div>
               ))}

@@ -8,14 +8,14 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
 /**
  * Add a vocabulary card to user's review list
  */
-export async function addToReview(userId, cardData) {
+export async function addToReview(token, cardData) {
   const response = await fetch(`${API_BASE_URL}/api/review-cards`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
     },
     body: JSON.stringify({
-      userId,
       cardId: cardData.id,
       cardData: {
         english: cardData.english,
@@ -41,13 +41,13 @@ export async function addToReview(userId, cardData) {
 /**
  * Remove a card from user's review list
  */
-export async function removeFromReview(userId, cardId) {
-  const response = await fetch(
-    `${API_BASE_URL}/api/review-cards/${cardId}?user_id=${userId}`,
-    {
-      method: "DELETE",
-    }
-  );
+export async function removeFromReview(token, cardId) {
+  const response = await fetch(`${API_BASE_URL}/api/review-cards/${cardId}`, {
+    method: "DELETE",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
 
   if (!response.ok) {
     throw new Error("Failed to remove card from review");
@@ -60,17 +60,21 @@ export async function removeFromReview(userId, cardId) {
  * Fetch user's review cards with pagination
  */
 export async function fetchReviewCards(
-  userId,
+  token,
   { limit = 20, cursor = null, status = null } = {}
 ) {
   const params = new URLSearchParams();
-  params.append("user_id", userId);
   params.append("limit", limit);
   if (cursor) params.append("cursor", cursor);
   if (status) params.append("status", status);
 
   const response = await fetch(
-    `${API_BASE_URL}/api/review-cards?${params.toString()}`
+    `${API_BASE_URL}/api/review-cards?${params.toString()}`,
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }
   );
 
   if (!response.ok) {
@@ -83,10 +87,15 @@ export async function fetchReviewCards(
 /**
  * Check if a specific card is bookmarked by the user
  */
-export async function checkIsBookmarked(userId, cardId) {
+export async function checkIsBookmarked(token, cardId) {
   try {
     const response = await fetch(
-      `${API_BASE_URL}/api/review-cards/check/${cardId}?user_id=${userId}`
+      `${API_BASE_URL}/api/review-cards/check/${cardId}`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
     );
 
     if (!response.ok) {
@@ -103,13 +112,17 @@ export async function checkIsBookmarked(userId, cardId) {
 /**
  * Get count of user's review cards
  */
-export async function getReviewCount(userId, status = null) {
+export async function getReviewCount(token, status = null) {
   const params = new URLSearchParams();
-  params.append("user_id", userId);
   if (status) params.append("status", status);
 
   const response = await fetch(
-    `${API_BASE_URL}/api/review-cards/count?${params.toString()}`
+    `${API_BASE_URL}/api/review-cards/count?${params.toString()}`,
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }
   );
 
   if (!response.ok) {
@@ -123,13 +136,15 @@ export async function getReviewCount(userId, status = null) {
 /**
  * Update the review status of a card
  */
-export async function updateReviewStatus(userId, cardId, status) {
-  const response = await fetch(
-    `${API_BASE_URL}/api/review-cards/${cardId}/status?user_id=${userId}&status=${status}`,
-    {
-      method: "PATCH",
-    }
-  );
+export async function updateReviewStatus(token, cardId, status) {
+  const response = await fetch(`${API_BASE_URL}/api/review-cards/${cardId}`, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ status }),
+  });
 
   if (!response.ok) {
     throw new Error("Failed to update review status");
@@ -141,14 +156,14 @@ export async function updateReviewStatus(userId, cardId, status) {
 /**
  * Bulk add all cards from a category to user's review list
  */
-export async function bulkAddToReview(userId, level, category, cards) {
+export async function bulkAddToReview(token, level, category, cards) {
   const response = await fetch(`${API_BASE_URL}/api/review-cards/bulk`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
     },
     body: JSON.stringify({
-      userId,
       level,
       category,
       cards: cards.map((card) => ({
@@ -176,9 +191,8 @@ export async function bulkAddToReview(userId, level, category, cards) {
 /**
  * Bulk remove all cards from a category from user's review list
  */
-export async function bulkRemoveFromReview(userId, level, category) {
+export async function bulkRemoveFromReview(token, level, category) {
   const params = new URLSearchParams();
-  params.append("user_id", userId);
   params.append("level", level);
   params.append("category", category);
 
@@ -186,6 +200,9 @@ export async function bulkRemoveFromReview(userId, level, category) {
     `${API_BASE_URL}/api/review-cards/bulk?${params.toString()}`,
     {
       method: "DELETE",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
     }
   );
 
@@ -199,15 +216,19 @@ export async function bulkRemoveFromReview(userId, level, category) {
 /**
  * Check if a category is bookmarked (has any cards in review)
  */
-export async function checkCategoryBookmarked(userId, level, category) {
+export async function checkCategoryBookmarked(token, level, category) {
   const params = new URLSearchParams();
-  params.append("user_id", userId);
   params.append("level", level);
   params.append("category", category);
 
   try {
     const response = await fetch(
-      `${API_BASE_URL}/api/review-cards/check-category?${params.toString()}`
+      `${API_BASE_URL}/api/review-cards/check-category?${params.toString()}`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
     );
 
     if (!response.ok) {

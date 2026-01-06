@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { useUser } from "@clerk/clerk-react";
+import { useUser, useAuth } from "@clerk/clerk-react";
 import { checkOnboardingStatus, getStudentProfile } from "../services/userApi";
 
 /**
@@ -8,6 +8,7 @@ import { checkOnboardingStatus, getStudentProfile } from "../services/userApi";
  */
 export function useStudentProfile() {
   const { user, isLoaded: isClerkLoaded } = useUser();
+  const { getToken } = useAuth();
   const [needsOnboarding, setNeedsOnboarding] = useState(false);
   const [profile, setProfile] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -20,13 +21,14 @@ export function useStudentProfile() {
 
     try {
       setIsLoading(true);
+      const token = await getToken();
       // Check onboarding status
-      const status = await checkOnboardingStatus(user.id);
+      const status = await checkOnboardingStatus(token);
 
       if (status.isComplete) {
         setNeedsOnboarding(false);
         // Fetch full profile if complete
-        const fullProfile = await getStudentProfile(user.id);
+        const fullProfile = await getStudentProfile(token);
         setProfile(fullProfile);
       } else {
         setNeedsOnboarding(true);
@@ -39,7 +41,7 @@ export function useStudentProfile() {
     } finally {
       setIsLoading(false);
     }
-  }, [user]);
+  }, [user, getToken]);
 
   useEffect(() => {
     if (isClerkLoaded) {

@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { useNavigate, useParams } from "react-router-dom";
-import { useUser } from "@clerk/clerk-react";
+import { useUser, useAuth } from "@clerk/clerk-react";
 import { ChevronLeftIcon, ChevronRightIcon } from "@heroicons/react/24/outline";
 
 import {
@@ -15,6 +15,7 @@ import { saveProgress, getLessonProgress } from "../../../services/progressApi";
 export default function LessonLearnPage() {
   const navigate = useNavigate();
   const { user } = useUser();
+  const { getToken } = useAuth();
   const { level, category, topic } = useParams();
   const [words, setWords] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -50,11 +51,8 @@ export default function LessonLearnPage() {
       // Check for saved progress to resume
       if (user && level && categoryToUse && fetchedWords.length > 0) {
         try {
-          const progress = await getLessonProgress(
-            user.id,
-            level,
-            categoryToUse
-          );
+          const token = await getToken();
+          const progress = await getLessonProgress(token, level, categoryToUse);
 
           if (
             progress.learnedCount > 0 &&
@@ -78,7 +76,7 @@ export default function LessonLearnPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [level, categoryToUse, user]);
+  }, [level, categoryToUse, user, getToken]);
 
   useEffect(() => {
     loadWordsAndProgress();
@@ -109,8 +107,15 @@ export default function LessonLearnPage() {
     try {
       // Save cards from 0 to currentIndex (inclusive)
       const cardsToSave = words.slice(0, currentIndex + 1);
+      const token = await getToken();
 
-      await saveProgress(user.id, level || "A1", categoryToUse, cardsToSave);
+      await saveProgress(
+        user.id,
+        level || "A1",
+        categoryToUse,
+        cardsToSave,
+        token
+      );
 
       // Navigate back after save
       navigate(-1);

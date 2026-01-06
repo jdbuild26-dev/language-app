@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { useUser } from "@clerk/clerk-react";
+import { useUser, useAuth } from "@clerk/clerk-react";
 import { ArrowLeft, Clock, Trash2, Loader2, Play } from "lucide-react";
 import {
   fetchReviewCards,
@@ -11,6 +11,7 @@ import VocabularyListRow from "../components/VocabularyListRow";
 export default function ReviewWordsPage() {
   const navigate = useNavigate();
   const { user, isLoaded } = useUser();
+  const { getToken } = useAuth();
   const [cards, setCards] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -24,7 +25,8 @@ export default function ReviewWordsPage() {
       setIsLoading(true);
       setError(null);
 
-      const data = await fetchReviewCards(user.id, { limit: 100 });
+      const token = await getToken();
+      const data = await fetchReviewCards(token, { limit: 100 });
       setCards(data.cards);
     } catch (err) {
       console.error("Failed to fetch review cards:", err);
@@ -32,7 +34,7 @@ export default function ReviewWordsPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [user]);
+  }, [user, getToken]);
 
   // Load cards when user is available
   useEffect(() => {
@@ -47,7 +49,8 @@ export default function ReviewWordsPage() {
 
     setRemovingCardId(cardId);
     try {
-      await removeFromReview(user.id, cardId);
+      const token = await getToken();
+      await removeFromReview(token, cardId);
       setCards((prev) => prev.filter((c) => c.cardId !== cardId));
     } catch (err) {
       console.error("Failed to remove card:", err);

@@ -21,6 +21,7 @@ import {
   BookOpenIcon,
   PencilSquareIcon,
   UserGroupIcon,
+  UserPlusIcon,
 } from "@heroicons/react/24/outline";
 
 export default function ProgressReportPage() {
@@ -314,6 +315,25 @@ export default function ProgressReportPage() {
                   {needsTeacherOnboarding
                     ? "Start teaching on platform"
                     : "Manage your classes"}
+                </p>
+              </div>
+            </Button>
+
+            {/* Find Teacher Action */}
+            <Button
+              variant="outline"
+              onClick={() => navigate("/find-teacher")}
+              className="h-auto p-6 flex flex-col items-start gap-4 hover:border-brand-blue-1 hover:bg-brand-blue-3/10 transition-all border-dashed dark:border-subtle-dark dark:hover:border-accent-primary"
+            >
+              <div className="p-2 rounded-full bg-orange-100 text-orange-600 dark:bg-orange-900/40 dark:text-orange-300">
+                <UserPlusIcon className="h-6 w-6" />
+              </div>
+              <div className="text-left">
+                <h3 className="font-semibold text-gray-900 dark:text-primary-dark">
+                  Find a Teacher
+                </h3>
+                <p className="text-xs text-gray-500 dark:text-secondary-dark mt-1">
+                  Connect with a mentor
                 </p>
               </div>
             </Button>

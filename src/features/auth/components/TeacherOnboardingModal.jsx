@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { createPortal } from "react-dom";
-import { useUser } from "@clerk/clerk-react";
+import { useUser, useAuth } from "@clerk/clerk-react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   CheckCircleIcon,
@@ -25,6 +25,7 @@ const STEPS = {
 
 export default function TeacherOnboardingModal({ onComplete }) {
   const { user } = useUser();
+  const { getToken } = useAuth();
   const [step, setStep] = useState(STEPS.TEACHING_LANG);
   const [formData, setFormData] = useState({
     teachingLanguages: [],
@@ -64,7 +65,8 @@ export default function TeacherOnboardingModal({ onComplete }) {
         name: user.fullName || user.firstName,
         ...data,
       };
-      await createTeacherProfile(profileData);
+      const token = await getToken();
+      await createTeacherProfile(profileData, token);
       setTimeout(() => {
         onComplete();
       }, 1500);

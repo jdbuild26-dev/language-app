@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
-import { Link, useParams } from "react-router-dom";
-import { useUser } from "@clerk/clerk-react";
+import { Link, useParams, useNavigate } from "react-router-dom";
+import { useUser, useAuth } from "@clerk/clerk-react";
 import {
   BookmarkIcon,
   BookOpenIcon,
@@ -85,6 +85,7 @@ function CategoryCard({
   isBookmarked = false,
   onBookmarkClick,
 }) {
+  const navigate = useNavigate();
   const totalWords = category.wordCount || 1;
   const progressPercent = Math.min(
     Math.round((learnedCount / totalWords) * 100),
@@ -99,10 +100,22 @@ function CategoryCard({
     }
   };
 
+  const handleCardClick = (e) => {
+    // Prevent navigation if clicking on interactive elements
+    if (
+      e.target.closest("button") ||
+      e.target.closest("a") ||
+      e.target.getAttribute("role") === "button"
+    ) {
+      return;
+    }
+    navigate(`/vocabulary/lessons/learn/${level}/${category.slug}`);
+  };
+
   return (
-    <Link
-      to={`/vocabulary/lessons/learn/${level}/${category.slug}`}
-      className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-700 p-5 flex flex-col hover:shadow-md transition-all cursor-pointer"
+    <div
+      onClick={handleCardClick}
+      className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-700 p-5 flex flex-col hover:shadow-md transition-all cursor-pointer relative group"
     >
       {/* Image and Bookmark */}
       <div className="relative mb-4">
@@ -183,13 +196,14 @@ function CategoryCard({
         <ActionButton icon={LanguageIcon} label="Match the pairs" />
         <ActionButton icon={BookOpenIcon} label="Spelling" />
       </div>
-    </Link>
+    </div>
   );
 }
 
 export default function CEFRLevelPage() {
   const { level } = useParams();
   const { user } = useUser();
+  const { getToken } = useAuth();
   const [categories, setCategories] = useState([]);
   const [progressMap, setProgressMap] = useState({});
   const [bookmarkMap, setBookmarkMap] = useState({});
@@ -227,11 +241,8 @@ export default function CEFRLevelPage() {
 
       const progressPromises = categories.map(async (category) => {
         try {
-          const progress = await getLessonProgress(
-            user.id,
-            level,
-            category.slug
-          );
+          const token = await getToken();
+          const progress = await getLessonProgress(token, level, category.slug);
           return { slug: category.slug, count: progress.learnedCount };
         } catch {
           return { slug: category.slug, count: 0 };
@@ -247,7 +258,7 @@ export default function CEFRLevelPage() {
     }
 
     loadProgress();
-  }, [user, categories, level]);
+  }, [user, categories, level, getToken]);
 
   // Check bookmark status for each category
   useEffect(() => {
@@ -256,8 +267,9 @@ export default function CEFRLevelPage() {
 
       const bookmarkPromises = categories.map(async (category) => {
         try {
+          const token = await getToken();
           const result = await checkCategoryBookmarked(
-            user.id,
+            token,
             level?.toUpperCase(),
             category.name
           );
@@ -276,7 +288,7 @@ export default function CEFRLevelPage() {
     }
 
     loadBookmarkStatus();
-  }, [user, categories, level]);
+  }, [user, categories, level, getToken]);
 
   // Handle bookmark click - show modal
   const handleBookmarkClick = (category, isCurrentlyBookmarked) => {
@@ -293,8 +305,9 @@ export default function CEFRLevelPage() {
     try {
       if (isRemoveAction) {
         // Remove all cards from this category
+        const token = await getToken();
         await bulkRemoveFromReview(
-          user.id,
+          token,
           level?.toUpperCase(),
           selectedCategory.name
         );
@@ -310,8 +323,9 @@ export default function CEFRLevelPage() {
         });
 
         if (vocabData.words && vocabData.words.length > 0) {
+          const token = await getToken();
           await bulkAddToReview(
-            user.id,
+            token,
             level?.toUpperCase(),
             selectedCategory.slug,
             vocabData.words
