@@ -11,7 +11,7 @@ import ProtectedRoute from "@/components/shared/ProtectedRoute";
 
 // Pages
 import Home from "@/pages/Home";
-import Dashboard from "@/pages/Dashboard";
+
 import NotFound from "@/pages/NotFound";
 
 // Legal pages
@@ -32,6 +32,7 @@ import PracticePage from "@/features/practice/pages/PracticePage";
 import BlogsPage from "@/features/blogs/pages/BlogsPage";
 import AIPracticePage from "@/features/ai-practice/pages/AIPracticePage";
 import ProgressReportPage from "@/features/progress-report/pages/ProgressReportPage";
+import FindTeacherPage from "@/features/vocabulary/pages/FindTeacherPage";
 import TeacherLayout from "@/features/teacher-dashboard/layout/TeacherLayout";
 import OverviewPage from "@/features/teacher-dashboard/pages/OverviewPage";
 import MyStudentsPage from "@/features/teacher-dashboard/pages/MyStudentsPage";
@@ -55,7 +56,7 @@ function App() {
             path="dashboard"
             element={
               <ProtectedRoute>
-                <Dashboard />
+                <ProgressReportPage />
               </ProtectedRoute>
             }
           />
@@ -78,7 +79,7 @@ function App() {
             }
           />
           <Route
-            path="grammar"
+            path="grammar/*"
             element={
               <ProtectedRoute>
                 <GrammarPage />
@@ -117,11 +118,12 @@ function App() {
               </ProtectedRoute>
             }
           />
+
           <Route
-            path="progress-report"
+            path="find-teacher"
             element={
               <ProtectedRoute>
-                <ProgressReportPage />
+                <FindTeacherPage />
               </ProtectedRoute>
             }
           />

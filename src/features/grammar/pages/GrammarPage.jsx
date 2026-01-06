@@ -1,19 +1,33 @@
-import { AcademicCapIcon } from "@heroicons/react/24/outline";
+import React from "react";
+import { Routes, Route, Navigate } from "react-router-dom";
+import { BookOpen, Dumbbell } from "lucide-react";
+import PageTabs from "@/components/ui/PageTabs";
+import GrammarNotesPage from "./GrammarNotesPage";
+import GrammarPracticePage from "./GrammarPracticePage";
+
+const grammarTabs = [
+  {
+    label: "Notes",
+    path: "notes",
+    icon: BookOpen,
+  },
+  {
+    label: "Practice",
+    path: "practice",
+    icon: Dumbbell,
+  },
+];
 
 export default function GrammarPage() {
   return (
-    <div className="min-h-[60vh] flex flex-col items-center justify-center px-4">
-      <div className="text-center">
-        <div className="inline-flex items-center justify-center w-20 h-20 bg-sky-100 dark:bg-sky-900/40 rounded-full mb-6">
-          <AcademicCapIcon className="w-10 h-10 text-sky-600 dark:text-sky-400" />
-        </div>
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">
-          Grammar
-        </h1>
-        <p className="text-gray-600 dark:text-slate-400 max-w-md">
-          Master grammar rules with clear explanations and practice exercises.
-        </p>
-      </div>
+    <div className="max-w-7xl mx-auto px-4 py-6">
+      <PageTabs basePath="/grammar" defaultTab="notes" tabs={grammarTabs} />
+
+      <Routes>
+        <Route path="notes" element={<GrammarNotesPage />} />
+        <Route path="practice" element={<GrammarPracticePage />} />
+        <Route path="*" element={<Navigate to="notes" replace />} />
+      </Routes>
     </div>
   );
 }

@@ -5,12 +5,16 @@ import { cn } from "@/lib/utils";
 import {
   fetchAvailableLevels,
   fetchCategoriesByLevel,
+  fetchUserProgressStats,
+  fetchVocabulary,
 } from "@/services/vocabularyApi";
+import { useUser } from "@clerk/clerk-react";
 
 const CEFR_LEVELS = ["A1", "A2", "B1", "B2", "C1", "C2"];
 
 export default function FlashcardsSetupPage() {
   const navigate = useNavigate();
+  const { user } = useUser();
   const [loading, setLoading] = useState(false);
 
   // Selection State
@@ -109,6 +113,75 @@ export default function FlashcardsSetupPage() {
       }
     });
   };
+
+  // Fetch Stats & Total Count
+  useEffect(() => {
+    async function loadData() {
+      // 1. Fetch Total Available Words (for "All" and "Untested")
+      // We perform this even if user not logged in, to show available cards count.
+      let totalAvailable = 0;
+      try {
+        const vocabData = await fetchVocabulary({
+          level: selectedLevel !== "All" ? selectedLevel : undefined,
+          category: selectedCategory || undefined,
+          subCategory:
+            selectedSubCategories.length > 0
+              ? selectedSubCategories
+              : undefined,
+        });
+        if (vocabData && vocabData.count) {
+          totalAvailable = vocabData.count;
+        }
+      } catch (err) {
+        console.error("Failed to fetch vocabulary count", err);
+      }
+
+      // 2. Fetch User Progress (if logged in)
+      if (!user) {
+        setFilteredWordCount({
+          all: totalAvailable,
+          dontKnow: 0,
+          know: 0,
+          mastered: 0,
+          untested: totalAvailable,
+        });
+        return;
+      }
+
+      try {
+        const stats = await fetchUserProgressStats({
+          userId: user.id,
+          level: selectedLevel !== "All" ? selectedLevel : undefined,
+          category: selectedCategory || undefined,
+          subCategory:
+            selectedSubCategories.length > 0
+              ? selectedSubCategories
+              : undefined,
+        });
+
+        if (stats) {
+          setFilteredWordCount({
+            all: totalAvailable,
+            dontKnow: stats.unknown,
+            know: stats.known,
+            mastered: stats.mastered,
+            untested: Math.max(0, totalAvailable - stats.total),
+          });
+        }
+      } catch (error) {
+        console.error("Failed to load stats", error);
+        // Fallback to just showing total available
+        setFilteredWordCount({
+          all: totalAvailable,
+          dontKnow: 0,
+          know: 0,
+          mastered: 0,
+          untested: totalAvailable,
+        });
+      }
+    }
+    loadData();
+  }, [user, selectedLevel, selectedCategory, selectedSubCategories]);
 
   const handleStart = () => {
     // Navigate to game page with Query Params
@@ -310,7 +383,7 @@ export default function FlashcardsSetupPage() {
                 All
               </div>
               <div className="text-2xl font-bold text-slate-800 dark:text-white">
-                20
+                {filteredWordCount.all}
               </div>
             </div>
             <div>
@@ -318,7 +391,7 @@ export default function FlashcardsSetupPage() {
                 Don't Know
               </div>
               <div className="text-2xl font-bold text-slate-800 dark:text-white">
-                6
+                {filteredWordCount.dontKnow}
               </div>
             </div>
             <div>
@@ -326,7 +399,7 @@ export default function FlashcardsSetupPage() {
                 Know
               </div>
               <div className="text-2xl font-bold text-slate-800 dark:text-white">
-                6
+                {filteredWordCount.know}
               </div>
             </div>
             <div>
@@ -334,7 +407,7 @@ export default function FlashcardsSetupPage() {
                 Mastered
               </div>
               <div className="text-2xl font-bold text-slate-800 dark:text-white">
-                2
+                {filteredWordCount.mastered}
               </div>
             </div>
             <div>
@@ -342,14 +415,10 @@ export default function FlashcardsSetupPage() {
                 Untested
               </div>
               <div className="text-2xl font-bold text-slate-800 dark:text-white">
-                6
+                {filteredWordCount.untested}
               </div>
             </div>
           </div>
-          <p className="text-xs text-center mt-4 bg-amber-50 dark:bg-amber-900/10 text-amber-700 dark:text-amber-400 p-2 rounded border border-amber-100 dark:border-amber-900/20 inline-block w-full">
-            Based on the selection above this summary is generated (Counts are
-            mocked for now)
-          </p>
         </div>
 
         {/* 5. Settings Dropdowns */}

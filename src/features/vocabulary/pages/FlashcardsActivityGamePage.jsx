@@ -1,12 +1,14 @@
 import { useState, useEffect } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
-import { fetchVocabulary } from "@/services/vocabularyApi";
+import { fetchVocabulary, saveUserProgress } from "@/services/vocabularyApi";
 import FlashcardGame from "../components/flashcards/FlashcardGame";
+import { useUser } from "@clerk/clerk-react";
 
 export default function FlashcardsActivityGamePage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const { user } = useUser();
 
   // Get params
   const level = searchParams.get("level");
@@ -27,6 +29,11 @@ export default function FlashcardsActivityGamePage() {
     mastered: 0,
     total: 0,
   });
+
+  // Scroll to top on mount
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
 
   useEffect(() => {
     async function loadWords() {
@@ -65,10 +72,35 @@ export default function FlashcardsActivityGamePage() {
     loadWords();
   }, [level, category, subCategories.join(","), count]);
 
-  const handleUpdateStats = (type) => {
+  const handleUpdateStats = async (type) => {
     // Current card is always queue[0]
     const currentCard = queue[0];
     const newQueue = queue.slice(1); // Remove current card
+
+    // Determine status string for backend
+    let status = "known";
+    if (type === "unknown") status = "unknown";
+    if (type === "mastered") status = "mastered";
+
+    // Save progress to backend (fire and forget for UI snappiness, or await if critical)
+    if (user && currentCard) {
+      try {
+        saveUserProgress({
+          userId: user.id,
+          level: currentCard.level || level || "A1", // Fallback if card missing level
+          category: currentCard.category || category || "General",
+          cards: [
+            {
+              cardId: currentCard.id,
+              cardData: currentCard,
+              status: status,
+            },
+          ],
+        }).catch((err) => console.error("Background save failed", err));
+      } catch (err) {
+        console.error("Failed to save progress", err);
+      }
+    }
 
     if (type === "unknown") {
       setQueue([...newQueue, currentCard]);

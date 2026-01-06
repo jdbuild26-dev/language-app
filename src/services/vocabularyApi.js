@@ -122,3 +122,142 @@ export async function checkApiHealth() {
     return false;
   }
 }
+
+/**
+ * Save user progress (batch)
+ */
+export async function saveUserProgress(progressData) {
+  const response = await fetch(`${API_BASE_URL}/api/progress/save`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(progressData),
+  });
+
+  if (!response.ok) {
+    throw new Error("Failed to save progress");
+  }
+
+  return response.json();
+}
+
+/**
+ * Fetch user progress stats
+ */
+export async function fetchUserProgressStats({
+  userId,
+  level,
+  category,
+  subCategory,
+} = {}) {
+  const params = new URLSearchParams();
+  params.append("user_id", userId);
+  if (level) params.append("level", level);
+  if (category) params.append("category", category);
+  if (subCategory && Array.isArray(subCategory)) {
+    subCategory.forEach((sc) => params.append("sub_category", sc));
+  } else if (subCategory) {
+    params.append("sub_category", subCategory);
+  }
+
+  const response = await fetch(`${API_BASE_URL}/api/progress/stats?${params}`);
+
+  if (!response.ok) {
+    throw new Error("Failed to fetch progress stats");
+  }
+
+  return response.json();
+}
+
+/**
+ * Fetch all teachers
+ */
+export async function fetchTeachers({ limit = 20, skip = 0 } = {}) {
+  const response = await fetch(
+    `${API_BASE_URL}/api/teachers?limit=${limit}&skip=${skip}`
+  );
+
+  if (!response.ok) {
+    throw new Error("Failed to fetch teachers");
+  }
+
+  return response.json();
+}
+
+/**
+ * Link a student to a teacher (sends request)
+ */
+export async function linkStudentToTeacher(studentId, teacherId) {
+  const response = await fetch(`${API_BASE_URL}/api/relationships/link`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ studentId, teacherId }),
+  });
+
+  if (!response.ok) {
+    throw new Error("Failed to send connection request");
+  }
+
+  return response.json();
+}
+
+/**
+ * Fetch students for a teacher (optional status filter)
+ */
+export async function fetchTeacherStudents(teacherId, status) {
+  const params = new URLSearchParams();
+  if (status) params.append("status", status);
+
+  const response = await fetch(
+    `${API_BASE_URL}/api/relationships/teacher/${teacherId}/students?${params}`
+  );
+
+  if (!response.ok) {
+    throw new Error("Failed to fetch students");
+  }
+
+  return response.json();
+}
+
+/**
+ * Fetch teachers for a student (optional status filter)
+ */
+export async function fetchStudentTeachers(studentId, status) {
+  const params = new URLSearchParams();
+  if (status) params.append("status", status);
+
+  const response = await fetch(
+    `${API_BASE_URL}/api/relationships/student/${studentId}/teachers?${params}`
+  );
+
+  if (!response.ok) {
+    throw new Error("Failed to fetch teachers");
+  }
+
+  return response.json();
+}
+
+/**
+ * Update relationship status (approve/reject)
+ */
+export async function updateRelationshipStatus(relationshipId, status) {
+  const response = await fetch(
+    `${API_BASE_URL}/api/relationships/${relationshipId}/status`,
+    {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ status }),
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error("Failed to update relationship status");
+  }
+
+  return response.json();
+}

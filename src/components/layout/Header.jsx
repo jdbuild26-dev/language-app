@@ -37,15 +37,6 @@ export default function Header() {
         <div className="hidden md:flex md:items-center md:gap-5">
           <DarkModeToggle />
           <SignedIn>
-            <Link
-              to="/dashboard"
-              className="text-white/90 hover:text-white font-medium text-sm transition-colors"
-            >
-              Dashboard
-            </Link>
-
-            <div className="h-6 w-px bg-white/20 dark:bg-slate-600" />
-
             <StreaksDropdown streaks={streaks} />
 
             <div className="h-6 w-px bg-white/20 dark:bg-slate-600" />

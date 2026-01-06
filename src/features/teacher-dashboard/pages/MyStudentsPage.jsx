@@ -2,10 +2,51 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { useTeacherProfile } from "@/hooks/useTeacherProfile";
 import { useTeacherStudents } from "@/hooks/useTeacherStudents";
+import { updateRelationshipStatus } from "@/services/vocabularyApi";
+import { UserPlus } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { useQueryClient } from "@tanstack/react-query";
 
 export default function MyStudentsPage() {
   const { profile } = useTeacherProfile();
-  const { data: students, isLoading, error } = useTeacherStudents();
+  const {
+    data: activeStudents,
+    isLoading: activeLoading,
+    refetch: refetchActive,
+  } = useTeacherStudents("active");
+  const {
+    data: pendingRequests,
+    isLoading: pendingLoading,
+    refetch: refetchPending,
+  } = useTeacherStudents("pending");
+
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  const handleUpdateStatus = async (relationshipId, status) => {
+    try {
+      await updateRelationshipStatus(relationshipId, status);
+      toast({
+        title: status === "active" ? "Request Approved" : "Request Rejected",
+        description:
+          status === "active"
+            ? "Student added to your roster."
+            : "Connection request rejected.",
+      });
+      // Refetch both lists
+      refetchActive();
+      refetchPending();
+    } catch (error) {
+      console.error("Failed to update status", error);
+      toast({
+        title: "Error",
+        description: "Failed to update request status.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const isLoading = activeLoading || pendingLoading;
 
   return (
     <div className="space-y-6">
@@ -47,6 +88,57 @@ export default function MyStudentsPage() {
         </Card>
       )}
 
+      {/* Pending Requests */}
+      {pendingRequests && pendingRequests.length > 0 && (
+        <div className="space-y-4">
+          <h2 className="text-xl font-semibold text-gray-800 dark:text-primary-dark flex items-center">
+            <div className="bg-orange-100 text-orange-600 p-1 rounded mr-2">
+              <UserPlus className="h-5 w-5" />
+            </div>
+            Pending Requests
+          </h2>
+          <div className="grid gap-4">
+            {pendingRequests.map((request) => (
+              <Card
+                key={request.id}
+                className="border-orange-200 bg-orange-50/30"
+              >
+                <CardContent className="p-4 flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="h-10 w-10 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center font-bold">
+                      {(request.name || "S").charAt(0)}
+                    </div>
+                    <div>
+                      <h3 className="font-semibold">
+                        {request.name || "Student"}
+                      </h3>
+                      <p className="text-xs text-gray-500">Requested to join</p>
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="text-red-500 hover:text-red-600 hover:bg-red-50 border-red-200"
+                      onClick={() => handleUpdateStatus(request.id, "rejected")}
+                    >
+                      Reject
+                    </Button>
+                    <Button
+                      size="sm"
+                      className="bg-green-600 hover:bg-green-700 text-white"
+                      onClick={() => handleUpdateStatus(request.id, "active")}
+                    >
+                      Approve
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Loading State */}
       {isLoading && (
         <div className="text-center py-12">
@@ -55,7 +147,7 @@ export default function MyStudentsPage() {
       )}
 
       {/* Empty State */}
-      {!isLoading && (!students || students.length === 0) && (
+      {!isLoading && (!activeStudents || activeStudents.length === 0) && (
         <div className="text-center py-12 bg-gray-50 dark:bg-card-dark rounded-lg border border-dashed border-gray-200 dark:border-subtle-dark">
           <p className="text-gray-500 dark:text-secondary-dark">
             No students connected yet.
@@ -67,8 +159,9 @@ export default function MyStudentsPage() {
       )}
 
       {/* Students List */}
+      <h2 className="text-xl font-semibold">Active Students</h2>
       <div className="grid gap-4">
-        {students?.map((student) => (
+        {activeStudents?.map((student) => (
           <Card
             key={student.studentId}
             className="hover:shadow-md transition-shadow"

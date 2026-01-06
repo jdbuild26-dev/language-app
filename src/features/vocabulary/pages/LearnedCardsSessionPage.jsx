@@ -4,7 +4,7 @@ import { useUser } from "@clerk/clerk-react";
 import { ChevronLeftIcon, ChevronRightIcon } from "@heroicons/react/24/outline";
 import { Loader2, ArrowLeft } from "lucide-react";
 
-import { FlashCard } from "../components/lesson-learn";
+import { LearningCard } from "../components/lesson-learn";
 import { getWordlist } from "../../../services/progressApi";
 
 export default function LearnedCardsSessionPage() {
@@ -148,7 +148,7 @@ export default function LearnedCardsSessionPage() {
       {/* Main Content */}
       <main className="flex-1 flex flex-col items-center justify-start pt-12 p-4 relative">
         <div className="w-full max-w-5xl relative">
-          <FlashCard word={cards[currentIndex]} showBookmark={true} />
+          <LearningCard word={cards[currentIndex]} showBookmark={true} />
 
           {/* Navigation Buttons */}
           <div className="absolute top-1/2 -translate-y-1/2 -left-4 md:-left-16 z-20">

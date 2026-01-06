@@ -5,7 +5,7 @@ import { useUser } from "@clerk/clerk-react";
 import { ChevronLeftIcon, ChevronRightIcon } from "@heroicons/react/24/outline";
 
 import {
-  FlashCard,
+  LearningCard,
   LessonHeader,
   CompletionScreen,
 } from "../components/lesson-learn";
@@ -208,7 +208,7 @@ export default function LessonLearnPage() {
 
       <main className="flex-1 flex flex-col items-center justify-center p-4 pb-12 relative">
         <div className="w-full max-w-[90rem] relative">
-          <FlashCard word={words[currentIndex]} />
+          <LearningCard word={words[currentIndex]} />
 
           {/* Navigation Buttons - Anchored to card edges */}
           <div className="absolute top-1/2 -translate-y-1/2 -left-3 md:-left-6 z-20">

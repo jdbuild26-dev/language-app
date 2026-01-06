@@ -4,7 +4,7 @@ import { useUser } from "@clerk/clerk-react";
 import { ChevronLeftIcon, ChevronRightIcon } from "@heroicons/react/24/outline";
 import { Trash2, Loader2, ArrowLeft, X } from "lucide-react";
 
-import { FlashCard, LessonHeader } from "../components/lesson-learn";
+import { LearningCard, LessonHeader } from "../components/lesson-learn";
 import {
   fetchReviewCards,
   removeFromReview,
@@ -191,7 +191,7 @@ export default function ReviewSessionPage() {
       {/* Main Content */}
       <main className="flex-1 flex flex-col items-center justify-start pt-12 p-4 relative">
         <div className="w-full max-w-5xl relative">
-          <FlashCard word={cards[currentIndex]} showBookmark={false} />
+          <LearningCard word={cards[currentIndex]} showBookmark={false} />
 
           {/* Navigation Buttons */}
           <div className="absolute top-1/2 -translate-y-1/2 -left-4 md:-left-16 z-20">

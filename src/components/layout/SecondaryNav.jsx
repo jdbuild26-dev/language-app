@@ -13,13 +13,13 @@ import {
 } from "@heroicons/react/24/outline";
 
 const navItems = [
+  { name: "Dashboard", path: "/dashboard", icon: ChartBarIcon },
   { name: "Vocabulary", path: "/vocabulary", icon: BookOpenIcon },
   { name: "Grammar", path: "/grammar", icon: AcademicCapIcon },
   { name: "Stories", path: "/stories", icon: BookmarkIcon },
   { name: "Practice", path: "/practice", icon: PencilSquareIcon },
   { name: "Blogs", path: "/blogs", icon: NewspaperIcon },
   { name: "AI Practice", path: "/ai-practice", icon: SparklesIcon },
-  { name: "Progress Report", path: "/progress-report", icon: ChartBarIcon },
 ];
 
 export default function SecondaryNavbar() {
