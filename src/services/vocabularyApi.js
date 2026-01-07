@@ -126,11 +126,12 @@ export async function checkApiHealth() {
 /**
  * Save user progress (batch)
  */
-export async function saveUserProgress(progressData) {
+export async function saveUserProgress(progressData, token) {
   const response = await fetch(`${API_BASE_URL}/api/progress/save`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
     },
     body: JSON.stringify(progressData),
   });
@@ -150,9 +151,10 @@ export async function fetchUserProgressStats({
   level,
   category,
   subCategory,
+  token,
 } = {}) {
   const params = new URLSearchParams();
-  params.append("user_id", userId);
+  // removed user_id param
   if (level) params.append("level", level);
   if (category) params.append("category", category);
   if (subCategory && Array.isArray(subCategory)) {
@@ -161,7 +163,11 @@ export async function fetchUserProgressStats({
     params.append("sub_category", subCategory);
   }
 
-  const response = await fetch(`${API_BASE_URL}/api/progress/stats?${params}`);
+  const response = await fetch(`${API_BASE_URL}/api/progress/stats?${params}`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
 
   if (!response.ok) {
     throw new Error("Failed to fetch progress stats");
@@ -188,11 +194,12 @@ export async function fetchTeachers({ limit = 20, skip = 0 } = {}) {
 /**
  * Link a student to a teacher (sends request)
  */
-export async function linkStudentToTeacher(studentId, teacherId) {
+export async function linkStudentToTeacher(studentId, teacherId, token) {
   const response = await fetch(`${API_BASE_URL}/api/relationships/link`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
     },
     body: JSON.stringify({ studentId, teacherId }),
   });
@@ -207,12 +214,17 @@ export async function linkStudentToTeacher(studentId, teacherId) {
 /**
  * Fetch students for a teacher (optional status filter)
  */
-export async function fetchTeacherStudents(teacherId, status) {
+export async function fetchTeacherStudents(teacherId, status, token) {
   const params = new URLSearchParams();
   if (status) params.append("status", status);
 
   const response = await fetch(
-    `${API_BASE_URL}/api/relationships/teacher/${teacherId}/students?${params}`
+    `${API_BASE_URL}/api/relationships/teacher/${teacherId}/students?${params}`,
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }
   );
 
   if (!response.ok) {
@@ -225,12 +237,17 @@ export async function fetchTeacherStudents(teacherId, status) {
 /**
  * Fetch teachers for a student (optional status filter)
  */
-export async function fetchStudentTeachers(studentId, status) {
+export async function fetchStudentTeachers(studentId, status, token) {
   const params = new URLSearchParams();
   if (status) params.append("status", status);
 
   const response = await fetch(
-    `${API_BASE_URL}/api/relationships/student/${studentId}/teachers?${params}`
+    `${API_BASE_URL}/api/relationships/student/${studentId}/teachers?${params}`,
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }
   );
 
   if (!response.ok) {
@@ -243,13 +260,14 @@ export async function fetchStudentTeachers(studentId, status) {
 /**
  * Update relationship status (approve/reject)
  */
-export async function updateRelationshipStatus(relationshipId, status) {
+export async function updateRelationshipStatus(relationshipId, status, token) {
   const response = await fetch(
     `${API_BASE_URL}/api/relationships/${relationshipId}/status`,
     {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
       },
       body: JSON.stringify({ status }),
     }
@@ -260,4 +278,25 @@ export async function updateRelationshipStatus(relationshipId, status) {
   }
 
   return response.json();
+}
+
+/**
+ * Delete a relationship (cancel request or remove connection)
+ */
+export async function deleteRelationship(relationshipId, token) {
+  const response = await fetch(
+    `${API_BASE_URL}/api/relationships/${relationshipId}`,
+    {
+      method: "DELETE",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error("Failed to delete relationship");
+  }
+
+  return true;
 }

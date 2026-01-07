@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { useUser } from "@clerk/clerk-react";
+import { useUser, useAuth } from "@clerk/clerk-react";
 import { ChevronLeftIcon, ChevronRightIcon } from "@heroicons/react/24/outline";
 import { Trash2, Loader2, ArrowLeft, X } from "lucide-react";
 
@@ -13,6 +13,7 @@ import {
 export default function ReviewSessionPage() {
   const navigate = useNavigate();
   const { user, isLoaded } = useUser();
+  const { getToken } = useAuth();
   const [cards, setCards] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
@@ -26,9 +27,10 @@ export default function ReviewSessionPage() {
     try {
       setIsLoading(true);
       setError(null);
+      const token = await getToken();
 
       // Fetch all review cards (with high limit for session)
-      const data = await fetchReviewCards(user.id, { limit: 100 });
+      const data = await fetchReviewCards(token, { limit: 100 });
 
       // Transform to flashcard format
       const transformedCards = data.cards.map((card) => ({
@@ -45,7 +47,7 @@ export default function ReviewSessionPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [user]);
+  }, [user, getToken]);
 
   useEffect(() => {
     if (isLoaded && user) {
@@ -72,7 +74,8 @@ export default function ReviewSessionPage() {
     setRemovingCard(true);
 
     try {
-      await removeFromReview(user.id, cardToRemove.id);
+      const token = await getToken();
+      await removeFromReview(token, cardToRemove.id);
 
       // Remove card from state
       const newCards = cards.filter((_, idx) => idx !== currentIndex);

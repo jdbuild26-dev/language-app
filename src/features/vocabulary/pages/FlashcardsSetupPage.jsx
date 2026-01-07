@@ -8,13 +8,14 @@ import {
   fetchUserProgressStats,
   fetchVocabulary,
 } from "@/services/vocabularyApi";
-import { useUser } from "@clerk/clerk-react";
+import { useUser, useAuth } from "@clerk/clerk-react";
 
 const CEFR_LEVELS = ["A1", "A2", "B1", "B2", "C1", "C2"];
 
 export default function FlashcardsSetupPage() {
   const navigate = useNavigate();
   const { user } = useUser();
+  const { getToken } = useAuth();
   const [loading, setLoading] = useState(false);
 
   // Selection State
@@ -149,8 +150,9 @@ export default function FlashcardsSetupPage() {
       }
 
       try {
+        const token = await getToken();
         const stats = await fetchUserProgressStats({
-          userId: user.id,
+          token,
           level: selectedLevel !== "All" ? selectedLevel : undefined,
           category: selectedCategory || undefined,
           subCategory:
@@ -181,7 +183,7 @@ export default function FlashcardsSetupPage() {
       }
     }
     loadData();
-  }, [user, selectedLevel, selectedCategory, selectedSubCategories]);
+  }, [user, selectedLevel, selectedCategory, selectedSubCategories, getToken]);
 
   const handleStart = () => {
     // Navigate to game page with Query Params

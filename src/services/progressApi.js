@@ -8,11 +8,12 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
 /**
  * Save progress - batch save learned cards
  */
-export async function saveProgress(userId, level, category, cards) {
+export async function saveProgress(userId, level, category, cards, token) {
   const response = await fetch(`${API_BASE_URL}/api/progress/save`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
     },
     body: JSON.stringify({
       userId,
@@ -45,14 +46,18 @@ export async function saveProgress(userId, level, category, cards) {
 /**
  * Get lesson progress for resume
  */
-export async function getLessonProgress(userId, level, category) {
+export async function getLessonProgress(token, level, category) {
   const params = new URLSearchParams();
-  params.append("user_id", userId);
   params.append("level", level.toUpperCase());
   params.append("category", category);
 
   const response = await fetch(
-    `${API_BASE_URL}/api/progress/lesson?${params.toString()}`
+    `${API_BASE_URL}/api/progress/lesson?${params.toString()}`,
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }
   );
 
   if (!response.ok) {
@@ -65,14 +70,18 @@ export async function getLessonProgress(userId, level, category) {
 /**
  * Get all learned cards for wordlist (paginated)
  */
-export async function getWordlist(userId, { limit = 50, cursor = null } = {}) {
+export async function getWordlist(token, { limit = 50, cursor = null } = {}) {
   const params = new URLSearchParams();
-  params.append("user_id", userId);
   params.append("limit", limit);
   if (cursor) params.append("cursor", cursor);
 
   const response = await fetch(
-    `${API_BASE_URL}/api/progress/wordlist?${params.toString()}`
+    `${API_BASE_URL}/api/progress/wordlist?${params.toString()}`,
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }
   );
 
   if (!response.ok) {
@@ -85,9 +94,8 @@ export async function getWordlist(userId, { limit = 50, cursor = null } = {}) {
 /**
  * Reset progress for a specific lesson
  */
-export async function resetLessonProgress(userId, level, category) {
+export async function resetLessonProgress(token, level, category) {
   const params = new URLSearchParams();
-  params.append("user_id", userId);
   params.append("level", level.toUpperCase());
   params.append("category", category);
 
@@ -95,6 +103,9 @@ export async function resetLessonProgress(userId, level, category) {
     `${API_BASE_URL}/api/progress/lesson?${params.toString()}`,
     {
       method: "DELETE",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
     }
   );
 
@@ -108,15 +119,17 @@ export async function resetLessonProgress(userId, level, category) {
 /**
  * Remove a single learned card
  */
-export async function deleteLearnedCard(userId, cardId) {
+export async function deleteLearnedCard(token, cardId) {
   const params = new URLSearchParams();
-  params.append("user_id", userId);
   params.append("card_id", cardId);
 
   const response = await fetch(
     `${API_BASE_URL}/api/progress/card?${params.toString()}`,
     {
       method: "DELETE",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
     }
   );
 
@@ -130,13 +143,12 @@ export async function deleteLearnedCard(userId, cardId) {
 /**
  * Get total learned cards count
  */
-export async function getTotalLearnedCount(userId) {
-  const params = new URLSearchParams();
-  params.append("user_id", userId);
-
-  const response = await fetch(
-    `${API_BASE_URL}/api/progress/count?${params.toString()}`
-  );
+export async function getTotalLearnedCount(token) {
+  const response = await fetch(`${API_BASE_URL}/api/progress/count`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
 
   if (!response.ok) {
     return 0;

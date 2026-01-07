@@ -3,12 +3,13 @@ import { useSearchParams, useNavigate } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 import { fetchVocabulary, saveUserProgress } from "@/services/vocabularyApi";
 import FlashcardGame from "../components/flashcards/FlashcardGame";
-import { useUser } from "@clerk/clerk-react";
+import { useUser, useAuth } from "@clerk/clerk-react";
 
 export default function FlashcardsActivityGamePage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { user } = useUser();
+  const { getToken } = useAuth();
 
   // Get params
   const level = searchParams.get("level");
@@ -84,22 +85,25 @@ export default function FlashcardsActivityGamePage() {
 
     // Save progress to backend (fire and forget for UI snappiness, or await if critical)
     if (user && currentCard) {
-      try {
-        saveUserProgress({
-          userId: user.id,
-          level: currentCard.level || level || "A1", // Fallback if card missing level
-          category: currentCard.category || category || "General",
-          cards: [
+      getToken()
+        .then((token) => {
+          saveUserProgress(
             {
-              cardId: currentCard.id,
-              cardData: currentCard,
-              status: status,
+              userId: user.id,
+              level: currentCard.level || level || "A1", // Fallback if card missing level
+              category: currentCard.category || category || "General",
+              cards: [
+                {
+                  cardId: currentCard.id,
+                  cardData: currentCard,
+                  status: status,
+                },
+              ],
             },
-          ],
-        }).catch((err) => console.error("Background save failed", err));
-      } catch (err) {
-        console.error("Failed to save progress", err);
-      }
+            token
+          ).catch((err) => console.error("Background save failed", err));
+        })
+        .catch((err) => console.error("Failed to get token", err));
     }
 
     if (type === "unknown") {

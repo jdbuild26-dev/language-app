@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useUser } from "@clerk/clerk-react";
+import { useUser, useAuth } from "@clerk/clerk-react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   CheckCircleIcon,
@@ -27,6 +27,7 @@ const STEPS = {
 
 export default function StudentOnboardingModal({ onComplete }) {
   const { user } = useUser();
+  const { getToken } = useAuth();
   const [step, setStep] = useState(STEPS.TARGET_LANG);
   const [formData, setFormData] = useState({
     targetLanguage: "",
@@ -122,7 +123,8 @@ export default function StudentOnboardingModal({ onComplete }) {
         name: user.fullName || user.firstName,
         ...data,
       };
-      await createStudentProfile(profileData);
+      const token = await getToken();
+      await createStudentProfile(profileData, token);
       // Wait a bit for effect
       setTimeout(() => {
         onComplete();

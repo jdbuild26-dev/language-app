@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useUser } from "@clerk/clerk-react";
+import { useUser, useAuth } from "@clerk/clerk-react";
 import {
   fetchTeachers,
   linkStudentToTeacher,
@@ -18,6 +18,7 @@ import { useToast } from "@/hooks/use-toast";
 
 export default function FindTeacherPage() {
   const { user } = useUser();
+  const { getToken } = useAuth();
   const { toast } = useToast();
 
   const [teachers, setTeachers] = useState([]);
@@ -84,13 +85,19 @@ export default function FindTeacherPage() {
       // TEMPORARY: I will fetch my profile here first if not stored.
       // This is inefficient but works for MVP without global store refactor.
 
+      const token = await getToken();
       const response = await fetch(
-        `${import.meta.env.VITE_API_URL}/api/students/me?user_id=${user.id}`
+        `${import.meta.env.VITE_API_URL}/api/students/me`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
       );
       if (!response.ok) throw new Error("Could not fetch my profile");
       const myProfile = await response.json();
 
-      await linkStudentToTeacher(myProfile.studentId, teacherId);
+      await linkStudentToTeacher(myProfile.studentId, teacherId, token);
 
       toast({
         title: "Request Sent",

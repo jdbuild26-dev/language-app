@@ -110,7 +110,7 @@ export default function MyWordlistsPage() {
         });
       } else {
         // ADD bookmark
-        await addToReview(user.id, {
+        await addToReview(token, {
           english: card.cardData.english,
           forms: card.cardData.forms,
           exampleTarget: card.cardData.exampleTarget,
