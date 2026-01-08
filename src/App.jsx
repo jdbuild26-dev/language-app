@@ -27,6 +27,7 @@ import SignUpPage from "@/features/auth/pages/SignUpPage";
 import VocabularyPage from "@/features/vocabulary/pages/VocabularyPage";
 import FlashcardsPage from "@/features/vocabulary/pages/FlashcardsPage";
 import GrammarPage from "@/features/grammar/pages/GrammarPage";
+import GrammarNotePage from "@/features/grammar/pages/GrammarNotePage";
 import StoriesPage from "@/features/stories/pages/StoriesPage";
 import PracticePage from "@/features/practice/pages/PracticePage";
 import BlogsPage from "@/features/blogs/pages/BlogsPage";
@@ -82,7 +83,10 @@ function App() {
             path="grammar/*"
             element={
               <ProtectedRoute>
-                <GrammarPage />
+                <Routes>
+                  <Route index element={<GrammarPage />} />
+                  <Route path=":noteId" element={<GrammarNotePage />} />
+                </Routes>
               </ProtectedRoute>
             }
           />
