@@ -41,6 +41,16 @@ import OverviewPage from "@/features/teacher-dashboard/pages/OverviewPage";
 import MyStudentsPage from "@/features/teacher-dashboard/pages/MyStudentsPage";
 import ClassesPage from "@/features/teacher-dashboard/pages/ClassesPage";
 
+// Practice Games
+import MatchPairsGamePage from "@/features/vocabulary/pages/MatchPairsGamePage";
+import ChooseOptionGamePage from "@/features/vocabulary/pages/ChooseOptionGamePage";
+import HighlightWordGamePage from "@/features/vocabulary/pages/HighlightWordGamePage";
+import OddOneOutGamePage from "@/features/vocabulary/pages/OddOneOutGamePage";
+import GroupWordsGamePage from "@/features/vocabulary/pages/GroupWordsGamePage";
+
+// Full Screen Layout
+import FullScreenLayout from "@/components/layout/FullScreenLayout";
+
 function App() {
   return (
     <Router>
@@ -162,10 +172,81 @@ function App() {
             <Route path="classes" element={<ClassesPage />} />
           </Route>
 
-          {/* 404 route */}
           <Route path="404" element={<NotFound />} />
           <Route path="*" element={<Navigate to="/404" replace />} />
         </Route>
+
+        {/* Full Screen Practice Routes (Outside Main Layout) */}
+        <Route
+          path="/vocabulary/practice/match-pairs"
+          element={
+            <ProtectedRoute>
+              <FullScreenLayout>
+                <MatchPairsGamePage />
+              </FullScreenLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/vocabulary/practice/choose-options"
+          element={
+            <ProtectedRoute>
+              <FullScreenLayout>
+                <ChooseOptionGamePage />
+              </FullScreenLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/vocabulary/practice/highlight-word"
+          element={
+            <ProtectedRoute>
+              <FullScreenLayout>
+                <HighlightWordGamePage />
+              </FullScreenLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/vocabulary/practice/odd-one-out"
+          element={
+            <ProtectedRoute>
+              <FullScreenLayout>
+                <OddOneOutGamePage />
+              </FullScreenLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/vocabulary/practice/group-words"
+          element={
+            <ProtectedRoute>
+              <FullScreenLayout>
+                <GroupWordsGamePage />
+              </FullScreenLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/vocabulary/practice/fill-in-blank"
+          element={
+            <ProtectedRoute>
+              <FullScreenLayout>
+                <FillInBlankGamePage />
+              </FullScreenLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/vocabulary/practice/correct-spelling"
+          element={
+            <ProtectedRoute>
+              <FullScreenLayout>
+                <CorrectSpellingGamePage />
+              </FullScreenLayout>
+            </ProtectedRoute>
+          }
+        />
       </Routes>
     </Router>
   );

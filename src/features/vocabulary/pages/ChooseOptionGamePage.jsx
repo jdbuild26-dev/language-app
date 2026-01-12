@@ -1,51 +1,83 @@
-import React, { useState } from "react";
-import { ArrowLeft, CheckCircle, XCircle, RotateCcw } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import {
+  ArrowLeft,
+  CheckCircle,
+  XCircle,
+  RotateCcw,
+  Loader2,
+} from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-
-// MOCK DATA for "Choose from Options"
-const MOCK_QUESTIONS = [
-  {
-    id: 1,
-    question: "What is the French word for 'Dog'?",
-    correctAnswer: "Chien",
-    options: ["Chat", "Chien", "Lapin", "Oiseau"],
-  },
-  {
-    id: 2,
-    question: "Select the correct translation for 'House'.",
-    correctAnswer: "Maison",
-    options: ["Maison", "École", "Voiture", "Arbre"],
-  },
-  {
-    id: 3,
-    question: "Which word means 'Apple'?",
-    correctAnswer: "Pomme",
-    options: ["Poire", "Banane", "Pomme", "Orange"],
-  },
-  {
-    id: 4,
-    question: "Translate: 'Good Morning'",
-    correctAnswer: "Bonjour",
-    options: ["Bonsoir", "Salut", "Bonjour", "Au revoir"],
-  },
-  {
-    id: 5,
-    question: "What is 'Red' in French?",
-    correctAnswer: "Rouge",
-    options: ["Bleu", "Vert", "Jaune", "Rouge"],
-  },
-];
+import { fetchPracticeQuestions } from "@/services/vocabularyApi";
 
 export default function ChooseOptionGamePage() {
+  const [questions, setQuestions] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedOption, setSelectedOption] = useState(null); // The option user clicked
   const [isAnswered, setIsAnswered] = useState(false); // Has user answered current Q?
   const [score, setScore] = useState(0);
   const [isGameOver, setIsGameOver] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  const currentQuestion = MOCK_QUESTIONS[currentIndex];
-  const progress = ((currentIndex + 1) / MOCK_QUESTIONS.length) * 100;
+  // Helper to shuffle array
+  const shuffleArray = (array) => {
+    return [...array].sort(() => Math.random() - 0.5);
+  };
+
+  useEffect(() => {
+    const loadGameData = async () => {
+      try {
+        setLoading(true);
+        // Fetch practice questions from specific sheet
+        const response = await fetchPracticeQuestions("A2_choose from options");
+        const practiceData = response.data || [];
+
+        if (!practiceData || practiceData.length === 0) {
+          throw new Error("No practice questions found.");
+        }
+
+        // Shuffle and pick a subset (e.g., 10 questions)
+        const gameQuestionsRaw = shuffleArray(practiceData).slice(0, 10);
+
+        const generatedQuestions = gameQuestionsRaw.map((item) => {
+          // Structure from API: Question, Option1, Option2, Option3, Option4, CorrectAnswer
+          const options = [
+            item.Option1,
+            item.Option2,
+            item.Option3,
+            item.Option4,
+          ].filter(Boolean); // Ensure no empty options
+
+          // Shuffle options if needed, though usually they might come pre-shuffled or fixed order.
+          // The sheet data has "ShuffleOptions": "TRUE", but let's shuffle client side to be sure.
+          const shuffledOptions = shuffleArray(options);
+
+          return {
+            id: item.ExerciseID || Math.random().toString(),
+            question: item.Question,
+            correctAnswer: item.CorrectAnswer,
+            options: shuffledOptions,
+          };
+        });
+
+        setQuestions(generatedQuestions);
+        setLoading(false);
+      } catch (err) {
+        console.error("Failed to load game data:", err);
+        setError(
+          "Failed to load questions. Please check the sheet name or try again."
+        );
+        setLoading(false);
+      }
+    };
+
+    loadGameData();
+  }, []);
+
+  const currentQuestion = questions[currentIndex];
+  const progress =
+    questions.length > 0 ? ((currentIndex + 1) / questions.length) * 100 : 0;
 
   const handleOptionClick = (option) => {
     if (isAnswered) return;
@@ -57,11 +89,6 @@ export default function ChooseOptionGamePage() {
       setScore((prev) => prev + 1);
       // Auto-advance if correct (0.7s delay to see feedback)
       setTimeout(() => {
-        // Use functional state update to ensure we don't use stale closure values if clicked rapidly
-        // But since we can't easily access the latest check inside timeout without ref or functional update to a "next" logic...
-        // Actually, logic needs to be safe.
-        // We'll call nextQuestion directly. Since valid current index doesn't change during the 0.7s, it is fine.
-        // However, we need to ensure the component hasn't unmounted or state changed strangely.
         nextQuestion();
       }, 700);
     }
@@ -69,7 +96,7 @@ export default function ChooseOptionGamePage() {
 
   const nextQuestion = () => {
     // Check based on current state
-    if (currentIndex + 1 < MOCK_QUESTIONS.length) {
+    if (currentIndex + 1 < questions.length) {
       setCurrentIndex((prev) => prev + 1);
       setSelectedOption(null);
       setIsAnswered(false);
@@ -79,6 +106,15 @@ export default function ChooseOptionGamePage() {
   };
 
   const restartGame = () => {
+    // Reload data to get new random questions?
+    // Or just restart with same set? For "Try Again" usually same set or similar.
+    // Let's re-fetch/re-shuffle logic for a fresh game experience:
+    // Actually, simple restart: reset states, maybe reshuffle logic could be better but let's stick to simple reset for now
+    // or trigger re-mount key.
+    // Let's simply reload the window or re-trigger effect.
+    // Simplest: window.location.reload() or internal reset.
+    // Let's implement internal reset with re-generation if possible, or just reset indices.
+    // For a true "Try Again" experience, let's just reset the current set.
     setCurrentIndex(0);
     setSelectedOption(null);
     setIsAnswered(false);
@@ -108,6 +144,30 @@ export default function ChooseOptionGamePage() {
     return `${baseStyle} bg-gray-50 dark:bg-gray-800/50 border-gray-100 dark:border-gray-800 text-gray-400 opacity-60`;
   };
 
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen">
+        <Loader2 className="w-8 h-8 animate-spin text-blue-500 mb-4" />
+        <p className="text-gray-500">Loading vocabulary...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen px-4 text-center">
+        <XCircle className="w-12 h-12 text-red-500 mb-4" />
+        <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
+          Error
+        </h2>
+        <p className="text-gray-600 dark:text-gray-300 mb-6">{error}</p>
+        <Link to="/vocabulary/practice">
+          <Button variant="outline">Back to Practice</Button>
+        </Link>
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-2xl mx-auto px-4 py-6 min-h-screen flex flex-col">
       {/* Header */}
@@ -120,7 +180,7 @@ export default function ChooseOptionGamePage() {
           Back to Practice
         </Link>
         <div className="text-sm font-medium text-gray-500">
-          Question {currentIndex + 1} / {MOCK_QUESTIONS.length}
+          Question {currentIndex + 1} / {questions.length}
         </div>
       </div>
 
@@ -128,11 +188,11 @@ export default function ChooseOptionGamePage() {
       <div className="w-full bg-gray-100 dark:bg-gray-800 h-2 rounded-full mb-8 overflow-hidden">
         <div
           className="bg-blue-500 h-full transition-all duration-500 ease-out"
-          style={{ width: `${(currentIndex / MOCK_QUESTIONS.length) * 100}%` }}
+          style={{ width: `${((currentIndex + 1) / questions.length) * 100}%` }}
         />
       </div>
 
-      {!isGameOver ? (
+      {!isGameOver && currentQuestion ? (
         <div className="flex-1 flex flex-col">
           {/* Question Card */}
           <div className="text-center mb-8">
@@ -171,7 +231,7 @@ export default function ChooseOptionGamePage() {
                 className="w-full h-12 text-lg"
                 size="lg"
               >
-                {currentIndex + 1 === MOCK_QUESTIONS.length
+                {currentIndex + 1 === questions.length
                   ? "Finish"
                   : "Next Question"}
               </Button>
@@ -189,7 +249,7 @@ export default function ChooseOptionGamePage() {
           </h2>
           <p className="text-xl text-gray-600 dark:text-gray-300 mb-8">
             You scored <span className="font-bold text-blue-600">{score}</span>{" "}
-            out of {MOCK_QUESTIONS.length}
+            out of {questions.length}
           </p>
 
           <div className="flex gap-4">
@@ -198,7 +258,11 @@ export default function ChooseOptionGamePage() {
                 Back to Menu
               </Button>
             </Link>
-            <Button onClick={restartGame} size="lg" className="gap-2">
+            <Button
+              onClick={() => window.location.reload()}
+              size="lg"
+              className="gap-2"
+            >
               <RotateCcw className="w-4 h-4" />
               Try Again
             </Button>
