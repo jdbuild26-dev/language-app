@@ -39,8 +39,7 @@ export function useTeacherProfile() {
       }
     } catch (error) {
       console.error("Error checking teacher status:", error);
-      // Fail safe: assume no profile if error
-      setNeedsOnboarding(true);
+      // Do NOT force onboarding on error.
     } finally {
       setIsLoading(false);
     }

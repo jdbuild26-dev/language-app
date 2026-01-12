@@ -300,3 +300,21 @@ export async function deleteRelationship(relationshipId, token) {
 
   return true;
 }
+
+/**
+ * Fetch practice questions from a specific sheet
+ */
+export async function fetchPracticeQuestions(sheetName, limit) {
+  const params = new URLSearchParams();
+  if (limit) params.append("limit", limit);
+
+  const response = await fetch(
+    `${API_BASE_URL}/api/practice/${encodeURIComponent(sheetName)}?${params}`
+  );
+
+  if (!response.ok) {
+    throw new Error(`Failed to fetch practice questions for ${sheetName}`);
+  }
+
+  return response.json();
+}

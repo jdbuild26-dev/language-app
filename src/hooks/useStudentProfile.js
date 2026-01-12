@@ -36,8 +36,8 @@ export function useStudentProfile() {
       }
     } catch (error) {
       console.error("Error checking student status:", error);
-      // Fail safe: assume no profile if error
-      setNeedsOnboarding(true);
+      // Do NOT force onboarding on error. Keep previous state (likely false).
+      // This prevents transient errors (500s, network) from triggering the onboarding flow.
     } finally {
       setIsLoading(false);
     }

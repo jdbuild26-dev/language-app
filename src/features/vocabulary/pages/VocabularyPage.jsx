@@ -9,6 +9,14 @@ import {
 import PageTabs from "@/components/ui/PageTabs";
 import LearnContent from "../components/LearnContent";
 import ReviewContent from "../components/ReviewContent";
+import PracticeContent from "../components/PracticeContent";
+import MatchPairsGamePage from "./MatchPairsGamePage";
+import ChooseOptionGamePage from "./ChooseOptionGamePage";
+import FillInBlankGamePage from "./FillInBlankGamePage";
+import CorrectSpellingGamePage from "./CorrectSpellingGamePage";
+import HighlightWordGamePage from "./HighlightWordGamePage";
+import OddOneOutGamePage from "./OddOneOutGamePage";
+import GroupWordsGamePage from "./GroupWordsGamePage";
 import LevelBasedPage from "./LevelBasedPage";
 import LessonLearnPage from "./LessonLearnPage";
 import CEFRLevelPage from "./CEFRLevelPage";
@@ -21,20 +29,6 @@ import TopicCategoryPage from "./TopicCategoryPage";
 import ActivitiesPage from "./ActivitiesPage";
 import FlashcardsSetupPage from "./FlashcardsSetupPage";
 import FlashcardsActivityGamePage from "./FlashcardsActivityGamePage";
-
-// Placeholder content components
-
-function PracticeContent() {
-  return (
-    <div className="text-gray-600 dark:text-slate-400">
-      <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
-        Practice
-      </h2>
-      <p>Test your vocabulary skills with quizzes and challenges.</p>
-    </div>
-  );
-}
-
 // Tab configuration
 const vocabularyTabs = [
   {
@@ -80,7 +74,28 @@ export default function VocabularyPage() {
           element={<LearnedCardsSessionPage />}
         />
         <Route path="lessons/activities" element={<ActivitiesPage />} />
+
+        {/* Practice Routes */}
         <Route path="practice" element={<PracticeContent />} />
+        <Route path="practice/match-pairs" element={<MatchPairsGamePage />} />
+        <Route
+          path="practice/choose-options"
+          element={<ChooseOptionGamePage />}
+        />
+        <Route
+          path="practice/highlight-word"
+          element={<HighlightWordGamePage />}
+        />
+        <Route path="practice/odd-one-out" element={<OddOneOutGamePage />} />
+        <Route path="practice/group-words" element={<GroupWordsGamePage />} />
+        <Route
+          path="practice/fill-in-blank"
+          element={<FillInBlankGamePage />}
+        />
+        <Route
+          path="practice/correct-spelling"
+          element={<CorrectSpellingGamePage />}
+        />
 
         {/* Level wordlist page - shows categories for a level */}
         <Route path="lessons/learn/:level" element={<CEFRLevelPage />} />

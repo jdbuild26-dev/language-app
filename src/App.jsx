@@ -30,6 +30,8 @@ import GrammarPage from "@/features/grammar/pages/GrammarPage";
 import GrammarNotePage from "@/features/grammar/pages/GrammarNotePage";
 import StoriesPage from "@/features/stories/pages/StoriesPage";
 import PracticePage from "@/features/practice/pages/PracticePage";
+import FillInBlankGamePage from "@/features/vocabulary/pages/FillInBlankGamePage";
+import CorrectSpellingGamePage from "@/features/vocabulary/pages/CorrectSpellingGamePage";
 import BlogsPage from "@/features/blogs/pages/BlogsPage";
 import AIPracticePage from "@/features/ai-practice/pages/AIPracticePage";
 import ProgressReportPage from "@/features/progress-report/pages/ProgressReportPage";
@@ -103,6 +105,22 @@ function App() {
             element={
               <ProtectedRoute>
                 <PracticePage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="practice/fill-in-blank"
+            element={
+              <ProtectedRoute>
+                <FillInBlankGamePage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="practice/correct-spelling"
+            element={
+              <ProtectedRoute>
+                <CorrectSpellingGamePage />
               </ProtectedRoute>
             }
           />
