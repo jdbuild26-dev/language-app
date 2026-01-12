@@ -12,7 +12,14 @@ export async function checkOnboardingStatus(token) {
     },
   });
   if (!response.ok) {
-    throw new Error("Failed to check onboarding status");
+    const errorText = await response.text();
+    console.error(
+      `[checkOnboardingStatus] Failed: ${response.status} ${response.statusText}`,
+      errorText
+    );
+    throw new Error(
+      `Failed to check onboarding status: ${response.status} ${response.statusText} - ${errorText}`
+    );
   }
   return response.json();
 }
@@ -82,7 +89,14 @@ export async function checkTeacherOnboardingStatus(token) {
     },
   });
   if (!response.ok) {
-    throw new Error("Failed to check teacher onboarding status");
+    const errorText = await response.text();
+    console.error(
+      `[checkTeacherOnboardingStatus] Failed: ${response.status} ${response.statusText}`,
+      errorText
+    );
+    throw new Error(
+      `Failed to check teacher onboarding status: ${response.status} ${response.statusText} - ${errorText}`
+    );
   }
   return response.json();
 }
