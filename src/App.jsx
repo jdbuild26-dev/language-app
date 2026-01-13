@@ -48,6 +48,13 @@ import HighlightWordGamePage from "@/features/vocabulary/pages/HighlightWordGame
 import OddOneOutGamePage from "@/features/vocabulary/pages/OddOneOutGamePage";
 import GroupWordsGamePage from "@/features/vocabulary/pages/GroupWordsGamePage";
 
+// Listening Practice Pages
+import AudioMatchingPage from "@/features/vocabulary/pages/listening/AudioMatchingPage";
+import PhoneticsPage from "@/features/vocabulary/pages/listening/PhoneticsPage";
+import MultiSelectPage from "@/features/vocabulary/pages/listening/MultiSelectPage";
+import AudioToAudioPage from "@/features/vocabulary/pages/listening/AudioToAudioPage";
+import DictationPage from "@/features/vocabulary/pages/listening/DictationPage";
+
 // Full Screen Layout
 import FullScreenLayout from "@/components/layout/FullScreenLayout";
 
@@ -244,6 +251,48 @@ function App() {
               <FullScreenLayout>
                 <CorrectSpellingGamePage />
               </FullScreenLayout>
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Listening Practice Routes */}
+        <Route
+          path="/vocabulary/practice/listening/match-pairs"
+          element={
+            <ProtectedRoute>
+              <AudioMatchingPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/vocabulary/practice/listening/phonetics"
+          element={
+            <ProtectedRoute>
+              <PhoneticsPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/vocabulary/practice/listening/multi-select"
+          element={
+            <ProtectedRoute>
+              <MultiSelectPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/vocabulary/practice/listening/audio-match"
+          element={
+            <ProtectedRoute>
+              <AudioToAudioPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/vocabulary/practice/listening/dictation"
+          element={
+            <ProtectedRoute>
+              <DictationPage />
             </ProtectedRoute>
           }
         />
