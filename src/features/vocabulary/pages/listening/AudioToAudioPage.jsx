@@ -1,259 +1,204 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useTextToSpeech } from "../../../../hooks/useTextToSpeech";
-import FullScreenLayout from "../../../../components/layout/FullScreenLayout";
-import {
-  Loader2,
-  Mic,
-  Play,
-  Pause,
-  Check,
-  CheckCircle2,
-  XCircle,
-} from "lucide-react";
+import { fetchPracticeQuestions } from "../../../../services/vocabularyApi";
+import { Loader2, Volume2, ArrowRight } from "lucide-react";
+import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
 
 export default function AudioToAudioPage() {
-  const { speak, cancel } = useTextToSpeech(); // removed isSpeaking to manage local playing states more granularly if needed, or use single
+  const { speak, isSpeaking } = useTextToSpeech();
 
   const [loading, setLoading] = useState(true);
   const [questions, setQuestions] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [selectedOptionIndex, setSelectedOptionIndex] = useState(null);
-  const [isCompleted, setIsCompleted] = useState(false);
+
+  const [userInput, setUserInput] = useState("");
+  const [status, setStatus] = useState("idle"); // idle, success, error
   const [score, setScore] = useState(0);
+  const [isCompleted, setIsCompleted] = useState(false);
 
-  // Track which audio is currently playing to show icon state
-  // "prompt" | "option-0" | "option-1" ... | null
-  const [activeAudioId, setActiveAudioId] = useState(null);
-
-  // Custom speak wrapper to track active state
-  const playAudio = (text, id) => {
-    cancel();
-    setActiveAudioId(id);
-    // Use speech synthesis directly with callback to clear state
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = "fr-FR";
-    utterance.onend = () => setActiveAudioId(null);
-    utterance.onerror = () => setActiveAudioId(null);
-    window.speechSynthesis.speak(utterance);
-  };
+  const inputRef = useRef(null);
 
   useEffect(() => {
-    const loadData = async () => {
-      try {
-        setLoading(true);
-        const response = await fetch(
-          `${
-            import.meta.env.VITE_API_URL || "http://localhost:8000"
-          }/api/practice/B5_Fill%20blanks_Audio`
-        );
-        if (!response.ok) throw new Error("Failed to fetch");
-        const json = await response.json();
-
-        if (json.data) {
-          const transformed = json.data.map((item) => ({
-            id: item["ExerciseID"],
-            // Fallback to CompleteSentence or Question if Audio is missing
-            prompt:
-              item["Audio"] ||
-              item["CompleteSentence"] ||
-              item["Question"] ||
-              "No audio found",
-            sentence: item["SentenceWithBlank"],
-            instruction:
-              item["Instruction_EN"] || "Listen and choose the matching word.",
-            options: [
-              item["Option1"],
-              item["Option2"],
-              item["Option3"],
-              item["Option4"],
-            ].filter(Boolean),
-            correctIndex:
-              parseInt(
-                item["CorrectAudioOptionIndex"] || item["CorrectOptionIndex"]
-              ) - 1,
-          }));
-          setQuestions(transformed);
-        }
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    };
     loadData();
   }, []);
 
-  const handleSelect = (idx) => {
-    if (selectedOptionIndex !== null) return;
-
-    setSelectedOptionIndex(idx);
-    const isCorrect = idx === questions[currentIndex].correctIndex;
-
-    if (isCorrect) {
-      setScore((s) => s + 1);
-      playAudio("Correct!", "feedback");
-    } else {
-      playAudio("Incorrect", "feedback");
-    }
-
-    setTimeout(() => {
-      if (currentIndex < questions.length - 1) {
-        setCurrentIndex((p) => p + 1);
-        setSelectedOptionIndex(null);
-        setActiveAudioId(null);
-      } else {
-        setIsCompleted(true);
+  const loadData = async () => {
+    try {
+      setLoading(true);
+      const response = await fetchPracticeQuestions("B5_Fill blanks_Audio");
+      if (response && response.data) {
+        const transformed = response.data.map((item) => ({
+          id: item["ExerciseID"],
+          fullSentence: item["CompleteSentence"] || item["Audio"],
+          displaySentence: item["SentenceWithBlank"],
+          answer: item["CorrectAnswer"],
+          instruction:
+            item["Instruction_EN"] || "Listen and complete the sentence",
+        }));
+        setQuestions(transformed);
       }
-    }, 1500);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const currentQ = questions[currentIndex];
+  const handleSubmit = (e) => {
+    e?.preventDefault();
+    if (status !== "idle") {
+      if (status === "success" || status === "error") handleNext();
+      return;
+    }
 
-  // Auto-play prompt
+    const currentQ = questions[currentIndex];
+
+    const normalizedInput = userInput
+      .trim()
+      .toLowerCase()
+      .replace(/[.,!?;:]/g, "");
+    const normalizedAnswer = currentQ.answer
+      .trim()
+      .toLowerCase()
+      .replace(/[.,!?;:]/g, "");
+
+    if (normalizedInput === normalizedAnswer) {
+      setStatus("success");
+      setScore((s) => s + 1);
+      speak("Correct!", "en-US");
+    } else {
+      setStatus("error");
+      speak(`Incorrect. The answer was ${currentQ.answer}`, "en-US");
+    }
+  };
+
+  const handleNext = () => {
+    setStatus("idle");
+    setUserInput("");
+    if (currentIndex < questions.length - 1) {
+      setCurrentIndex((p) => p + 1);
+    } else {
+      setIsCompleted(true);
+    }
+  };
+
+  const playSentence = () => {
+    if (questions[currentIndex]) {
+      speak(questions[currentIndex].fullSentence, "fr-FR", 0.85);
+    }
+  };
+
+  // Auto-play on new question
   useEffect(() => {
-    if (!loading && !isCompleted && currentQ) {
-      const t = setTimeout(() => playAudio(currentQ.prompt, "prompt"), 600);
+    if (!loading && !isCompleted && questions.length > 0) {
+      const t = setTimeout(() => {
+        playSentence();
+        if (inputRef.current) inputRef.current.focus();
+      }, 800);
       return () => clearTimeout(t);
     }
   }, [currentIndex, loading, isCompleted]);
 
-  if (loading)
-    return (
-      <FullScreenLayout title="Loading...">
-        <Loader2 className="animate-spin" />
-      </FullScreenLayout>
-    );
+  const currentQ = questions[currentIndex];
+  const progress =
+    questions.length > 0 ? ((currentIndex + 1) / questions.length) * 100 : 0;
 
-  if (isCompleted) {
-    return (
-      <FullScreenLayout title="Result" showExitButton>
-        <div className="flex flex-col h-full items-center justify-center p-8 text-center">
-          <h2 className="text-3xl font-bold mb-4">Complete!</h2>
-          <p className="text-xl">
-            Score: {score} / {questions.length}
-          </p>
-          <button
-            onClick={() => window.location.reload()}
-            className="mt-8 px-6 py-3 bg-blue-600 text-white rounded-full"
-          >
-            Again
-          </button>
-        </div>
-      </FullScreenLayout>
-    );
+  let submitLabel = "Check";
+  if (status !== "idle") {
+    submitLabel = currentIndex === questions.length - 1 ? "Finish" : "Next";
   }
 
+  if (loading)
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="animate-spin text-blue-500 w-8 h-8" />
+      </div>
+    );
+
   return (
-    <FullScreenLayout
-      title={`Audio Match ${currentIndex + 1}/${questions.length}`}
-      showExitButton
+    <PracticeGameLayout
+      questionType="Audio Fill in the Blank"
+      instructionFr="Écoutez et complétez la phrase"
+      instructionEn={
+        currentQ?.instruction || "Listen and complete the sentence"
+      }
+      progress={progress}
+      isGameOver={isCompleted}
+      score={score}
+      totalQuestions={questions.length}
+      onExit={() => (window.location.href = "/vocabulary/practice")}
+      onNext={handleSubmit}
+      onRestart={() => window.location.reload()}
+      isSubmitEnabled={userInput.trim().length > 0}
+      showSubmitButton={true}
+      submitLabel={submitLabel}
     >
-      <div className="flex flex-col h-full max-w-4xl mx-auto p-6 items-center">
-        <h2 className="mb-4 text-lg text-gray-600 dark:text-gray-300">
-          {currentQ.instruction}
-        </h2>
+      <div className="flex flex-col items-center w-full max-w-2xl">
+        <button
+          onClick={playSentence}
+          className={`mb-8 w-24 h-24 rounded-full flex items-center justify-center transition-all shadow-md
+               ${
+                 isSpeaking
+                   ? "bg-purple-100 text-purple-600 ring-4 ring-purple-200"
+                   : "bg-white dark:bg-slate-800 hover:bg-gray-50 text-purple-500"
+               }
+             `}
+        >
+          <Volume2 className="w-10 h-10" />
+        </button>
 
-        {/* Sentence Context (if available) */}
-        {currentQ.sentence && (
-          <h3 className="mb-8 text-2xl font-medium text-center text-gray-800 dark:text-white leading-relaxed">
-            {currentQ.sentence}
-          </h3>
-        )}
-
-        {/* PROMPT */}
-        <div className="mb-12">
-          <button
-            onClick={() => playAudio(currentQ.prompt, "prompt")}
-            className={`w-40 h-40 rounded-full flex items-center justify-center border-4 transition-all shadow-xl
-                 ${
-                   activeAudioId === "prompt"
-                     ? "border-blue-500 bg-blue-50 text-blue-600 scale-110"
-                     : "border-gray-100 bg-white text-gray-700 hover:scale-105"
-                 }`}
-          >
-            {activeAudioId === "prompt" ? (
-              <Mic size={64} className="animate-pulse" />
-            ) : (
-              <Play size={64} className="ml-2" />
-            )}
-          </button>
-          <p className="mt-4 text-center text-sm font-bold text-gray-400">
-            LISTEN
-          </p>
+        <div className="text-2xl font-medium text-center text-gray-800 dark:text-gray-100 mb-8 leading-relaxed">
+          {currentQ?.displaySentence.split("___").map((part, i, arr) => (
+            <span key={i}>
+              {part}
+              {i < arr.length - 1 && (
+                <span className="inline-block w-32 border-b-2 border-gray-400 mx-2 relative top-1">
+                  {status !== "idle" && (
+                    <span
+                      className={`absolute -top-8 left-0 w-full text-center text-sm font-bold ${
+                        status === "success" ? "text-green-500" : "text-red-500"
+                      }`}
+                    >
+                      {status === "success" ? userInput : currentQ.answer}
+                    </span>
+                  )}
+                </span>
+              )}
+            </span>
+          ))}
         </div>
 
-        {/* OPTIONS */}
-        <div className="grid grid-cols-2 gap-6 w-full max-w-2xl">
-          {currentQ.options.map((optText, idx) => {
-            const isSelected = selectedOptionIndex === idx;
-            const isCorrect = idx === currentQ.correctIndex;
-            const isPlaying = activeAudioId === `option-${idx}`;
-
-            // Determine visual state
-            let containerClass =
-              "bg-white dark:bg-gray-800 border-2 border-gray-100 dark:border-gray-700";
-
-            if (selectedOptionIndex !== null) {
-              if (isSelected) {
-                containerClass = isCorrect
-                  ? "bg-green-50 border-green-500"
-                  : "bg-red-50 border-red-500";
-              } else if (isCorrect) {
-                containerClass = "bg-green-50 border-green-500 opacity-80";
-              } else {
-                containerClass = "opacity-40";
-              }
-            } else {
-              containerClass += " hover:border-blue-300";
-            }
-
-            return (
-              <div
-                key={idx}
-                className={`relative p-4 rounded-xl transition-all ${containerClass} flex items-center gap-4`}
-              >
-                {/* Play Button */}
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    playAudio(optText, `option-${idx}`);
-                  }}
-                  disabled={selectedOptionIndex !== null}
-                  className={`w-12 h-12 rounded-full flex items-center justify-center shrink-0 
-                         ${
-                           isPlaying
-                             ? "bg-blue-600 text-white"
-                             : "bg-gray-100 dark:bg-gray-700 text-gray-600 hover:bg-blue-100"
-                         }
-                       `}
-                >
-                  {isPlaying ? (
-                    <Mic size={20} />
-                  ) : (
-                    <Play size={20} className="ml-1" />
-                  )}
-                </button>
-
-                {/* Select Action Area */}
-                <button
-                  onClick={() => handleSelect(idx)}
-                  disabled={selectedOptionIndex !== null}
-                  className="flex-1 h-full text-left font-semibold text-gray-800 dark:text-gray-200 hover:text-blue-600 text-lg flex items-center justify-between"
-                >
-                  <span>{optText}</span>
-
-                  {selectedOptionIndex !== null && isCorrect && (
-                    <CheckCircle2 className="text-green-500" />
-                  )}
-                  {selectedOptionIndex === idx && !isCorrect && (
-                    <XCircle className="text-red-500" />
-                  )}
-                </button>
-              </div>
-            );
-          })}
+        <div className="w-full relative">
+          <input
+            ref={inputRef}
+            type="text"
+            value={userInput}
+            onChange={(e) => setUserInput(e.target.value)}
+            disabled={status !== "idle"}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") handleSubmit();
+            }}
+            placeholder="Type the missing word..."
+            className={`w-full p-4 text-center text-xl rounded-xl border-2 outline-none transition-all
+                      ${
+                        status === "idle"
+                          ? "border-gray-200 dark:border-slate-700 focus:border-blue-500 bg-white dark:bg-slate-800"
+                          : ""
+                      }
+                      ${
+                        status === "success"
+                          ? "border-green-500 bg-green-50 text-green-900"
+                          : ""
+                      }
+                      ${
+                        status === "error"
+                          ? "border-red-500 bg-red-50 text-red-900"
+                          : ""
+                      }
+                   `}
+          />
         </div>
       </div>
-    </FullScreenLayout>
+    </PracticeGameLayout>
   );
 }

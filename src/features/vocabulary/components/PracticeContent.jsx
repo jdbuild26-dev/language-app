@@ -76,7 +76,7 @@ const practiceCategories = [
     bgColor: "bg-purple-50 dark:bg-purple-900/20",
     features: [
       {
-        id: "l1",
+        id: "b1",
         name: "Match Pairs (Audio)",
         icon: Music,
         desc: "Match sounds to text",
@@ -105,6 +105,14 @@ const practiceCategories = [
         icon: Mic, // Changed from b5 Fill Blanks Audio
         desc: "Match spoken audio",
         path: "listening/audio-match",
+        status: "Live",
+      },
+      {
+        id: "b5-new",
+        name: "Audio Fill in the Blank",
+        icon: Volume2,
+        desc: "Listen and complete",
+        path: "listening/fill-in-blank",
         status: "Live",
       },
       {

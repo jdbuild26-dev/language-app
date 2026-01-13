@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useTextToSpeech } from "../../../../hooks/useTextToSpeech";
-import FullScreenLayout from "../../../../components/layout/FullScreenLayout";
-import { Loader2, Volume2, ArrowRight } from "lucide-react";
+import { fetchPracticeQuestions } from "../../../../services/vocabularyApi";
+import { Loader2, Volume2 } from "lucide-react";
+import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
 
 export default function DictationPage() {
   const { speak, isSpeaking } = useTextToSpeech();
@@ -11,54 +12,46 @@ export default function DictationPage() {
   const [currentIndex, setCurrentIndex] = useState(0);
 
   const [userInput, setUserInput] = useState("");
-  const [status, setStatus] = useState("idle"); // idle, success, error
+  const [status, setStatus] = useState("idle");
   const [score, setScore] = useState(0);
   const [isCompleted, setIsCompleted] = useState(false);
 
   const inputRef = useRef(null);
 
   useEffect(() => {
-    const loadData = async () => {
-      try {
-        setLoading(true);
-        const response = await fetch(
-          `${
-            import.meta.env.VITE_API_URL || "http://localhost:8000"
-          }/api/practice/B6_Fill%20blanks_Typing`
-        );
-        if (!response.ok) throw new Error("Failed");
-        const json = await response.json();
-
-        if (json.data) {
-          const transformed = json.data.map((item) => {
-            // Handle case where specific parts are missing or in generic columns
-            // Detected: SentenceWithBlank, CompleteSentence/Audio, CorrectAnswer
-            return {
-              id: item["ExerciseID"],
-              fullSentence: item["CompleteSentence"] || item["Audio"], // Fallback if column name ambiguous
-              displaySentence: item["SentenceWithBlank"],
-              answer: item["CorrectAnswer"],
-              instruction: item["Instruction_EN"],
-            };
-          });
-          setQuestions(transformed);
-        }
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    };
     loadData();
   }, []);
 
+  const loadData = async () => {
+    try {
+      setLoading(true);
+      const response = await fetchPracticeQuestions("B6_Fill blanks_Typing");
+      if (response && response.data) {
+        const transformed = response.data.map((item) => ({
+          id: item["ExerciseID"],
+          fullSentence: item["CompleteSentence"] || item["Audio"],
+          displaySentence: item["SentenceWithBlank"],
+          answer: item["CorrectAnswer"],
+          instruction:
+            item["Instruction_EN"] || "Listen and complete the sentence",
+        }));
+        setQuestions(transformed);
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleSubmit = (e) => {
     e?.preventDefault();
-    if (status !== "idle") return;
+    if (status !== "idle") {
+      handleNext();
+      return;
+    }
 
     const currentQ = questions[currentIndex];
-
-    // Normalize comparison (trim, lowercase, remove punctuation if needed)
     const normalizedInput = userInput
       .trim()
       .toLowerCase()
@@ -90,79 +83,73 @@ export default function DictationPage() {
 
   const playSentence = () => {
     if (questions[currentIndex]) {
-      speak(questions[currentIndex].fullSentence, "fr-FR", 0.85); // Slightly slower for dictation
+      speak(questions[currentIndex].fullSentence, "fr-FR", 0.85);
     }
   };
 
-  // Auto-play
   useEffect(() => {
     if (!loading && !isCompleted && questions.length > 0) {
       const t = setTimeout(() => {
         playSentence();
-        // Focus input
         if (inputRef.current) inputRef.current.focus();
       }, 800);
       return () => clearTimeout(t);
     }
   }, [currentIndex, loading, isCompleted]);
 
+  const currentQ = questions[currentIndex];
+  const progress =
+    questions.length > 0 ? ((currentIndex + 1) / questions.length) * 100 : 0;
+
+  let submitLabel = "Check";
+  if (status !== "idle")
+    submitLabel = currentIndex === questions.length - 1 ? "Finish" : "Next";
+
   if (loading)
     return (
-      <FullScreenLayout title="Loading...">
-        <Loader2 className="animate-spin" />
-      </FullScreenLayout>
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="animate-spin text-blue-500 w-8 h-8" />
+      </div>
     );
-
-  if (isCompleted) {
-    return (
-      <FullScreenLayout title="Summary" showExitButton>
-        <div className="flex flex-col h-full items-center justify-center p-8 text-center">
-          <h2 className="text-3xl font-bold mb-4">Practice Session Complete</h2>
-          <p className="text-xl">
-            You got {score} out of {questions.length} correct.
-          </p>
-          <button
-            onClick={() => window.location.reload()}
-            className="mt-8 px-6 py-3 bg-blue-600 text-white rounded-full"
-          >
-            Practice Again
-          </button>
-        </div>
-      </FullScreenLayout>
-    );
-  }
-
-  const currentQ = questions[currentIndex];
-
-  // Render sentence with proper styling for the blank
-  // We prefer to replace '___' or similar in valid HTML if we wanted inline input,
-  // but for simplicity we'll show the text above and a main input below.
 
   return (
-    <FullScreenLayout
-      title={`Dictation ${currentIndex + 1}/${questions.length}`}
-      showExitButton
+    <PracticeGameLayout
+      questionType="Dictation"
+      instructionFr="Écoutez et écrivez le mot manquant"
+      instructionEn={
+        currentQ?.instruction || "Listen and type the missing word"
+      }
+      progress={progress}
+      isGameOver={isCompleted}
+      score={score}
+      totalQuestions={questions.length}
+      onExit={() => (window.location.href = "/vocabulary/practice")}
+      onNext={handleSubmit}
+      onRestart={() => window.location.reload()}
+      isSubmitEnabled={userInput.trim().length > 0}
+      showSubmitButton={true}
+      submitLabel={submitLabel}
     >
-      <div className="flex flex-col h-full max-w-2xl mx-auto p-6 items-center justify-center">
+      <div className="flex flex-col items-center w-full max-w-2xl">
         <button
           onClick={playSentence}
-          className={`mb-8 w-20 h-20 rounded-full flex items-center justify-center transition-all 
+          className={`mb-8 w-24 h-24 rounded-full flex items-center justify-center transition-all shadow-md
                ${
                  isSpeaking
                    ? "bg-purple-100 text-purple-600 ring-4 ring-purple-200"
-                   : "bg-gray-100 hover:bg-gray-200 text-gray-700"
+                   : "bg-white dark:bg-slate-800 hover:bg-gray-50 text-purple-500"
                }
              `}
         >
-          <Volume2 size={32} />
+          <Volume2 className="w-10 h-10" />
         </button>
 
         <div className="text-2xl font-medium text-center text-gray-800 dark:text-gray-100 mb-8 leading-relaxed">
-          {currentQ.displaySentence.split("___").map((part, i, arr) => (
+          {currentQ?.displaySentence.split("___").map((part, i, arr) => (
             <span key={i}>
               {part}
               {i < arr.length - 1 && (
-                <span className="inline-block w-24 border-b-2 border-gray-400 mx-2 relative top-1">
+                <span className="inline-block w-32 border-b-2 border-gray-400 mx-2 relative top-1">
                   {status !== "idle" && (
                     <span
                       className={`absolute -top-8 left-0 w-full text-center text-sm font-bold ${
@@ -178,52 +165,37 @@ export default function DictationPage() {
           ))}
         </div>
 
-        <form onSubmit={handleSubmit} className="w-full flex flex-col gap-4">
+        <div className="w-full relative">
           <input
             ref={inputRef}
             type="text"
             value={userInput}
             onChange={(e) => setUserInput(e.target.value)}
             disabled={status !== "idle"}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") handleSubmit();
+            }}
             placeholder="Type the missing word..."
             className={`w-full p-4 text-center text-xl rounded-xl border-2 outline-none transition-all
-                  ${
-                    status === "idle"
-                      ? "border-gray-200 focus:border-blue-500"
-                      : ""
-                  }
-                  ${
-                    status === "success"
-                      ? "border-green-500 bg-green-50 text-green-900"
-                      : ""
-                  }
-                  ${
-                    status === "error"
-                      ? "border-red-500 bg-red-50 text-red-900"
-                      : ""
-                  }
-               `}
+                      ${
+                        status === "idle"
+                          ? "border-gray-200 dark:border-slate-700 focus:border-blue-500 bg-white dark:bg-slate-800"
+                          : ""
+                      }
+                      ${
+                        status === "success"
+                          ? "border-green-500 bg-green-50 text-green-900"
+                          : ""
+                      }
+                      ${
+                        status === "error"
+                          ? "border-red-500 bg-red-50 text-red-900"
+                          : ""
+                      }
+                   `}
           />
-
-          {status === "idle" ? (
-            <button
-              type="submit"
-              disabled={!userInput.trim()}
-              className="w-full py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 disabled:opacity-50 transition-colors"
-            >
-              Check
-            </button>
-          ) : (
-            <button
-              type="button"
-              onClick={handleNext}
-              className="w-full py-3 bg-gray-900 text-white rounded-xl font-bold hover:opacity-90 flex items-center justify-center gap-2"
-            >
-              Next <ArrowRight size={20} />
-            </button>
-          )}
-        </form>
+        </div>
       </div>
-    </FullScreenLayout>
+    </PracticeGameLayout>
   );
 }
