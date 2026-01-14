@@ -43,10 +43,18 @@ import ClassesPage from "@/features/teacher-dashboard/pages/ClassesPage";
 
 // Practice Games
 import MatchPairsGamePage from "@/features/vocabulary/pages/MatchPairsGamePage";
+import MatchPairsB1GamePage from "@/features/vocabulary/pages/MatchPairsB1GamePage";
 import ChooseOptionGamePage from "@/features/vocabulary/pages/ChooseOptionGamePage";
 import HighlightWordGamePage from "@/features/vocabulary/pages/HighlightWordGamePage";
 import OddOneOutGamePage from "@/features/vocabulary/pages/OddOneOutGamePage";
 import GroupWordsGamePage from "@/features/vocabulary/pages/GroupWordsGamePage";
+
+// Listening Practice Pages
+import PhoneticsPage from "@/features/vocabulary/pages/listening/PhoneticsPage";
+import MultiSelectPage from "@/features/vocabulary/pages/listening/MultiSelectPage";
+import AudioToAudioPage from "@/features/vocabulary/pages/listening/AudioToAudioPage";
+import AudioFillBlankPage from "@/features/vocabulary/pages/listening/AudioFillBlankPage";
+import DictationPage from "@/features/vocabulary/pages/listening/DictationPage";
 
 // Full Screen Layout
 import FullScreenLayout from "@/components/layout/FullScreenLayout";
@@ -188,6 +196,16 @@ function App() {
           }
         />
         <Route
+          path="/vocabulary/practice/match-pairs-b1"
+          element={
+            <ProtectedRoute>
+              <FullScreenLayout>
+                <MatchPairsB1GamePage />
+              </FullScreenLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
           path="/vocabulary/practice/choose-options"
           element={
             <ProtectedRoute>
@@ -243,6 +261,68 @@ function App() {
             <ProtectedRoute>
               <FullScreenLayout>
                 <CorrectSpellingGamePage />
+              </FullScreenLayout>
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Listening Practice Routes */}
+        <Route
+          path="/vocabulary/practice/listening/match-pairs"
+          element={
+            <ProtectedRoute>
+              <FullScreenLayout>
+                <MatchPairsB1GamePage />
+              </FullScreenLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/vocabulary/practice/listening/phonetics"
+          element={
+            <ProtectedRoute>
+              <FullScreenLayout>
+                <PhoneticsPage />
+              </FullScreenLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/vocabulary/practice/listening/multi-select"
+          element={
+            <ProtectedRoute>
+              <FullScreenLayout>
+                <MultiSelectPage />
+              </FullScreenLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/vocabulary/practice/listening/audio-match"
+          element={
+            <ProtectedRoute>
+              <FullScreenLayout>
+                <AudioToAudioPage />
+              </FullScreenLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/vocabulary/practice/listening/fill-in-blank"
+          element={
+            <ProtectedRoute>
+              <FullScreenLayout>
+                <AudioFillBlankPage />
+              </FullScreenLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/vocabulary/practice/listening/dictation"
+          element={
+            <ProtectedRoute>
+              <FullScreenLayout>
+                <DictationPage />
               </FullScreenLayout>
             </ProtectedRoute>
           }

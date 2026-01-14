@@ -1,10 +1,11 @@
-import React, { useState } from "react";
-import { ArrowLeft, CheckCircle, RotateCcw } from "lucide-react";
-import { Link } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { Loader2, XCircle } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
+import { fetchPracticeQuestions } from "@/services/vocabularyApi";
 
-// MOCK DATA for "Highlight the Word"
-// In a real app, backend would likely provide the sentence split or we split by space.
+// MOCK DATA Fallback
 const MOCK_DATA = [
   {
     id: 1,
@@ -12,6 +13,9 @@ const MOCK_DATA = [
     sentence: "Le chien joue dans le parc.",
     correctWord: "chien",
     meaning: "Dog",
+    QuestionType: "Highlight the word",
+    Instruction_FR: "Mettez en surbrillance le mot",
+    Instruction_EN: "Highlight the word",
   },
   {
     id: 2,
@@ -19,231 +23,164 @@ const MOCK_DATA = [
     sentence: "Ma voiture est rouge et rapide.",
     correctWord: "rouge",
     meaning: "Red",
-  },
-  {
-    id: 3,
-    prompt: "Select the French word for 'To Eat'",
-    sentence: "J'aime manger des pommes.",
-    correctWord: "manger",
-    meaning: "To Eat",
-  },
-  {
-    id: 4,
-    prompt: "Select the French word for 'Happy'",
-    sentence: "Elle est très heureuse aujourd'hui.",
-    correctWord: "heureuse",
-    meaning: "Happy",
-  },
-  {
-    id: 5,
-    prompt: "Select the French word for 'Book'",
-    sentence: "Le livre est sur la table.",
-    correctWord: "livre",
-    meaning: "Book",
+    QuestionType: "Highlight the word",
+    Instruction_FR: "Mettez en surbrillance le mot",
+    Instruction_EN: "Highlight the word",
   },
 ];
 
 export default function HighlightWordGamePage() {
+  const navigate = useNavigate();
+  const [questions, setQuestions] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [selectedWordIndex, setSelectedWordIndex] = useState(null); // Index of word user clicked
+  const [selectedWordIndex, setSelectedWordIndex] = useState(null);
   const [isAnswered, setIsAnswered] = useState(false);
   const [score, setScore] = useState(0);
   const [isGameOver, setIsGameOver] = useState(false);
+  const [loading, setLoading] = useState(true);
 
-  const currentItem = MOCK_DATA[currentIndex];
+  // Timer State
+  const [timer, setTimer] = useState(20); // Default per question
 
-  // Split sentence into words for rendering
-  // Note: Simple split by space. In production, need better tokenizer handling punctuation.
-  const words = currentItem.sentence.split(" ");
+  useEffect(() => {
+    setTimeout(() => {
+      setQuestions(MOCK_DATA);
+      setLoading(false);
+    }, 500);
+  }, []);
 
-  // Clean a word for comparison (remove punctuation)
-  const cleanWord = (word) => word.toLowerCase().replace(/[.,!?;:]/g, "");
+  // Timer Tick
+  useEffect(() => {
+    if (!loading && !isGameOver && !isAnswered && timer > 0) {
+      const interval = setInterval(() => setTimer((t) => t - 1), 1000);
+      return () => clearInterval(interval);
+    }
+  }, [timer, loading, isGameOver, isAnswered]);
 
-  const progress = ((currentIndex + 1) / MOCK_DATA.length) * 100;
+  const currentItem = questions[currentIndex];
 
-  const handleWordClick = (word, index) => {
+  const words = currentItem ? currentItem.sentence.split(" ") : [];
+
+  const handleWordClick = (index, word) => {
     if (isAnswered) return;
 
+    // Simple sanitization for comparison
+    const cleanWord = word.replace(/[.,!?;:]/g, "").toLowerCase();
+    const cleanTarget = currentItem.correctWord.toLowerCase();
+
     setSelectedWordIndex(index);
+  };
+
+  const handleCheck = () => {
+    if (selectedWordIndex === null) return;
     setIsAnswered(true);
 
-    const isCorrect = cleanWord(word) === currentItem.correctWord.toLowerCase();
+    const selectedWord = words[selectedWordIndex];
+    const cleanWord = selectedWord.replace(/[.,!?;:]/g, "").toLowerCase();
+    const cleanTarget = currentItem.correctWord.toLowerCase();
 
-    if (isCorrect) {
+    if (cleanWord === cleanTarget) {
       setScore((prev) => prev + 1);
-      // Auto-advance if correct
-      setTimeout(() => {
-        nextQuestion();
-      }, 700);
     }
   };
 
-  const nextQuestion = () => {
-    if (currentIndex + 1 < MOCK_DATA.length) {
+  const handleNext = () => {
+    if (!isAnswered) {
+      handleCheck();
+      return;
+    }
+
+    // Move to next
+    if (currentIndex < questions.length - 1) {
       setCurrentIndex((prev) => prev + 1);
       setSelectedWordIndex(null);
       setIsAnswered(false);
+      setTimer(20); // Reset timer
     } else {
       setIsGameOver(true);
     }
   };
 
-  const restartGame = () => {
-    setCurrentIndex(0);
-    setSelectedWordIndex(null);
-    setIsAnswered(false);
-    setScore(0);
-    setIsGameOver(false);
-  };
+  if (loading)
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader2 className="animate-spin w-10 h-10 text-blue-500" />
+      </div>
+    );
 
-  const getWordStyle = (word, index) => {
-    const isSelected = selectedWordIndex === index;
-    const isCorrect = cleanWord(word) === currentItem.correctWord.toLowerCase();
+  // Progress
+  const progress = ((currentIndex + 1) / questions.length) * 100;
 
-    // Base style
-    let style =
-      "px-3 py-2 rounded-lg text-xl cursor-pointer transition-all duration-200 border-2 border-transparent ";
-
-    if (!isAnswered) {
-      return (
-        style +
-        "hover:bg-blue-100 dark:hover:bg-blue-900/40 hover:border-blue-200"
-      );
-    }
-
-    // Logic after answer
-    if (isCorrect) {
-      // Must be the correct word
-      if (isSelected) {
-        return (
-          style +
-          "bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300 border-green-500 font-medium"
-        );
-      }
-      // If user got it wrong, highlight correct one?
-      // Let's highlight correct answer regardless if user was wrong?
-      // For now, if user clicked wrong, they see red. The correct one stays neutral until they find it?
-      // Or show correct one? Let's show correct one if they got it wrong.
-      if (
-        selectedWordIndex !== null &&
-        cleanWord(words[selectedWordIndex]) !==
-          currentItem.correctWord.toLowerCase()
-      ) {
-        return (
-          style +
-          "bg-green-50 dark:bg-green-900/20 text-green-600 border-green-200 dashed"
-        );
-      }
-    } else if (isSelected) {
-      // Selected wrong word
-      return (
-        style +
-        "bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300 border-red-500 animate-shake"
-      );
-    }
-
-    return style + "opacity-50";
-  };
+  // Timer Format
+  const timerString = `0:${timer.toString().padStart(2, "0")}`;
 
   return (
-    <div className="max-w-3xl mx-auto px-4 py-6 min-h-screen flex flex-col">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-8">
-        <Link
-          to="/vocabulary/practice"
-          className="flex items-center text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white transition-colors"
-        >
-          <ArrowLeft className="w-5 h-5 mr-2" />
-          Back to Practice
-        </Link>
-        <div className="text-sm font-medium text-gray-500">
-          Question {currentIndex + 1} / {MOCK_DATA.length}
-        </div>
-      </div>
-
-      {/* Progress Bar */}
-      <div className="w-full bg-gray-100 dark:bg-gray-800 h-2 rounded-full mb-12 overflow-hidden">
-        <div
-          className="bg-blue-500 h-full transition-all duration-500 ease-out"
-          style={{ width: `${progress}%` }}
-        />
-      </div>
-
-      {!isGameOver ? (
-        <div className="flex-1 flex flex-col items-center justify-center -mt-20">
-          {/* Prompt */}
-          <h2 className="text-gray-500 dark:text-gray-400 text-lg uppercase tracking-wide font-medium mb-8">
-            {currentItem.prompt}
-          </h2>
-
-          {/* Sentence Container */}
-          <div className="bg-white dark:bg-gray-800 p-8 rounded-3xl shadow-sm border border-gray-100 dark:border-gray-700 w-full text-center leading-loose">
-            <div className="flex flex-wrap justify-center gap-2">
-              {words.map((word, idx) => (
-                <span
-                  key={idx}
-                  onClick={() => handleWordClick(word, idx)}
-                  className={getWordStyle(word, idx)}
-                >
-                  {word}
-                </span>
-              ))}
-            </div>
-          </div>
-
-          {/* Feedback / Continue */}
-          {isAnswered && (
-            <div className="mt-12 w-full max-w-sm animate-in fade-in slide-in-from-bottom-4">
-              {selectedWordIndex !== null &&
-                cleanWord(words[selectedWordIndex]) !==
-                  currentItem.correctWord.toLowerCase() && (
-                  <div className="text-center mb-4 text-red-500 font-medium">
-                    Oops! Correct answer:{" "}
-                    <span className="font-bold">{currentItem.correctWord}</span>
-                  </div>
-                )}
-
-              {/* Only show NEXT button if answer was WRONG (since correct auto-advances) */}
-              {selectedWordIndex !== null &&
-                cleanWord(words[selectedWordIndex]) !==
-                  currentItem.correctWord.toLowerCase() && (
-                  <Button
-                    onClick={nextQuestion}
-                    className="w-full h-12 text-lg"
-                  >
-                    Next Question
-                  </Button>
-                )}
-            </div>
-          )}
-        </div>
-      ) : (
-        // Game Over Screen
-        <div className="flex-1 flex flex-col items-center justify-center text-center animate-in zoom-in duration-300">
-          <div className="w-20 h-20 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center mb-6">
-            <span className="text-4xl">🎯</span>
-          </div>
-          <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-            Practice Complete!
-          </h2>
-          <p className="text-xl text-gray-600 dark:text-gray-300 mb-8">
-            You found <span className="font-bold text-blue-600">{score}</span>{" "}
-            word{score !== 1 ? "s" : ""} correctly!
+    <PracticeGameLayout
+      questionType={currentItem?.QuestionType}
+      instructionFr={currentItem?.Instruction_FR}
+      instructionEn={currentItem?.Instruction_EN}
+      progress={progress}
+      isGameOver={isGameOver}
+      score={score}
+      totalQuestions={questions.length}
+      onExit={() => navigate("/vocabulary/practice")}
+      onNext={handleNext}
+      onRestart={() => window.location.reload()}
+      isSubmitEnabled={selectedWordIndex !== null}
+      showSubmitButton={true}
+      submitLabel={
+        isAnswered
+          ? currentIndex < questions.length - 1
+            ? "Next"
+            : "Finish"
+          : "Submit"
+      }
+      timerValue={timerString}
+    >
+      <div className="flex flex-col items-center justify-center w-full max-w-3xl">
+        {/* Specific Prompt Instruction */}
+        <div className="mb-12 text-center">
+          <h3 className="text-xl md:text-2xl font-bold text-gray-800 dark:text-gray-100 mb-2">
+            {currentItem?.prompt}
+          </h3>
+          <p className="text-gray-400 italic">
+            Highlight the word which means "{currentItem?.meaning}"
           </p>
-
-          <div className="flex gap-4">
-            <Link to="/vocabulary/practice">
-              <Button variant="outline" size="lg">
-                Back to Menu
-              </Button>
-            </Link>
-            <Button onClick={restartGame} size="lg" className="gap-2">
-              <RotateCcw className="w-4 h-4" />
-              Try Again
-            </Button>
-          </div>
         </div>
-      )}
-    </div>
+
+        <div className="flex flex-wrap justify-center gap-3 text-2xl md:text-4xl font-medium leading-relaxed">
+          {words.map((word, index) => {
+            let styles =
+              "bg-transparent text-gray-800 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg px-2 cursor-pointer transition-all";
+
+            if (selectedWordIndex === index) {
+              styles =
+                "bg-blue-100 text-blue-800 ring-2 ring-blue-300 rounded-lg px-2 shadow-sm";
+              if (isAnswered) {
+                const cleanWord = word.replace(/[.,!?;:]/g, "").toLowerCase();
+                const cleanTarget = currentItem.correctWord.toLowerCase();
+                if (cleanWord === cleanTarget) {
+                  styles =
+                    "bg-green-100 text-green-800 ring-2 ring-green-400 rounded-lg px-2";
+                } else {
+                  styles =
+                    "bg-red-100 text-red-800 ring-2 ring-red-400 rounded-lg px-2 opacity-60";
+                }
+              }
+            }
+
+            return (
+              <span
+                key={index}
+                onClick={() => handleWordClick(index, word)}
+                className={styles}
+              >
+                {word}
+              </span>
+            );
+          })}
+        </div>
+      </div>
+    </PracticeGameLayout>
   );
 }
