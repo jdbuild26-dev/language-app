@@ -5,10 +5,28 @@ import {
 } from "@heroicons/react/24/outline";
 import { Link } from "react-router-dom";
 import { cn } from "@/lib/utils";
-import { Volume2, Ear, PenTool } from "lucide-react";
+import { Volume2, Ear, PenTool, Mic } from "lucide-react";
 
 export default function PracticePage() {
   const SECTIONS = [
+    {
+      title: "Speaking",
+      description: "Practice pronunciation",
+      icon: <Mic className="w-6 h-6 text-green-600 dark:text-green-400" />,
+      color: "bg-green-100 dark:bg-green-900/40",
+      activities: [
+        {
+          title: "Repeat Sentence",
+          description: "Speak the missing word",
+          path: "/vocabulary/practice/repeat-sentence",
+          color: "bg-green-500",
+          icon: <Mic className="w-6 h-6" />,
+          iconIsComponent: true,
+          level: "D1",
+          isLive: true,
+        },
+      ],
+    },
     {
       title: "Listening",
       description: "Improve your comprehension",
@@ -100,7 +118,7 @@ export default function PracticePage() {
       ],
     },
     {
-      title: "Vocabulary",
+      title: "Reading",
       description: "Expand your word bank",
       icon: (
         <BookOpenIcon className="w-6 h-6 text-blue-600 dark:text-blue-400" />
