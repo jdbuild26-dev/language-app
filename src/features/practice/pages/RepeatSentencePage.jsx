@@ -56,6 +56,11 @@ export default function RepeatSentencePage() {
       };
 
       recognitionRef.current.onerror = (event) => {
+        if (event.error === "no-speech") {
+          setFeedback("retry"); // New state for UI feedback
+          setIsListening(false);
+          return;
+        }
         console.error("Speech recognition error", event.error);
         setIsListening(false);
       };
@@ -72,15 +77,36 @@ export default function RepeatSentencePage() {
   useEffect(() => {
     const fetchData = async () => {
       try {
+        const sheetName = encodeURIComponent("D1_Repeat + Correct word");
         const response = await fetch(
-          `${import.meta.env.VITE_API_URL}/api/practice/repeat-sentence`
+          `${import.meta.env.VITE_API_URL}/api/practice/${sheetName}`
         );
         if (!response.ok) throw new Error("Failed to fetch data");
-        const data = await response.json();
+        const responseJson = await response.json();
+        console.log("RepeatSentence response:", responseJson); // Debug log
 
-        // Shuffle or just use as is
-        const shuffled = data.sort(() => 0.5 - Math.random());
-        setQuestions(shuffled);
+        let data = responseJson.data;
+        if (!Array.isArray(data)) {
+          console.warn("Expected array in response.data, got:", typeof data);
+          data = [];
+        }
+
+        // Shuffle safe copy
+        const rawData = [...data].sort(() => 0.5 - Math.random());
+
+        // Normalize keys (Backend returns PascalCase from Sheets)
+        const normalizedData = rawData.map((item) => ({
+          ...item,
+          instructionFr: item.Instruction_FR || item.instructionFr || "",
+          instructionEn: item.Instruction_EN || item.instructionEn || "",
+          sentenceWithBlank:
+            item.SentenceWithBlank || item.sentenceWithBlank || "",
+          correctAnswer: item.CorrectAnswer || item.correctAnswer || "",
+          completeSentence:
+            item.CompleteSentence || item.completeSentence || "",
+        }));
+
+        setQuestions(normalizedData);
       } catch (error) {
         console.error("Error fetching repeat sentence data:", error);
       } finally {
@@ -128,7 +154,7 @@ export default function RepeatSentencePage() {
     // This allows natural speaking ("Le chien et le chat...") or just the word ("chat").
 
     const normalizedSpoken = normalizeText(spokenText);
-    const normalizedAnswer = normalizeText(currentQuestion.correctAnswer);
+    const normalizedAnswer = normalizeText(currentQuestion.correctAnswer || "");
 
     // Also support checking against the full sentence just in case
     const normalizedFullSentence = normalizeText(
@@ -268,8 +294,8 @@ export default function RepeatSentencePage() {
 
         {/* Spoken Text Feedback */}
         <div className="h-16 w-full text-center">
-          {spokenText && (
-            <p className="text-xl text-slate-600 dark:text-slate-300 font-medium">
+          {!isListening && spokenText && (
+            <p className="text-xl text-slate-600 dark:text-slate-300 font-medium animate-in fade-in slide-in-from-bottom-2">
               "{spokenText}"
             </p>
           )}

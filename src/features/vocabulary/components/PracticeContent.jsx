@@ -1,279 +1,260 @@
-import React from "react";
-import { useNavigate } from "react-router-dom";
-import {
-  BookType,
-  CheckCircle2,
-  Highlighter,
-  MessageSquare,
-  Mic,
-  Music,
-  Image as ImageIcon,
-  Keyboard,
-  ListTodo,
-  Layers,
-  Ear,
-  Pencil,
-  Volume2,
-  GitMerge,
-} from "lucide-react";
-
-// Categorized Feature List
-const practiceCategories = [
-  {
-    title: "Vocabulary",
-    description: "Expand your word bank",
-    icon: BookType,
-    color: "text-blue-500",
-    bgColor: "bg-blue-50 dark:bg-blue-900/20",
-    features: [
-      {
-        id: "a1",
-        name: "Match the Pairs",
-        icon: Layers,
-        desc: "Match words with meanings",
-        path: "match-pairs",
-        status: "Live",
-      },
-      {
-        id: "a2",
-        name: "Choose from Options",
-        icon: CheckCircle2,
-        desc: "Select the correct answer",
-        path: "choose-options",
-        status: "Live",
-      },
-      {
-        id: "a4",
-        name: "Highlight the Word",
-        icon: Highlighter,
-        desc: "Find the word in context",
-        path: "highlight-word",
-        status: "Live",
-      },
-      {
-        id: "a5",
-        name: "Odd One Out",
-        icon: ListTodo,
-        desc: "Identify the unrelated word",
-        path: "odd-one-out",
-        status: "Live",
-      },
-      {
-        id: "a6",
-        name: "Group Words",
-        icon: GitMerge, // Changed icon
-        desc: "Sort words into categories", // Changed description
-        path: "group-words", // Added path
-        status: "Live", // Added status
-      },
-    ],
-  },
-  {
-    title: "Listening",
-    description: "Improve your comprehension",
-    icon: Ear,
-    color: "text-purple-500",
-    bgColor: "bg-purple-50 dark:bg-purple-900/20",
-    features: [
-      {
-        id: "b1",
-        name: "Match Pairs (Audio)",
-        icon: Music,
-        desc: "Match sounds to text",
-        path: "listening/match-pairs",
-        status: "Live",
-      },
-      {
-        id: "b2",
-        name: "Phonetics",
-        icon: Volume2,
-        desc: "Distinguish similar sounds",
-        path: "listening/phonetics",
-        status: "Live",
-      },
-      {
-        id: "b3",
-        name: "Multiple Select",
-        icon: CheckCircle2,
-        desc: "Select all valid options",
-        path: "listening/multi-select",
-        status: "Live",
-      },
-      {
-        id: "b5",
-        name: "Audio Match",
-        icon: Mic, // Changed from b5 Fill Blanks Audio
-        desc: "Match spoken audio",
-        path: "listening/audio-match",
-        status: "Live",
-      },
-      {
-        id: "b5-new",
-        name: "Audio Fill in the Blank",
-        icon: Volume2,
-        desc: "Listen and complete",
-        path: "listening/fill-in-blank",
-        status: "Live",
-      },
-      {
-        id: "b6",
-        name: "Dictation",
-        icon: Keyboard, // Changed from Fill Blanks Typing
-        desc: "Transcribe what you hear",
-        path: "listening/dictation",
-        status: "Live",
-      },
-    ],
-  },
-  {
-    title: "Writing",
-    description: "Perfect your spelling & grammar",
-    icon: Pencil,
-    color: "text-orange-500",
-    bgColor: "bg-orange-50 dark:bg-orange-900/20",
-    features: [
-      {
-        id: "c1",
-        name: "Fill in the Blank",
-        icon: Keyboard,
-        desc: "Complete the sentence",
-        path: "fill-in-blank",
-        status: "Live",
-      },
-      {
-        id: "c2",
-        name: "Correct Spelling",
-        icon: CheckCircle2,
-        desc: "Fix misspelled words",
-        path: "correct-spelling",
-        status: "Live",
-      },
-      {
-        id: "c3",
-        name: "Dictation (Image)",
-        icon: ImageIcon,
-        desc: "Name the object displayed",
-        path: "dictation-image",
-        status: "Live",
-      },
-    ],
-  },
-  {
-    title: "Speaking",
-    description: "Practice pronunciation",
-    icon: Mic,
-    color: "text-green-500",
-    bgColor: "bg-green-50 dark:bg-green-900/20",
-    features: [
-      {
-        id: "d1",
-        name: "Repeat Sentence",
-        icon: Volume2,
-        desc: "Speak the missing word",
-        path: "repeat-sentence",
-        status: "Live",
-      },
-      {
-        id: "d2",
-        name: "What do you see?",
-        icon: MessageSquare,
-        desc: "Describe the image",
-        path: "what-do-you-see",
-        status: "Live",
-      },
-    ],
-  },
-];
+import { PencilSquareIcon, BookOpenIcon } from "@heroicons/react/24/outline";
+import { Link } from "react-router-dom";
+import { cn } from "@/lib/utils";
+import { Ear, Mic } from "lucide-react";
 
 export default function PracticeContent() {
-  const navigate = useNavigate();
-
-  const handleCardClick = (feature) => {
-    if (feature.path) {
-      navigate(feature.path);
-    }
-  };
+  const SECTIONS = [
+    {
+      title: "Speaking",
+      description: "Practice pronunciation",
+      icon: <Mic className="w-6 h-6 text-green-600 dark:text-green-400" />,
+      color: "bg-green-100 dark:bg-green-900/40",
+      activities: [
+        {
+          title: "Repeat Sentence",
+          description: "Speak the missing word",
+          path: "/vocabulary/practice/repeat-sentence",
+          color: "bg-green-500",
+          icon: <Mic className="w-6 h-6" />,
+          iconIsComponent: true,
+          level: "D1",
+          isLive: true,
+        },
+        {
+          title: "What Do You See?",
+          description: "Describe the image",
+          path: "/vocabulary/practice/what-do-you-see",
+          color: "bg-green-600",
+          icon: "👁️",
+          level: "D2",
+          isLive: true,
+        },
+      ],
+    },
+    {
+      title: "Listening",
+      description: "Improve your comprehension",
+      icon: <Ear className="w-6 h-6 text-purple-600 dark:text-purple-400" />,
+      color: "bg-purple-100 dark:bg-purple-900/40",
+      activities: [
+        {
+          title: "Match Pairs (Audio)",
+          description: "Match sounds to text",
+          path: "/vocabulary/practice/match-pairs-b1",
+          color: "bg-purple-500",
+          icon: "🎵",
+          level: "B1",
+          isLive: true,
+        },
+        {
+          title: "Phonetics",
+          description: "Distinguish similar sounds",
+          path: "/vocabulary/practice/listening/phonetics",
+          color: "bg-indigo-500",
+          icon: "🔊",
+          level: "B2",
+          isLive: true,
+        },
+        {
+          title: "Multiple Select",
+          description: "Select all valid options",
+          path: "/vocabulary/practice/listening/multi-select",
+          color: "bg-pink-500",
+          icon: "☑️",
+          level: "A1",
+          isLive: true,
+        },
+        {
+          title: "Audio MATCH",
+          description: "Match spoken audio",
+          path: "/vocabulary/practice/listening/audio-match",
+          color: "bg-violet-500",
+          icon: "🎧",
+          level: "B5",
+          isLive: true,
+        },
+        {
+          title: "Audio Fill in the Blank",
+          description: "Listen and complete",
+          path: "/vocabulary/practice/listening/fill-in-blank",
+          icon: "🔉",
+          color: "bg-teal-500",
+          level: "B5",
+          isLive: true,
+        },
+        {
+          title: "Dictation",
+          description: "Transcribe what you hear",
+          path: "/vocabulary/practice/listening/dictation",
+          color: "bg-yellow-500",
+          icon: "⌨️",
+          level: "B6",
+          isLive: true,
+        },
+      ],
+    },
+    {
+      title: "Writing",
+      description: "Practice your written French",
+      icon: (
+        <PencilSquareIcon className="w-6 h-6 text-orange-600 dark:text-orange-400" />
+      ),
+      color: "bg-orange-100 dark:bg-orange-900/40",
+      activities: [
+        {
+          title: "Fill in the Blank",
+          description: "Complete sentences",
+          path: "/vocabulary/practice/fill-in-blank",
+          color: "bg-sky-500",
+          icon: "📝",
+          level: "C1",
+          isLive: true,
+        },
+        {
+          title: "Correct Spelling",
+          description: "Fix spelling errors",
+          path: "/vocabulary/practice/correct-spelling",
+          color: "bg-red-500",
+          icon: "✍️",
+          level: "C2",
+          isLive: true,
+        },
+      ],
+    },
+    {
+      title: "Reading",
+      description: "Expand your word bank",
+      icon: (
+        <BookOpenIcon className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+      ),
+      color: "bg-blue-100 dark:bg-blue-900/40",
+      activities: [
+        {
+          title: "Match Pairs (A1)",
+          description: "Match words to translations",
+          path: "/vocabulary/practice/match-pairs",
+          color: "bg-blue-500",
+          icon: "🧩",
+          level: "A1",
+          isLive: true,
+        },
+        {
+          title: "Choose from Options",
+          description: "Select the correct meaning",
+          path: "/vocabulary/practice/choose-options",
+          color: "bg-cyan-500",
+          icon: "🤔",
+          level: "A2",
+          isLive: true,
+        },
+        {
+          title: "Highlight Word",
+          description: "Find the word in context",
+          path: "/vocabulary/practice/highlight-word",
+          color: "bg-amber-500",
+          icon: "🖍️",
+          level: "A4",
+          isLive: true,
+        },
+        {
+          title: "Odd One Out",
+          description: "Identify the intruder",
+          path: "/vocabulary/practice/odd-one-out",
+          color: "bg-orange-500",
+          icon: "❓",
+          level: "A1",
+          isLive: true,
+        },
+        {
+          title: "Group Words",
+          description: "Categorize words",
+          path: "/vocabulary/practice/group-words",
+          color: "bg-green-500",
+          icon: "📂",
+          level: "A1",
+          isLive: true,
+        },
+      ],
+    },
+  ];
 
   return (
-    <div className="space-y-10 pb-10">
-      {/* Introduction */}
-      <div className="text-center max-w-2xl mx-auto space-y-3">
-        <h2 className="text-3xl font-bold text-gray-900 dark:text-white">
-          Practice Area
-        </h2>
-        <p className="text-gray-600 dark:text-gray-400 text-lg">
-          Master the language with targeted exercises covering all core skills.
-        </p>
-      </div>
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 p-6 md:p-12 font-sans">
+      <div className="max-w-7xl mx-auto space-y-12">
+        {/* Page Header */}
+        <div className="text-center mb-16">
+          <h1 className="text-4xl md:text-5xl font-extrabold text-slate-900 dark:text-white mb-4 tracking-tight">
+            Practice Area
+          </h1>
+          <p className="text-lg text-slate-600 dark:text-slate-400 max-w-2xl mx-auto leading-relaxed">
+            Master your skills with interactive exercises designed for every
+            level.
+          </p>
+        </div>
 
-      {/* Categories */}
-      {practiceCategories.map((category) => (
-        <div key={category.title} className="space-y-4">
-          <div className="flex items-center gap-3 border-b border-gray-200 dark:border-gray-700 pb-2">
-            <div
-              className={`p-2 rounded-lg ${category.bgColor} ${category.color}`}
-            >
-              <category.icon size={24} />
-            </div>
-            <div>
-              <h3 className="text-xl font-bold text-gray-900 dark:text-white">
-                {category.title}
-              </h3>
-              <p className="text-sm text-gray-500 dark:text-gray-400">
-                {category.description}
-              </p>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {category.features.map((feature) => (
-              <div
-                key={feature.id}
-                onClick={() => handleCardClick(feature)}
-                className={`group relative bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 transition-all text-left ${
-                  feature.path
-                    ? "cursor-pointer hover:shadow-md hover:border-blue-500 dark:hover:border-blue-400"
-                    : "cursor-default opacity-80"
-                }`}
-              >
-                <div className="flex justify-between items-start mb-3">
-                  <div
-                    className={`p-2 rounded-lg bg-gray-50 dark:bg-gray-700/50 ${
-                      feature.path
-                        ? "group-hover:bg-blue-50 dark:group-hover:bg-blue-900/20 group-hover:text-blue-600 dark:group-hover:text-blue-400"
-                        : ""
-                    } text-gray-600 dark:text-gray-400 transition-colors`}
-                  >
-                    <feature.icon size={20} />
-                  </div>
-                  <span
-                    className={`text-[10px] font-medium tracking-wide uppercase border px-2 py-0.5 rounded-full ${
-                      feature.status === "Live"
-                        ? "text-green-600 dark:text-green-400 border-green-200 bg-green-50 dark:bg-green-900/20"
-                        : "text-gray-400 dark:text-gray-500 border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800"
-                    }`}
-                  >
-                    {feature.status || "Coming Soon"}
-                  </span>
-                </div>
-
-                <h4
-                  className={`font-semibold text-gray-900 dark:text-white mb-1 ${
-                    feature.path
-                      ? "group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors"
-                      : ""
-                  }`}
-                >
-                  {feature.name}
-                </h4>
-                <p className="text-sm text-gray-500 dark:text-gray-400 line-clamp-2">
-                  {feature.desc}
+        {/* Sections */}
+        {SECTIONS.map((section, idx) => (
+          <div key={idx} className="space-y-6">
+            {/* Section Header */}
+            <div className="flex items-center gap-4 border-b border-gray-200 dark:border-gray-800 pb-4">
+              {/* Icon wrapper */}
+              <div className={cn("p-3 rounded-2xl", section.color)}>
+                {section.icon}
+              </div>
+              <div>
+                <h2 className="text-2xl font-bold text-slate-900 dark:text-white">
+                  {section.title}
+                </h2>
+                <p className="text-slate-500 dark:text-slate-400 text-sm font-medium">
+                  {section.description}
                 </p>
               </div>
-            ))}
+            </div>
+
+            {/* Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              {section.activities.map((activity, aIdx) => (
+                <Link
+                  key={aIdx}
+                  to={activity.path}
+                  className="group bg-white dark:bg-slate-800 rounded-2xl p-6 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all border border-slate-100 dark:border-slate-800 relative overflow-hidden"
+                >
+                  {/* LIVE badge */}
+                  {activity.isLive && (
+                    <span className="absolute top-4 right-4 px-2 py-0.5 bg-green-100 text-green-700 text-[10px] font-bold uppercase tracking-wider rounded-full border border-green-200">
+                      Live
+                    </span>
+                  )}
+
+                  <div className="flex flex-col h-full">
+                    {/* Icon */}
+                    <div
+                      className={cn(
+                        "w-12 h-12 rounded-xl flex items-center justify-center text-xl mb-4 shadow-sm",
+                        activity.color,
+                        activity.iconIsComponent
+                          ? "text-white"
+                          : "bg-opacity-10 text-opacity-100"
+                      )}
+                    >
+                      {activity.icon}
+                    </div>
+
+                    <h3 className="text-lg font-bold text-slate-800 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors mb-1">
+                      {activity.title}
+                    </h3>
+
+                    <p className="text-sm text-slate-500 dark:text-slate-400 line-clamp-2 leading-relaxed">
+                      {activity.description}
+                    </p>
+                  </div>
+                </Link>
+              ))}
+            </div>
           </div>
-        </div>
-      ))}
+        ))}
+      </div>
     </div>
   );
 }

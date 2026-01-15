@@ -55,6 +55,11 @@ export default function WhatDoYouSeePage() {
       };
 
       recognitionRef.current.onerror = (event) => {
+        if (event.error === "no-speech") {
+          setFeedback("retry"); // New state for UI feedback
+          setIsListening(false);
+          return;
+        }
         console.error("Speech recognition error", event.error);
         setIsListening(false);
       };
@@ -71,15 +76,35 @@ export default function WhatDoYouSeePage() {
   useEffect(() => {
     const fetchData = async () => {
       try {
+        const sheetName = encodeURIComponent("D2_Speaking+Question");
         const response = await fetch(
-          `${import.meta.env.VITE_API_URL}/api/practice/what-do-you-see`
+          `${import.meta.env.VITE_API_URL}/api/practice/${sheetName}`
         );
         if (!response.ok) throw new Error("Failed to fetch data");
-        const data = await response.json();
+        const responseJson = await response.json();
+        console.log("WhatDoYouSee response:", responseJson); // Debug log
 
-        // Shuffle or just use as is
-        const shuffled = data.sort(() => 0.5 - Math.random());
-        setQuestions(shuffled);
+        let data = responseJson.data;
+        if (!Array.isArray(data)) {
+          console.warn("Expected array in response.data, got:", typeof data);
+          data = [];
+        }
+
+        // Shuffle safe copy
+        const rawData = [...data].sort(() => 0.5 - Math.random());
+
+        // Normalize keys (Backend returns PascalCase from Sheets)
+        // Check for common variations like "Question" or "question"
+        const normalizedData = rawData.map((item) => ({
+          ...item,
+          question: item.Question || item.question || "",
+          instructionFr: item.Instruction_FR || item.instructionFr || "",
+          instructionEn: item.Instruction_EN || item.instructionEn || "",
+          correctAnswer: item.CorrectAnswer || item.correctAnswer || "",
+          imageUrl: item.ImageUrl || item.imageUrl || "",
+        }));
+
+        setQuestions(normalizedData);
       } catch (error) {
         console.error("Error fetching what-do-you-see data:", error);
       } finally {
@@ -191,7 +216,7 @@ export default function WhatDoYouSeePage() {
 
   // Generate blank boxes based on answer characters
   // Split by characters to show exact length
-  const answerChars = currentQuestion.correctAnswer.split("");
+  const answerChars = (currentQuestion.correctAnswer || "").split("");
 
   return (
     <PracticeGameLayout
@@ -303,8 +328,14 @@ export default function WhatDoYouSeePage() {
                 : "bg-slate-50 text-slate-600 dark:bg-slate-800/50 dark:text-slate-300"
             }`}
           >
-            {spokenText ? (
-              <p className="text-lg font-medium">"{spokenText}"</p>
+            {isListening ? (
+              <p className="text-lg font-medium animate-pulse text-indigo-600 dark:text-indigo-400">
+                Listening...
+              </p>
+            ) : spokenText ? (
+              <p className="text-lg font-medium animate-in fade-in slide-in-from-bottom-2">
+                "{spokenText}"
+              </p>
             ) : (
               <p className="text-sm text-slate-400 italic">
                 Tap the microphone and speak

@@ -29,7 +29,7 @@ import FlashcardsPage from "@/features/vocabulary/pages/FlashcardsPage";
 import GrammarPage from "@/features/grammar/pages/GrammarPage";
 import GrammarNotePage from "@/features/grammar/pages/GrammarNotePage";
 import StoriesPage from "@/features/stories/pages/StoriesPage";
-import PracticePage from "@/features/practice/pages/PracticePage";
+// import PracticePage from "@/features/practice/pages/PracticePage";
 import FillInBlankGamePage from "@/features/vocabulary/pages/FillInBlankGamePage";
 import CorrectSpellingGamePage from "@/features/vocabulary/pages/CorrectSpellingGamePage";
 import BlogsPage from "@/features/blogs/pages/BlogsPage";
@@ -125,10 +125,22 @@ function App() {
             path="practice"
             element={
               <ProtectedRoute>
-                <PracticePage />
+                <div className="p-8 text-center">
+                  <h2 className="text-2xl font-bold">Practice Moved</h2>
+                  <p className="text-muted-foreground mt-2">
+                    Please go to{" "}
+                    <a
+                      href="/vocabulary/practice"
+                      className="underline text-blue-500"
+                    >
+                      Vocabulary &gt; Practice
+                    </a>
+                  </p>
+                </div>
               </ProtectedRoute>
             }
           />
+          {/* 
           <Route
             path="practice/fill-in-blank"
             element={
@@ -144,7 +156,8 @@ function App() {
                 <CorrectSpellingGamePage />
               </ProtectedRoute>
             }
-          />
+          /> 
+          */}
           <Route
             path="blogs"
             element={

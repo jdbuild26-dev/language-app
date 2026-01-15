@@ -1,8 +1,9 @@
-import React, { useState } from "react";
-import { CheckCircle, XCircle } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { CheckCircle, XCircle, Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
+import { fetchPracticeQuestions } from "@/services/vocabularyApi";
 
 // MOCK DATA for "Odd One Out"
 const MOCK_QUESTIONS = [
@@ -43,15 +44,63 @@ const MOCK_QUESTIONS = [
 
 export default function OddOneOutGamePage() {
   const navigate = useNavigate();
+  const [questions, setQuestions] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedWord, setSelectedWord] = useState(null);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [score, setScore] = useState(0);
   const [isGameOver, setIsGameOver] = useState(false);
 
-  const currentQuestion = MOCK_QUESTIONS[currentIndex];
-  const totalQuestions = MOCK_QUESTIONS.length;
-  const progress = ((currentIndex + 1) / totalQuestions) * 100;
+  useEffect(() => {
+    loadGameData();
+  }, []);
+
+  const loadGameData = async () => {
+    try {
+      setLoading(true);
+      const response = await fetchPracticeQuestions("A5_Pick odd one out");
+      const practiceData = response.data || [];
+
+      if (!practiceData || practiceData.length === 0) {
+        console.warn("No data from API, using fallback");
+        setQuestions(MOCK_QUESTIONS);
+        setLoading(false);
+        return;
+      }
+
+      // Map API data to game format
+      const gameQuestions = practiceData.map((item) => ({
+        id: item.ExerciseID || Math.random().toString(),
+        words: [
+          item.Option1 || "",
+          item.Option2 || "",  
+          item.Option3 || "",
+          item.Option4 || ""
+        ].filter(Boolean), // Remove empty options
+        correctAnswer: item.CorrectAnswer || item["CorrectAnswer"] || "",
+        reason: item["Correct Explanation_EN"] || item.CorrectExplanation_EN || "",
+        type: item.QuestionType || "Odd One Out",
+        instructionFr: item.Instruction_FR || "Choisissez l'intrus",
+        instructionEn: item.Instruction_EN || "Pick the odd one out",
+        timerSeconds: parseInt(item.TimeLimitSeconds) || 60
+      }));
+
+      setQuestions(gameQuestions);
+    } catch (err) {
+      console.error("Failed to load odd one out questions:", err);
+      setError("Failed to load questions. Please check data source.");
+      // Use mock data as fallback
+      setQuestions(MOCK_QUESTIONS);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const currentQuestion = questions[currentIndex];
+  const totalQuestions = questions.length;
+  const progress = totalQuestions > 0 ? ((currentIndex + 1) / totalQuestions) * 100 : 0;
 
   const handleWordClick = (word) => {
     if (isSubmitted) return;
@@ -105,6 +154,42 @@ export default function OddOneOutGamePage() {
 
     return `${baseStyle} bg-gray-50 dark:bg-gray-800/50 border-gray-100 dark:border-gray-800 text-gray-400 opacity-50`;
   };
+
+  // Loading state
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen">
+        <Loader2 className="w-8 h-8 animate-spin text-blue-500 mb-4" />
+        <p className="text-gray-500">Loading questions...</p>
+      </div>
+    );
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen px-4 text-center">
+        <XCircle className="w-12 h-12 text-red-500 mb-4" />
+        <h2 className="text-xl font-bold mb-2">Error</h2>
+        <p className="text-gray-600 mb-6">{error}</p>
+        <Button onClick={() => navigate("/vocabulary/practice")}>
+          Back to Practice
+        </Button>
+      </div>
+    );
+  }
+
+  // No questions state
+  if (!currentQuestion) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen px-4 text-center">
+        <p className="text-gray-600 mb-6">No questions available</p>
+        <Button onClick={() => navigate("/vocabulary/practice")}>
+          Back to Practice
+        </Button>
+      </div>
+    );
+  }
 
   let submitLabel = "Submit";
   if (isSubmitted) {

@@ -43,11 +43,44 @@ export default function HighlightWordGamePage() {
   const [timer, setTimer] = useState(20); // Default per question
 
   useEffect(() => {
-    setTimeout(() => {
-      setQuestions(MOCK_DATA);
-      setLoading(false);
-    }, 500);
+    loadGameData();
   }, []);
+
+  const loadGameData = async () => {
+    try {
+      setLoading(true);
+      const response = await fetchPracticeQuestions("A4_Highlight word");
+      const practiceData = response.data || [];
+
+      if (!practiceData || practiceData.length === 0) {
+        console.warn("No data from API, using fallback");
+        setQuestions(MOCK_DATA);
+        setLoading(false);
+        return;
+      }
+
+      // Map API data to game format
+      const gameQuestions = practiceData.map((item) => ({
+        id: item.ExerciseID || Math.random().toString(),
+        prompt: item.Question_EN || item["Question_EN"] || "Select the correct word",
+        sentence: item["Complete sentence"] || item.CompleteSentence || "",
+        correctWord: item.CorrectAnswer || item["CorrectAnswer"] || "",
+        meaning: item["Correct Explanation_EN"] || item.CorrectExplanation_EN || "",
+        QuestionType: item.QuestionType || "Highlight the word",
+        Instruction_FR: item.Instruction_FR || "Soulignez le mot correct",
+        Instruction_EN: item.Instruction_EN || "Highlight the correct word",
+        timerSeconds: parseInt(item.TimeLimitSeconds) || 60
+      }));
+
+      setQuestions(gameQuestions);
+    } catch (err) {
+      console.error("Failed to load highlight word questions:", err);
+      // Use mock data as fallback
+      setQuestions(MOCK_DATA);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Timer Tick
   useEffect(() => {

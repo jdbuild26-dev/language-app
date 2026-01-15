@@ -1,377 +1,230 @@
 import React, { useState, useEffect } from "react";
-import { Loader2 } from "lucide-react";
-import { Link, useNavigate } from "react-router-dom";
+import { fetchVocabulary } from "../../../services/vocabularyApi";
+import { Loader2, ArrowLeft, RotateCcw, Volume2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { motion, AnimatePresence } from "framer-motion";
-import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
-import { fetchPracticeQuestions } from "@/services/vocabularyApi";
+import { Link } from "react-router-dom";
+import { cn } from "@/lib/utils";
 import { useTextToSpeech } from "@/hooks/useTextToSpeech";
 
 export default function MatchPairsB1GamePage() {
-  const navigate = useNavigate();
   const { speak } = useTextToSpeech();
-
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [allPairs, setAllPairs] = useState([]);
-
-  // Game State
+  const [pairs, setPairs] = useState([]);
   const [cards, setCards] = useState([]);
   const [selectedCards, setSelectedCards] = useState([]);
-  const [matchedPairsCount, setMatchedPairsCount] = useState(0);
-  const [timer, setTimer] = useState(60);
-  const [isGameOver, setIsGameOver] = useState(false);
+  const [matchedPairs, setMatchedPairs] = useState([]);
   const [score, setScore] = useState(0);
-
-  // Constants
-  const GRID_SIZE = 8; // 4x2 or similar
+  const [errors, setErrors] = useState(0);
+  const [gameCompleted, setGameCompleted] = useState(false);
 
   useEffect(() => {
-    loadGameData();
+    loadData();
   }, []);
 
-  // Timer Tick
-  useEffect(() => {
-    if (!loading && !isGameOver && timer > 0) {
-      const interval = setInterval(() => setTimer((t) => t - 1), 1000);
-      return () => clearInterval(interval);
-    } else if (timer === 0 && !isGameOver) {
-      setIsGameOver(true);
-    }
-  }, [timer, loading, isGameOver]);
-
-  // Mock Data for Fallback
-  const MOCK_DATA = [
-    {
-      id: 101,
-      Type: "Audio-Text",
-      Prompt: "Bonjour",
-      Target: "Hello",
-      Instruction_FR: "Associez les paires",
-      Instruction_EN: "Match the pairs",
-    },
-    {
-      id: 102,
-      Type: "Audio-Text",
-      Prompt: "Chat",
-      Target: "Cat",
-      Instruction_FR: "Associez les paires",
-      Instruction_EN: "Match the pairs",
-    },
-    {
-      id: 103,
-      Type: "Audio-Text",
-      Prompt: "Chien",
-      Target: "Dog",
-      Instruction_FR: "Associez les paires",
-      Instruction_EN: "Match the pairs",
-    },
-    {
-      id: 104,
-      Type: "Audio-Text",
-      Prompt: "Pomme",
-      Target: "Apple",
-      Instruction_FR: "Associez les paires",
-      Instruction_EN: "Match the pairs",
-    },
-    {
-      id: 105,
-      Type: "Audio-Text",
-      Prompt: "Maison",
-      Target: "House",
-      Instruction_FR: "Associez les paires",
-      Instruction_EN: "Match the pairs",
-    },
-    {
-      id: 106,
-      Type: "Audio-Text",
-      Prompt: "Voiture",
-      Target: "Car",
-      Instruction_FR: "Associez les paires",
-      Instruction_EN: "Match the pairs",
-    },
-    {
-      id: 107,
-      Type: "Audio-Text",
-      Prompt: "Livre",
-      Target: "Book",
-      Instruction_FR: "Associez les paires",
-      Instruction_EN: "Match the pairs",
-    },
-    {
-      id: 108,
-      Type: "Audio-Text",
-      Prompt: "École",
-      Target: "School",
-      Instruction_FR: "Associez les paires",
-      Instruction_EN: "Match the pairs",
-    },
-  ];
-
-  const loadGameData = async () => {
+  const loadData = async () => {
+    setLoading(true);
     try {
-      setLoading(true);
-      const response = await fetchPracticeQuestions("B1.Match the pairs");
+      // Use B1 level for this specific game
+      const response = await fetchVocabulary({ level: "B1", limit: 50 });
+      if (response && response.data) {
+        // Randomly select 6 pairs
+        const shuffled = [...response.data]
+          .sort(() => 0.5 - Math.random())
+          .slice(0, 6);
 
-      let pairsData = [];
-      if (response && response.data && response.data.length > 0) {
-        pairsData = response.data;
-      } else {
-        console.warn("API returned no data, using mock data.");
-        pairsData = MOCK_DATA;
+        setPairs(shuffled);
+        prepareCards(shuffled);
       }
-
-      // Transform data
-      const pairs = pairsData.map((item, index) => ({
-        id: index,
-        type: item.Type || "Audio-Text", // Default type
-        prompt: item.Prompt, // The audio text
-        target: item.Target, // The match (text or image url)
-        instructionFr: item.Instruction_FR || "Associez les paires",
-        instructionEn: item.Instruction_EN || "Match the pairs",
-      }));
-      setAllPairs(pairs);
-      initializeGrid(pairs);
-    } catch (err) {
-      console.error("Failed to load match pairs:", err);
-      // Fallback to mock data on error
-      console.warn("Using mock data due to error.");
-      const pairs = MOCK_DATA.map((item, index) => ({
-        id: index,
-        type: item.Type,
-        prompt: item.Prompt,
-        target: item.Target,
-        instructionFr: item.Instruction_FR,
-        instructionEn: item.Instruction_EN,
-      }));
-      setAllPairs(pairs);
-      initializeGrid(pairs);
-      // Don't set error state if we successfully loaded mock data
-      // setError("Failed to load game data.");
+    } catch (error) {
+      console.error("Error loading vocabulary:", error);
     } finally {
       setLoading(false);
     }
   };
 
-  const initializeGrid = (sourcePairs) => {
-    // Pick random pairs to fill grid
-    const setSize = GRID_SIZE / 2;
-    const shuffledSource = [...sourcePairs].sort(() => 0.5 - Math.random());
-    const activePairs = shuffledSource.slice(0, setSize);
-
-    // Create card objects (2 per pair)
-    let gridCards = [];
-    activePairs.forEach((pair) => {
-      // Card 1: Audio Prompt
-      gridCards.push({
-        id: `prompt-${pair.id}`,
+  const prepareCards = (vocabularyPairs) => {
+    const newCards = [];
+    vocabularyPairs.forEach((pair) => {
+      // Card 1: French Word (Text + Audio on click)
+      newCards.push({
+        id: `fr-${pair.id}`,
         pairId: pair.id,
-        content: "🔊", // Audio Icon
-        text: pair.prompt,
-        type: "prompt",
-        state: "default",
+        content: pair.forms?.[0]?.word || pair.english, // Fallback
+        type: "french",
+        audioText: pair.forms?.[0]?.word || pair.english, // For TTS
       });
-      // Card 2: Target
-      gridCards.push({
-        id: `target-${pair.id}`,
+      // Card 2: English Meaning (Text only)
+      newCards.push({
+        id: `en-${pair.id}`,
         pairId: pair.id,
-        content: pair.target, // Text or Image
-        type: "target",
-        state: "default",
+        content: pair.english,
+        type: "english",
+        audioText: null,
       });
     });
 
-    // Shuffle grid
-    gridCards = gridCards.sort(() => 0.5 - Math.random());
-    setCards(gridCards);
+    // Shuffle cards
+    setCards(newCards.sort(() => 0.5 - Math.random()));
   };
 
   const handleCardClick = (card) => {
-    if (isGameOver || card.state === "matched" || card.state === "selected")
+    if (
+      gameCompleted ||
+      matchedPairs.includes(card.pairId) ||
+      selectedCards.find((c) => c.id === card.id) ||
+      selectedCards.length >= 2
+    ) {
       return;
-    if (selectedCards.length >= 2) return;
+    }
 
-    // Play audio if prompt
-    if (card.type === "prompt") {
-      speak(card.text, "fr-FR");
-    } else if (card.type === "target") {
-      // If existing selected is prompt, play it? No, simpler logic first.
-      // Maybe just text to speech key?
+    // Play Audio if it's a French card
+    if (card.audioText) {
+      speak(card.audioText, "fr-FR");
     }
 
     const newSelected = [...selectedCards, card];
     setSelectedCards(newSelected);
 
-    // Visual update
-    setCards((prev) =>
-      prev.map((c) => (c.id === card.id ? { ...c, state: "selected" } : c))
-    );
-
     if (newSelected.length === 2) {
-      checkMatch(newSelected);
+      checkForMatch(newSelected);
     }
   };
 
-  const checkMatch = (selection) => {
-    const [card1, card2] = selection;
+  const checkForMatch = (currentSelected) => {
+    const [card1, card2] = currentSelected;
     const isMatch = card1.pairId === card2.pairId;
 
     if (isMatch) {
-      setScore((s) => s + 10);
-      setMatchedPairsCount((c) => c + 1);
-      setCards((prev) =>
-        prev.map((c) =>
-          c.id === card1.id || c.id === card2.id
-            ? { ...c, state: "matched" }
-            : c
-        )
-      );
+      setMatchedPairs((prev) => [...prev, card1.pairId]);
+      setScore((prev) => prev + 10);
       setSelectedCards([]);
 
-      // Refill logic check
-      // If all matched, refill? This logic is "Infinite" in standard A1, implementing similar here?
-      // If visible unmatched cards count is 0, refill.
-      // Note: setCards update is async, checks need to wait or infer.
-      setTimeout(() => {
-        checkRefill();
-      }, 500);
+      // Check for game completion
+      if (matchedPairs.length + 1 === pairs.length) {
+        setGameCompleted(true);
+      }
     } else {
-      // Error state
-      setCards((prev) =>
-        prev.map((c) =>
-          c.id === card1.id || c.id === card2.id ? { ...c, state: "error" } : c
-        )
-      );
+      setErrors((prev) => prev + 1);
+      // Delay to show error state
       setTimeout(() => {
-        setCards((prev) =>
-          prev.map((c) =>
-            c.id === card1.id || c.id === card2.id
-              ? { ...c, state: "default" }
-              : c
-          )
-        );
         setSelectedCards([]);
       }, 1000);
     }
   };
 
-  const checkRefill = () => {
-    // Logic: if all cards in current view are matched, replenish
-    // Since we use state="matched" (hidden), we can count non-matched
-    // But inside this closure, state might be stale if not careful.
-    // Actually simpler: we can track count.
-    // Let's assume refill is needed if matched pairs in current grid == GRID_SIZE / 2.
-    // But simpler implementation for B1: just reload new set.
-    // Or just standard "Game Over" if fixed set?
-    // User requested "infinite refill logic" for B1 in previous session description.
-    // So I will implement refill.
-    setCards((currentCards) => {
-      const remaining = currentCards.filter((c) => c.state !== "matched");
-      if (remaining.length === 0) {
-        // Refill
-        const setSize = GRID_SIZE / 2;
-        const shuffledSource = [...allPairs].sort(() => 0.5 - Math.random());
-        const activePairs = shuffledSource.slice(0, setSize);
-        let gridCards = [];
-        activePairs.forEach((pair) => {
-          gridCards.push({
-            id: `prompt-${pair.id}-${Date.now()}`,
-            pairId: pair.id,
-            content: "🔊",
-            text: pair.prompt,
-            type: "prompt",
-            state: "default",
-          });
-          gridCards.push({
-            id: `target-${pair.id}-${Date.now()}`,
-            pairId: pair.id,
-            content: pair.target,
-            type: "target",
-            state: "default",
-          });
-        });
-        return gridCards.sort(() => 0.5 - Math.random());
-      }
-      return currentCards;
-    });
+  const handleRestart = () => {
+    setMatchedPairs([]);
+    setSelectedCards([]);
+    setScore(0);
+    setErrors(0);
+    setGameCompleted(false);
+    loadData();
   };
 
-  // Safe instruction access
-  const instructionFr = allPairs[0]?.instructionFr || "Associez les paires";
-  const instructionEn =
-    allPairs[0]?.instructionEn || "Match audio with meaning";
-
-  // Score/Progress: No definitive total if infinite.
-  // Just show progress based on Time? or fixed "Levels".
-  // Using 0-100 placeholder or arbitrary.
-  const progress = Math.min((score / 100) * 100, 100);
-
-  const timerString = `0:${timer.toString().padStart(2, "0")}`;
-
-  if (loading)
+  if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="animate-spin text-blue-500 w-8 h-8" />
+      <div className="flex flex-col items-center justify-center min-h-screen bg-slate-50 dark:bg-slate-900">
+        <Loader2 className="w-12 h-12 text-blue-500 animate-spin mb-4" />
+        <p className="text-slate-600 dark:text-slate-400">
+          Loading vocabulary...
+        </p>
       </div>
     );
+  }
 
   return (
-    <PracticeGameLayout
-      questionType="Match the Pairs"
-      instructionFr={instructionFr}
-      instructionEn={instructionEn}
-      progress={progress}
-      isGameOver={isGameOver}
-      score={score}
-      totalQuestions={Object.keys(allPairs).length || 10} // Approximation
-      onExit={() => navigate("/vocabulary/practice")}
-      onRestart={() => window.location.reload()}
-      showSubmitButton={false} // Continuous game
-      timerValue={timerString}
-    >
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 w-full max-w-4xl place-content-center">
-        <AnimatePresence mode="popLayout">
-          {cards.map((card) => (
-            <motion.button
-              key={card.id}
-              layout
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{
-                opacity: card.state === "matched" ? 0 : 1,
-                scale: card.state === "matched" ? 0 : 1,
-              }}
-              exit={{ opacity: 0, scale: 0 }}
-              onClick={() => handleCardClick(card)}
-              disabled={card.state === "matched"}
-              className={`
-                    aspect-[4/3] rounded-xl text-lg font-medium transition-all duration-300 transform
-                    flex items-center justify-center p-4 text-center shadow-sm relative border-2
-                    ${
-                      card.state === "default"
-                        ? "bg-white dark:bg-gray-800 border-gray-100 dark:border-gray-700 hover:border-blue-300 hover:shadow-md text-gray-700 dark:text-gray-200"
-                        : ""
-                    }
-                    ${
-                      card.state === "selected"
-                        ? "bg-blue-50 dark:bg-blue-900/30 border-blue-500 text-blue-700 dark:text-blue-300 scale-105 shadow-lg z-10"
-                        : ""
-                    }
-                    ${
-                      card.state === "error"
-                        ? "bg-red-50 dark:bg-red-900/30 border-red-500 text-red-700 dark:text-red-300 animate-shake"
-                        : ""
-                    }
-                `}
-            >
-              {card.content === "🔊" ? (
-                <span className="text-4xl text-blue-500">🔊</span>
-              ) : (
-                <span className="text-xl font-bold">{card.content}</span>
-              )}
-            </motion.button>
-          ))}
-        </AnimatePresence>
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 p-4 md:p-8">
+      <div className="max-w-4xl mx-auto h-full flex flex-col">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-8">
+          <Link to="/vocabulary/practice">
+            <Button variant="ghost" className="gap-2">
+              <ArrowLeft className="w-4 h-4" /> Exit
+            </Button>
+          </Link>
+          <div className="flex items-center gap-6">
+            <div className="text-sm font-medium text-slate-600 dark:text-slate-400">
+              Pairs: {matchedPairs.length} / {pairs.length}
+            </div>
+            <div className="text-lg font-bold text-slate-900 dark:text-white">
+              Score: {score}
+            </div>
+          </div>
+        </div>
+
+        {/* Game Area */}
+        {gameCompleted ? (
+          <div className="flex-1 flex flex-col items-center justify-center animate-in zoom-in duration-300">
+            <div className="w-24 h-24 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mb-6">
+              <span className="text-5xl">🎉</span>
+            </div>
+            <h2 className="text-3xl font-bold text-slate-900 dark:text-white mb-2">
+              Excellent!
+            </h2>
+            <p className="text-slate-600 dark:text-slate-400 mb-8 max-w-md text-center">
+              You've successfully matched all {pairs.length} pairs with only{" "}
+              {errors} errors.
+            </p>
+            <div className="flex gap-4">
+              <Link to="/vocabulary/practice">
+                <Button variant="outline" size="lg">
+                  Done
+                </Button>
+              </Link>
+              <Button onClick={handleRestart} size="lg" className="gap-2">
+                <RotateCcw className="w-4 h-4" /> Play Again
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4 auto-rows-fr">
+            {cards.map((card) => {
+              const isSelected = selectedCards.find((c) => c.id === card.id);
+              const isMatched = matchedPairs.includes(card.pairId);
+              let cardStyle =
+                "bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 hover:border-blue-400 dark:hover:border-blue-500 hover:-translate-y-1";
+
+              if (isSelected) {
+                cardStyle =
+                  "bg-blue-50 dark:bg-blue-900/20 border-blue-500 ring-2 ring-blue-500 shadow-lg scale-[1.02] z-10";
+              }
+              if (isMatched) {
+                cardStyle =
+                  "bg-green-50 dark:bg-green-900/20 border-green-500 opacity-50 grayscale cursor-default";
+              }
+              // Error state if 2 selected and not match
+              if (
+                selectedCards.length === 2 &&
+                isSelected &&
+                selectedCards[0].pairId !== selectedCards[1].pairId
+              ) {
+                cardStyle =
+                  "bg-red-50 dark:bg-red-900/20 border-red-500 animate-shake";
+              }
+
+              return (
+                <button
+                  key={card.id}
+                  onClick={() => handleCardClick(card)}
+                  disabled={isMatched}
+                  className={cn(
+                    "relative flex flex-col items-center justify-center p-6 rounded-xl border-2 transition-all duration-200 shadow-sm min-h-[140px]",
+                    cardStyle
+                  )}
+                >
+                  <span className="text-lg md:text-xl font-medium text-center text-slate-800 dark:text-slate-100">
+                    {card.content}
+                  </span>
+
+                  {card.audioText && !isMatched && (
+                    <Volume2 className="w-4 h-4 text-slate-400 absolute bottom-3 right-3 opacity-50" />
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        )}
       </div>
-    </PracticeGameLayout>
+    </div>
   );
 }
