@@ -73,7 +73,7 @@ export default function RepeatSentencePage() {
     const fetchData = async () => {
       try {
         const response = await fetch(
-          `${import.meta.env.VITE_API_URL}/api/practice/repeat-sentence`
+          `${import.meta.env.VITE_API_URL}/api/practice/repeat-sentence`,
         );
         if (!response.ok) throw new Error("Failed to fetch data");
         const data = await response.json();
@@ -132,7 +132,7 @@ export default function RepeatSentencePage() {
 
     // Also support checking against the full sentence just in case
     const normalizedFullSentence = normalizeText(
-      currentQuestion.completeSentence
+      currentQuestion.completeSentence,
     );
 
     const isCorrect =
@@ -224,8 +224,8 @@ export default function RepeatSentencePage() {
         feedback === "correct"
           ? "Correct!"
           : feedback === "incorrect"
-          ? "Incorrect"
-          : "Submit"
+            ? "Incorrect"
+            : "Submit"
       }
     >
       <div className="flex flex-col items-center justify-center max-w-3xl w-full gap-12">
@@ -251,7 +251,7 @@ export default function RepeatSentencePage() {
               "w-24 h-24 rounded-full flex items-center justify-center transition-all duration-300 shadow-xl",
               isListening
                 ? "bg-red-500 text-white animate-pulse scale-110 shadow-red-500/30"
-                : "bg-indigo-600 text-white hover:bg-indigo-700 hover:scale-105 shadow-indigo-600/30"
+                : "bg-indigo-600 text-white hover:bg-indigo-700 hover:scale-105 shadow-indigo-600/30",
             )}
           >
             <Mic className={cn("w-10 h-10", isListening && "animate-bounce")} />

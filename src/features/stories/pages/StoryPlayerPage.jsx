@@ -46,10 +46,12 @@ export default function StoryPlayerPage() {
         )}
 
         {content && (
-          <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden">
-            <div
-              className="p-8 story-content"
-              dangerouslySetInnerHTML={{ __html: processedContent }}
+          <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden h-[calc(100vh-140px)]">
+            <iframe
+              srcDoc={content}
+              title="Story Player"
+              className="w-full h-full border-none"
+              sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
             />
           </div>
         )}

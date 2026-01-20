@@ -50,7 +50,7 @@ export default function CorrectSpellingGamePage() {
     try {
       setLoading(true);
       const response = await fetchPracticeQuestions(
-        "C2_Writing_Correct spelling"
+        "C2_Writing_Correct spelling",
       );
       if (!response || !response.data || response.data.length === 0) {
         console.warn("Primary sheet empty, checking alternates...");
@@ -276,8 +276,8 @@ export default function CorrectSpellingGamePage() {
                 feedbackState === "incorrect"
                   ? "border-red-400 text-red-600 bg-red-50"
                   : feedbackState === "correct"
-                  ? "border-green-400 text-green-600 bg-green-50"
-                  : "border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200"
+                    ? "border-green-400 text-green-600 bg-green-50"
+                    : "border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200",
               )}
             />
           ))}

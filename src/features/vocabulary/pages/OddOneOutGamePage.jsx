@@ -3,6 +3,8 @@ import { CheckCircle, XCircle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
+import FeedbackBanner from "@/components/ui/FeedbackBanner";
+import { getFeedbackMessage } from "@/utils/feedbackMessages";
 
 // MOCK DATA for "Odd One Out"
 const MOCK_QUESTIONS = [
@@ -48,6 +50,9 @@ export default function OddOneOutGamePage() {
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [score, setScore] = useState(0);
   const [isGameOver, setIsGameOver] = useState(false);
+  const [showFeedback, setShowFeedback] = useState(false);
+  const [isCorrect, setIsCorrect] = useState(false);
+  const [feedbackMessage, setFeedbackMessage] = useState("");
 
   const currentQuestion = MOCK_QUESTIONS[currentIndex];
   const totalQuestions = MOCK_QUESTIONS.length;
@@ -61,6 +66,7 @@ export default function OddOneOutGamePage() {
   const handleSubmit = () => {
     if (isSubmitted) {
       // Next Logic
+      setShowFeedback(false);
       if (currentIndex + 1 < totalQuestions) {
         setCurrentIndex((prev) => prev + 1);
         setSelectedWord(null);
@@ -75,14 +81,19 @@ export default function OddOneOutGamePage() {
     if (!selectedWord) return;
     setIsSubmitted(true);
 
-    if (selectedWord === currentQuestion.correctAnswer) {
+    const correct = selectedWord === currentQuestion.correctAnswer;
+    setIsCorrect(correct);
+    setFeedbackMessage(getFeedbackMessage(correct));
+    setShowFeedback(true);
+
+    if (correct) {
       setScore((prev) => prev + 1);
     }
   };
 
   const getWordStyle = (word) => {
     const baseStyle =
-      "h-24 rounded-2xl border-2 text-xl font-medium transition-all duration-200 flex items-center justify-center relative overflow-hidden w-full";
+      "h-24 rounded-2xl border-2 text-xl font-medium transition-all duration-200 flex items-center justify-center relative overflow-hidden min-w-[180px]";
 
     if (!isSubmitted) {
       // Normal Selection
@@ -113,70 +124,69 @@ export default function OddOneOutGamePage() {
   }
 
   return (
-    <PracticeGameLayout
-      questionType={currentQuestion.type || "Odd One Out"}
-      instructionFr={currentQuestion.instructionFr || "Trouvez l'intrus"}
-      instructionEn={currentQuestion.instructionEn || "Select the odd one out"}
-      progress={progress}
-      isGameOver={isGameOver}
-      score={score}
-      totalQuestions={totalQuestions}
-      onExit={() => navigate("/vocabulary/practice")}
-      onNext={handleSubmit}
-      onRestart={() => window.location.reload()}
-      isSubmitEnabled={!!selectedWord}
-      showSubmitButton={true}
-      submitLabel={submitLabel}
-    >
-      <div className="flex-1 flex flex-col items-center justify-center -mt-10">
-        {/* Grid */}
-        <div className="grid grid-cols-2 gap-4 w-full max-w-2xl mb-8">
-          {currentQuestion.words.map((word, idx) => (
-            <button
-              key={idx}
-              onClick={() => handleWordClick(word)}
-              disabled={isSubmitted}
-              className={getWordStyle(word)}
-            >
-              <span>{word}</span>
-              {isSubmitted && word === currentQuestion.correctAnswer && (
-                <div className="absolute top-2 right-2">
-                  <CheckCircle className="w-5 h-5 text-green-600" />
-                </div>
-              )}
-              {isSubmitted &&
-                word === selectedWord &&
-                word !== currentQuestion.correctAnswer && (
+    <>
+      <PracticeGameLayout
+        questionType={currentQuestion.type || "Odd One Out"}
+        instructionFr={currentQuestion.instructionFr || "Trouvez l'intrus"}
+        instructionEn={
+          currentQuestion.instructionEn || "Select the odd one out"
+        }
+        progress={progress}
+        isGameOver={isGameOver}
+        score={score}
+        totalQuestions={totalQuestions}
+        onExit={() => navigate("/vocabulary/practice")}
+        onNext={handleSubmit}
+        onRestart={() => window.location.reload()}
+        isSubmitEnabled={!!selectedWord}
+        showSubmitButton={true}
+        submitLabel={submitLabel}
+      >
+        <div className="flex-1 flex flex-col items-center justify-center -mt-10">
+          {/* Grid */}
+          <div className="grid grid-cols-2 gap-4 w-full max-w-2xl">
+            {currentQuestion.words.map((word, idx) => (
+              <button
+                key={idx}
+                onClick={() => handleWordClick(word)}
+                disabled={isSubmitted}
+                className={getWordStyle(word)}
+              >
+                <span>{word}</span>
+                {isSubmitted && word === currentQuestion.correctAnswer && (
                   <div className="absolute top-2 right-2">
-                    <XCircle className="w-5 h-5 text-red-600" />
+                    <CheckCircle className="w-5 h-5 text-green-600" />
                   </div>
                 )}
-            </button>
-          ))}
+                {isSubmitted &&
+                  word === selectedWord &&
+                  word !== currentQuestion.correctAnswer && (
+                    <div className="absolute top-2 right-2">
+                      <XCircle className="w-5 h-5 text-red-600" />
+                    </div>
+                  )}
+              </button>
+            ))}
+          </div>
         </div>
+      </PracticeGameLayout>
 
-        {/* Feedback Section */}
-        <div className="h-24 w-full max-w-2xl px-4">
-          {isSubmitted && (
-            <div className="animate-in fade-in slide-in-from-bottom-4 bg-gray-50 dark:bg-gray-800/80 rounded-xl p-4 border border-gray-100 dark:border-gray-700 text-center">
-              <p
-                className={`font-medium text-lg mb-1 ${
-                  selectedWord === currentQuestion.correctAnswer
-                    ? "text-green-600"
-                    : "text-red-600"
-                }`}
-              >
-                {selectedWord === currentQuestion.correctAnswer
-                  ? "Correct!"
-                  : "Not quite!"}
-              </p>
-              <p className="text-sm text-gray-500 dark:text-gray-400">
-                {currentQuestion.reason}
-              </p>
-            </div>
-          )}
-        </div>
-      </div>
-    </PracticeGameLayout>
+      {/* Feedback Banner */}
+      {showFeedback && (
+        <FeedbackBanner
+          isCorrect={isCorrect}
+          correctAnswer={
+            !isCorrect
+              ? `${currentQuestion.correctAnswer} - ${currentQuestion.reason}`
+              : null
+          }
+          onContinue={handleSubmit}
+          message={feedbackMessage}
+          continueLabel={
+            currentIndex + 1 === totalQuestions ? "FINISH" : "CONTINUE"
+          }
+        />
+      )}
+    </>
   );
 }

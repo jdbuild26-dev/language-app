@@ -4,6 +4,8 @@ import { fetchPracticeQuestions } from "../../../../services/vocabularyApi";
 import { Loader2, Volume2, CheckCircle2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
+import FeedbackBanner from "@/components/ui/FeedbackBanner";
+import { getFeedbackMessage } from "@/utils/feedbackMessages";
 
 export default function AudioMatchingPage() {
   const { speak, isSpeaking } = useTextToSpeech();
@@ -12,7 +14,10 @@ export default function AudioMatchingPage() {
   const [loading, setLoading] = useState(true);
   const [questions, setQuestions] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [selectedOption, setSelectedOption] = useState(null); // { id, isCorrect }
+  const [selectedOption, setSelectedOption] = useState(null);
+  const [showFeedback, setShowFeedback] = useState(false);
+  const [isCorrect, setIsCorrect] = useState(false);
+  const [feedbackMessage, setFeedbackMessage] = useState("");
   const [isCompleted, setIsCompleted] = useState(false);
   const [score, setScore] = useState(0);
 
@@ -69,21 +74,23 @@ export default function AudioMatchingPage() {
   };
 
   const handleOptionClick = (option) => {
-    if (selectedOption) return;
+    if (showFeedback) return;
 
-    const isCorrect = option.isCorrect;
-    setSelectedOption({ id: option.id, isCorrect });
+    const correct = option.isCorrect;
+    setSelectedOption({ id: option.id, isCorrect: correct });
+    setIsCorrect(correct);
+    setFeedbackMessage(getFeedbackMessage(correct));
+    setShowFeedback(true);
 
-    if (isCorrect) {
+    if (correct) {
       setScore((prev) => prev + 1);
-      speak("Correct", "en-US"); // Optional feedback audio
-    } else {
-      speak("Incorrect", "en-US");
     }
+  };
 
-    setTimeout(() => {
-      handleNext();
-    }, 1500);
+  const handleContinue = () => {
+    setShowFeedback(false);
+    setSelectedOption(null);
+    handleNext();
   };
 
   const handleNext = () => {
@@ -107,24 +114,25 @@ export default function AudioMatchingPage() {
     );
 
   return (
-    <PracticeGameLayout
-      questionType="What do you hear?"
-      instructionFr="Écoutez et choisissez la bonne traduction"
-      instructionEn="Listen and choose the correct translation"
-      progress={progress}
-      isGameOver={isCompleted}
-      score={score}
-      totalQuestions={questions.length}
-      onExit={() => (window.location.href = "/vocabulary/practice")} // using href to ensure clean exit or use navigate
-      onRestart={() => window.location.reload()}
-      isSubmitEnabled={false}
-      showSubmitButton={false}
-    >
-      <div className="flex flex-col items-center w-full max-w-2xl">
-        {/* Audio Button */}
-        <button
-          onClick={() => speak(currentQ.promptAudio)}
-          className={`
+    <>
+      <PracticeGameLayout
+        questionType="What do you hear?"
+        instructionFr="Écoutez et choisissez la bonne traduction"
+        instructionEn="Listen and choose the correct translation"
+        progress={progress}
+        isGameOver={isCompleted}
+        score={score}
+        totalQuestions={questions.length}
+        onExit={() => (window.location.href = "/vocabulary/practice")}
+        onRestart={() => window.location.reload()}
+        isSubmitEnabled={false}
+        showSubmitButton={false}
+      >
+        <div className="flex flex-col items-center w-full max-w-2xl">
+          {/* Audio Button */}
+          <button
+            onClick={() => speak(currentQ.promptAudio)}
+            className={`
               mb-12 w-32 h-32 rounded-full flex items-center justify-center shadow-lg transition-all transform hover:scale-105
               ${
                 isSpeaking
@@ -132,54 +140,72 @@ export default function AudioMatchingPage() {
                   : "bg-white dark:bg-slate-800 text-blue-500"
               }
             `}
-        >
-          <Volume2
-            className={`w-12 h-12 ${isSpeaking ? "animate-pulse" : ""}`}
-          />
-        </button>
+          >
+            <Volume2
+              className={`w-12 h-12 ${isSpeaking ? "animate-pulse" : ""}`}
+            />
+          </button>
 
-        {/* Options Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
-          <AnimatePresence mode="popLayout">
-            {currentQ?.options.map((option) => {
-              let stateStyles =
-                "bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700 hover:border-blue-400";
-              if (selectedOption) {
-                if (option.isCorrect) {
-                  stateStyles =
-                    "bg-green-50 border-green-500 text-green-700 ring-1 ring-green-500";
-                } else if (selectedOption.id === option.id) {
-                  stateStyles =
-                    "bg-red-50 border-red-500 text-red-700 opacity-60";
-                } else {
-                  stateStyles = "opacity-50 grayscale";
+          {/* Options Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
+            <AnimatePresence mode="popLayout">
+              {currentQ?.options.map((option) => {
+                let stateStyles =
+                  "bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700 hover:border-blue-400";
+                if (selectedOption && !showFeedback) {
+                  if (option.isCorrect) {
+                    stateStyles =
+                      "bg-green-50 border-green-500 text-green-700 ring-1 ring-green-500";
+                  } else if (selectedOption.id === option.id) {
+                    stateStyles =
+                      "bg-red-50 border-red-500 text-red-700 opacity-60";
+                  } else {
+                    stateStyles = "opacity-50 grayscale";
+                  }
                 }
-              }
 
-              return (
-                <motion.button
-                  key={option.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  onClick={() => handleOptionClick(option)}
-                  disabled={!!selectedOption}
-                  className={`
+                return (
+                  <motion.button
+                    key={option.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    onClick={() => handleOptionClick(option)}
+                    disabled={showFeedback}
+                    className={`
                                 relative p-6 rounded-2xl border-2 text-lg font-medium text-left transition-all
                                 ${stateStyles}
                             `}
-                >
-                  <span className="flex items-center justify-between">
-                    {option.text}
-                    {selectedOption?.id === option.id && option.isCorrect && (
-                      <CheckCircle2 className="text-green-600" />
-                    )}
-                  </span>
-                </motion.button>
-              );
-            })}
-          </AnimatePresence>
+                  >
+                    <span className="flex items-center justify-between">
+                      {option.text}
+                      {selectedOption?.id === option.id && option.isCorrect && (
+                        <CheckCircle2 className="text-green-600" />
+                      )}
+                    </span>
+                  </motion.button>
+                );
+              })}
+            </AnimatePresence>
+          </div>
         </div>
-      </div>
-    </PracticeGameLayout>
+      </PracticeGameLayout>
+
+      {/* Feedback Banner */}
+      {showFeedback && (
+        <FeedbackBanner
+          isCorrect={isCorrect}
+          correctAnswer={
+            !isCorrect
+              ? currentQ.options.find((opt) => opt.isCorrect)?.text
+              : null
+          }
+          onContinue={handleContinue}
+          message={feedbackMessage}
+          continueLabel={
+            currentIndex + 1 === questions.length ? "FINISH" : "CONTINUE"
+          }
+        />
+      )}
+    </>
   );
 }
