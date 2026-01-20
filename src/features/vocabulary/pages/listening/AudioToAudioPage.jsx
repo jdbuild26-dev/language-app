@@ -3,6 +3,8 @@ import { useTextToSpeech } from "../../../../hooks/useTextToSpeech";
 import { fetchPracticeQuestions } from "../../../../services/vocabularyApi";
 import { Loader2, Volume2, ArrowRight } from "lucide-react";
 import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
+import FeedbackBanner from "@/components/ui/FeedbackBanner";
+import { getFeedbackMessage } from "@/utils/feedbackMessages";
 
 export default function AudioToAudioPage() {
   const { speak, isSpeaking } = useTextToSpeech();
@@ -12,7 +14,9 @@ export default function AudioToAudioPage() {
   const [currentIndex, setCurrentIndex] = useState(0);
 
   const [userInput, setUserInput] = useState("");
-  const [status, setStatus] = useState("idle"); // idle, success, error
+  const [showFeedback, setShowFeedback] = useState(false);
+  const [isCorrect, setIsCorrect] = useState(false);
+  const [feedbackMessage, setFeedbackMessage] = useState("");
   const [score, setScore] = useState(0);
   const [isCompleted, setIsCompleted] = useState(false);
 
@@ -46,10 +50,7 @@ export default function AudioToAudioPage() {
 
   const handleSubmit = (e) => {
     e?.preventDefault();
-    if (status !== "idle") {
-      if (status === "success" || status === "error") handleNext();
-      return;
-    }
+    if (showFeedback) return;
 
     const currentQ = questions[currentIndex];
 
@@ -62,18 +63,24 @@ export default function AudioToAudioPage() {
       .toLowerCase()
       .replace(/[.,!?;:]/g, "");
 
-    if (normalizedInput === normalizedAnswer) {
-      setStatus("success");
+    const correct = normalizedInput === normalizedAnswer;
+    setIsCorrect(correct);
+    setFeedbackMessage(getFeedbackMessage(correct));
+    setShowFeedback(true);
+
+    if (correct) {
       setScore((s) => s + 1);
-      speak("Correct!", "en-US");
-    } else {
-      setStatus("error");
-      speak(`Incorrect. The answer was ${currentQ.answer}`, "en-US");
     }
   };
 
+  const handleContinue = () => {
+    setShowFeedback(false);
+    setUserInput("");
+    handleNext();
+  };
+
   const handleNext = () => {
-    setStatus("idle");
+    setShowFeedback(false);
     setUserInput("");
     if (currentIndex < questions.length - 1) {
       setCurrentIndex((p) => p + 1);
@@ -103,11 +110,6 @@ export default function AudioToAudioPage() {
   const progress =
     questions.length > 0 ? ((currentIndex + 1) / questions.length) * 100 : 0;
 
-  let submitLabel = "Check";
-  if (status !== "idle") {
-    submitLabel = currentIndex === questions.length - 1 ? "Finish" : "Next";
-  }
-
   if (loading)
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -116,89 +118,78 @@ export default function AudioToAudioPage() {
     );
 
   return (
-    <PracticeGameLayout
-      questionType="Audio Fill in the Blank"
-      instructionFr="Écoutez et complétez la phrase"
-      instructionEn={
-        currentQ?.instruction || "Listen and complete the sentence"
-      }
-      progress={progress}
-      isGameOver={isCompleted}
-      score={score}
-      totalQuestions={questions.length}
-      onExit={() => (window.location.href = "/vocabulary/practice")}
-      onNext={handleSubmit}
-      onRestart={() => window.location.reload()}
-      isSubmitEnabled={userInput.trim().length > 0}
-      showSubmitButton={true}
-      submitLabel={submitLabel}
-    >
-      <div className="flex flex-col items-center w-full max-w-2xl">
-        <button
-          onClick={playSentence}
-          className={`mb-8 w-24 h-24 rounded-full flex items-center justify-center transition-all shadow-md
+    <>
+      <PracticeGameLayout
+        questionType="Audio Fill in the Blank"
+        instructionFr="Écoutez et complétez la phrase"
+        instructionEn={
+          currentQ?.instruction || "Listen and complete the sentence"
+        }
+        progress={progress}
+        isGameOver={isCompleted}
+        score={score}
+        totalQuestions={questions.length}
+        onExit={() => (window.location.href = "/vocabulary/practice")}
+        onNext={handleSubmit}
+        onRestart={() => window.location.reload()}
+        isSubmitEnabled={userInput.trim().length > 0 && !showFeedback}
+        showSubmitButton={true}
+        submitLabel="Submit"
+      >
+        <div className="flex flex-col items-center w-full max-w-2xl">
+          <button
+            onClick={playSentence}
+            className={`mb-8 w-24 h-24 rounded-full flex items-center justify-center transition-all shadow-md
                ${
                  isSpeaking
                    ? "bg-purple-100 text-purple-600 ring-4 ring-purple-200"
                    : "bg-white dark:bg-slate-800 hover:bg-gray-50 text-purple-500"
                }
              `}
-        >
-          <Volume2 className="w-10 h-10" />
-        </button>
+          >
+            <Volume2 className="w-10 h-10" />
+          </button>
 
-        <div className="text-2xl font-medium text-center text-gray-800 dark:text-gray-100 mb-8 leading-relaxed">
-          {currentQ?.displaySentence.split("___").map((part, i, arr) => (
-            <span key={i}>
-              {part}
-              {i < arr.length - 1 && (
-                <span className="inline-block w-32 border-b-2 border-gray-400 mx-2 relative top-1">
-                  {status !== "idle" && (
-                    <span
-                      className={`absolute -top-8 left-0 w-full text-center text-sm font-bold ${
-                        status === "success" ? "text-green-500" : "text-red-500"
-                      }`}
-                    >
-                      {status === "success" ? userInput : currentQ.answer}
-                    </span>
-                  )}
-                </span>
-              )}
-            </span>
-          ))}
-        </div>
+          <div className="text-2xl font-medium text-center text-gray-800 dark:text-gray-100 mb-8 leading-relaxed">
+            {currentQ?.displaySentence.split("___").map((part, i, arr) => (
+              <span key={i}>
+                {part}
+                {i < arr.length - 1 && (
+                  <span className="inline-block w-32 border-b-2 border-gray-400 mx-2 relative top-1" />
+                )}
+              </span>
+            ))}
+          </div>
 
-        <div className="w-full relative">
-          <input
-            ref={inputRef}
-            type="text"
-            value={userInput}
-            onChange={(e) => setUserInput(e.target.value)}
-            disabled={status !== "idle"}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") handleSubmit();
-            }}
-            placeholder="Type the missing word..."
-            className={`w-full p-4 text-center text-xl rounded-xl border-2 outline-none transition-all
-                      ${
-                        status === "idle"
-                          ? "border-gray-200 dark:border-slate-700 focus:border-blue-500 bg-white dark:bg-slate-800"
-                          : ""
-                      }
-                      ${
-                        status === "success"
-                          ? "border-green-500 bg-green-50 text-green-900"
-                          : ""
-                      }
-                      ${
-                        status === "error"
-                          ? "border-red-500 bg-red-50 text-red-900"
-                          : ""
-                      }
-                   `}
-          />
+          <div className="w-full relative">
+            <input
+              ref={inputRef}
+              type="text"
+              value={userInput}
+              onChange={(e) => setUserInput(e.target.value)}
+              disabled={showFeedback}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") handleSubmit();
+              }}
+              placeholder="Type the missing word..."
+              className="w-full p-4 text-center text-xl rounded-xl border-2 outline-none transition-all border-gray-200 dark:border-slate-700 focus:border-blue-500 bg-white dark:bg-slate-800"
+            />
+          </div>
         </div>
-      </div>
-    </PracticeGameLayout>
+      </PracticeGameLayout>
+
+      {/* Feedback Banner */}
+      {showFeedback && (
+        <FeedbackBanner
+          isCorrect={isCorrect}
+          correctAnswer={!isCorrect ? currentQ.answer : null}
+          onContinue={handleContinue}
+          message={feedbackMessage}
+          continueLabel={
+            currentIndex + 1 === questions.length ? "FINISH" : "CONTINUE"
+          }
+        />
+      )}
+    </>
   );
 }

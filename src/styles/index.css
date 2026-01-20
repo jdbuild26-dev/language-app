@@ -4,6 +4,25 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer components {
+  /* Story Content Styles */
+  .story-content {
+    @apply font-sans;
+  }
+  .story-content h1 {
+    @apply text-2xl font-bold text-slate-800 dark:text-white mb-6;
+  }
+  .story-content .dialogue-line {
+    @apply mb-4;
+  }
+  .story-content .speaker {
+    @apply font-bold text-orange-500 mr-2;
+  }
+  .story-content .text {
+    @apply text-slate-700 dark:text-slate-300;
+  }
+}
+
 @layer base {
   :root {
     --background: #ffffff;

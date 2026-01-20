@@ -3,7 +3,9 @@ import { Loader2, XCircle } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
+import FeedbackBanner from "@/components/ui/FeedbackBanner";
 import { fetchPracticeQuestions } from "@/services/vocabularyApi";
+import { getFeedbackMessage } from "@/utils/feedbackMessages";
 
 // MOCK DATA Fallback
 const MOCK_DATA = [
@@ -38,6 +40,9 @@ export default function HighlightWordGamePage() {
   const [score, setScore] = useState(0);
   const [isGameOver, setIsGameOver] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [showFeedback, setShowFeedback] = useState(false);
+  const [isCorrect, setIsCorrect] = useState(false);
+  const [feedbackMessage, setFeedbackMessage] = useState("");
 
   // Timer State
   const [timer, setTimer] = useState(20); // Default per question
@@ -79,7 +84,12 @@ export default function HighlightWordGamePage() {
     const cleanWord = selectedWord.replace(/[.,!?;:]/g, "").toLowerCase();
     const cleanTarget = currentItem.correctWord.toLowerCase();
 
-    if (cleanWord === cleanTarget) {
+    const correct = cleanWord === cleanTarget;
+    setIsCorrect(correct);
+    setFeedbackMessage(getFeedbackMessage(correct));
+    setShowFeedback(true);
+
+    if (correct) {
       setScore((prev) => prev + 1);
     }
   };
@@ -89,6 +99,8 @@ export default function HighlightWordGamePage() {
       handleCheck();
       return;
     }
+
+    setShowFeedback(false);
 
     // Move to next
     if (currentIndex < questions.length - 1) {
@@ -115,72 +127,87 @@ export default function HighlightWordGamePage() {
   const timerString = `0:${timer.toString().padStart(2, "0")}`;
 
   return (
-    <PracticeGameLayout
-      questionType={currentItem?.QuestionType}
-      instructionFr={currentItem?.Instruction_FR}
-      instructionEn={currentItem?.Instruction_EN}
-      progress={progress}
-      isGameOver={isGameOver}
-      score={score}
-      totalQuestions={questions.length}
-      onExit={() => navigate("/vocabulary/practice")}
-      onNext={handleNext}
-      onRestart={() => window.location.reload()}
-      isSubmitEnabled={selectedWordIndex !== null}
-      showSubmitButton={true}
-      submitLabel={
-        isAnswered
-          ? currentIndex < questions.length - 1
-            ? "Next"
-            : "Finish"
-          : "Submit"
-      }
-      timerValue={timerString}
-    >
-      <div className="flex flex-col items-center justify-center w-full max-w-3xl">
-        {/* Specific Prompt Instruction */}
-        <div className="mb-12 text-center">
-          <h3 className="text-xl md:text-2xl font-bold text-gray-800 dark:text-gray-100 mb-2">
-            {currentItem?.prompt}
-          </h3>
-          <p className="text-gray-400 italic">
-            Highlight the word which means "{currentItem?.meaning}"
-          </p>
-        </div>
+    <>
+      <PracticeGameLayout
+        questionType={currentItem?.QuestionType}
+        instructionFr={currentItem?.Instruction_FR}
+        instructionEn={currentItem?.Instruction_EN}
+        progress={progress}
+        isGameOver={isGameOver}
+        score={score}
+        totalQuestions={questions.length}
+        onExit={() => navigate("/vocabulary/practice")}
+        onNext={handleNext}
+        onRestart={() => window.location.reload()}
+        isSubmitEnabled={selectedWordIndex !== null}
+        showSubmitButton={true}
+        submitLabel={
+          isAnswered
+            ? currentIndex < questions.length - 1
+              ? "Next"
+              : "Finish"
+            : "Submit"
+        }
+        timerValue={timerString}
+      >
+        <div className="flex flex-col items-center justify-center w-full max-w-3xl">
+          {/* Specific Prompt Instruction */}
+          <div className="mb-12 text-center">
+            <h3 className="text-xl md:text-2xl font-bold text-gray-800 dark:text-gray-100 mb-2">
+              {currentItem?.prompt}
+            </h3>
+            <p className="text-gray-400 italic">
+              Highlight the word which means "{currentItem?.meaning}"
+            </p>
+          </div>
 
-        <div className="flex flex-wrap justify-center gap-3 text-2xl md:text-4xl font-medium leading-relaxed">
-          {words.map((word, index) => {
-            let styles =
-              "bg-transparent text-gray-800 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg px-2 cursor-pointer transition-all";
+          <div className="flex flex-wrap justify-center gap-3 text-2xl md:text-4xl font-medium leading-relaxed">
+            {words.map((word, index) => {
+              let styles =
+                "bg-transparent text-gray-800 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg px-2 cursor-pointer transition-all";
 
-            if (selectedWordIndex === index) {
-              styles =
-                "bg-blue-100 text-blue-800 ring-2 ring-blue-300 rounded-lg px-2 shadow-sm";
-              if (isAnswered) {
-                const cleanWord = word.replace(/[.,!?;:]/g, "").toLowerCase();
-                const cleanTarget = currentItem.correctWord.toLowerCase();
-                if (cleanWord === cleanTarget) {
-                  styles =
-                    "bg-green-100 text-green-800 ring-2 ring-green-400 rounded-lg px-2";
-                } else {
-                  styles =
-                    "bg-red-100 text-red-800 ring-2 ring-red-400 rounded-lg px-2 opacity-60";
+              if (selectedWordIndex === index) {
+                styles =
+                  "bg-blue-100 text-blue-800 ring-2 ring-blue-300 rounded-lg px-2 shadow-sm";
+                if (isAnswered) {
+                  const cleanWord = word.replace(/[.,!?;:]/g, "").toLowerCase();
+                  const cleanTarget = currentItem.correctWord.toLowerCase();
+                  if (cleanWord === cleanTarget) {
+                    styles =
+                      "bg-green-100 text-green-800 ring-2 ring-green-400 rounded-lg px-2";
+                  } else {
+                    styles =
+                      "bg-red-100 text-red-800 ring-2 ring-red-400 rounded-lg px-2 opacity-60";
+                  }
                 }
               }
-            }
 
-            return (
-              <span
-                key={index}
-                onClick={() => handleWordClick(index, word)}
-                className={styles}
-              >
-                {word}
-              </span>
-            );
-          })}
+              return (
+                <span
+                  key={index}
+                  onClick={() => handleWordClick(index, word)}
+                  className={styles}
+                >
+                  {word}
+                </span>
+              );
+            })}
+          </div>
         </div>
-      </div>
-    </PracticeGameLayout>
+      </PracticeGameLayout>
+
+      {/* Feedback Banner */}
+      {showFeedback && (
+        <FeedbackBanner
+          isCorrect={isCorrect}
+          correctAnswer={!isCorrect ? currentItem.correctWord : null}
+          onContinue={handleNext}
+          message={feedbackMessage}
+          continueLabel={
+            currentIndex + 1 === questions.length ? "FINISH" : "CONTINUE"
+          }
+        />
+      )}
+    </>
   );
 }

@@ -29,6 +29,7 @@ import FlashcardsPage from "@/features/vocabulary/pages/FlashcardsPage";
 import GrammarPage from "@/features/grammar/pages/GrammarPage";
 import GrammarNotePage from "@/features/grammar/pages/GrammarNotePage";
 import StoriesPage from "@/features/stories/pages/StoriesPage";
+import StoryPlayerPage from "@/features/stories/pages/StoryPlayerPage";
 import PracticePage from "@/features/practice/pages/PracticePage";
 import FillInBlankGamePage from "@/features/vocabulary/pages/FillInBlankGamePage";
 import CorrectSpellingGamePage from "@/features/vocabulary/pages/CorrectSpellingGamePage";
@@ -114,10 +115,18 @@ function App() {
             }
           />
           <Route
-            path="stories"
+            path="stories/*"
             element={
               <ProtectedRoute>
                 <StoriesPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="stories/:storyId"
+            element={
+              <ProtectedRoute>
+                <StoryPlayerPage />
               </ProtectedRoute>
             }
           />

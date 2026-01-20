@@ -1,4 +1,5 @@
-const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
+const API_BASE_URL =
+  import.meta.env.VITE_API_URL || "https://language-api-mine.onrender.com";
 
 /**
  * Fetch vocabulary with optional filtering
@@ -37,14 +38,14 @@ export async function fetchVocabulary({
  */
 export async function fetchLessonWords(
   lessonId,
-  { level, wordsPerLesson = 10 } = {}
+  { level, wordsPerLesson = 10 } = {},
 ) {
   const params = new URLSearchParams();
   params.append("words_per_lesson", wordsPerLesson);
   if (level) params.append("level", level);
 
   const response = await fetch(
-    `${API_BASE_URL}/api/vocabulary/lesson/${lessonId}?${params}`
+    `${API_BASE_URL}/api/vocabulary/lesson/${lessonId}?${params}`,
   );
 
   if (!response.ok) {
@@ -88,7 +89,7 @@ export async function fetchCategoriesByLevel(level) {
   if (level) params.append("level", level);
 
   const response = await fetch(
-    `${API_BASE_URL}/api/vocabulary/categories-by-level?${params}`
+    `${API_BASE_URL}/api/vocabulary/categories-by-level?${params}`,
   );
 
   if (!response.ok) {
@@ -181,7 +182,7 @@ export async function fetchUserProgressStats({
  */
 export async function fetchTeachers({ limit = 20, skip = 0 } = {}) {
   const response = await fetch(
-    `${API_BASE_URL}/api/teachers?limit=${limit}&skip=${skip}`
+    `${API_BASE_URL}/api/teachers?limit=${limit}&skip=${skip}`,
   );
 
   if (!response.ok) {
@@ -224,7 +225,7 @@ export async function fetchTeacherStudents(teacherId, status, token) {
       headers: {
         Authorization: `Bearer ${token}`,
       },
-    }
+    },
   );
 
   if (!response.ok) {
@@ -247,7 +248,7 @@ export async function fetchStudentTeachers(studentId, status, token) {
       headers: {
         Authorization: `Bearer ${token}`,
       },
-    }
+    },
   );
 
   if (!response.ok) {
@@ -270,7 +271,7 @@ export async function updateRelationshipStatus(relationshipId, status, token) {
         Authorization: `Bearer ${token}`,
       },
       body: JSON.stringify({ status }),
-    }
+    },
   );
 
   if (!response.ok) {
@@ -291,7 +292,7 @@ export async function deleteRelationship(relationshipId, token) {
       headers: {
         Authorization: `Bearer ${token}`,
       },
-    }
+    },
   );
 
   if (!response.ok) {
@@ -309,7 +310,7 @@ export async function fetchPracticeQuestions(sheetName, limit) {
   if (limit) params.append("limit", limit);
 
   const response = await fetch(
-    `${API_BASE_URL}/api/practice/${encodeURIComponent(sheetName)}?${params}`
+    `${API_BASE_URL}/api/practice/${encodeURIComponent(sheetName)}?${params}`,
   );
 
   if (!response.ok) {

@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 import { useTextToSpeech } from "@/hooks/useTextToSpeech";
 
 export default function MultiSelectPage() {
-  const { speak } = useTextToSpeech();
+  const { speak, isSpeaking, cancel } = useTextToSpeech();
   const [loading, setLoading] = useState(true);
   const [questions, setQuestions] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -23,7 +23,7 @@ export default function MultiSelectPage() {
     try {
       setLoading(true);
       const response = await fetchPracticeQuestions(
-        "B3_what you hear-Multiple"
+        "B3_what you hear-Multiple",
       );
       if (response && response.data && response.data.length > 0) {
         const transformed = response.data.map((q) => ({
@@ -63,6 +63,7 @@ export default function MultiSelectPage() {
 
   const handleOptionToggle = (idx) => {
     if (isChecked) return;
+    cancel(); // Stop audio when user interacts
     setSelectedIndices((prev) => {
       if (prev.includes(idx)) return prev.filter((i) => i !== idx);
       return [...prev, idx];
@@ -155,14 +156,16 @@ export default function MultiSelectPage() {
               <Volume2 className="w-8 h-8" />
             </button>
             {/* Fake Waveform Visual */}
+            {/* Fake Waveform Visual */}
             <div className="flex-1 h-12 flex items-center justify-center gap-[2px] ml-4 opacity-50">
               {[...Array(20)].map((_, i) => (
                 <div
                   key={i}
-                  className="bg-orange-400 w-1 rounded-full animate-pulse"
+                  // Removed animate-pulse class entirely
+                  className="bg-orange-400 w-1 rounded-full"
+                  // Deterministic height based on index i, preventing jitter
                   style={{
-                    height: `${Math.random() * 100}%`,
-                    animationDelay: `${i * 0.05}s`,
+                    height: `${30 + ((i * 11) % 70)}%`,
                   }}
                 />
               ))}
