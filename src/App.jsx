@@ -115,7 +115,7 @@ function App() {
             }
           />
           <Route
-            path="stories"
+            path="stories/*"
             element={
               <ProtectedRoute>
                 <StoriesPage />
