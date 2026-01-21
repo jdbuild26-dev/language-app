@@ -150,36 +150,46 @@ export default function HighlightWordGamePage() {
         }
         timerValue={timerString}
       >
-        <div className="flex flex-col items-center justify-center w-full max-w-3xl">
+        <div className="flex flex-col items-center justify-center w-full max-w-5xl">
           {/* Specific Prompt Instruction */}
-          <div className="mb-12 text-center">
-            <h3 className="text-xl md:text-2xl font-bold text-gray-800 dark:text-gray-100 mb-2">
+          <div className="mb-12 text-center w-full">
+            <h3 className="text-xl md:text-2xl font-bold text-gray-800 dark:text-gray-100 mb-6 pb-4 border-b border-gray-100 dark:border-gray-800">
               {currentItem?.prompt}
             </h3>
-            <p className="text-gray-400 italic">
-              Highlight the word which means "{currentItem?.meaning}"
-            </p>
+            <div className="inline-block px-6 py-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+              <p className="text-gray-600 dark:text-gray-300 font-medium">
+                Word meaning "{currentItem?.meaning}"
+              </p>
+            </div>
           </div>
 
-          <div className="flex flex-wrap justify-center gap-3 text-2xl md:text-4xl font-medium leading-relaxed">
+          <div className="flex flex-wrap justify-center gap-3 text-lg md:text-2xl font-medium leading-relaxed max-w-4xl mx-auto">
             {words.map((word, index) => {
               let styles =
-                "bg-transparent text-gray-800 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg px-2 cursor-pointer transition-all";
+                "bg-transparent text-gray-800 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg px-2 py-1 cursor-pointer transition-all border border-transparent";
 
-              if (selectedWordIndex === index) {
-                styles =
-                  "bg-blue-100 text-blue-800 ring-2 ring-blue-300 rounded-lg px-2 shadow-sm";
-                if (isAnswered) {
-                  const cleanWord = word.replace(/[.,!?;:]/g, "").toLowerCase();
-                  const cleanTarget = currentItem.correctWord.toLowerCase();
-                  if (cleanWord === cleanTarget) {
-                    styles =
-                      "bg-green-100 text-green-800 ring-2 ring-green-400 rounded-lg px-2";
-                  } else {
-                    styles =
-                      "bg-red-100 text-red-800 ring-2 ring-red-400 rounded-lg px-2 opacity-60";
-                  }
+              const cleanWord = word.replace(/[.,!?;:]/g, "").toLowerCase();
+              const cleanTarget = currentItem.correctWord.toLowerCase();
+
+              // If answered, logic for coloring
+              if (isAnswered) {
+                if (cleanWord === cleanTarget) {
+                  // This is the correct word -> GREEN
+                  styles =
+                    "bg-green-100 text-green-800 ring-2 ring-green-400 rounded-lg px-2 py-1 shadow-sm";
+                } else if (selectedWordIndex === index) {
+                  // This was selected but is wrong -> RED
+                  styles =
+                    "bg-red-100 text-red-800 ring-2 ring-red-400 rounded-lg px-2 py-1 opacity-80";
+                } else {
+                  // Other unrelated words -> Faded
+                  styles =
+                    "text-gray-400 dark:text-gray-600 rounded-lg px-2 py-1 opacity-50";
                 }
+              } else if (selectedWordIndex === index) {
+                // Currently selected (not checked yet) -> BLUE
+                styles =
+                  "bg-blue-100 text-blue-800 ring-2 ring-blue-300 rounded-lg px-2 py-1 shadow-sm";
               }
 
               return (
