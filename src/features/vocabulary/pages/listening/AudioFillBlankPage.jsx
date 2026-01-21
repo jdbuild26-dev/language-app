@@ -1,23 +1,26 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
+import { useTextToSpeech } from "../../../../hooks/useTextToSpeech";
 import { fetchPracticeQuestions } from "../../../../services/vocabularyApi";
-import { Loader2, Volume2, CheckCircle, XCircle } from "lucide-react";
+import { Loader2, Volume2, ArrowRight } from "lucide-react";
 import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
-import { useTextToSpeech } from "@/hooks/useTextToSpeech";
-import { cn } from "@/lib/utils";
 import FeedbackBanner from "@/components/ui/FeedbackBanner";
 import { getFeedbackMessage } from "@/utils/feedbackMessages";
 
 export default function AudioFillBlankPage() {
-  const { speak } = useTextToSpeech();
+  const { speak, isSpeaking } = useTextToSpeech();
+
   const [loading, setLoading] = useState(true);
   const [questions, setQuestions] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [selectedOption, setSelectedOption] = useState(null);
+
+  const [userInput, setUserInput] = useState("");
   const [showFeedback, setShowFeedback] = useState(false);
   const [isCorrect, setIsCorrect] = useState(false);
   const [feedbackMessage, setFeedbackMessage] = useState("");
   const [score, setScore] = useState(0);
   const [isCompleted, setIsCompleted] = useState(false);
+
+  const inputRef = useRef(null);
 
   useEffect(() => {
     loadData();
@@ -27,105 +30,90 @@ export default function AudioFillBlankPage() {
     try {
       setLoading(true);
       const response = await fetchPracticeQuestions("B5_Fill blanks_Audio");
-      if (response && response.data && response.data.length > 0) {
-        const transformed = response.data.map((q) => ({
-          id: q.ExerciseID || Math.random(),
-          instruction: q.Instruction_EN || "What do you hear?",
-          displaySentence: q.SentenceWithBlank || "Le ___ est dans la cuisine.",
-          fullSentence: q.CompleteSentence || q.Audio || "", // Text to speak for context
-          options: [q.Option1, q.Option2, q.Option3, q.Option4].filter(Boolean),
-          correctAnswer: q.CorrectAnswer || q.Option1, // Fallback
+      if (response && response.data) {
+        const transformed = response.data.map((item) => ({
+          id: item["ExerciseID"],
+          fullSentence: item["CompleteSentence"] || item["Audio"],
+          displaySentence: item["SentenceWithBlank"],
+          answer: item["CorrectAnswer"],
+          instruction:
+            item["Instruction_EN"] || "Listen and complete the sentence",
         }));
         setQuestions(transformed);
-      } else {
-        console.warn("API returned empty, using MOCK data");
-        setQuestions(MOCK_DATA);
       }
     } catch (err) {
       console.error(err);
-      setQuestions(MOCK_DATA);
     } finally {
       setLoading(false);
     }
   };
 
-  const MOCK_DATA = [
-    {
-      id: 1,
-      instruction: "What do you hear?",
-      displaySentence: "Le chien et le _____ jouent dans le jardin.",
-      fullSentence: "Le chien et le chat jouent dans le jardin.",
-      options: ["chat", "rat", "plat", "drap"],
-      correctAnswer: "chat",
-    },
-    {
-      id: 2,
-      instruction: "What do you hear?",
-      displaySentence: "J'aime manger des _____.",
-      fullSentence: "J'aime manger des pommes.",
-      options: ["pommes", "poires", "gommes", "sommes"],
-      correctAnswer: "pommes",
-    },
-  ];
-
-  const handleOptionSelect = (opt) => {
+  const handleSubmit = (e) => {
+    e?.preventDefault();
     if (showFeedback) return;
-    setSelectedOption(opt);
-  };
 
-  const playSentence = () => {
-    const q = questions[currentIndex];
-    if (q?.fullSentence) speak(q.fullSentence, "fr-FR");
-  };
+    const currentQ = questions[currentIndex];
 
-  const playOption = (e, text) => {
-    e.stopPropagation(); // Prevent selecting when clicking play? or maybe playing selects it?
-    // Design shows speaker icon inside the button.
-    speak(text, "fr-FR");
-  };
+    const normalizedInput = userInput
+      .trim()
+      .toLowerCase()
+      .replace(/[.,!?;:]/g, "");
+    const normalizedAnswer = currentQ.answer
+      .trim()
+      .toLowerCase()
+      .replace(/[.,!?;:]/g, "");
 
-  const handleSubmit = () => {
-    if (showFeedback) return;
-    if (!selectedOption) return;
-
-    const q = questions[currentIndex];
-    const correct =
-      selectedOption?.toLowerCase() === q.correctAnswer?.toLowerCase();
+    const correct = normalizedInput === normalizedAnswer;
     setIsCorrect(correct);
     setFeedbackMessage(getFeedbackMessage(correct));
     setShowFeedback(true);
 
     if (correct) {
-      setScore((prev) => prev + 1);
+      setScore((s) => s + 1);
     }
   };
 
   const handleContinue = () => {
     setShowFeedback(false);
-    setSelectedOption(null);
+    setUserInput("");
+    handleNext();
+  };
 
+  const handleNext = () => {
+    setShowFeedback(false);
+    setUserInput("");
     if (currentIndex < questions.length - 1) {
-      setCurrentIndex((prev) => prev + 1);
+      setCurrentIndex((p) => p + 1);
     } else {
       setIsCompleted(true);
     }
   };
 
-  const currentQ = questions[currentIndex];
-  // Auto-play sentence on load
+  const playSentence = () => {
+    if (questions[currentIndex]) {
+      speak(questions[currentIndex].fullSentence, "fr-FR", 0.85);
+    }
+  };
+
+  // Auto-play on new question
   useEffect(() => {
-    if (!loading && !isCompleted && currentQ) {
-      // speak(currentQ.fullSentence, "fr-FR");
+    if (!loading && !isCompleted && questions.length > 0) {
+      const t = setTimeout(() => {
+        playSentence();
+        if (inputRef.current) inputRef.current.focus();
+      }, 800);
+      return () => clearTimeout(t);
     }
   }, [currentIndex, loading, isCompleted]);
 
+  const currentQ = questions[currentIndex];
   const progress =
     questions.length > 0 ? ((currentIndex + 1) / questions.length) * 100 : 0;
 
   if (loading)
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="animate-spin w-8 h-8 text-blue-500" />
+        <Loader2 className="animate-spin text-blue-500 w-8 h-8" />
       </div>
     );
 
@@ -134,7 +122,9 @@ export default function AudioFillBlankPage() {
       <PracticeGameLayout
         questionType="Audio Fill in the Blank"
         instructionFr="Écoutez et complétez la phrase"
-        instructionEn={currentQ?.instruction}
+        instructionEn={
+          currentQ?.instruction || "Listen and complete the sentence"
+        }
         progress={progress}
         isGameOver={isCompleted}
         score={score}
@@ -142,81 +132,48 @@ export default function AudioFillBlankPage() {
         onExit={() => (window.location.href = "/vocabulary/practice")}
         onNext={handleSubmit}
         onRestart={() => window.location.reload()}
-        isSubmitEnabled={!!selectedOption && !showFeedback}
+        isSubmitEnabled={userInput.trim().length > 0 && !showFeedback}
         showSubmitButton={true}
         submitLabel="Submit"
       >
-        <div className="flex flex-col items-center w-full max-w-3xl px-4">
-          {/* Sentence & Main Audio */}
-          <div className="flex flex-col md:flex-row items-center gap-6 mb-16">
-            <button
-              onClick={playSentence}
-              className="w-16 h-16 rounded-full bg-teal-100 hover:bg-teal-200 text-teal-700 flex items-center justify-center transition-transform active:scale-95 border-4 border-white shadow-sm"
-            >
-              <Volume2 className="w-8 h-8" />
-            </button>
-            <h2 className="text-2xl md:text-3xl font-medium text-gray-800 dark:text-gray-100 text-center leading-relaxed">
-              {currentQ?.displaySentence.split("_____").map((part, i, arr) => (
-                <React.Fragment key={i}>
-                  {part}
-                  {i < arr.length - 1 && (
-                    <span className="inline-block border-b-4 border-gray-400 min-w-[3rem] mx-2" />
-                  )}
-                </React.Fragment>
-              ))}
-            </h2>
+        <div className="flex flex-col items-center w-full max-w-2xl">
+          <button
+            onClick={playSentence}
+            className={`mb-8 w-24 h-24 rounded-full flex items-center justify-center transition-all shadow-md
+               ${
+                 isSpeaking
+                   ? "bg-purple-100 text-purple-600 ring-4 ring-purple-200"
+                   : "bg-white dark:bg-slate-800 hover:bg-gray-50 text-purple-500"
+               }
+             `}
+          >
+            <Volume2 className="w-10 h-10" />
+          </button>
+
+          <div className="text-2xl font-medium text-center text-gray-800 dark:text-gray-100 mb-8 leading-relaxed">
+            {currentQ?.displaySentence.split("___").map((part, i, arr) => (
+              <span key={i}>
+                {part}
+                {i < arr.length - 1 && (
+                  <span className="inline-block w-32 border-b-2 border-gray-400 mx-2 relative top-1" />
+                )}
+              </span>
+            ))}
           </div>
 
-          {/* Audio Options */}
-          <div className="flex flex-col gap-4 w-full max-w-md">
-            {currentQ?.options.map((opt, idx) => {
-              const isSelected = selectedOption === opt;
-              const isCorrect = currentQ.correctAnswer === opt;
-
-              let style =
-                "bg-white dark:bg-slate-800 border-2 border-gray-200 dark:border-slate-700 hover:border-teal-400";
-
-              if (isSelected) {
-                style =
-                  "bg-teal-50 border-teal-500 ring-1 ring-teal-500 shadow-md";
-              }
-
-              return (
-                <div
-                  key={idx}
-                  onClick={() => handleOptionSelect(opt)}
-                  className={cn(
-                    "relative flex items-center p-4 rounded-xl cursor-pointer transition-all active:scale-[0.98] group",
-                    style,
-                  )}
-                >
-                  {/* Play Button for this option */}
-                  <button
-                    onClick={(e) => playOption(e, opt)}
-                    className="w-10 h-10 rounded-full bg-gray-100 hover:bg-blue-100 text-blue-500 flex items-center justify-center mr-4 shrink-0 transition-colors"
-                  >
-                    <Volume2 className="w-5 h-5" />
-                  </button>
-
-                  {/* Fake Waveform */}
-                  <div className="flex-1 flex items-center gap-[3px] h-8 opacity-40 group-hover:opacity-60 transition-opacity">
-                    {[...Array(25)].map((_, i) => (
-                      <div
-                        key={i}
-                        className="w-1 bg-current rounded-full"
-                        // Deterministic height based on option index (idx) and bar index (i)
-                        // preventing jitter on re-renders
-                        style={{
-                          height: `${30 + ((i * 13 + idx * 7) % 70)}%`,
-                        }}
-                      />
-                    ))}
-                  </div>
-
-                  {/* Status Icon - removed inline icons */}
-                </div>
-              );
-            })}
+          <div className="w-full relative">
+            <input
+              ref={inputRef}
+              type="text"
+              value={userInput}
+              onChange={(e) => setUserInput(e.target.value)}
+              disabled={showFeedback}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") handleSubmit();
+              }}
+              placeholder="Type the missing word..."
+              className="w-full p-4 text-center text-xl rounded-xl border-2 outline-none transition-all border-gray-200 dark:border-slate-700 focus:border-blue-500 bg-white dark:bg-slate-800"
+            />
           </div>
         </div>
       </PracticeGameLayout>
@@ -225,7 +182,7 @@ export default function AudioFillBlankPage() {
       {showFeedback && (
         <FeedbackBanner
           isCorrect={isCorrect}
-          correctAnswer={!isCorrect ? currentQ.correctAnswer : null}
+          correctAnswer={!isCorrect ? currentQ.answer : null}
           onContinue={handleContinue}
           message={feedbackMessage}
           continueLabel={

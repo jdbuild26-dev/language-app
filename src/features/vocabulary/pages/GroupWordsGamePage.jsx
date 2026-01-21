@@ -41,25 +41,6 @@ const MOCK_QUESTIONS = [
     instructionFr: "Triez les mots",
     instructionEn: "Select 4 words related to Time",
     theme: "Time",
-    allWords: [
-      "Lundi",
-      "Rouge",
-      "Janvier",
-      "Manger",
-      "Heure",
-      "Grand",
-      "Minute",
-      "Fleur",
-      "Année",
-      "Petit",
-      "Chat",
-      "Mer",
-    ],
-    correctGroup: ["Lundi", "Janvier", "Heure", "Minute", "Année"],
-    // Wait, prompt says "Pick 4". Arrays might be variable size in real app, but let's stick to 4 for "Pick 4".
-    // Let's fix data: Lundi, Janvier, Heure, Minute = 4. Année is 5th.
-    // Let's remove Année from correct group for this specific game type constraint, or handle N words.
-    // "Pick 4" implies exactly 4. I will use 4 correct words.
     correctGroup: ["Lundi", "Janvier", "Heure", "Minute"],
     // Need to ensure these are in allWords.
     allWords: [

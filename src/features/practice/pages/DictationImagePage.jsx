@@ -15,6 +15,8 @@ const normalizeText = (text) => {
     .trim();
 };
 
+import FeedbackBanner from "@/components/ui/FeedbackBanner";
+
 export default function DictationImagePage() {
   const navigate = useNavigate();
 
@@ -37,7 +39,7 @@ export default function DictationImagePage() {
     const fetchData = async () => {
       try {
         const response = await fetch(
-          `${import.meta.env.VITE_API_URL}/api/practice/dictation-image`
+          `${import.meta.env.VITE_API_URL}/api/practice/dictation-image`,
         );
         if (!response.ok) throw new Error("Failed to fetch data");
         const data = await response.json();
@@ -67,11 +69,26 @@ export default function DictationImagePage() {
   // Reset inputs when question changes
   useEffect(() => {
     if (questions.length > 0 && questions[currentIndex]) {
-      const answerLen = questions[currentIndex].correctAnswer.length;
-      setUserInputs(Array(answerLen).fill(""));
-      // Focus first input
+      const answer = questions[currentIndex].correctAnswer || ""; // Safe fallback
+      const answerLen = answer.length;
+
+      console.log("Setting up inputs for:", answer); // Debug log
+
+      const newInputs = Array(answerLen).fill("");
+
+      // Pre-fill first and last characters
+      if (answerLen > 0) {
+        newInputs[0] = answer[0];
+        newInputs[answerLen - 1] = answer[answerLen - 1];
+      }
+
+      setUserInputs(newInputs);
+
+      // Focus second input (since first is filled) if length > 1, else generic focus
       setTimeout(() => {
-        inputRefs.current[0]?.focus();
+        if (answerLen > 1) {
+          inputRefs.current[1]?.focus();
+        }
       }, 50);
     }
   }, [currentIndex, questions]);
@@ -112,11 +129,7 @@ export default function DictationImagePage() {
     } else {
       setFeedback("incorrect");
     }
-
-    // Auto-advance after delay
-    setTimeout(() => {
-      handleNext();
-    }, 1500);
+    // Updated: No auto-advance, wait for user to click Continue on banner
   };
 
   const handleNext = () => {
@@ -134,6 +147,7 @@ export default function DictationImagePage() {
     setIsGameOver(false);
     setTimer(0);
     setQuestions((prev) => [...prev].sort(() => 0.5 - Math.random()));
+    setFeedback(null);
   };
 
   const formatTimer = (seconds) => {
@@ -170,93 +184,108 @@ export default function DictationImagePage() {
   const isComplete = userInputs.every((char) => char !== "");
 
   return (
-    <PracticeGameLayout
-      title="Dictation (Image)"
-      questionType={currentQuestion.question}
-      instructionFr={currentQuestion.instructionFr}
-      instructionEn={currentQuestion.instructionEn}
-      progress={((currentIndex + 1) / questions.length) * 100}
-      score={score}
-      totalQuestions={questions.length}
-      isGameOver={isGameOver}
-      timerValue={formatTimer(timer)}
-      onExit={() => navigate("/vocabulary/practice")}
-      onNext={handleSubmit}
-      onRestart={handleRestart}
-      isSubmitEnabled={isComplete && !feedback}
-      submitLabel={
-        feedback === "correct"
-          ? "Correct!"
-          : feedback === "incorrect"
-          ? "Incorrect"
-          : "Submit"
-      }
-    >
-      <div className="flex flex-col items-center justify-center w-full max-w-4xl gap-8">
-        {/* Image */}
-        <div className="w-64 h-64 md:w-80 md:h-80 bg-slate-200 dark:bg-slate-800 rounded-2xl overflow-hidden shadow-lg flex items-center justify-center relative">
-          {currentQuestion.imageUrl &&
-          !currentQuestion.imageUrl.includes("placeholder") ? (
-            <img
-              src={currentQuestion.imageUrl}
-              alt="Dictation"
-              className="w-full h-full object-cover"
-            />
-          ) : (
-            <div className="flex flex-col items-center text-slate-400">
-              <ImageIcon className="w-16 h-16 mb-2" />
-              <span>No Image</span>
-            </div>
-          )}
+    <>
+      <PracticeGameLayout
+        title="Dictation (Image)"
+        questionType={currentQuestion.question}
+        instructionFr={currentQuestion.instructionFr}
+        instructionEn={currentQuestion.instructionEn}
+        progress={((currentIndex + 1) / questions.length) * 100}
+        score={score}
+        totalQuestions={questions.length}
+        isGameOver={isGameOver}
+        timerValue={formatTimer(timer)}
+        onExit={() => navigate("/vocabulary/practice")}
+        onNext={handleSubmit}
+        onRestart={handleRestart}
+        // Hide standard submit button when feedback banner is active
+        showSubmitButton={!feedback}
+        isSubmitEnabled={isComplete && !feedback}
+        submitLabel="Submit"
+      >
+        <div className="flex flex-col md:flex-row items-center justify-center w-full h-full gap-8 md:gap-16 px-4">
+          {/* Left Side: Image */}
+          <div className="w-64 h-64 md:w-96 md:h-96 bg-slate-100 dark:bg-slate-800 rounded-2xl overflow-hidden shadow-sm flex items-center justify-center relative shrink-0">
+            {currentQuestion.imageUrl &&
+            !currentQuestion.imageUrl.includes("placeholder") ? (
+              <img
+                src={currentQuestion.imageUrl}
+                alt="Dictation"
+                className="w-full h-full object-contain p-4"
+              />
+            ) : (
+              <div className="flex flex-col items-center text-slate-400">
+                <ImageIcon className="w-16 h-16 mb-2" />
+                <span>No Image</span>
+              </div>
+            )}
 
-          {/* Feedback Overlay on Image */}
-          {feedback === "correct" && (
-            <div className="absolute inset-0 bg-green-500/20 flex items-center justify-center animate-in fade-in duration-300">
-              <span className="text-4xl">✅</span>
-            </div>
-          )}
-          {feedback === "incorrect" && (
-            <div className="absolute inset-0 bg-red-500/20 flex items-center justify-center animate-in fade-in duration-300">
-              <span className="text-4xl">❌</span>
-            </div>
-          )}
-        </div>
+            {/* Removed Overlay since we use Banner now */}
+          </div>
 
-        {/* Question */}
-        <div className="text-center">
-          <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-100">
-            {currentQuestion.question}
-          </h2>
-        </div>
+          {/* Right Side: Inputs and Hint */}
+          <div className="flex flex-col items-center md:items-start gap-8 max-w-2xl">
+            {/* Question / Hint */}
+            <div className="text-center md:text-left">
+              <h2 className="text-2xl md:text-4xl font-bold text-slate-800 dark:text-slate-100 mb-2">
+                {currentQuestion.question}
+              </h2>
+              <p className="text-slate-500 dark:text-slate-400 text-lg">
+                Spell the word
+              </p>
+            </div>
 
-        {/* Inputs */}
-        <div className="flex flex-wrap justify-center gap-2 md:gap-3">
-          {userInputs.map((char, index) => (
-            <input
-              key={index}
-              ref={(el) => (inputRefs.current[index] = el)}
-              type="text"
-              maxLength={1}
-              value={char}
-              onChange={(e) => handleInputChange(index, e.target.value)}
-              onKeyDown={(e) => handleKeyDown(index, e)}
-              disabled={feedback !== null}
-              className={cn(
-                "w-12 h-14 md:w-14 md:h-16 border-2 rounded-xl text-center text-2xl font-bold transition-all outline-none focus:ring-4 focus:ring-indigo-500/20",
-                feedback === null
-                  ? "border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 focus:border-indigo-500 dark:focus:border-indigo-400"
-                  : "",
-                feedback === "correct"
-                  ? "border-green-500 bg-green-50 text-green-700"
-                  : "",
-                feedback === "incorrect"
-                  ? "border-red-500 bg-red-50 text-red-700"
-                  : ""
-              )}
-            />
-          ))}
+            {/* Inputs */}
+            <div className="flex flex-wrap justify-center md:justify-start gap-2">
+              {userInputs.map((char, index) => {
+                // Determine if this input was pre-filled (first or last char)
+                const isPreFilled =
+                  index === 0 || index === userInputs.length - 1;
+
+                return (
+                  <input
+                    key={index}
+                    ref={(el) => (inputRefs.current[index] = el)}
+                    type="text"
+                    maxLength={1}
+                    value={char}
+                    onChange={(e) => handleInputChange(index, e.target.value)}
+                    onKeyDown={(e) => handleKeyDown(index, e)}
+                    disabled={feedback !== null || isPreFilled}
+                    className={cn(
+                      "w-12 h-14 md:w-16 md:h-20 border-2 rounded-xl text-center text-2xl md:text-3xl font-bold transition-all outline-none",
+                      // Default Style
+                      "border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white",
+                      // Focus Style (only if not disabled)
+                      !isPreFilled &&
+                        feedback === null &&
+                        "focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20",
+                      // Pre-filled Style
+                      isPreFilled &&
+                        "bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700 select-none",
+                      // Correct/Incorrect Feedback
+                      feedback === "correct" &&
+                        "border-green-500 bg-green-50 text-green-700",
+                      feedback === "incorrect" &&
+                        "border-red-500 bg-red-50 text-red-700",
+                    )}
+                  />
+                );
+              })}
+            </div>
+          </div>
         </div>
-      </div>
-    </PracticeGameLayout>
+      </PracticeGameLayout>
+
+      {/* Feedback Banner */}
+      {feedback && (
+        <FeedbackBanner
+          isCorrect={feedback === "correct"}
+          correctAnswer={currentQuestion.correctAnswer}
+          message={feedback === "correct" ? "Excellent!" : "Correct solution:"}
+          onContinue={handleNext}
+        />
+      )}
+    </>
   );
 }
