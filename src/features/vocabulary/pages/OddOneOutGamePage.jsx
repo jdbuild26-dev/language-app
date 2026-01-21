@@ -93,7 +93,7 @@ export default function OddOneOutGamePage() {
 
   const getWordStyle = (word) => {
     const baseStyle =
-      "h-24 rounded-2xl border-2 text-xl font-medium transition-all duration-200 flex items-center justify-center relative overflow-hidden min-w-[180px]";
+      "h-32 md:h-40 rounded-2xl border-2 text-2xl md:text-3xl font-medium transition-all duration-200 flex items-center justify-center relative overflow-hidden min-w-[180px] md:min-w-[240px]";
 
     if (!isSubmitted) {
       // Normal Selection
@@ -144,7 +144,7 @@ export default function OddOneOutGamePage() {
       >
         <div className="flex-1 flex flex-col items-center justify-center -mt-10">
           {/* Grid */}
-          <div className="grid grid-cols-2 gap-4 w-full max-w-2xl">
+          <div className="grid grid-cols-2 gap-6 md:gap-10 w-full max-w-5xl">
             {currentQuestion.words.map((word, idx) => (
               <button
                 key={idx}

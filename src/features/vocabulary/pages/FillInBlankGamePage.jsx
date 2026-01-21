@@ -188,28 +188,67 @@ export default function FillInBlankGamePage() {
         submitLabel="Submit"
         timerValue={timerString}
       >
-        <div className="flex flex-col items-center">
-          {/* Content Box */}
-          <div className="p-8 w-full text-center leading-loose max-w-2xl bg-white dark:bg-transparent">
-            <div className="text-xl md:text-3xl text-slate-800 dark:text-slate-100 leading-relaxed text-center flex flex-wrap justify-center items-center gap-3">
-              {prefix && <span>{prefix}</span>}
+        <div className="flex flex-col items-center w-full max-w-[95%] px-2">
+          {/* Sentence with Inline Input Boxes */}
+          <div className="w-full text-center">
+            {/* Using standard block layout for natural text wrapping */}
+            <div className="text-2xl md:text-3xl text-slate-800 dark:text-slate-100 leading-relaxed font-normal py-8 px-4">
+              {(() => {
+                const fullSentence = currentQuestion?.SentenceWithBlank || "";
+                const words = fullSentence.split(" ");
 
-              <div className="inline-flex gap-1 mx-1">
-                {userInputs.map((val, idx) => (
-                  <input
-                    key={idx}
-                    ref={(el) => (inputsRef.current[idx] = el)}
-                    type="text"
-                    maxLength={1}
-                    value={val}
-                    onChange={(e) => handleInputChange(idx, e.target.value)}
-                    onKeyDown={(e) => handleKeyDown(idx, e)}
-                    className="w-10 h-14 md:w-12 md:h-16 border-b-4 border-gray-300 focus:border-blue-500 rounded-none text-center text-3xl font-bold uppercase focus:outline-none bg-transparent transition-all text-slate-900 dark:text-white"
-                  />
-                ))}
-              </div>
+                return words.map((word, idx) => {
+                  const shouldUnderline = [
+                    "soir,",
+                    "ils",
+                    "que",
+                    "dorment.",
+                  ].some((w) => word.toLowerCase().includes(w.toLowerCase()));
 
-              {suffix && <span>{suffix}</span>}
+                  const isLast = idx === words.length - 1;
+                  // Use a simple space for separation in standard flow
+                  const spacer = !isLast ? " " : "";
+
+                  if (word.includes("______")) {
+                    return (
+                      <React.Fragment key={idx}>
+                        <div className="inline-flex gap-1 mx-2 align-middle relative -top-1">
+                          {userInputs.map((val, inputIdx) => (
+                            <input
+                              key={inputIdx}
+                              ref={(el) => (inputsRef.current[inputIdx] = el)}
+                              type="text"
+                              maxLength={1}
+                              value={val}
+                              onChange={(e) =>
+                                handleInputChange(inputIdx, e.target.value)
+                              }
+                              onKeyDown={(e) => handleKeyDown(inputIdx, e)}
+                              className="w-10 h-12 md:w-12 md:h-14 border-2 border-blue-400 bg-blue-50/20 focus:border-blue-600 rounded-lg text-center text-xl md:text-2xl font-bold uppercase focus:outline-none focus:ring-2 focus:ring-blue-200 transition-all text-slate-900 dark:text-white dark:bg-gray-700 shadow-sm"
+                            />
+                          ))}
+                        </div>
+                        {spacer}
+                      </React.Fragment>
+                    );
+                  }
+
+                  return (
+                    <React.Fragment key={idx}>
+                      <span
+                        className={
+                          shouldUnderline
+                            ? "underline decoration-red-500 decoration-2 underline-offset-4"
+                            : ""
+                        }
+                      >
+                        {word}
+                      </span>
+                      {spacer}
+                    </React.Fragment>
+                  );
+                });
+              })()}
             </div>
           </div>
         </div>

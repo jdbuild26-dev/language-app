@@ -1,32 +1,73 @@
 import React, { useState, useEffect } from "react";
-import { Loader2 } from "lucide-react";
+import { Loader2, Volume2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { fetchPracticeQuestions } from "../../../services/vocabularyApi";
 import { motion, AnimatePresence } from "framer-motion";
 import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
 import { useTextToSpeech } from "@/hooks/useTextToSpeech";
+
+// MOCK DATA for Match Pairs
+const MOCK_DATA = [
+  {
+    id: 1,
+    french: "Chien",
+    english: "Dog",
+    instructionFr: "Associez les paires",
+    instructionEn: "Match the pairs",
+  },
+  {
+    id: 2,
+    french: "Chat",
+    english: "Cat",
+    instructionFr: "Associez les paires",
+    instructionEn: "Match the pairs",
+  },
+  {
+    id: 3,
+    french: "Maison",
+    english: "House",
+    instructionFr: "Associez les paires",
+    instructionEn: "Match the pairs",
+  },
+  {
+    id: 4,
+    french: "Voiture",
+    english: "Car",
+    instructionFr: "Associez les paires",
+    instructionEn: "Match the pairs",
+  },
+  {
+    id: 5,
+    french: "Pomme",
+    english: "Apple",
+    instructionFr: "Associez les paires",
+    instructionEn: "Match the pairs",
+  },
+  // Add more if needed, game logic handles slicing
+];
 
 export default function MatchPairsGamePage() {
   const navigate = useNavigate();
   const { speak } = useTextToSpeech();
 
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [allPairs, setAllPairs] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [topCards, setTopCards] = useState([]); // French
+  const [bottomCards, setBottomCards] = useState([]); // English
 
-  // Game State
-  const [cards, setCards] = useState([]);
-  const [selectedCards, setSelectedCards] = useState([]);
-  const [matchedPairsCount, setMatchedPairsCount] = useState(0);
+  const [selectedTopId, setSelectedTopId] = useState(null);
+  const [selectedBottomId, setSelectedBottomId] = useState(null);
+
+  const [matchedIds, setMatchedIds] = useState([]); // Array of pairIds
+  const [errorIds, setErrorIds] = useState([]); // Array of cardIds showing error
+
   const [timer, setTimer] = useState(60);
   const [isGameOver, setIsGameOver] = useState(false);
   const [score, setScore] = useState(0);
 
   // Constants
-  const GRID_SIZE = 8;
+  const PAIRS_PER_ROUND = 5;
 
   useEffect(() => {
-    loadGameData();
+    initializeGame();
   }, []);
 
   // Timer Tick
@@ -39,191 +80,99 @@ export default function MatchPairsGamePage() {
     }
   }, [timer, loading, isGameOver]);
 
-  const loadGameData = async () => {
-    try {
-      setLoading(true);
-      // Fetching from backend using correct logic
-      // Assuming generic sheet or similar mechanism, or existing source
-      // In previous interactions, MatchPairsA1 was refactored but data source wasn't explicitly changed from mock in some cases.
-      // But user mentioned "backend is ready".
-      // I'll stick to MOCK fallbacks if fetch fails or map appropriately if response structure differs.
-      // EDIT: Previous refactor kept MOCK unless fetchPracticeQuestions("A1.Match the pairs") works.
-      // I will attempt fetch first.
-      const response = await fetchPracticeQuestions("A1.Match the pairs");
-      if (response && response.data && response.data.length > 0) {
-        const pairs = response.data.map((item, index) => ({
-          id: index,
-          french: item["French Word"] || item.French || item.Prompt || "French",
-          english:
-            item["English Word"] || item.English || item.Target || "English",
-          instructionFr: item.Instruction_FR || "Associez les paires",
-          instructionEn: item.Instruction_EN || "Match the pairs",
-        }));
-        setAllPairs(pairs);
-        initializeGrid(pairs);
-      } else {
-        // Fallback or empty
-        setAllPairs([]);
+  const initializeGame = () => {
+    setLoading(true);
+    // Shuffle and pick pairs
+    const shuffledSource = [...MOCK_DATA].sort(() => 0.5 - Math.random());
+    const activePairs = shuffledSource.slice(0, PAIRS_PER_ROUND);
+
+    const top = activePairs
+      .map((p) => ({
+        id: `fr-${p.id}`,
+        pairId: p.id,
+        content: p.french,
+        type: "top",
+      }))
+      .sort(() => 0.5 - Math.random()); // Shuffle top row
+
+    const bottom = activePairs
+      .map((p) => ({
+        id: `en-${p.id}`,
+        pairId: p.id,
+        content: p.english,
+        type: "bottom",
+      }))
+      .sort(() => 0.5 - Math.random()); // Shuffle bottom row
+
+    setTopCards(top);
+    setBottomCards(bottom);
+    setLoading(false);
+  };
+
+  const handleTopClick = (card) => {
+    if (isGameOver || matchedIds.includes(card.pairId)) return;
+
+    // Play Audio (Top only)
+    speak(card.content, "fr-FR");
+
+    // Replace previous top selection
+    setSelectedTopId(card.id);
+
+    // If bottom is already selected, check match immediately
+    if (selectedBottomId) {
+      checkMatch(card.id, selectedBottomId);
+    }
+  };
+
+  const handleBottomClick = (card) => {
+    if (isGameOver || matchedIds.includes(card.pairId)) return;
+
+    // No Audio for bottom
+
+    // Replace previous bottom selection
+    setSelectedBottomId(card.id);
+
+    // If top is already selected, check match immediately
+    if (selectedTopId) {
+      checkMatch(selectedTopId, card.id);
+    }
+  };
+
+  const checkMatch = (topId, bottomId) => {
+    const topCard = topCards.find((c) => c.id === topId);
+    const bottomCard = bottomCards.find((c) => c.id === bottomId);
+
+    if (!topCard || !bottomCard) return;
+
+    if (topCard.pairId === bottomCard.pairId) {
+      // MATCH
+      setMatchedIds((prev) => [...prev, topCard.pairId]);
+      setScore((prev) => prev + 1);
+      setSelectedTopId(null);
+      setSelectedBottomId(null);
+
+      // Check Win
+      if (matchedIds.length + 1 === PAIRS_PER_ROUND) {
+        // Game Over Success handling if needed, or refill
+        // For now let's just finish
+        setTimeout(() => setIsGameOver(true), 1000); // Simple finish
       }
-    } catch (err) {
-      console.error("Failed to load match pairs:", err);
-      // Mock Data Fallback for robustness
-      const MOCK = [
-        {
-          id: 1,
-          french: "Chien",
-          english: "Dog",
-          instructionFr: "Associez les paires",
-        },
-        {
-          id: 2,
-          french: "Chat",
-          english: "Cat",
-          instructionFr: "Associez les paires",
-        },
-        {
-          id: 3,
-          french: "Maison",
-          english: "House",
-          instructionFr: "Associez les paires",
-        },
-        {
-          id: 4,
-          french: "Voiture",
-          english: "Car",
-          instructionFr: "Associez les paires",
-        },
-        {
-          id: 5,
-          french: "Rouge",
-          english: "Red",
-          instructionFr: "Associez les paires",
-        },
-      ];
-      setAllPairs(MOCK);
-      initializeGrid(MOCK);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const initializeGrid = (sourcePairs) => {
-    const setSize = GRID_SIZE / 2;
-    const shuffledSource = [...sourcePairs].sort(() => 0.5 - Math.random());
-    const activePairs = shuffledSource.slice(0, setSize);
-
-    let gridCards = [];
-    activePairs.forEach((pair) => {
-      gridCards.push({
-        id: `fr-${pair.id}-${Math.random()}`,
-        pairId: pair.id,
-        content: pair.french,
-        lang: "fr",
-        type: "text",
-        state: "default",
-      });
-      gridCards.push({
-        id: `en-${pair.id}-${Math.random()}`,
-        pairId: pair.id,
-        content: pair.english,
-        lang: "en",
-        type: "text",
-        state: "default",
-      });
-    });
-
-    setCards(gridCards.sort(() => 0.5 - Math.random()));
-  };
-
-  const handleCardClick = (card) => {
-    if (isGameOver || card.state === "matched" || card.state === "selected")
-      return;
-    if (selectedCards.length >= 2) return;
-
-    if (card.lang === "fr") speak(card.content, "fr-FR");
-
-    const newSelected = [...selectedCards, card];
-    setSelectedCards(newSelected);
-
-    setCards((prev) =>
-      prev.map((c) => (c.id === card.id ? { ...c, state: "selected" } : c))
-    );
-
-    if (newSelected.length === 2) {
-      checkMatch(newSelected);
-    }
-  };
-
-  const checkMatch = (selection) => {
-    const [card1, card2] = selection;
-    const isMatch = card1.pairId === card2.pairId;
-
-    if (isMatch) {
-      setScore((s) => s + 10);
-      setMatchedPairsCount((c) => c + 1);
-      setCards((prev) =>
-        prev.map((c) =>
-          c.id === card1.id || c.id === card2.id
-            ? { ...c, state: "matched" }
-            : c
-        )
-      );
-      setSelectedCards([]);
-      setTimeout(checkRefill, 500);
     } else {
-      setCards((prev) =>
-        prev.map((c) =>
-          c.id === card1.id || c.id === card2.id ? { ...c, state: "error" } : c
-        )
-      );
+      // MISMATCH
+      // Show error state for a brief moment then reset selection
+      setErrorIds([topId, bottomId]);
+
       setTimeout(() => {
-        setCards((prev) =>
-          prev.map((c) =>
-            c.id === card1.id || c.id === card2.id
-              ? { ...c, state: "default" }
-              : c
-          )
-        );
-        setSelectedCards([]);
-      }, 1000);
+        setErrorIds([]);
+        setSelectedTopId(null);
+        setSelectedBottomId(null);
+      }, 800);
     }
   };
 
-  const checkRefill = () => {
-    setCards((currentCards) => {
-      const remaining = currentCards.filter((c) => c.state !== "matched");
-      if (remaining.length === 0) {
-        const setSize = GRID_SIZE / 2;
-        const shuffledSource = [...allPairs].sort(() => 0.5 - Math.random());
-        const activePairs = shuffledSource.slice(0, setSize);
-        let gridCards = [];
-        activePairs.forEach((pair) => {
-          gridCards.push({
-            id: `fr-${pair.id}-${Math.random()}`,
-            pairId: pair.id,
-            content: pair.french,
-            lang: "fr",
-            type: "text",
-            state: "default",
-          });
-          gridCards.push({
-            id: `en-${pair.id}-${Math.random()}`,
-            pairId: pair.id,
-            content: pair.english,
-            lang: "en",
-            type: "text",
-            state: "default",
-          });
-        });
-        return gridCards.sort(() => 0.5 - Math.random());
-      }
-      return currentCards;
-    });
-  };
-
-  const instructionFr = allPairs[0]?.instructionFr || "Associez les paires";
-  const instructionEn = allPairs[0]?.instructionEn || "Match the pairs";
-  const progress = Math.min((score / 150) * 100, 100);
+  const instructionFr = MOCK_DATA[0].instructionFr;
+  const instructionEn = MOCK_DATA[0].instructionEn;
+  const progress = (matchedIds.length / PAIRS_PER_ROUND) * 100;
   const timerString = `0:${timer.toString().padStart(2, "0")}`;
 
   if (loading)
@@ -233,58 +182,85 @@ export default function MatchPairsGamePage() {
       </div>
     );
 
+  const getCardStyle = (card, isSelected, isError, isMatched) => {
+    let base =
+      "aspect-square rounded-2xl border-2 flex items-center justify-center p-4 text-center font-bold text-xl transition-all duration-200 cursor-pointer shadow-sm relative relative";
+
+    if (isMatched) return "opacity-0 pointer-events-none"; // Disappear
+
+    if (isError)
+      return base + " bg-red-100 border-red-500 text-red-800 animate-shake";
+
+    if (isSelected)
+      return (
+        base +
+        " bg-blue-50 border-blue-500 text-blue-700 ring-4 ring-blue-500/20"
+      );
+
+    return (
+      base +
+      " bg-white border-gray-200 hover:border-blue-300 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-100"
+    );
+  };
+
   return (
     <PracticeGameLayout
       questionType="Match the Pairs"
-      instructionFr={instructionFr}
-      instructionEn={instructionEn}
+      instructionFr={instructionFr || "Associez les paires"}
+      instructionEn={instructionEn || "Match the pairs"}
       progress={progress}
       isGameOver={isGameOver}
       score={score}
-      totalQuestions={Object.keys(allPairs).length || 10}
+      totalQuestions={PAIRS_PER_ROUND}
       onExit={() => navigate("/vocabulary/practice")}
       onRestart={() => window.location.reload()}
       showSubmitButton={false}
       timerValue={timerString}
     >
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 w-full max-w-4xl place-content-center">
-        <AnimatePresence mode="popLayout">
-          {cards.map((card) => (
-            <motion.button
-              key={card.id}
-              layout
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{
-                opacity: card.state === "matched" ? 0 : 1,
-                scale: card.state === "matched" ? 0 : 1,
-              }}
-              exit={{ opacity: 0, scale: 0 }}
-              onClick={() => handleCardClick(card)}
-              disabled={card.state === "matched"}
-              className={`
-                    aspect-[4/3] rounded-xl text-lg font-bold transition-all duration-300 transform
-                    flex items-center justify-center p-4 text-center shadow-sm relative border-2
-                    ${
-                      card.state === "default"
-                        ? "bg-white dark:bg-gray-800 border-gray-100 dark:border-gray-700 hover:border-blue-300 hover:shadow-md text-slate-700 dark:text-slate-200"
-                        : ""
-                    }
-                    ${
-                      card.state === "selected"
-                        ? "bg-blue-50 dark:bg-blue-900/30 border-blue-500 text-blue-700 dark:text-blue-300 scale-105 shadow-lg z-10"
-                        : ""
-                    }
-                    ${
-                      card.state === "error"
-                        ? "bg-red-50 dark:bg-red-900/30 border-red-500 text-red-700 dark:text-red-300 animate-shake"
-                        : ""
-                    }
-                `}
-            >
-              {card.content}
-            </motion.button>
-          ))}
-        </AnimatePresence>
+      <div className="flex flex-col w-full max-w-7xl gap-8 md:gap-16 px-4 -mt-6">
+        {/* Top Row: French */}
+        <div className="flex justify-center w-full">
+          <div className="grid grid-cols-5 gap-4 md:gap-8 w-full">
+            {topCards.map((card) => (
+              <button
+                key={card.id}
+                onClick={() => handleTopClick(card)}
+                className={getCardStyle(
+                  card,
+                  selectedTopId === card.id,
+                  errorIds.includes(card.id),
+                  matchedIds.includes(card.pairId),
+                )}
+              >
+                {card.content}
+                {/* Audio Icon Hint */}
+                {!matchedIds.includes(card.pairId) && (
+                  <Volume2 className="absolute top-2 right-2 w-4 h-4 text-gray-300" />
+                )}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Bottom Row: English */}
+        <div className="flex justify-center w-full">
+          <div className="grid grid-cols-5 gap-4 md:gap-8 w-full">
+            {bottomCards.map((card) => (
+              <button
+                key={card.id}
+                onClick={() => handleBottomClick(card)}
+                className={getCardStyle(
+                  card,
+                  selectedBottomId === card.id,
+                  errorIds.includes(card.id),
+                  matchedIds.includes(card.pairId),
+                )}
+              >
+                {card.content}
+              </button>
+            ))}
+          </div>
+        </div>
       </div>
     </PracticeGameLayout>
   );

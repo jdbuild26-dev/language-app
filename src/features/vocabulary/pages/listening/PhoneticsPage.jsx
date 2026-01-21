@@ -109,42 +109,66 @@ export default function PhoneticsPage() {
         onNext={handleSubmit}
         onRestart={() => window.location.reload()}
         isSubmitEnabled={selectedOptionIndex !== null && !showFeedback}
-        showSubmitButton={true}
+        showSubmitButton={!showFeedback}
         submitLabel="Submit"
       >
-        <div className="flex flex-col items-center w-full max-w-2xl">
-          {/* Audio Prompt */}
-          <button
-            onClick={() => speak(currentQ.prompt)}
-            className="mb-8 w-24 h-24 rounded-full bg-white dark:bg-slate-800 shadow-md flex items-center justify-center text-blue-500 hover:text-blue-600 hover:scale-105 transition-all"
-          >
-            <Volume2 className="w-10 h-10" />
-          </button>
+        <div className="flex flex-col md:flex-row items-center justify-center w-full max-w-5xl gap-8 md:gap-16 px-4">
+          {/* Left Side: Large Audio Button */}
+          <div className="flex-shrink-0">
+            <button
+              onClick={() => speak(currentQ.prompt)}
+              className="w-48 h-48 md:w-64 md:h-64 bg-sky-500 rounded-3xl shadow-[0_6px_0_0_#0ea5e9] hover:bg-sky-400 active:shadow-none active:translate-y-[6px] transition-all flex items-center justify-center text-white"
+            >
+              <Volume2
+                className="w-24 h-24 md:w-32 md:h-32"
+                strokeWidth={1.5}
+              />
+            </button>
+          </div>
 
-          {/* Options */}
-          <div className="grid grid-cols-1 gap-3 w-full">
-            {currentQ?.options.map((opt, idx) => {
-              const isSelected = selectedOptionIndex === idx;
-              const isCorrect = currentQ.correctIndex === idx;
-              let styles =
-                "bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-700";
+          {/* Right Side: Question & Options */}
+          <div className="flex flex-col w-full max-w-lg gap-6">
+            {/* Question Text */}
+            <h2 className="text-xl md:text-2xl font-bold text-slate-700 dark:text-slate-200">
+              {currentQ?.instruction || "Which word do you hear?"}
+            </h2>
 
-              if (isSelected) {
-                styles =
-                  "bg-blue-50 border-blue-500 text-blue-700 ring-1 ring-blue-500";
-              }
+            {/* Options List */}
+            <div className="grid grid-cols-1 gap-3 w-full">
+              {currentQ?.options.map((opt, idx) => {
+                const isSelected = selectedOptionIndex === idx;
 
-              return (
-                <button
-                  key={idx}
-                  onClick={() => handleOptionClick(idx)}
-                  disabled={showFeedback}
-                  className={`p-4 rounded-xl border-2 text-left font-mono text-lg transition-all flex justify-between items-center ${styles}`}
-                >
-                  <span>{opt}</span>
-                </button>
-              );
-            })}
+                return (
+                  <button
+                    key={idx}
+                    onClick={() => handleOptionClick(idx)}
+                    disabled={showFeedback}
+                    className={cn(
+                      "group relative p-4 rounded-2xl border-[3px] text-left font-medium text-lg md:text-xl transition-all flex items-center gap-4 bg-white dark:bg-slate-800 shadow-sm",
+                      // Default
+                      "border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700",
+                      // Selected
+                      isSelected &&
+                        "border-sky-400 bg-sky-50 dark:bg-sky-900/20 text-sky-600 dark:text-sky-300",
+                    )}
+                  >
+                    {/* Fake Radio/Checkbox Circle */}
+                    <div
+                      className={cn(
+                        "w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors",
+                        isSelected
+                          ? "border-sky-500 bg-sky-500 text-white"
+                          : "border-slate-300 dark:border-slate-500 text-transparent",
+                      )}
+                    >
+                      <span className="text-[10px] font-bold">✓</span>
+                    </div>
+
+                    <span className="flex-1">{opt}</span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
         </div>
       </PracticeGameLayout>

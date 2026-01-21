@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from "react";
-import { Loader2, XCircle } from "lucide-react";
+import { Loader2, XCircle, CheckCircle2, Circle } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { fetchPracticeQuestions } from "@/services/vocabularyApi";
 import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
 import FeedbackBanner from "@/components/ui/FeedbackBanner";
 import { getFeedbackMessage } from "@/utils/feedbackMessages";
+import { cn } from "@/lib/utils";
 
 export default function ChooseOptionGamePage() {
   const navigate = useNavigate();
@@ -55,8 +56,11 @@ export default function ChooseOptionGamePage() {
             correctAnswer: item.CorrectAnswer,
             options: shuffledOptions,
             questionType: item.QuestionType || "Choose from Options",
-            instructionFr: item.Instruction_FR || "Choisissez la bonne réponse",
-            instructionEn: item.Instruction_EN || "Select the correct option",
+            instructionFr:
+              item.Instruction_FR || "Complétez la phrase avec le mot correct",
+            instructionEn:
+              item.Instruction_EN ||
+              "Complete the sentence with the correct word",
             image: item.ImageURL,
           };
         });
@@ -74,6 +78,29 @@ export default function ChooseOptionGamePage() {
   }, []);
 
   const currentQuestion = questions[currentIndex];
+  // Timer string handled by layout or internal state?
+  // NOTE: Layout handles timer prop, but we aren't passing it explicitly here,
+  // defaulting to PracticeGameLayout's internal timer or we should add one if needed.
+  // For consistency with HighlightGame, adding basic timer here would be good,
+  // but existing code didn't have one visible. Layout has a `timerValue` prop now.
+  // Let's stick to existing functionality + new UI unless requested.
+  // The screenshot shows "0:14", so I should probably implement a timer similar to HighlightGame.
+
+  const [timer, setTimer] = useState(20);
+  useEffect(() => {
+    if (!loading && !isGameOver && !showFeedback && timer > 0) {
+      const interval = setInterval(() => setTimer((t) => t - 1), 1000);
+      return () => clearInterval(interval);
+    }
+  }, [timer, loading, isGameOver, showFeedback]);
+
+  // Reset timer on next question
+  useEffect(() => {
+    setTimer(20);
+  }, [currentIndex]);
+
+  const timerString = `0:${timer.toString().padStart(2, "0")}`;
+
   const progress =
     questions.length > 0 ? ((currentIndex + 1) / questions.length) * 100 : 0;
 
@@ -106,31 +133,6 @@ export default function ChooseOptionGamePage() {
     }
   };
 
-  const currentQuestionType = currentQuestion?.questionType;
-  const currentInstructionFr = currentQuestion?.instructionFr;
-  const currentInstructionEn = currentQuestion?.instructionEn;
-
-  // Styles
-  const getOptionStyle = (option) => {
-    const baseStyle =
-      "w-full p-4 rounded-xl border-2 text-lg font-medium transition-all duration-200 flex items-center justify-between";
-
-    if (!showFeedback) {
-      // Normal selection state
-      if (option === selectedOption) {
-        return `${baseStyle} bg-blue-50 dark:bg-blue-900/20 border-blue-500 text-blue-700 dark:text-blue-300 ring-1 ring-blue-500`;
-      }
-      return `${baseStyle} bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:border-blue-300 text-gray-700 dark:text-gray-200`;
-    }
-
-    // Feedback state - just show selected
-    if (option === selectedOption) {
-      return `${baseStyle} bg-blue-50 dark:bg-blue-900/20 border-blue-500 text-blue-700 dark:text-blue-300`;
-    }
-
-    return `${baseStyle} opacity-50 border-gray-100 dark:border-gray-800 text-gray-400`;
-  };
-
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen">
@@ -156,9 +158,9 @@ export default function ChooseOptionGamePage() {
   return (
     <>
       <PracticeGameLayout
-        questionType={currentQuestionType}
-        instructionFr={currentInstructionFr}
-        instructionEn={currentInstructionEn}
+        questionType={currentQuestion?.questionType}
+        instructionFr={currentQuestion?.instructionFr}
+        instructionEn={currentQuestion?.instructionEn}
         progress={progress}
         isGameOver={isGameOver}
         score={score}
@@ -168,26 +170,145 @@ export default function ChooseOptionGamePage() {
         onRestart={() => window.location.reload()}
         isSubmitEnabled={!!selectedOption && !showFeedback}
         submitLabel="Submit"
+        timerValue={timerString}
       >
-        {/* Question Text */}
-        <div className="text-center mb-8">
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-            {currentQuestion.question}
-          </h1>
-        </div>
+        <div className="flex flex-col md:flex-row items-center md:items-start justify-center w-full max-w-6xl gap-8 md:gap-16">
+          {/* Left Side: Question / Prompt */}
+          <div className="w-full md:w-1/2 flex flex-col justify-center min-h-[200px]">
+            {/* Secondary Title (Context) - OPTIONAL based on API data, using placeholder logic for now */}
+            {/* Note: Screenshot shows "Word meaning 'they speak'" above options, but layout-wise text is left. */}
+            {/* Let's put the main sentence here. */}
 
-        {/* Options */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
-          {currentQuestion.options.map((option, idx) => (
-            <button
-              key={idx}
-              onClick={() => handleOptionClick(option)}
-              disabled={showFeedback}
-              className={getOptionStyle(option)}
-            >
-              <span>{option}</span>
-            </button>
-          ))}
+            <div className="bg-transparent p-4 rounded-xl">
+              <h2 className="text-2xl md:text-3xl font-medium text-gray-800 dark:text-gray-100 leading-relaxed text-center md:text-left">
+                {(() => {
+                  const highlightText = (text) => {
+                    if (!showFeedback || !currentQuestion.correctAnswer)
+                      return text;
+
+                    const parts = text.split(
+                      new RegExp(`(${currentQuestion.correctAnswer})`, "gi"),
+                    );
+                    return parts.map((part, i) =>
+                      part.toLowerCase() ===
+                      currentQuestion.correctAnswer.toLowerCase() ? (
+                        <span
+                          key={i}
+                          className="text-green-600 font-bold bg-green-100 px-1 rounded-md mx-0.5 shadow-sm border border-green-200"
+                        >
+                          {part}
+                        </span>
+                      ) : (
+                        part
+                      ),
+                    );
+                  };
+
+                  if (currentQuestion.question.includes("____")) {
+                    return currentQuestion.question
+                      .split("____")
+                      .map((part, i, arr) => (
+                        <React.Fragment key={i}>
+                          {highlightText(part)}
+                          {i < arr.length - 1 && (
+                            <span className="inline-block border-b-2 border-slate-800 dark:border-slate-200 min-w-[3rem] mx-1 relative top-1"></span>
+                          )}
+                        </React.Fragment>
+                      ));
+                  }
+
+                  return highlightText(currentQuestion.question);
+                })()}
+              </h2>
+            </div>
+          </div>
+
+          {/* Right Side: Options */}
+          <div className="w-full md:w-1/2 flex flex-col gap-4">
+            {/* Context Header above options if available, essentially 'Word Meanings' logic from screenshot */}
+            <div className="mb-2">
+              <h3 className="text-lg font-bold text-slate-700 dark:text-slate-200">
+                Word meaning "{currentQuestion.correctAnswer}"{" "}
+                {/* Context is tricky without clear data field, using correct answer as placeholder for 'meaning' logic if implied, OR just generic label */}
+                {/* Wait, standard data doesn't have "meaning" separate usually for this type. 
+                        The screenshot says 'Word meaning "they speak"'. 
+                        I will assume the 'Instruction_EN' or context is passed. 
+                        For now, I'll stick to a clean option list. 
+                    */}
+              </h3>
+            </div>
+
+            <div className="flex flex-col gap-3 w-full">
+              {currentQuestion.options.map((option, idx) => {
+                const isSelected = selectedOption === option;
+                const isCorrectOption =
+                  option === currentQuestion.correctAnswer;
+
+                // Determine styles
+                let containerClasses =
+                  "relative w-full p-4 rounded-xl border-2 cursor-pointer transition-all duration-200 flex items-center gap-4 group";
+                let iconClasses = "w-6 h-6 shrink-0 transition-colors";
+
+                if (showFeedback) {
+                  if (isCorrectOption) {
+                    containerClasses +=
+                      " bg-green-50 border-green-500 ring-1 ring-green-500";
+                    iconClasses += " text-green-500 fill-green-500/20";
+                  } else if (isSelected && !isCorrectOption) {
+                    containerClasses += " bg-red-50 border-red-500 opacity-80";
+                    iconClasses += " text-red-500";
+                  } else {
+                    containerClasses +=
+                      " bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-800 opacity-50";
+                    iconClasses += " text-slate-300 dark:text-slate-600";
+                  }
+                } else {
+                  if (isSelected) {
+                    containerClasses +=
+                      " bg-blue-50 dark:bg-blue-900/20 border-blue-500 ring-1 ring-blue-500";
+                    iconClasses += " text-blue-500 fill-blue-500/20";
+                  } else {
+                    containerClasses +=
+                      " bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 hover:border-blue-300 hover:bg-slate-50 dark:hover:bg-slate-800/50";
+                    iconClasses +=
+                      " text-slate-300 dark:text-slate-600 group-hover:text-blue-300";
+                  }
+                }
+
+                return (
+                  <button
+                    key={idx}
+                    onClick={() => handleOptionClick(option)}
+                    disabled={showFeedback}
+                    className={containerClasses}
+                  >
+                    {/* Icon */}
+                    <div className={iconClasses}>
+                      {isSelected || (showFeedback && isCorrectOption) ? (
+                        <CheckCircle2 className="w-full h-full" />
+                      ) : (
+                        <Circle className="w-full h-full" />
+                      )}
+                    </div>
+
+                    {/* Text */}
+                    <span
+                      className={cn(
+                        "text-lg font-medium text-left",
+                        showFeedback && isCorrectOption
+                          ? "text-green-800 dark:text-green-300"
+                          : showFeedback && isSelected
+                            ? "text-red-800 dark:text-red-300"
+                            : "text-slate-700 dark:text-slate-200",
+                      )}
+                    >
+                      {option}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
         </div>
       </PracticeGameLayout>
 

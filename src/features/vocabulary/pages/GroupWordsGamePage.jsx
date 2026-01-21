@@ -1,156 +1,212 @@
 import React, { useState } from "react";
-import { Layers, RotateCcw } from "lucide-react";
+import { CheckCircle, AlertCircle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
 import FeedbackBanner from "@/components/ui/FeedbackBanner";
-import { getFeedbackMessage } from "@/utils/feedbackMessages";
+import { cn } from "@/lib/utils";
 
-// MOCK DATA for "Group Words"
-const MOCK_LEVELS = [
+// MOCK DATA for "Pick 4" (Group Words)
+const MOCK_QUESTIONS = [
   {
     id: 1,
-    title: "Animals vs Food",
+    title: "Pick 4",
     instructionFr: "Triez les mots",
-    instructionEn: "Sort the words into correct groups",
-    groups: [
-      { id: "A", name: "Animals", icon: "🐶" },
-      { id: "B", name: "Food", icon: "🍎" },
+    instructionEn: "Select 4 words that are related",
+    theme: "Fruits",
+    allWords: [
+      "Pomme",
+      "Chien",
+      "Banane",
+      "Voiture",
+      "Orange",
+      "Livre",
+      "Raisin",
+      "Stylo",
+      "Fraise",
+      "Lampe",
+      "Chat",
+      "Vélo",
     ],
-    items: [
-      { word: "Chien", group: "A" },
-      { word: "Pomme", group: "B" },
-      { word: "Chat", group: "A" },
-      { word: "Pain", group: "B" },
-      { word: "Oiseau", group: "A" },
-      { word: "Fromage", group: "B" },
-    ],
+    correctWords: ["Pomme", "Banane", "Orange", "Raisin", "Fraise"], // Wait, usually 4. Let's stick to 4.
+    // Let's refine mock data to have exactly 4 correct words from the prompt "Pick 4"
+    // Modified list to ensure 4 distinct fruits: Pomme, Banane, Orange, Raisin. (Fraise removed from logic if we want strict 4)
+    // Actually let's use 4 correct.
+    correctGroup: ["Pomme", "Banane", "Orange", "Raisin"],
+    reason: "These are all fruits.",
   },
   {
     id: 2,
-    title: "Masculine vs Feminine",
-    instructionFr: "Masculin ou Féminin ?",
-    instructionEn: "Sort by gender",
-    groups: [
-      { id: "A", name: "Masculine (Le/Un)", icon: "👨" },
-      { id: "B", name: "Feminine (La/Une)", icon: "👩" },
+    title: "Pick 4",
+    instructionFr: "Triez les mots",
+    instructionEn: "Select 4 words related to Time",
+    theme: "Time",
+    correctGroup: ["Lundi", "Janvier", "Heure", "Minute"],
+    // Need to ensure these are in allWords.
+    allWords: [
+      "Lundi",
+      "Rouge",
+      "Janvier",
+      "Manger",
+      "Heure",
+      "Grand",
+      "Minute",
+      "Fleur",
+      "Soleil",
+      "Petit",
+      "Chat",
+      "Mer",
     ],
-    items: [
-      { word: "Garçon", group: "A" },
-      { word: "Fille", group: "B" },
-      { word: "Livre", group: "A" },
-      { word: "Maison", group: "B" },
-      { word: "Soleil", group: "A" },
-      { word: "Lune", group: "B" },
-    ],
+    reason: "These are all related to time.",
   },
 ];
 
 export default function GroupWordsGamePage() {
   const navigate = useNavigate();
-  const [currentLevelIndex, setCurrentLevelIndex] = useState(0);
-  const [itemIndex, setItemIndex] = useState(0);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [selectedWords, setSelectedWords] = useState([]);
+  const [isSubmitted, setIsSubmitted] = useState(false);
   const [score, setScore] = useState(0);
+  const [isGameOver, setIsGameOver] = useState(false);
   const [showFeedback, setShowFeedback] = useState(false);
   const [isCorrect, setIsCorrect] = useState(false);
   const [feedbackMessage, setFeedbackMessage] = useState("");
-  const [isGameOver, setIsGameOver] = useState(false);
 
-  const currentLevel = MOCK_LEVELS[currentLevelIndex];
-  const currentItem = currentLevel.items[itemIndex];
-  const totalItems = currentLevel.items.length;
-  const progress = (itemIndex / totalItems) * 100;
+  const currentQuestion = MOCK_QUESTIONS[currentIndex];
+  // Ensure we rely on 'correctGroup' being exactly 4 items for "Pick 4" logic
+  // If backend returns more, we might need to adjust, but for now we enforce 4.
+  const targetCount = 4;
 
-  const handleSort = (groupId) => {
-    if (showFeedback) return;
+  const totalQuestions = MOCK_QUESTIONS.length;
+  const progress = ((currentIndex + 1) / totalQuestions) * 100;
 
-    const correct = currentItem.group === groupId;
-    setIsCorrect(correct);
-    setFeedbackMessage(getFeedbackMessage(correct));
+  const handleWordClick = (word) => {
+    if (isSubmitted) return;
+
+    if (selectedWords.includes(word)) {
+      setSelectedWords((prev) => prev.filter((w) => w !== word));
+    } else {
+      if (selectedWords.length < targetCount) {
+        setSelectedWords((prev) => [...prev, word]);
+      }
+    }
+  };
+
+  const handleSubmit = () => {
+    if (isSubmitted) {
+      // Next Logic
+      setShowFeedback(false);
+      if (currentIndex + 1 < totalQuestions) {
+        setCurrentIndex((prev) => prev + 1);
+        setSelectedWords([]);
+        setIsSubmitted(false);
+      } else {
+        setIsGameOver(true);
+      }
+      return;
+    }
+
+    // Submit Logic
+    if (selectedWords.length !== targetCount) return;
+    setIsSubmitted(true);
+
+    // Check if checks are correct
+    // Are all selected words in the correctGroup?
+    const allCorrect = selectedWords.every((w) =>
+      currentQuestion.correctGroup.includes(w),
+    );
+
+    setIsCorrect(allCorrect);
+    setFeedbackMessage(allCorrect ? "Great job!" : currentQuestion.reason);
     setShowFeedback(true);
 
-    if (correct) {
+    if (allCorrect) {
       setScore((prev) => prev + 1);
     }
   };
 
-  const handleContinue = () => {
-    setShowFeedback(false);
-    if (itemIndex + 1 < totalItems) {
-      setItemIndex((prev) => prev + 1);
-    } else {
-      setIsGameOver(true);
-    }
-  };
-
-  const restartGame = () => {
-    setItemIndex(0);
-    setScore(0);
-    setShowFeedback(false);
-    setIsGameOver(false);
-  };
-
-  const nextLevel = () => {
-    const nextIdx = (currentLevelIndex + 1) % MOCK_LEVELS.length;
-    setCurrentLevelIndex(nextIdx);
-    restartGame();
-  };
+  let submitLabel = "Submit";
+  if (isSubmitted) {
+    submitLabel =
+      currentIndex + 1 === totalQuestions ? "Finish" : "Next Question";
+  }
 
   return (
     <>
       <PracticeGameLayout
-        questionType={currentLevel.title || "Group Words"}
-        instructionFr={currentLevel.instructionFr || "Triez les mots"}
-        instructionEn={currentLevel.instructionEn || "Sort the words"}
+        questionType="Pick 4"
+        instructionFr={currentQuestion.instructionFr || "Triez les mots"}
+        instructionEn={
+          currentQuestion.instructionEn || `Select ${targetCount} related words`
+        }
         progress={progress}
         isGameOver={isGameOver}
         score={score}
-        totalQuestions={totalItems}
+        totalQuestions={totalQuestions}
         onExit={() => navigate("/vocabulary/practice")}
-        onRestart={restartGame}
-        isSubmitEnabled={false}
-        showSubmitButton={false}
+        onNext={handleSubmit}
+        onRestart={() => window.location.reload()}
+        isSubmitEnabled={selectedWords.length === targetCount}
+        showSubmitButton={true}
+        submitLabel={submitLabel}
       >
-        <div className="flex-1 flex flex-col items-center justify-center -mt-10">
-          {/* Deck Counter */}
-          <div className="mb-6 flex flex-col items-center text-gray-400 dark:text-gray-500">
-            <Layers className="w-8 h-8 mb-2 opacity-50" />
-            <span className="text-sm font-medium">
-              {totalItems - itemIndex} cards remaining
-            </span>
+        <div className="flex-1 flex flex-col items-center justify-center -mt-10 w-full max-w-7xl">
+          <div className="mb-10 text-center">
+            <h2 className="text-3xl font-semibold text-gray-800 dark:text-gray-100">
+              {currentQuestion.theme
+                ? `Topic: ${currentQuestion.theme}`
+                : "Find the related words"}
+            </h2>
+            <p className="text-gray-500 dark:text-gray-400 mt-3 text-lg">
+              Select the {targetCount} words that belong together
+            </p>
           </div>
 
-          {/* Card Area */}
-          <div className="relative w-full max-w-sm h-64 mb-12 flex items-center justify-center px-4">
-            <div className="w-full h-full bg-white dark:bg-gray-800 rounded-3xl shadow-xl border border-gray-100 dark:border-gray-700 flex flex-col items-center justify-center p-8 text-center transition-all duration-300">
-              <h2 className="text-4xl font-bold text-gray-900 dark:text-white mb-2">
-                {currentItem?.word}
-              </h2>
-              <div className="text-gray-400 text-sm mt-4">
-                Where does this belong?
-              </div>
-            </div>
-          </div>
+          {/* Grid: 6 columns for 12 items = 2 rows. Wide spacing. */}
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6 md:gap-12 w-full px-4 md:px-0">
+            {currentQuestion.allWords.map((word, idx) => {
+              const isSelected = selectedWords.includes(word);
+              const isTargetWord = currentQuestion.correctGroup.includes(word);
 
-          {/* Sorting Buttons */}
-          <div className="grid grid-cols-2 gap-6 w-full max-w-lg px-4">
-            {currentLevel.groups.map((group) => (
-              <button
-                key={group.id}
-                disabled={showFeedback}
-                className="
-                        flex flex-col items-center justify-center p-6 rounded-2xl
-                        bg-gray-50 dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700
-                        hover:border-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20
-                        transition-all active:scale-95
-                    "
-              >
-                <span className="text-4xl mb-3">{group.icon}</span>
-                <span className="font-semibold text-gray-700 dark:text-gray-200">
-                  {group.name}
-                </span>
-              </button>
-            ))}
+              // Square cards: aspect-square, remove fixed height
+              let cardStyle =
+                "aspect-square rounded-2xl border-2 flex items-center justify-center text-xl md:text-2xl font-medium transition-all duration-200 cursor-pointer relative shadow-sm";
+
+              if (showFeedback) {
+                if (isTargetWord) {
+                  // Always show correct words in green
+                  cardStyle +=
+                    " bg-green-100 border-green-500 text-green-800 dark:bg-green-900/30 dark:text-green-300";
+                } else if (isSelected && !isTargetWord) {
+                  // Wrong selection
+                  cardStyle +=
+                    " bg-red-100 border-red-500 text-red-800 dark:bg-red-900/30 dark:text-red-300 opacity-80";
+                } else {
+                  // Unrelated, unselected words
+                  cardStyle +=
+                    " bg-gray-50 border-gray-100 text-gray-400 opacity-30 dark:bg-gray-800/50 dark:border-gray-800";
+                }
+              } else {
+                if (isSelected) {
+                  cardStyle +=
+                    " bg-blue-50 border-blue-500 text-blue-700 ring-4 ring-blue-500/20 dark:bg-blue-900/20 dark:text-blue-300";
+                } else {
+                  cardStyle +=
+                    " bg-white border-gray-200 hover:border-blue-300 hover:shadow-lg hover:-translate-y-1 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200";
+                }
+              }
+
+              return (
+                <button
+                  key={idx}
+                  onClick={() => handleWordClick(word)}
+                  disabled={isSubmitted}
+                  className={cardStyle}
+                >
+                  {word}
+                </button>
+              );
+            })}
           </div>
         </div>
       </PracticeGameLayout>
@@ -159,15 +215,12 @@ export default function GroupWordsGamePage() {
       {showFeedback && (
         <FeedbackBanner
           isCorrect={isCorrect}
-          correctAnswer={
-            !isCorrect
-              ? currentLevel.groups.find((g) => g.id === currentItem.group)
-                  ?.name
-              : null
-          }
-          onContinue={handleContinue}
+          correctAnswer={!isCorrect ? currentQuestion.reason : null}
+          onContinue={handleSubmit}
           message={feedbackMessage}
-          continueLabel={itemIndex + 1 === totalItems ? "FINISH" : "CONTINUE"}
+          continueLabel={
+            currentIndex + 1 === totalQuestions ? "FINISH" : "CONTINUE"
+          }
         />
       )}
     </>
