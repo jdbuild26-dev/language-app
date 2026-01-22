@@ -7,7 +7,6 @@ import FeedbackBanner from "@/components/ui/FeedbackBanner";
 import { fetchPracticeQuestions } from "@/services/vocabularyApi";
 import { getFeedbackMessage } from "@/utils/feedbackMessages";
 
-
 export default function HighlightWordGamePage() {
   const navigate = useNavigate();
   const [questions, setQuestions] = useState([]);
@@ -33,7 +32,15 @@ export default function HighlightWordGamePage() {
       setLoading(true);
       const response = await fetchPracticeQuestions("A4_Highlight word");
       if (response && response.data && response.data.length > 0) {
-        setQuestions(response.data);
+        // Map API response keys to component state keys
+        const formattedQuestions = response.data.map((q) => ({
+          ...q,
+          sentence: q["Complete sentence"],
+          correctWord: q["CorrectAnswer"],
+          prompt: q["Question_FR"]?.trim(),
+          meaning: q["Question_EN"]?.trim(),
+        }));
+        setQuestions(formattedQuestions);
       } else {
         console.error("No questions received from backend");
         setQuestions([]);

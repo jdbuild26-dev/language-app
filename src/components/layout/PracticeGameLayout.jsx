@@ -1,5 +1,5 @@
-import React from "react";
-import { ArrowLeft, XCircle, RotateCcw } from "lucide-react";
+import React, { useState } from "react";
+import { ArrowLeft, XCircle, RotateCcw, Languages } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 
@@ -37,6 +37,8 @@ export default function PracticeGameLayout({
   timerValue, // New prop for Timer string (e.g. "0:17")
   children,
 }) {
+  const [showTranslation, setShowTranslation] = useState(false);
+
   if (isGameOver) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen p-4 text-center animate-in zoom-in duration-300">
@@ -77,16 +79,23 @@ export default function PracticeGameLayout({
         </div>
 
         {/* Instructions */}
-        <div className="space-y-1">
-          {instructionFr && (
-            <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white tracking-tight">
-              {instructionFr}
-            </h1>
-          )}
-          {instructionEn && (
-            <p className="text-sm md:text-base text-gray-400 dark:text-gray-500 italic font-medium">
-              {instructionEn}
-            </p>
+        <div className="flex items-center justify-center gap-3">
+          <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white tracking-tight">
+            {showTranslation
+              ? instructionEn || instructionFr
+              : instructionFr || instructionEn}
+          </h1>
+
+          {instructionFr && instructionEn && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setShowTranslation(!showTranslation)}
+              className="rounded-full w-8 h-8 text-gray-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
+              title="Translate"
+            >
+              <Languages className="w-5 h-5" />
+            </Button>
           )}
         </div>
       </div>
@@ -95,8 +104,8 @@ export default function PracticeGameLayout({
       <div className="flex-1 flex flex-col items-center justify-center p-6 overflow-y-auto w-full max-w-[95%] mx-auto">
         {/* Question Type Label (Optional, maybe less prominent now) */}
         {questionType && (
-          <div className="mb-8 opacity-50">
-            <span className="text-xs font-semibold uppercase tracking-widest text-gray-500 dark:text-gray-400">
+          <div className="mb-8">
+            <span className="text-base font-bold uppercase tracking-widest text-black dark:text-white">
               {questionType}
             </span>
           </div>

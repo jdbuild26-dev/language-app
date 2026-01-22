@@ -4,6 +4,8 @@ import { useNavigate } from "react-router-dom";
 import { fetchPracticeQuestions } from "../../../services/vocabularyApi";
 import { cn } from "@/lib/utils";
 import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
+import FeedbackBanner from "@/components/ui/FeedbackBanner";
+import { getFeedbackMessage } from "@/utils/feedbackMessages";
 
 export default function CorrectSpellingGamePage() {
   const navigate = useNavigate();
@@ -14,8 +16,16 @@ export default function CorrectSpellingGamePage() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [userInputs, setUserInputs] = useState([]);
   const [isCompleted, setIsCompleted] = useState(false);
+  // feedbackState is less useful now with standard banner, but keeping for input coloring consistency if needed
+  // actually standard banner pattern uses isCorrect/showFeedback
   const [feedbackState, setFeedbackState] = useState("neutral");
+  const [showFeedback, setShowFeedback] = useState(false);
+  const [isCorrect, setIsCorrect] = useState(false);
+  const [feedbackMessage, setFeedbackMessage] = useState("");
+  const [score, setScore] = useState(0);
+
   const [timer, setTimer] = useState(60);
+  const [timerActive, setTimerActive] = useState(true);
 
   const inputsRef = useRef([]);
 
@@ -27,6 +37,7 @@ export default function CorrectSpellingGamePage() {
     if (questions.length > 0 && !isCompleted) {
       const currentQ = questions[currentIndex];
       setTimer(parseInt(currentQ?.timeLimit) || 60);
+      setTimerActive(true);
 
       const answer = currentQ.correctAnswer
         ? currentQ.correctAnswer.trim()
@@ -40,11 +51,11 @@ export default function CorrectSpellingGamePage() {
   }, [currentIndex, questions, isCompleted]);
 
   useEffect(() => {
-    if (!loading && !isCompleted && timer > 0) {
+    if (!loading && !isCompleted && timer > 0 && timerActive) {
       const interval = setInterval(() => setTimer((t) => t - 1), 1000);
       return () => clearInterval(interval);
     }
-  }, [timer, loading, isCompleted]);
+  }, [timer, loading, isCompleted, timerActive]);
 
   const loadQuestions = async () => {
     try {
@@ -52,10 +63,6 @@ export default function CorrectSpellingGamePage() {
       const response = await fetchPracticeQuestions(
         "C2_Writing_Correct spelling",
       );
-      if (!response || !response.data || response.data.length === 0) {
-        console.warn("Primary sheet empty, checking alternates...");
-        // Could fetch alternate here if needed
-      }
       if (response && response.data && response.data.length > 0) {
         const normalized = response.data.map((item) => ({
           id: item.ExerciseID || Math.random(),
@@ -97,8 +104,9 @@ export default function CorrectSpellingGamePage() {
     }
   };
 
-
   const handleInputChange = (index, value) => {
+    if (showFeedback) return;
+
     // Check for deletion
     if (value === "") {
       const newInputs = [...userInputs];
@@ -118,58 +126,74 @@ export default function CorrectSpellingGamePage() {
   };
 
   const handleKeyDown = (index, e) => {
+    if (showFeedback) return;
+
     if (e.key === "Backspace") {
       if (userInputs[index] === "" && index > 0) {
         // Current is empty, move back + focus
         inputsRef.current[index - 1]?.focus();
       }
       // If current is not empty, onChange will handle clearance
+    } else if (e.key === "ArrowLeft" && index > 0) {
+      inputsRef.current[index - 1]?.focus();
+    } else if (e.key === "ArrowRight" && index < userInputs.length - 1) {
+      inputsRef.current[index + 1]?.focus();
     }
   };
 
-  const handlePaste = (e) => {
+  const handlePaste = (index, e) => {
+    if (showFeedback) return;
     e.preventDefault();
     const pastedData = e.clipboardData.getData("text").trim();
     if (!pastedData) return;
 
-    const chars = pastedData.split("").slice(0, userInputs.length);
+    // Split paste content
+    const chars = pastedData.split("");
     const newInputs = [...userInputs];
 
-    // Fill inputs starting from the first one (or active one? - usually filling all is clearer for this simple game)
-    // Actually let's just fill from left to right as much as we can, regardless of check?
-    // Let's assume we overwrite from start.
-    chars.forEach((char, i) => {
-      if (i < newInputs.length) {
-        newInputs[i] = char;
+    // Fill starting from the focused index
+    let filledCount = 0;
+    for (let i = 0; i < chars.length; i++) {
+      const targetIndex = index + i;
+      if (targetIndex < newInputs.length) {
+        newInputs[targetIndex] = chars[i];
+        filledCount++;
       }
-    });
+    }
 
     setUserInputs(newInputs);
 
     // Focus the next empty input or the last filled one
-    const nextIndex = Math.min(chars.length, newInputs.length - 1);
+    const nextIndex = Math.min(index + filledCount, newInputs.length - 1);
     if (inputsRef.current[nextIndex]) {
       inputsRef.current[nextIndex].focus();
     }
   };
 
   const handleSubmit = () => {
+    if (showFeedback) return;
+
     const userAnswer = userInputs.join("");
     const rightAnswer = questions[currentIndex].correctAnswer.trim();
+    const correct = userAnswer.toLowerCase() === rightAnswer.toLowerCase();
 
-    if (userAnswer.toLowerCase() === rightAnswer.toLowerCase()) {
+    setIsCorrect(correct);
+    setFeedbackMessage(getFeedbackMessage(correct));
+    setShowFeedback(true);
+    setTimerActive(false);
+
+    if (correct) {
       setFeedbackState("correct");
-      setTimeout(() => {
-        handleNext();
-      }, 1000);
+      setScore((prev) => prev + 1);
     } else {
       setFeedbackState("incorrect");
-      setTimeout(() => setFeedbackState("neutral"), 1000);
     }
   };
 
-  const handleNext = () => {
+  const handleContinue = () => {
+    setShowFeedback(false);
     setFeedbackState("neutral");
+
     if (currentIndex < questions.length - 1) {
       setCurrentIndex((prev) => prev + 1);
     } else {
@@ -182,9 +206,6 @@ export default function CorrectSpellingGamePage() {
   const progress =
     questions.length > 0 ? ((currentIndex + 1) / questions.length) * 100 : 0;
 
-  let submitLabel = "Submit";
-  if (currentIndex === questions.length - 1) submitLabel = "Finish";
-
   const timerString = `0:${timer.toString().padStart(2, "0")}`;
 
   if (loading) {
@@ -196,63 +217,80 @@ export default function CorrectSpellingGamePage() {
   }
 
   return (
-    <PracticeGameLayout
-      questionType="Correct the spelling"
-      instructionFr={currentQuestion?.instructionFr || "Corrigez l'orthographe"}
-      instructionEn={currentQuestion?.instructionEn || "Correct the spelling"}
-      progress={progress}
-      isGameOver={isCompleted}
-      score={0} // Tracking "answered correctly" isn't explicitly shown in game over screen of this layout usually, but passed anyway
-      totalQuestions={questions.length}
-      onExit={() => navigate("/vocabulary/practice")}
-      onNext={handleSubmit}
-      onRestart={() => window.location.reload()}
-      isSubmitEnabled={userInputs.every((i) => i !== "")}
-      showSubmitButton={true}
-      submitLabel={currentIndex === questions.length - 1 ? "Finish" : "Submit"}
-      timerValue={timerString}
-    >
-      <div className="flex flex-col items-center justify-center w-full max-w-4xl">
-        {/* Hint / Context */}
-        {(currentQuestion?.meaning ||
-          currentQuestion?.wordMeaningEn ||
-          currentQuestion?.instructionFr) && (
-          <div className="bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-300 px-4 py-2 rounded-lg text-sm font-medium mb-8">
-            {currentQuestion.meaning || currentQuestion.wordMeaningEn || ""}
+    <>
+      <PracticeGameLayout
+        questionType="Correct the spelling"
+        instructionFr={
+          currentQuestion?.instructionFr || "Corrigez l'orthographe"
+        }
+        instructionEn={currentQuestion?.instructionEn || "Correct the spelling"}
+        progress={progress}
+        isGameOver={isCompleted}
+        score={score}
+        totalQuestions={questions.length}
+        onExit={() => navigate("/vocabulary/practice")}
+        onNext={handleSubmit}
+        onRestart={() => window.location.reload()}
+        isSubmitEnabled={userInputs.every((i) => i !== "") && !showFeedback}
+        showSubmitButton={true}
+        submitLabel="Submit"
+        timerValue={timerString}
+      >
+        <div className="flex flex-col items-center justify-center w-full max-w-4xl">
+          {/* Hint / Context */}
+          {(currentQuestion?.meaning ||
+            currentQuestion?.wordMeaningEn ||
+            currentQuestion?.instructionFr) && (
+            <div className="bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-300 px-4 py-2 rounded-lg text-sm font-medium mb-8">
+              {currentQuestion.meaning || currentQuestion.wordMeaningEn || ""}
+            </div>
+          )}
+
+          {/* Misspelled Word */}
+          <div className="mb-12 text-center">
+            <span className="text-3xl md:text-4xl font-medium text-slate-600 dark:text-slate-300 tracking-wide">
+              {currentQuestion?.misspelledWord}
+            </span>
           </div>
-        )}
 
-        {/* Misspelled Word */}
-        <div className="mb-12 text-center">
-          <span className="text-3xl md:text-4xl font-medium text-slate-600 dark:text-slate-300 tracking-wide">
-            {currentQuestion?.misspelledWord}
-          </span>
-        </div>
-
-        {/* Input Boxes */}
-        <div className="flex flex-nowrap justify-center gap-2 mb-8 max-w-full overflow-x-auto pb-2 px-2 scrollbar-hide">
-          {userInputs.map((val, idx) => (
-            <input
-              key={idx}
-              ref={(el) => (inputsRef.current[idx] = el)}
-              type="text"
-              maxLength={1}
-              value={val}
-              onChange={(e) => handleInputChange(idx, e.target.value)}
-              onKeyDown={(e) => handleKeyDown(idx, e)}
-              onPaste={handlePaste}
-              className={cn(
-                "w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 border-2 rounded-xl text-center text-xl sm:text-2xl md:text-3xl font-bold uppercase transition-all bg-transparent focus:outline-none focus:border-sky-400 focus:shadow-md shrink-0",
-                feedbackState === "incorrect"
-                  ? "border-red-400 text-red-600 bg-red-50"
-                  : feedbackState === "correct"
-                    ? "border-green-400 text-green-600 bg-green-50"
+          {/* Input Boxes */}
+          <div className="flex flex-nowrap justify-center gap-2 mb-8 max-w-full overflow-x-auto pb-2 px-2 scrollbar-hide">
+            {userInputs.map((val, idx) => (
+              <input
+                key={idx}
+                ref={(el) => (inputsRef.current[idx] = el)}
+                type="text"
+                maxLength={1}
+                value={val}
+                onChange={(e) => handleInputChange(idx, e.target.value)}
+                onKeyDown={(e) => handleKeyDown(idx, e)}
+                onPaste={(e) => handlePaste(idx, e)}
+                disabled={showFeedback}
+                className={cn(
+                  "w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 border-2 rounded-xl text-center text-xl sm:text-2xl md:text-3xl font-bold uppercase transition-all bg-transparent focus:outline-none focus:border-sky-400 focus:shadow-md shrink-0",
+                  showFeedback
+                    ? isCorrect
+                      ? "border-green-400 text-green-600 bg-green-50"
+                      : "border-red-400 text-red-600 bg-red-50"
                     : "border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200",
-              )}
-            />
-          ))}
+                )}
+              />
+            ))}
+          </div>
         </div>
-      </div>
-    </PracticeGameLayout>
+      </PracticeGameLayout>
+
+      {showFeedback && (
+        <FeedbackBanner
+          isCorrect={isCorrect}
+          correctAnswer={!isCorrect ? currentQuestion.correctAnswer : null}
+          onContinue={handleContinue}
+          message={feedbackMessage}
+          continueLabel={
+            currentIndex + 1 === questions.length ? "FINISH" : "CONTINUE"
+          }
+        />
+      )}
+    </>
   );
 }

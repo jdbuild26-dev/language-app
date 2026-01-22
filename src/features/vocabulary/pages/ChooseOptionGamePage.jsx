@@ -226,17 +226,6 @@ export default function ChooseOptionGamePage() {
           {/* Right Side: Options */}
           <div className="w-full md:w-1/2 flex flex-col gap-4">
             {/* Context Header above options if available, essentially 'Word Meanings' logic from screenshot */}
-            <div className="mb-2">
-              <h3 className="text-lg font-bold text-slate-700 dark:text-slate-200">
-                Word meaning "{currentQuestion.correctAnswer}"{" "}
-                {/* Context is tricky without clear data field, using correct answer as placeholder for 'meaning' logic if implied, OR just generic label */}
-                {/* Wait, standard data doesn't have "meaning" separate usually for this type. 
-                        The screenshot says 'Word meaning "they speak"'. 
-                        I will assume the 'Instruction_EN' or context is passed. 
-                        For now, I'll stick to a clean option list. 
-                    */}
-              </h3>
-            </div>
 
             <div className="flex flex-col gap-3 w-full">
               {currentQuestion.options.map((option, idx) => {

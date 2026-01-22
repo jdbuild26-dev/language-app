@@ -24,7 +24,7 @@ export default function StoryPlayerPage() {
 
   return (
     <div className="bg-slate-50 min-h-screen">
-      <div className="container mx-auto p-6 max-w-4xl">
+      <div className="mx-auto p-6 w-[90%]">
         <Link
           to="/stories"
           className="inline-flex items-center text-slate-500 hover:text-indigo-600 mb-6 transition-colors"

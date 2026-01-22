@@ -104,18 +104,35 @@ export default function FillInBlankGamePage() {
 
   const handleKeyDown = (index, e) => {
     if (e.key === "Backspace") {
+      const isHint = (idx) => idx === 0 || idx === userInputs.length - 1;
+
       if (userInputs[index]) {
-        // Clear current input
-        const newInputs = [...userInputs];
-        newInputs[index] = "";
-        setUserInputs(newInputs);
+        // Clear current input if not a hint
+        if (!isHint(index)) {
+          const newInputs = [...userInputs];
+          newInputs[index] = "";
+          setUserInputs(newInputs);
+        }
       } else if (index > 0) {
-        // Move to previous input and clear it
-        const newInputs = [...userInputs];
-        newInputs[index - 1] = "";
-        setUserInputs(newInputs);
-        inputsRef.current[index - 1]?.focus();
+        // Move to previous input
+        const prevIndex = index - 1;
+        // Only clear and focus if previous is NOT a hint
+        if (!isHint(prevIndex)) {
+          const newInputs = [...userInputs];
+          newInputs[prevIndex] = "";
+          setUserInputs(newInputs);
+          inputsRef.current[prevIndex]?.focus();
+        } else {
+          // If previous is hint, just strictly focus it (optional) or do nothing?
+          // Focusing it lets user see they are at start, but they can't edit it.
+          // Let's just focus it so navigation feels natural, but DO NOT CLEAR content.
+          inputsRef.current[prevIndex]?.focus();
+        }
       }
+    } else if (e.key === "ArrowLeft" && index > 0) {
+      inputsRef.current[index - 1]?.focus();
+    } else if (e.key === "ArrowRight" && index < userInputs.length - 1) {
+      inputsRef.current[index + 1]?.focus();
     }
   };
 
