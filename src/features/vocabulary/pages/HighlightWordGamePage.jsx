@@ -7,29 +7,6 @@ import FeedbackBanner from "@/components/ui/FeedbackBanner";
 import { fetchPracticeQuestions } from "@/services/vocabularyApi";
 import { getFeedbackMessage } from "@/utils/feedbackMessages";
 
-// MOCK DATA Fallback
-const MOCK_DATA = [
-  {
-    id: 1,
-    prompt: "Select the French word for 'Dog'",
-    sentence: "Le chien joue dans le parc.",
-    correctWord: "chien",
-    meaning: "Dog",
-    QuestionType: "Highlight the word",
-    Instruction_FR: "Mettez en surbrillance le mot",
-    Instruction_EN: "Highlight the word",
-  },
-  {
-    id: 2,
-    prompt: "Select the French word for 'Red'",
-    sentence: "Ma voiture est rouge et rapide.",
-    correctWord: "rouge",
-    meaning: "Red",
-    QuestionType: "Highlight the word",
-    Instruction_FR: "Mettez en surbrillance le mot",
-    Instruction_EN: "Highlight the word",
-  },
-];
 
 export default function HighlightWordGamePage() {
   const navigate = useNavigate();
@@ -48,11 +25,26 @@ export default function HighlightWordGamePage() {
   const [timer, setTimer] = useState(20); // Default per question
 
   useEffect(() => {
-    setTimeout(() => {
-      setQuestions(MOCK_DATA);
-      setLoading(false);
-    }, 500);
+    loadQuestions();
   }, []);
+
+  const loadQuestions = async () => {
+    try {
+      setLoading(true);
+      const response = await fetchPracticeQuestions("A4_Highlight word");
+      if (response && response.data && response.data.length > 0) {
+        setQuestions(response.data);
+      } else {
+        console.error("No questions received from backend");
+        setQuestions([]);
+      }
+    } catch (error) {
+      console.error("Failed to load questions:", error);
+      setQuestions([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Timer Tick
   useEffect(() => {

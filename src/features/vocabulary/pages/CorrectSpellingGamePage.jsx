@@ -86,47 +86,17 @@ export default function CorrectSpellingGamePage() {
         }));
         setQuestions(normalized);
       } else {
-        console.warn("API returned empty, using MOCK data");
-        setQuestions(MOCK_DATA_SPELLING);
+        console.error("API returned empty data");
+        setQuestions([]);
       }
     } catch (err) {
       console.error("Failed to load practice questions:", err);
-      // Fallback
-      setQuestions(MOCK_DATA_SPELLING);
+      setQuestions([]);
     } finally {
       setLoading(false);
     }
   };
 
-  const MOCK_DATA_SPELLING = [
-    {
-      id: "1",
-      misspelledWord: "Acomodation",
-      correctAnswer: "Accommodation",
-      instructionFr: "Corrigez l'orthographe",
-      instructionEn: "Fix the spelling error",
-      timeLimit: "30",
-    },
-    {
-      id: "2",
-      misspelledWord: "Ocurrence",
-      correctAnswer: "Occurrence",
-      instructionFr: "Corrigez l'orthographe",
-      instructionEn: "Fix the spelling error",
-      timeLimit: "30",
-    },
-    {
-      id: "3",
-      misspelledWord: "Definately",
-      correctAnswer: "Definitely", // Wait, is this French or English spelling? The Prompt implies French context but words look English.
-      // Assuming Standard English spelling practice based on "C2_Writing_Correct spelling" or whatever the sheet intent is.
-      // If French "Definitivement"? Let's stick to generic words or French if app is French.
-      // "Appartement" vs "Apartement".
-      instructionFr: "Corrigez l'orthographe",
-      instructionEn: "Fix the spelling error",
-      timeLimit: "30",
-    },
-  ];
 
   const handleInputChange = (index, value) => {
     // Check for deletion
