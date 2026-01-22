@@ -229,7 +229,7 @@ export default function RepeatSentencePage() {
       }
     >
       <div className="flex flex-col items-center justify-center max-w-3xl w-full gap-12">
-        {/* Sentence Display */}
+        {/* Sentence Display with Inline Input Boxes */}
         <div className="w-full bg-white dark:bg-slate-800 rounded-2xl p-8 shadow-sm border border-slate-100 dark:border-slate-700 text-center relative overflow-hidden">
           {feedback === "correct" && (
             <div className="absolute inset-0 bg-green-500/10 z-0" />
@@ -238,9 +238,95 @@ export default function RepeatSentencePage() {
             <div className="absolute inset-0 bg-red-500/10 z-0" />
           )}
 
-          <h2 className="text-2xl md:text-3xl font-medium text-slate-800 dark:text-slate-100 leading-relaxed relative z-10">
-            {currentQuestion.sentenceWithBlank}
-          </h2>
+          <div className="text-lg md:text-xl text-slate-800 dark:text-slate-100 leading-relaxed font-medium relative z-10">
+            {(() => {
+              const sentence = currentQuestion.sentenceWithBlank || "";
+              const correctAnswer = currentQuestion.correctAnswer || "";
+              const words = sentence.split(" ");
+
+              return words.map((word, idx) => {
+                const isLast = idx === words.length - 1;
+                const spacer = !isLast ? " " : "";
+
+                // Check if this word contains the blank (underscores)
+                if (word.includes("_____") || word.includes("______")) {
+                  // Split by _ to get surrounding punctuation/text
+                  const parts = word.split(/_{3,}/);
+                  const beforeBlank = parts[0] || "";
+                  const afterBlank = parts[1] || "";
+
+                  // Create character boxes for the correct answer
+                  const answerChars = correctAnswer.toUpperCase().split("");
+
+                  // Determine what to show in boxes based on spoken text
+                  const spokenChars = spokenText.toUpperCase().split("");
+
+                  return (
+                    <React.Fragment key={idx}>
+                      {beforeBlank}
+                      <span className="inline-flex gap-1 mx-1 align-baseline">
+                        {answerChars.map((char, charIdx) => {
+                          // First and last are hints
+                          const isHint =
+                            charIdx === 0 || charIdx === answerChars.length - 1;
+
+                          // Determine the displayed value
+                          let displayValue = "";
+                          if (isHint) {
+                            displayValue = char; // Show hint
+                          } else if (feedback) {
+                            // After submission, show correct answer
+                            displayValue = char;
+                          }
+
+                          // Styling based on feedback state
+                          let borderColorClass =
+                            "border-gray-300 dark:border-gray-600";
+                          if (isHint) {
+                            borderColorClass =
+                              "border-blue-400 bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-600";
+                          }
+                          if (feedback === "correct") {
+                            borderColorClass =
+                              "border-green-500 bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-400";
+                          } else if (feedback === "incorrect") {
+                            borderColorClass =
+                              "border-red-500 bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-400";
+                          }
+
+                          return (
+                            <span
+                              key={charIdx}
+                              className={`
+                                inline-flex items-center justify-center
+                                w-7 h-9 md:w-8 md:h-10 
+                                border-2 rounded-md 
+                                text-center text-base md:text-lg font-semibold uppercase 
+                                transition-all duration-200
+                                ${borderColorClass}
+                                ${isHint ? "cursor-default" : ""}
+                              `}
+                            >
+                              {displayValue}
+                            </span>
+                          );
+                        })}
+                      </span>
+                      {afterBlank}
+                      {spacer}
+                    </React.Fragment>
+                  );
+                }
+
+                return (
+                  <span key={idx}>
+                    {word}
+                    {spacer}
+                  </span>
+                );
+              });
+            })()}
+          </div>
         </div>
 
         {/* Mic Button & Interaction */}

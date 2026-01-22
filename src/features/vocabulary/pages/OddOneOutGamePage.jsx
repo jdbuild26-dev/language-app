@@ -93,7 +93,7 @@ export default function OddOneOutGamePage() {
 
   const getWordStyle = (word) => {
     const baseStyle =
-      "h-32 md:h-40 rounded-2xl border-2 text-2xl md:text-3xl font-medium transition-all duration-200 flex items-center justify-center relative overflow-hidden min-w-[180px] md:min-w-[240px]";
+      "h-32 md:h-40 rounded-2xl border-2 text-lg md:text-xl font-medium transition-all duration-200 flex items-center justify-center relative overflow-hidden min-w-[180px] md:min-w-[240px]";
 
     if (!isSubmitted) {
       // Normal Selection

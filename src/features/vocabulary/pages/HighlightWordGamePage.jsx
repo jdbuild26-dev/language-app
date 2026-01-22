@@ -163,7 +163,7 @@ export default function HighlightWordGamePage() {
             </div>
           </div>
 
-          <div className="flex flex-wrap justify-center gap-3 text-lg md:text-2xl font-medium leading-relaxed max-w-4xl mx-auto">
+          <div className="flex flex-wrap justify-center gap-3 text-lg md:text-xl font-medium leading-relaxed max-w-4xl mx-auto">
             {words.map((word, index) => {
               let styles =
                 "bg-transparent text-gray-800 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg px-2 py-1 cursor-pointer transition-all border border-transparent";

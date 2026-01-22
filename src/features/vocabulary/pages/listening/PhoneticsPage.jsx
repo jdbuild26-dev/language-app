@@ -129,7 +129,7 @@ export default function PhoneticsPage() {
           {/* Right Side: Question & Options */}
           <div className="flex flex-col w-full max-w-lg gap-6">
             {/* Question Text */}
-            <h2 className="text-xl md:text-2xl font-bold text-slate-700 dark:text-slate-200">
+            <h2 className="text-lg md:text-xl font-bold text-slate-700 dark:text-slate-200">
               {currentQ?.instruction || "Which word do you hear?"}
             </h2>
 

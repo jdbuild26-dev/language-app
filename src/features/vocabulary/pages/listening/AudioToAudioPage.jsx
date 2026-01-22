@@ -159,7 +159,7 @@ export default function AudioToAudioPage() {
               />
             </button>
 
-            <h2 className="text-xl md:text-2xl font-medium text-slate-700 dark:text-slate-200 text-center leading-relaxed">
+            <h2 className="text-lg md:text-xl font-medium text-slate-700 dark:text-slate-200 text-center leading-relaxed">
               {currentQ?.displaySentence.split("_____").map((part, i, arr) => (
                 <React.Fragment key={i}>
                   {part}

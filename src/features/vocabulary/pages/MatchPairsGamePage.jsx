@@ -184,7 +184,7 @@ export default function MatchPairsGamePage() {
 
   const getCardStyle = (card, isSelected, isError, isMatched) => {
     let base =
-      "aspect-square rounded-2xl border-2 flex items-center justify-center p-4 text-center font-bold text-xl transition-all duration-200 cursor-pointer shadow-sm relative relative";
+      "aspect-square rounded-2xl border-2 flex items-center justify-center p-4 text-center font-bold text-lg md:text-xl transition-all duration-200 cursor-pointer shadow-sm relative relative";
 
     if (isMatched) return "opacity-0 pointer-events-none"; // Disappear
 

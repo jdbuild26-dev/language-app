@@ -92,7 +92,7 @@ export default function PracticeGameLayout({
       </div>
 
       {/* CONTENT AREA */}
-      <div className="flex-1 flex flex-col items-center justify-center p-6 overflow-y-auto w-full max-w-7xl mx-auto">
+      <div className="flex-1 flex flex-col items-center justify-center p-6 overflow-y-auto w-full max-w-[95%] mx-auto">
         {/* Question Type Label (Optional, maybe less prominent now) */}
         {questionType && (
           <div className="mb-8 opacity-50">

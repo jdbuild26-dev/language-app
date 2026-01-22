@@ -170,7 +170,7 @@ export default function GroupWordsGamePage() {
 
               // Square cards: aspect-square, remove fixed height
               let cardStyle =
-                "aspect-square rounded-2xl border-2 flex items-center justify-center text-xl md:text-2xl font-medium transition-all duration-200 cursor-pointer relative shadow-sm";
+                "aspect-square rounded-2xl border-2 flex items-center justify-center text-lg md:text-xl font-medium transition-all duration-200 cursor-pointer relative shadow-sm";
 
               if (showFeedback) {
                 if (isTargetWord) {
