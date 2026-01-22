@@ -172,6 +172,16 @@ const practiceActivities = [
     color: "from-purple-400 to-violet-500",
     shadow: "shadow-purple-200 dark:shadow-purple-900/20",
   },
+  {
+    id: "is-french-word",
+    name: "Is this a French Word?",
+    icon: CheckCircle2,
+    desc: "Identify real French words",
+    path: "is-french-word",
+    category: "writing",
+    color: "from-teal-400 to-cyan-500",
+    shadow: "shadow-teal-200 dark:shadow-teal-900/20",
+  },
 
   // Speaking Activities
   {

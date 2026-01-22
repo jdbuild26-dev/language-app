@@ -50,12 +50,12 @@ export default function MultiSelectPage() {
         }));
         setQuestions(transformed);
       } else {
-        console.warn("API returned empty, using MOCK data");
-        setQuestions(MOCK_DATA);
+        console.error("API returned empty data");
+        setQuestions([]);
       }
     } catch (err) {
-      console.error(err);
-      setQuestions(MOCK_DATA);
+      console.error("Failed to load questions:", err);
+      setQuestions([]);
     } finally {
       setLoading(false);
     }
@@ -208,20 +208,3 @@ export default function MultiSelectPage() {
     </PracticeGameLayout>
   );
 }
-
-const MOCK_DATA = [
-  {
-    id: 1,
-    instruction: "Select the animals you hear",
-    options: ["Chat", "Chien", "Cheval", "Hibou", "Lion", "Tigre"],
-    correctIndices: [0, 1, 3], // Chat, Chien, Hibou
-    audioText: "Chat, Chien, Hibou",
-  },
-  {
-    id: 2,
-    instruction: "Select the colors mentioned",
-    options: ["Rouge", "Vert", "Bleu", "Jaune", "Noir", "Blanc"],
-    correctIndices: [0, 2], // Rouge, Bleu
-    audioText: "Rouge, Bleu",
-  },
-];

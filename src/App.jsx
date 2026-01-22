@@ -49,6 +49,7 @@ import ChooseOptionGamePage from "@/features/vocabulary/pages/ChooseOptionGamePa
 import HighlightWordGamePage from "@/features/vocabulary/pages/HighlightWordGamePage";
 import OddOneOutGamePage from "@/features/vocabulary/pages/OddOneOutGamePage";
 import GroupWordsGamePage from "@/features/vocabulary/pages/GroupWordsGamePage";
+import IsThisFrenchWordPage from "@/features/vocabulary/pages/IsThisFrenchWordPage";
 
 // Listening Practice Pages
 import PhoneticsPage from "@/features/vocabulary/pages/listening/PhoneticsPage";
@@ -273,6 +274,16 @@ function App() {
             <ProtectedRoute>
               <FullScreenLayout>
                 <CorrectSpellingGamePage />
+              </FullScreenLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/vocabulary/practice/is-french-word"
+          element={
+            <ProtectedRoute>
+              <FullScreenLayout>
+                <IsThisFrenchWordPage />
               </FullScreenLayout>
             </ProtectedRoute>
           }

@@ -7,30 +7,6 @@ import FeedbackBanner from "@/components/ui/FeedbackBanner";
 import { fetchPracticeQuestions } from "@/services/vocabularyApi";
 import { getFeedbackMessage } from "@/utils/feedbackMessages";
 
-// MOCK DATA Fallback
-const MOCK_DATA = [
-  {
-    id: 1,
-    prompt: "Select the French word for 'Dog'",
-    sentence: "Le chien joue dans le parc.",
-    correctWord: "chien",
-    meaning: "Dog",
-    QuestionType: "Highlight the word",
-    Instruction_FR: "Mettez en surbrillance le mot",
-    Instruction_EN: "Highlight the word",
-  },
-  {
-    id: 2,
-    prompt: "Select the French word for 'Red'",
-    sentence: "Ma voiture est rouge et rapide.",
-    correctWord: "rouge",
-    meaning: "Red",
-    QuestionType: "Highlight the word",
-    Instruction_FR: "Mettez en surbrillance le mot",
-    Instruction_EN: "Highlight the word",
-  },
-];
-
 export default function HighlightWordGamePage() {
   const navigate = useNavigate();
   const [questions, setQuestions] = useState([]);
@@ -48,11 +24,34 @@ export default function HighlightWordGamePage() {
   const [timer, setTimer] = useState(20); // Default per question
 
   useEffect(() => {
-    setTimeout(() => {
-      setQuestions(MOCK_DATA);
-      setLoading(false);
-    }, 500);
+    loadQuestions();
   }, []);
+
+  const loadQuestions = async () => {
+    try {
+      setLoading(true);
+      const response = await fetchPracticeQuestions("A4_Highlight word");
+      if (response && response.data && response.data.length > 0) {
+        // Map API response keys to component state keys
+        const formattedQuestions = response.data.map((q) => ({
+          ...q,
+          sentence: q["Complete sentence"],
+          correctWord: q["CorrectAnswer"],
+          prompt: q["Question_FR"]?.trim(),
+          meaning: q["Question_EN"]?.trim(),
+        }));
+        setQuestions(formattedQuestions);
+      } else {
+        console.error("No questions received from backend");
+        setQuestions([]);
+      }
+    } catch (error) {
+      console.error("Failed to load questions:", error);
+      setQuestions([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Timer Tick
   useEffect(() => {
@@ -163,7 +162,7 @@ export default function HighlightWordGamePage() {
             </div>
           </div>
 
-          <div className="flex flex-wrap justify-center gap-3 text-lg md:text-2xl font-medium leading-relaxed max-w-4xl mx-auto">
+          <div className="flex flex-wrap justify-center gap-3 text-lg md:text-xl font-medium leading-relaxed max-w-4xl mx-auto">
             {words.map((word, index) => {
               let styles =
                 "bg-transparent text-gray-800 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg px-2 py-1 cursor-pointer transition-all border border-transparent";

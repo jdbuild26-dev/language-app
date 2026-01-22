@@ -144,7 +144,7 @@ export default function DictationPage() {
           <Volume2 className="w-10 h-10" />
         </button>
 
-        <div className="text-2xl font-medium text-center text-gray-800 dark:text-gray-100 mb-8 leading-relaxed">
+        <div className="text-lg md:text-xl font-medium text-center text-gray-800 dark:text-gray-100 mb-8 leading-relaxed">
           {currentQ?.displaySentence.split("___").map((part, i, arr) => (
             <span key={i}>
               {part}
