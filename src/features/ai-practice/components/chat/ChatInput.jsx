@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Send, Lightbulb } from "lucide-react";
+import AudioRecorder from "../AudioRecorder";
 
 export default function ChatInput({ onSend, onHint, disabled = false }) {
   const [message, setMessage] = useState("");
@@ -60,15 +61,25 @@ export default function ChatInput({ onSend, onHint, disabled = false }) {
           <button
             type="button"
             onClick={handleHintClick}
-            className={`p-2.5 rounded-xl transition-colors ${
-              showHint
-                ? "bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400"
-                : "bg-gray-100 dark:bg-slate-800 text-gray-500 dark:text-slate-400 hover:bg-gray-200 dark:hover:bg-slate-700"
-            }`}
+            className={`p-2.5 rounded-xl transition-colors ${showHint
+              ? "bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400"
+              : "bg-gray-100 dark:bg-slate-800 text-gray-500 dark:text-slate-400 hover:bg-gray-200 dark:hover:bg-slate-700"
+              }`}
             title="Get a hint"
           >
             <Lightbulb className="w-5 h-5" />
           </button>
+
+          {/* Audio Recorder */}
+          <AudioRecorder
+            onRecordingComplete={(blob) => {
+              console.log("Audio recorded:", blob);
+              // TODO: Send blob to backend for transcription
+              // For now, we'll just alert purely for visual confirmation that the callback fired
+              // alert("Audio recorded! Backend integration coming next.");
+            }}
+            disabled={disabled}
+          />
 
           {/* Text Input */}
           <input
@@ -79,20 +90,18 @@ export default function ChatInput({ onSend, onHint, disabled = false }) {
               disabled ? "AI is thinking..." : "Type your message in French..."
             }
             disabled={disabled}
-            className={`flex-1 px-4 py-2.5 bg-gray-100 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent transition-all ${
-              disabled ? "opacity-50 cursor-not-allowed" : ""
-            }`}
+            className={`flex-1 px-4 py-2.5 bg-gray-100 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent transition-all ${disabled ? "opacity-50 cursor-not-allowed" : ""
+              }`}
           />
 
           {/* Send Button */}
           <button
             type="submit"
             disabled={!message.trim() || disabled}
-            className={`p-2.5 rounded-xl transition-colors ${
-              message.trim() && !disabled
-                ? "bg-sky-500 hover:bg-sky-600 text-white"
-                : "bg-gray-100 dark:bg-slate-800 text-gray-400 dark:text-slate-500 cursor-not-allowed"
-            }`}
+            className={`p-2.5 rounded-xl transition-colors ${message.trim() && !disabled
+              ? "bg-sky-500 hover:bg-sky-600 text-white"
+              : "bg-gray-100 dark:bg-slate-800 text-gray-400 dark:text-slate-500 cursor-not-allowed"
+              }`}
             title="Send message"
           >
             <Send className="w-5 h-5" />

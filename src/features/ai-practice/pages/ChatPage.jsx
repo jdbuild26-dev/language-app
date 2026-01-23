@@ -4,6 +4,8 @@ import { Loader2, AlertCircle } from "lucide-react";
 import ChatHeader from "../components/chat/ChatHeader";
 import ChatInput from "../components/chat/ChatInput";
 import MessageBubble from "../components/chat/MessageBubble";
+import ConversationWarmup from "../components/ConversationWarmup";
+import AnalyzeModal from "../components/AnalyzeModal";
 import {
   fetchTopicBySlug,
   sendChatMessage,
@@ -21,6 +23,10 @@ export default function ChatPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSending, setIsSending] = useState(false);
   const [error, setError] = useState(null);
+
+  const [showWarmup, setShowWarmup] = useState(true);
+  const [showAnalyze, setShowAnalyze] = useState(false);
+  const [analysisData, setAnalysisData] = useState(null);
 
   // Auto-scroll to bottom when messages change
   useEffect(() => {
@@ -58,7 +64,7 @@ export default function ChatPage() {
               hour: "2-digit",
               minute: "2-digit",
             }),
-            autoPlay: true,
+            autoPlay: true, // This will be handled by the component
           },
         ]);
       } catch (err) {
@@ -73,6 +79,39 @@ export default function ChatPage() {
       initializeChat();
     }
   }, [topicSlug]);
+
+  const handleWarmupComplete = () => {
+    setShowWarmup(false);
+    // You might want to trigger the first message audio here if needed,
+    // but the autoPlay prop on the first message should handle it once rendered/active.
+  };
+
+  const handleEndSession = async () => {
+    // In a real implementation, we would call an API here to generate the analysis
+    // For now, we'll simulate a loading delay then show the modal
+    // TODO: Call /ai-practice/analyze endpoint
+
+    // Simulate data fetch
+    setAnalysisData(null); // Reset to trigger loading state in modal if handled
+    setShowAnalyze(true);
+
+    // Mock data for immediate testing - will be replaced by API call later
+    setTimeout(() => {
+      setAnalysisData({
+        cefr_assessment: "A2",
+        grammar_score: 85,
+        vocabulary_score: 70,
+        fluency_note: "You showed good understanding of basic phrases. Try to use more complex sentence structures in the future.",
+        feedback_points: [
+          {
+            error: "Je suis appelle John",
+            correction: "Je m'appelle John",
+            explanation: "Use reflexive verb 's'appeler' for names."
+          }
+        ]
+      });
+    }, 1500);
+  };
 
   const handleSendMessage = async (messageText) => {
     if (!messageText.trim() || isSending || !scenario) return;
@@ -194,8 +233,18 @@ export default function ChatPage() {
 
   return (
     <div className="fixed inset-0 top-[64px] z-40 flex flex-col bg-gray-50 dark:bg-slate-950">
+      {/* Warmup Overlay */}
+      {showWarmup && <ConversationWarmup onComplete={handleWarmupComplete} />}
+
+      {/* Analysis Modal */}
+      <AnalyzeModal
+        isOpen={showAnalyze}
+        onClose={() => navigate("/ai-practice")}
+        analysisData={analysisData}
+      />
+
       {/* Fixed Header */}
-      <ChatHeader scenario={scenario} />
+      <ChatHeader scenario={scenario} onEndSession={handleEndSession} />
 
       {/* Messages Container */}
       <div className="flex-1 overflow-y-auto px-4 py-6">
@@ -241,7 +290,7 @@ export default function ChatPage() {
       <ChatInput
         onSend={handleSendMessage}
         onHint={handleHint}
-        disabled={isSending}
+        disabled={isSending || showWarmup}
       />
     </div>
   );
