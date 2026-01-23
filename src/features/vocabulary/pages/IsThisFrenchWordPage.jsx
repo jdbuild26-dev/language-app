@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useExerciseTimer } from "@/hooks/useExerciseTimer";
 import { useNavigate } from "react-router-dom";
 import { Check, X, Loader2 } from "lucide-react";
 import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
@@ -33,7 +34,6 @@ export default function IsThisFrenchWordPage() {
   const [loading, setLoading] = useState(true);
 
   // Timer
-  const [timer, setTimer] = useState(15);
 
   useEffect(() => {
     // Shuffle and load questions
@@ -42,20 +42,26 @@ export default function IsThisFrenchWordPage() {
     setLoading(false);
   }, []);
 
+  // Timer Hook
+  const { timerString, resetTimer, isPaused } = useExerciseTimer({
+    duration: 15,
+    mode: "timer",
+    onExpire: () => {
+      // Auto fail if time runs out
+      if (!showFeedback && !isCompleted) {
+        setIsCorrect(false);
+        setFeedbackMessage("Time's up!");
+        setShowFeedback(true);
+      }
+    },
+    isPaused: loading || isCompleted || showFeedback,
+  });
+
   // Reset timer on new question
   useEffect(() => {
-    if (!loading && !isCompleted && !showFeedback) {
-      setTimer(15);
-    }
-  }, [currentIndex, loading, isCompleted, showFeedback]);
-
-  // Timer tick
-  useEffect(() => {
-    if (!loading && !isCompleted && !showFeedback && timer > 0) {
-      const interval = setInterval(() => setTimer((t) => t - 1), 1000);
-      return () => clearInterval(interval);
-    }
-  }, [timer, loading, isCompleted, showFeedback]);
+    resetTimer();
+  }, [currentIndex, resetTimer]);
+  // Removed manual timer effects
 
   const handleAnswer = (answer) => {
     if (showFeedback) return;
@@ -87,7 +93,6 @@ export default function IsThisFrenchWordPage() {
   const currentQ = questions[currentIndex];
   const progress =
     questions.length > 0 ? ((currentIndex + 1) / questions.length) * 100 : 0;
-  const timerString = `0:${timer.toString().padStart(2, "0")}`;
 
   if (loading) {
     return (

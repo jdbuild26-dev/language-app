@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { useExerciseTimer } from "@/hooks/useExerciseTimer";
 import { CheckCircle, AlertCircle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -71,6 +72,25 @@ export default function GroupWordsGamePage() {
   const [showFeedback, setShowFeedback] = useState(false);
   const [isCorrect, setIsCorrect] = useState(false);
   const [feedbackMessage, setFeedbackMessage] = useState("");
+
+  // Timer Hook
+  const { timerString, resetTimer, isPaused } = useExerciseTimer({
+    duration: 60,
+    mode: "timer",
+    onExpire: () => {
+      if (!isSubmitted && !showFeedback && !isGameOver) {
+        setIsSubmitted(true);
+        setIsCorrect(false);
+        setFeedbackMessage("Time's up!");
+        setShowFeedback(true);
+      }
+    },
+    isPaused: isSubmitted || showFeedback || isGameOver,
+  });
+
+  useEffect(() => {
+    resetTimer();
+  }, [currentIndex, resetTimer]);
 
   const currentQuestion = MOCK_QUESTIONS[currentIndex];
   // Ensure we rely on 'correctGroup' being exactly 4 items for "Pick 4" logic
@@ -149,6 +169,7 @@ export default function GroupWordsGamePage() {
         isSubmitEnabled={selectedWords.length === targetCount}
         showSubmitButton={true}
         submitLabel={submitLabel}
+        timerValue={timerString}
       >
         <div className="flex-1 flex flex-col items-center justify-center -mt-10 w-full max-w-7xl">
           <div className="mb-10 text-center">

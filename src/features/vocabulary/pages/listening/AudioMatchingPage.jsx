@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from "react";
+import { useExerciseTimer } from "@/hooks/useExerciseTimer";
 import { useTextToSpeech } from "../../../../hooks/useTextToSpeech";
 import { fetchPracticeQuestions } from "../../../../services/vocabularyApi";
-import { Loader2, Volume2, CheckCircle2 } from "lucide-react";
+import { Loader2, CheckCircle2 } from "lucide-react";
+import AudioPlayer from "../../components/shared/AudioPlayer";
 import { motion, AnimatePresence } from "framer-motion";
 import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
 import FeedbackBanner from "@/components/ui/FeedbackBanner";
@@ -20,6 +22,24 @@ export default function AudioMatchingPage() {
   const [feedbackMessage, setFeedbackMessage] = useState("");
   const [isCompleted, setIsCompleted] = useState(false);
   const [score, setScore] = useState(0);
+
+  // Timer Hook
+  const { timerString, resetTimer, isPaused } = useExerciseTimer({
+    duration: 30,
+    mode: "timer",
+    onExpire: () => {
+      if (!showFeedback && !isCompleted) {
+        setIsCorrect(false);
+        setFeedbackMessage("Time's up!");
+        setShowFeedback(true);
+      }
+    },
+    isPaused: loading || isCompleted || showFeedback,
+  });
+
+  useEffect(() => {
+    resetTimer();
+  }, [currentIndex, resetTimer]);
 
   useEffect(() => {
     loadData();
@@ -116,7 +136,8 @@ export default function AudioMatchingPage() {
   return (
     <>
       <PracticeGameLayout
-        questionType="What do you hear?"
+        questionTypeFr="Qu'entendez-vous ?"
+        questionTypeEn="What do you hear?"
         instructionFr="Écoutez et choisissez la bonne traduction"
         instructionEn="Listen and choose the correct translation"
         progress={progress}
@@ -127,24 +148,13 @@ export default function AudioMatchingPage() {
         onRestart={() => window.location.reload()}
         isSubmitEnabled={false}
         showSubmitButton={false}
+        timerValue={timerString}
       >
-        <div className="flex flex-col items-center w-full max-w-2xl">
+        <div className="flex flex-col items-center w-full max-w-2xl pb-32">
           {/* Audio Button */}
-          <button
-            onClick={() => speak(currentQ.promptAudio)}
-            className={`
-              mb-12 w-32 h-32 rounded-full flex items-center justify-center shadow-lg transition-all transform hover:scale-105
-              ${
-                isSpeaking
-                  ? "bg-blue-100 text-blue-600 ring-4 ring-blue-200"
-                  : "bg-white dark:bg-slate-800 text-blue-500"
-              }
-            `}
-          >
-            <Volume2
-              className={`w-12 h-12 ${isSpeaking ? "animate-pulse" : ""}`}
-            />
-          </button>
+          <div className="mb-12">
+            <AudioPlayer text={currentQ?.promptAudio || ""} />
+          </div>
 
           {/* Options Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full">

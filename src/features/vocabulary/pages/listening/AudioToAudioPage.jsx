@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from "react";
+import { useExerciseTimer } from "@/hooks/useExerciseTimer";
 import { fetchPracticeQuestions } from "../../../../services/vocabularyApi";
-import { Loader2, Volume2, CheckCircle, XCircle } from "lucide-react";
+import { Loader2, CheckCircle, XCircle } from "lucide-react";
+import AudioPlayer from "../../components/shared/AudioPlayer";
 import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
 import { useTextToSpeech } from "@/hooks/useTextToSpeech";
 import { cn } from "@/lib/utils";
@@ -18,6 +20,24 @@ export default function AudioToAudioPage() {
   const [feedbackMessage, setFeedbackMessage] = useState("");
   const [score, setScore] = useState(0);
   const [isCompleted, setIsCompleted] = useState(false);
+
+  // Timer Hook
+  const { timerString, resetTimer, isPaused } = useExerciseTimer({
+    duration: 30,
+    mode: "timer",
+    onExpire: () => {
+      if (!showFeedback && !isCompleted) {
+        setIsCorrect(false);
+        setFeedbackMessage("Time's up!");
+        setShowFeedback(true);
+      }
+    },
+    isPaused: loading || isCompleted || showFeedback,
+  });
+
+  useEffect(() => {
+    resetTimer();
+  }, [currentIndex, resetTimer]);
 
   useEffect(() => {
     loadData();
@@ -48,7 +68,6 @@ export default function AudioToAudioPage() {
       setLoading(false);
     }
   };
-
 
   const handleOptionSelect = (opt) => {
     if (showFeedback) return;
@@ -117,7 +136,8 @@ export default function AudioToAudioPage() {
   return (
     <>
       <PracticeGameLayout
-        questionType="Audio Match"
+        questionTypeFr="Choisissez l'audio correspondant"
+        questionTypeEn="Choose the matching audio"
         instructionFr="Écoutez et choisissez"
         instructionEn={currentQ?.instruction}
         progress={progress}
@@ -130,19 +150,12 @@ export default function AudioToAudioPage() {
         isSubmitEnabled={!!selectedOption && !showFeedback}
         showSubmitButton={!showFeedback}
         submitLabel="Submit"
+        timerValue={timerString}
       >
-        <div className="flex flex-col md:flex-row items-center justify-center w-full max-w-5xl gap-8 md:gap-16 px-4">
+        <div className="flex flex-col md:flex-row items-center justify-center w-full max-w-5xl gap-8 md:gap-16 px-4 pb-32">
           {/* Left Side: Audio & Sentence */}
           <div className="flex flex-col items-center gap-8 w-full md:w-1/2">
-            <button
-              onClick={playSentence}
-              className="w-40 h-40 md:w-56 md:h-56 bg-sky-500 rounded-3xl shadow-[0_6px_0_0_#0ea5e9] hover:bg-sky-400 active:shadow-none active:translate-y-[6px] transition-all flex items-center justify-center text-white"
-            >
-              <Volume2
-                className="w-20 h-20 md:w-24 md:h-24"
-                strokeWidth={1.5}
-              />
-            </button>
+            <AudioPlayer text={currentQ?.fullSentence || ""} />
 
             <h2 className="text-lg md:text-xl font-medium text-slate-700 dark:text-slate-200 text-center leading-relaxed">
               {currentQ?.displaySentence.split("_____").map((part, i, arr) => (
@@ -179,47 +192,185 @@ export default function AudioToAudioPage() {
                       isSelected &&
                         "border-sky-400 bg-sky-50 dark:bg-sky-900/20",
                       // Feedback states
-                      showFeedback && opt === currentQ?.correctAnswer &&
+                      showFeedback &&
+                        opt === currentQ?.correctAnswer &&
                         "border-green-400 bg-green-50 dark:bg-green-900/20",
-                      showFeedback && isSelected && opt !== currentQ?.correctAnswer &&
+                      showFeedback &&
+                        isSelected &&
+                        opt !== currentQ?.correctAnswer &&
                         "border-red-400 bg-red-50 dark:bg-red-900/20",
                     )}
                   >
                     {/* Static Waveform SVG */}
-                    <svg 
-                      width="120" 
-                      height="40" 
-                      viewBox="0 0 120 40" 
+                    <svg
+                      width="120"
+                      height="40"
+                      viewBox="0 0 120 40"
                       className={cn(
                         "transition-colors",
-                        isSelected 
-                          ? "text-sky-500" 
+                        isSelected
+                          ? "text-sky-500"
                           : showFeedback && opt === currentQ?.correctAnswer
-                          ? "text-green-500"
-                          : showFeedback && isSelected && opt !== currentQ?.correctAnswer
-                          ? "text-red-500"
-                          : "text-slate-400 dark:text-slate-500"
+                            ? "text-green-500"
+                            : showFeedback &&
+                                isSelected &&
+                                opt !== currentQ?.correctAnswer
+                              ? "text-red-500"
+                              : "text-slate-400 dark:text-slate-500",
                       )}
                     >
-                      <rect x="2" y="15" width="3" height="10" fill="currentColor" rx="1.5"/>
-                      <rect x="8" y="10" width="3" height="20" fill="currentColor" rx="1.5"/>
-                      <rect x="14" y="12" width="3" height="16" fill="currentColor" rx="1.5"/>
-                      <rect x="20" y="8" width="3" height="24" fill="currentColor" rx="1.5"/>
-                      <rect x="26" y="14" width="3" height="12" fill="currentColor" rx="1.5"/>
-                      <rect x="32" y="11" width="3" height="18" fill="currentColor" rx="1.5"/>
-                      <rect x="38" y="16" width="3" height="8" fill="currentColor" rx="1.5"/>
-                      <rect x="44" y="13" width="3" height="14" fill="currentColor" rx="1.5"/>
-                      <rect x="50" y="9" width="3" height="22" fill="currentColor" rx="1.5"/>
-                      <rect x="56" y="17" width="3" height="6" fill="currentColor" rx="1.5"/>
-                      <rect x="62" y="12" width="3" height="16" fill="currentColor" rx="1.5"/>
-                      <rect x="68" y="15" width="3" height="10" fill="currentColor" rx="1.5"/>
-                      <rect x="74" y="11" width="3" height="18" fill="currentColor" rx="1.5"/>
-                      <rect x="80" y="14" width="3" height="12" fill="currentColor" rx="1.5"/>
-                      <rect x="86" y="10" width="3" height="20" fill="currentColor" rx="1.5"/>
-                      <rect x="92" y="16" width="3" height="8" fill="currentColor" rx="1.5"/>
-                      <rect x="98" y="13" width="3" height="14" fill="currentColor" rx="1.5"/>
-                      <rect x="104" y="15" width="3" height="10" fill="currentColor" rx="1.5"/>
-                      <rect x="110" y="18" width="3" height="4" fill="currentColor" rx="1.5"/>
+                      <rect
+                        x="2"
+                        y="15"
+                        width="3"
+                        height="10"
+                        fill="currentColor"
+                        rx="1.5"
+                      />
+                      <rect
+                        x="8"
+                        y="10"
+                        width="3"
+                        height="20"
+                        fill="currentColor"
+                        rx="1.5"
+                      />
+                      <rect
+                        x="14"
+                        y="12"
+                        width="3"
+                        height="16"
+                        fill="currentColor"
+                        rx="1.5"
+                      />
+                      <rect
+                        x="20"
+                        y="8"
+                        width="3"
+                        height="24"
+                        fill="currentColor"
+                        rx="1.5"
+                      />
+                      <rect
+                        x="26"
+                        y="14"
+                        width="3"
+                        height="12"
+                        fill="currentColor"
+                        rx="1.5"
+                      />
+                      <rect
+                        x="32"
+                        y="11"
+                        width="3"
+                        height="18"
+                        fill="currentColor"
+                        rx="1.5"
+                      />
+                      <rect
+                        x="38"
+                        y="16"
+                        width="3"
+                        height="8"
+                        fill="currentColor"
+                        rx="1.5"
+                      />
+                      <rect
+                        x="44"
+                        y="13"
+                        width="3"
+                        height="14"
+                        fill="currentColor"
+                        rx="1.5"
+                      />
+                      <rect
+                        x="50"
+                        y="9"
+                        width="3"
+                        height="22"
+                        fill="currentColor"
+                        rx="1.5"
+                      />
+                      <rect
+                        x="56"
+                        y="17"
+                        width="3"
+                        height="6"
+                        fill="currentColor"
+                        rx="1.5"
+                      />
+                      <rect
+                        x="62"
+                        y="12"
+                        width="3"
+                        height="16"
+                        fill="currentColor"
+                        rx="1.5"
+                      />
+                      <rect
+                        x="68"
+                        y="15"
+                        width="3"
+                        height="10"
+                        fill="currentColor"
+                        rx="1.5"
+                      />
+                      <rect
+                        x="74"
+                        y="11"
+                        width="3"
+                        height="18"
+                        fill="currentColor"
+                        rx="1.5"
+                      />
+                      <rect
+                        x="80"
+                        y="14"
+                        width="3"
+                        height="12"
+                        fill="currentColor"
+                        rx="1.5"
+                      />
+                      <rect
+                        x="86"
+                        y="10"
+                        width="3"
+                        height="20"
+                        fill="currentColor"
+                        rx="1.5"
+                      />
+                      <rect
+                        x="92"
+                        y="16"
+                        width="3"
+                        height="8"
+                        fill="currentColor"
+                        rx="1.5"
+                      />
+                      <rect
+                        x="98"
+                        y="13"
+                        width="3"
+                        height="14"
+                        fill="currentColor"
+                        rx="1.5"
+                      />
+                      <rect
+                        x="104"
+                        y="15"
+                        width="3"
+                        height="10"
+                        fill="currentColor"
+                        rx="1.5"
+                      />
+                      <rect
+                        x="110"
+                        y="18"
+                        width="3"
+                        height="4"
+                        fill="currentColor"
+                        rx="1.5"
+                      />
                     </svg>
 
                     {/* Feedback Icons */}

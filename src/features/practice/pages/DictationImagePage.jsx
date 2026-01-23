@@ -236,7 +236,7 @@ export default function DictationImagePage() {
             </div>
 
             {/* Inputs */}
-            <div className="flex flex-wrap justify-center md:justify-start gap-2">
+            <div className="flex flex-nowrap justify-center gap-1 sm:gap-2 w-full max-w-full px-2">
               {userInputs.map((char, index) => {
                 // Determine if this input was pre-filled (first or last char)
                 const isPreFilled =
@@ -253,7 +253,7 @@ export default function DictationImagePage() {
                     onKeyDown={(e) => handleKeyDown(index, e)}
                     disabled={feedback !== null || isPreFilled}
                     className={cn(
-                      "w-12 h-14 md:w-16 md:h-20 border-2 rounded-xl text-center text-2xl md:text-3xl font-bold transition-all outline-none",
+                      "w-8 h-10 sm:w-12 sm:h-14 md:w-16 md:h-20 shrink min-w-0 border-2 rounded-md sm:rounded-xl text-center text-lg sm:text-2xl md:text-3xl font-bold transition-all outline-none",
                       // Default Style
                       "border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white",
                       // Focus Style (only if not disabled)

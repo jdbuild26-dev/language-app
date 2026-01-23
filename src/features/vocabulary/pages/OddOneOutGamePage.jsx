@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { useExerciseTimer } from "@/hooks/useExerciseTimer";
 import { CheckCircle, XCircle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -53,6 +54,25 @@ export default function OddOneOutGamePage() {
   const [showFeedback, setShowFeedback] = useState(false);
   const [isCorrect, setIsCorrect] = useState(false);
   const [feedbackMessage, setFeedbackMessage] = useState("");
+
+  // Timer Hook
+  const { timerString, resetTimer, isPaused } = useExerciseTimer({
+    duration: 20,
+    mode: "timer",
+    onExpire: () => {
+      if (!isSubmitted && !showFeedback && !isGameOver) {
+        setIsSubmitted(true);
+        setIsCorrect(false);
+        setFeedbackMessage("Time's up!");
+        setShowFeedback(true);
+      }
+    },
+    isPaused: isSubmitted || showFeedback || isGameOver,
+  });
+
+  useEffect(() => {
+    resetTimer();
+  }, [currentIndex, resetTimer]);
 
   const currentQuestion = MOCK_QUESTIONS[currentIndex];
   const totalQuestions = MOCK_QUESTIONS.length;
@@ -141,6 +161,7 @@ export default function OddOneOutGamePage() {
         isSubmitEnabled={!!selectedWord}
         showSubmitButton={true}
         submitLabel={submitLabel}
+        timerValue={timerString}
       >
         <div className="flex-1 flex flex-col items-center justify-center -mt-10">
           {/* Grid */}

@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from "react";
+import { useExerciseTimer } from "@/hooks/useExerciseTimer";
 import { fetchPracticeQuestions } from "../../../../services/vocabularyApi";
-import { Loader2, Check, Volume2 } from "lucide-react";
+import { Loader2, Check } from "lucide-react";
+import AudioPlayer from "../../components/shared/AudioPlayer";
 import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
 import { cn } from "@/lib/utils";
 import { useTextToSpeech } from "@/hooks/useTextToSpeech";
@@ -14,6 +16,22 @@ export default function MultiSelectPage() {
   const [isChecked, setIsChecked] = useState(false);
   const [score, setScore] = useState(0);
   const [isCompleted, setIsCompleted] = useState(false);
+
+  // Timer Hook
+  const { timerString, resetTimer, isPaused } = useExerciseTimer({
+    duration: 30,
+    mode: "timer",
+    onExpire: () => {
+      if (!isChecked && !isCompleted) {
+        handleSubmit();
+      }
+    },
+    isPaused: loading || isCompleted || isChecked,
+  });
+
+  useEffect(() => {
+    resetTimer();
+  }, [currentIndex, resetTimer]);
 
   useEffect(() => {
     loadData();
@@ -129,7 +147,8 @@ export default function MultiSelectPage() {
 
   return (
     <PracticeGameLayout
-      questionType="What do you hear?"
+      questionTypeFr="Qu'entendez-vous ?"
+      questionTypeEn="What do you hear?"
       instructionFr="Écoutez et sélectionnez les bonnes réponses"
       instructionEn={
         currentQ?.instruction || "Listen and choose 1-4 correct answers"
@@ -144,33 +163,12 @@ export default function MultiSelectPage() {
       isSubmitEnabled={selectedIndices.length > 0}
       showSubmitButton={true}
       submitLabel={submitLabel}
+      timerValue={timerString}
     >
       <div className="flex flex-col items-center w-full max-w-3xl">
         {/* Audio Player Section */}
         <div className="mb-10 w-full flex flex-col items-center justify-center">
-          <div className="relative flex items-center bg-orange-50 dark:bg-orange-900/10 border-2 border-orange-200 dark:border-orange-800 rounded-full p-2 pr-8 shadow-sm max-w-md w-full">
-            <button
-              onClick={playAudio}
-              className="w-16 h-16 rounded-full bg-orange-100 hover:bg-orange-200 dark:bg-orange-800 dark:hover:bg-orange-700 flex items-center justify-center text-orange-600 dark:text-orange-200 transition-transform active:scale-95 shrink-0 z-10 border-4 border-white dark:border-slate-900"
-            >
-              <Volume2 className="w-8 h-8" />
-            </button>
-            {/* Fake Waveform Visual */}
-            {/* Fake Waveform Visual */}
-            <div className="flex-1 h-12 flex items-center justify-center gap-[2px] ml-4 opacity-50">
-              {[...Array(20)].map((_, i) => (
-                <div
-                  key={i}
-                  // Removed animate-pulse class entirely
-                  className="bg-orange-400 w-1 rounded-full"
-                  // Deterministic height based on index i, preventing jitter
-                  style={{
-                    height: `${30 + ((i * 11) % 70)}%`,
-                  }}
-                />
-              ))}
-            </div>
-          </div>
+          <AudioPlayer text={questions[currentIndex]?.audioText || ""} />
         </div>
 
         {/* Options Grid */}

@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from "react";
+import { useExerciseTimer } from "@/hooks/useExerciseTimer";
 import { useTextToSpeech } from "../../../../hooks/useTextToSpeech";
 import { fetchPracticeQuestions } from "../../../../services/vocabularyApi";
-import { Loader2, Volume2, CheckCircle2, XCircle } from "lucide-react";
+import { Loader2, CheckCircle2, XCircle } from "lucide-react";
+import AudioPlayer from "../../components/shared/AudioPlayer";
 import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
 import { cn } from "@/lib/utils";
 import FeedbackBanner from "@/components/ui/FeedbackBanner";
@@ -20,6 +22,24 @@ export default function PhoneticsPage() {
   const [feedbackMessage, setFeedbackMessage] = useState("");
   const [isCompleted, setIsCompleted] = useState(false);
   const [score, setScore] = useState(0);
+
+  // Timer Hook
+  const { timerString, resetTimer, isPaused } = useExerciseTimer({
+    duration: 30,
+    mode: "timer",
+    onExpire: () => {
+      if (!showFeedback && !isCompleted) {
+        setIsCorrect(false);
+        setFeedbackMessage("Time's up!");
+        setShowFeedback(true);
+      }
+    },
+    isPaused: loading || isCompleted || showFeedback,
+  });
+
+  useEffect(() => {
+    resetTimer();
+  }, [currentIndex, resetTimer]);
 
   useEffect(() => {
     loadData();
@@ -96,7 +116,8 @@ export default function PhoneticsPage() {
   return (
     <>
       <PracticeGameLayout
-        questionType="Phonetics Practice"
+        questionTypeFr="Exercice de phonétique"
+        questionTypeEn="Phonetics Practice"
         instructionFr="Choisissez la bonne transcription"
         instructionEn={
           currentQ?.instruction || "Choose the correct transcription"
@@ -111,19 +132,12 @@ export default function PhoneticsPage() {
         isSubmitEnabled={selectedOptionIndex !== null && !showFeedback}
         showSubmitButton={!showFeedback}
         submitLabel="Submit"
+        timerValue={timerString}
       >
         <div className="flex flex-col md:flex-row items-center justify-center w-full max-w-5xl gap-8 md:gap-16 px-4">
           {/* Left Side: Large Audio Button */}
           <div className="flex-shrink-0">
-            <button
-              onClick={() => speak(currentQ.prompt)}
-              className="w-48 h-48 md:w-64 md:h-64 bg-sky-500 rounded-3xl shadow-[0_6px_0_0_#0ea5e9] hover:bg-sky-400 active:shadow-none active:translate-y-[6px] transition-all flex items-center justify-center text-white"
-            >
-              <Volume2
-                className="w-24 h-24 md:w-32 md:h-32"
-                strokeWidth={1.5}
-              />
-            </button>
+            <AudioPlayer text={currentQ?.prompt || ""} />
           </div>
 
           {/* Right Side: Question & Options */}

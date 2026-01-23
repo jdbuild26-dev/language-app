@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
+import { useExerciseTimer } from "@/hooks/useExerciseTimer";
 import { Mic, Loader2, Volume2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
@@ -24,7 +25,6 @@ export default function RepeatSentencePage() {
   const [score, setScore] = useState(0);
   const [isGameOver, setIsGameOver] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [timer, setTimer] = useState(0);
 
   // Interaction State
   const [isListening, setIsListening] = useState(false);
@@ -91,15 +91,11 @@ export default function RepeatSentencePage() {
     fetchData();
   }, []);
 
-  // Timer
-  useEffect(() => {
-    if (!isLoading && !isGameOver) {
-      const interval = setInterval(() => {
-        setTimer((prev) => prev + 1);
-      }, 1000);
-      return () => clearInterval(interval);
-    }
-  }, [isLoading, isGameOver]);
+  // Timer (Stopwatch mode)
+  const { timerString, resetTimer, isPaused } = useExerciseTimer({
+    mode: "stopwatch",
+    isPaused: isLoading || isGameOver,
+  });
 
   const currentQuestion = questions[currentIndex];
 
@@ -170,14 +166,8 @@ export default function RepeatSentencePage() {
     setScore(0);
     setCurrentIndex(0);
     setIsGameOver(false);
-    setTimer(0);
+    resetTimer();
     setQuestions((prev) => [...prev].sort(() => 0.5 - Math.random()));
-  };
-
-  const formatTimer = (seconds) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, "0")}`;
   };
 
   if (isLoading) {
@@ -215,7 +205,7 @@ export default function RepeatSentencePage() {
       score={score}
       totalQuestions={questions.length}
       isGameOver={isGameOver}
-      timerValue={formatTimer(timer)}
+      timerValue={timerString}
       onExit={() => navigate("/vocabulary/practice")}
       onNext={handleSubmit}
       onRestart={handleRestart}
