@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useExerciseTimer } from "@/hooks/useExerciseTimer";
 import { Loader2, XCircle } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -20,8 +21,7 @@ export default function HighlightWordGamePage() {
   const [isCorrect, setIsCorrect] = useState(false);
   const [feedbackMessage, setFeedbackMessage] = useState("");
 
-  // Timer State
-  const [timer, setTimer] = useState(20); // Default per question
+  // Timer State Replaced
 
   useEffect(() => {
     loadQuestions();
@@ -37,8 +37,8 @@ export default function HighlightWordGamePage() {
           ...q,
           sentence: q["Complete sentence"],
           correctWord: q["CorrectAnswer"],
-          prompt: q["Question_FR"]?.trim(),
-          meaning: q["Question_EN"]?.trim(),
+          prompt: q["Question_EN"]?.trim(),
+          meaning: q["Question_EN"]?.trim(), // Keeping as fallback or redundant, but UI will remove usage
         }));
         setQuestions(formattedQuestions);
       } else {
@@ -52,14 +52,38 @@ export default function HighlightWordGamePage() {
       setLoading(false);
     }
   };
+  const { timerString, resetTimer, isPaused } = useExerciseTimer({
+    duration: 20,
+    mode: "timer",
+    onExpire: () => {
+      // Auto-submit if not answered
+      if (!isAnswered && !isGameOver && !showFeedback) {
+        // If auto-submitting without selection, it's incorrect or we just trigger check
+        // But check requires selectedWordIndex.
+        // If nothing selected, just mark incorrect or force answer?
+        // Existing handleCheck checks if selectedWordIndex is null.
+        // If null, we might want to fail the question?
+        // Let's modify handleCheck or just force a failure here.
+        if (selectedWordIndex === null) {
+          // Time's up, no selection
+          setIsAnswered(true);
+          setIsCorrect(false);
+          setFeedbackMessage("Time's up!");
+          setShowFeedback(true);
+        } else {
+          handleCheck();
+        }
+      }
+    },
+    isPaused: loading || isGameOver || isAnswered || showFeedback,
+  });
 
-  // Timer Tick
+  // Reset timer on new question
   useEffect(() => {
-    if (!loading && !isGameOver && !isAnswered && timer > 0) {
-      const interval = setInterval(() => setTimer((t) => t - 1), 1000);
-      return () => clearInterval(interval);
-    }
-  }, [timer, loading, isGameOver, isAnswered]);
+    resetTimer(); // We should probably pass dependency?
+    // In hook, resetTimer depends on duration.
+  }, [currentIndex, resetTimer]);
+  // Removed old timer effect
 
   const currentItem = questions[currentIndex];
 
@@ -106,11 +130,15 @@ export default function HighlightWordGamePage() {
       setCurrentIndex((prev) => prev + 1);
       setSelectedWordIndex(null);
       setIsAnswered(false);
-      setTimer(20); // Reset timer
+      resetTimer(); // Reset timer
     } else {
       setIsGameOver(true);
     }
   };
+
+  // Progress
+  const progress =
+    questions.length > 0 ? ((currentIndex + 1) / questions.length) * 100 : 0;
 
   if (loading)
     return (
@@ -118,12 +146,6 @@ export default function HighlightWordGamePage() {
         <Loader2 className="animate-spin w-10 h-10 text-blue-500" />
       </div>
     );
-
-  // Progress
-  const progress = ((currentIndex + 1) / questions.length) * 100;
-
-  // Timer Format
-  const timerString = `0:${timer.toString().padStart(2, "0")}`;
 
   return (
     <>
@@ -155,11 +177,6 @@ export default function HighlightWordGamePage() {
             <h3 className="text-xl md:text-2xl font-bold text-gray-800 dark:text-gray-100 mb-6 pb-4 border-b border-gray-100 dark:border-gray-800">
               {currentItem?.prompt}
             </h3>
-            <div className="inline-block px-6 py-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-              <p className="text-gray-600 dark:text-gray-300 font-medium">
-                Word meaning "{currentItem?.meaning}"
-              </p>
-            </div>
           </div>
 
           <div className="flex flex-wrap justify-center gap-3 text-lg md:text-xl font-medium leading-relaxed max-w-4xl mx-auto">

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
+import { useExerciseTimer } from "@/hooks/useExerciseTimer";
 import { Loader2, X, HelpCircle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { fetchPracticeQuestions } from "../../../services/vocabularyApi";
@@ -24,23 +25,36 @@ export default function CorrectSpellingGamePage() {
   const [feedbackMessage, setFeedbackMessage] = useState("");
   const [score, setScore] = useState(0);
 
-  const [timer, setTimer] = useState(60);
-  const [timerActive, setTimerActive] = useState(true);
+  // Timer Hook
+  const currentQuestion = questions[currentIndex];
+  const timerDuration = parseInt(currentQuestion?.timeLimit) || 60;
 
+  // Ref for input fields
   const inputsRef = useRef([]);
 
+  // Load questions on mount
   useEffect(() => {
     loadQuestions();
   }, []);
 
+  const { timerString, resetTimer, isPaused } = useExerciseTimer({
+    duration: timerDuration,
+    mode: "timer",
+    onExpire: () => {
+      if (!isCompleted && !showFeedback) {
+        handleSubmit();
+      }
+    },
+    isPaused: loading || isCompleted || showFeedback,
+  });
+
+  // Reset logic
   useEffect(() => {
     if (questions.length > 0 && !isCompleted) {
-      const currentQ = questions[currentIndex];
-      setTimer(parseInt(currentQ?.timeLimit) || 60);
-      setTimerActive(true);
-
-      const answer = currentQ.correctAnswer
-        ? currentQ.correctAnswer.trim()
+      resetTimer();
+      // Setup inputs
+      const answer = currentQuestion?.correctAnswer
+        ? currentQuestion.correctAnswer.trim()
         : "";
       setUserInputs(new Array(answer.length).fill(""));
 
@@ -48,14 +62,8 @@ export default function CorrectSpellingGamePage() {
         if (inputsRef.current[0]) inputsRef.current[0].focus();
       }, 100);
     }
-  }, [currentIndex, questions, isCompleted]);
-
-  useEffect(() => {
-    if (!loading && !isCompleted && timer > 0 && timerActive) {
-      const interval = setInterval(() => setTimer((t) => t - 1), 1000);
-      return () => clearInterval(interval);
-    }
-  }, [timer, loading, isCompleted, timerActive]);
+  }, [currentIndex, questions, isCompleted, resetTimer]);
+  // Removed old timer effect
 
   const loadQuestions = async () => {
     try {
@@ -180,7 +188,6 @@ export default function CorrectSpellingGamePage() {
     setIsCorrect(correct);
     setFeedbackMessage(getFeedbackMessage(correct));
     setShowFeedback(true);
-    setTimerActive(false);
 
     if (correct) {
       setFeedbackState("correct");
@@ -201,12 +208,9 @@ export default function CorrectSpellingGamePage() {
     }
   };
 
-  const currentQuestion = questions[currentIndex];
-  // Calculate progress properly
+  // Progress
   const progress =
     questions.length > 0 ? ((currentIndex + 1) / questions.length) * 100 : 0;
-
-  const timerString = `0:${timer.toString().padStart(2, "0")}`;
 
   if (loading) {
     return (

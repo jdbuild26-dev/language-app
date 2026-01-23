@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
+import { useExerciseTimer } from "@/hooks/useExerciseTimer";
 import { Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { fetchPracticeQuestions } from "../../../services/vocabularyApi";
@@ -22,23 +23,40 @@ export default function FillInBlankGamePage() {
   const [feedbackMessage, setFeedbackMessage] = useState("");
   const [score, setScore] = useState(0);
 
-  // Timer for display (optional usage ideally from Sheet)
-  const [timer, setTimer] = useState(60);
-  const [timerActive, setTimerActive] = useState(true);
+  // Timer Hook
+  const currentQuestion = questions[currentIndex];
+  // Calculate duration securely
+  const timerDuration = parseInt(currentQuestion?.TimeLimitSeconds) || 60;
 
+  // Ref for input fields
   const inputsRef = useRef([]);
 
+  // Load questions on mount
   useEffect(() => {
     loadQuestions();
   }, []);
 
+  const { timerString, resetTimer, isPaused } = useExerciseTimer({
+    duration: timerDuration,
+    mode: "timer",
+    onExpire: () => {
+      if (!isCompleted && !showFeedback) {
+        handleSubmit();
+      }
+    },
+    isPaused: loading || isCompleted || showFeedback,
+  });
+
+  // Reset logic when question changes
   useEffect(() => {
     if (questions.length > 0 && !isCompleted) {
-      const currentQ = questions[currentIndex];
-      setTimer(parseInt(currentQ?.TimeLimitSeconds) || 60);
+      // Pre-fill logic moved here or kept?
+      // Logic below depends on currentQuestion.
+      // We need to coordinate resetTimer with this.
+      resetTimer();
 
-      const answer = currentQ.CorrectAnswer
-        ? currentQ.CorrectAnswer.trim().toUpperCase()
+      const answer = currentQuestion?.CorrectAnswer
+        ? currentQuestion.CorrectAnswer.trim().toUpperCase()
         : "";
 
       // Pre-fill first and last characters as hints
@@ -58,15 +76,11 @@ export default function FillInBlankGamePage() {
         }
       }, 100);
     }
-  }, [currentIndex, questions, isCompleted]);
+  }, [currentIndex, questions, isCompleted, resetTimer]);
+  // removed 'currentQuestion' dependency to avoid cyclic dependency if defined inside component body before this effect.
+  // Actually currentQuestion is defined above hook now.
 
-  // Timer Tick
-  useEffect(() => {
-    if (!loading && !isCompleted && timer > 0 && timerActive) {
-      const interval = setInterval(() => setTimer((t) => t - 1), 1000);
-      return () => clearInterval(interval);
-    }
-  }, [timer, loading, isCompleted, timerActive]);
+  // Old Timer Tick Effect Removed
 
   const loadQuestions = async () => {
     try {
@@ -94,6 +108,12 @@ export default function FillInBlankGamePage() {
     }
 
     const char = value.slice(-1).toUpperCase();
+
+    // Validate: Allow only letters (basic Latin + French accents)
+    if (!/^[A-Z\u00C0-\u00FF]$/.test(char)) {
+      return; // Ignore invalid characters
+    }
+
     newInputs[index] = char;
     setUserInputs(newInputs);
 
@@ -147,7 +167,6 @@ export default function FillInBlankGamePage() {
     setIsCorrect(correct);
     setFeedbackMessage(getFeedbackMessage(correct));
     setShowFeedback(true);
-    setTimerActive(false); // Stop timer
 
     if (correct) {
       setScore((prev) => prev + 1);
@@ -156,7 +175,7 @@ export default function FillInBlankGamePage() {
 
   const handleContinue = () => {
     setShowFeedback(false);
-    setTimerActive(true); // Resume timer
+
     handleNext();
   };
 
@@ -168,7 +187,7 @@ export default function FillInBlankGamePage() {
     }
   };
 
-  const currentQuestion = questions[currentIndex];
+  // Constants re-added
   const progress =
     questions.length > 0 ? ((currentIndex + 1) / questions.length) * 100 : 0;
 
@@ -179,8 +198,6 @@ export default function FillInBlankGamePage() {
   ];
   const prefix = sentenceParts[0];
   const suffix = sentenceParts[1] || "";
-
-  const timerString = `0:${timer.toString().padStart(2, "0")}`;
 
   if (loading) {
     return (
@@ -216,7 +233,7 @@ export default function FillInBlankGamePage() {
       >
         <div className="flex flex-col items-center w-full px-2">
           {/* Sentence with Inline Input Boxes */}
-          <div className="w-full text-left">
+          <div className="w-fit max-w-full text-left">
             {/* Standard block layout for natural text wrapping */}
             <div className="text-lg md:text-xl text-slate-800 dark:text-slate-100 leading-relaxed font-medium py-8">
               {(() => {

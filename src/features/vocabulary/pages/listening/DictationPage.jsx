@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useRef } from "react";
+import { useExerciseTimer } from "@/hooks/useExerciseTimer";
 import { useTextToSpeech } from "../../../../hooks/useTextToSpeech";
 import { fetchPracticeQuestions } from "../../../../services/vocabularyApi";
-import { Loader2, Volume2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
+import AudioPlayer from "../../components/shared/AudioPlayer";
 import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
 
 export default function DictationPage() {
@@ -17,6 +19,22 @@ export default function DictationPage() {
   const [isCompleted, setIsCompleted] = useState(false);
 
   const inputRef = useRef(null);
+
+  // Timer Hook
+  const { timerString, resetTimer, isPaused } = useExerciseTimer({
+    duration: 60, // Dictation might take longer? keeping 60s
+    mode: "timer",
+    onExpire: () => {
+      if (status === "idle" && !isCompleted) {
+        handleSubmit();
+      }
+    },
+    isPaused: loading || isCompleted || status !== "idle",
+  });
+
+  useEffect(() => {
+    resetTimer();
+  }, [currentIndex, resetTimer]);
 
   useEffect(() => {
     loadData();
@@ -114,7 +132,8 @@ export default function DictationPage() {
 
   return (
     <PracticeGameLayout
-      questionType="Dictation"
+      questionTypeFr="Dictée"
+      questionTypeEn="Dictation"
       instructionFr="Écoutez et écrivez le mot manquant"
       instructionEn={
         currentQ?.instruction || "Listen and type the missing word"
@@ -129,20 +148,12 @@ export default function DictationPage() {
       isSubmitEnabled={userInput.trim().length > 0}
       showSubmitButton={true}
       submitLabel={submitLabel}
+      timerValue={timerString}
     >
       <div className="flex flex-col items-center w-full max-w-2xl">
-        <button
-          onClick={playSentence}
-          className={`mb-8 w-24 h-24 rounded-full flex items-center justify-center transition-all shadow-md
-               ${
-                 isSpeaking
-                   ? "bg-purple-100 text-purple-600 ring-4 ring-purple-200"
-                   : "bg-white dark:bg-slate-800 hover:bg-gray-50 text-purple-500"
-               }
-             `}
-        >
-          <Volume2 className="w-10 h-10" />
-        </button>
+        <div className="mb-8">
+          <AudioPlayer text={questions[currentIndex]?.fullSentence || ""} />
+        </div>
 
         <div className="text-lg md:text-xl font-medium text-center text-gray-800 dark:text-gray-100 mb-8 leading-relaxed">
           {currentQ?.displaySentence.split("___").map((part, i, arr) => (

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useExerciseTimer } from "@/hooks/useExerciseTimer";
 import { Loader2, XCircle, CheckCircle2, Circle } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -86,20 +87,23 @@ export default function ChooseOptionGamePage() {
   // Let's stick to existing functionality + new UI unless requested.
   // The screenshot shows "0:14", so I should probably implement a timer similar to HighlightGame.
 
-  const [timer, setTimer] = useState(20);
-  useEffect(() => {
-    if (!loading && !isGameOver && !showFeedback && timer > 0) {
-      const interval = setInterval(() => setTimer((t) => t - 1), 1000);
-      return () => clearInterval(interval);
-    }
-  }, [timer, loading, isGameOver, showFeedback]);
+  // Timer Hook
+  const { timerString, resetTimer, isPaused } = useExerciseTimer({
+    duration: 20,
+    mode: "timer",
+    onExpire: () => {
+      // Auto-submit when time expires
+      if (!isGameOver && !showFeedback) {
+        handleSubmit();
+      }
+    },
+    isPaused: loading || isGameOver || showFeedback,
+  });
 
   // Reset timer on next question
   useEffect(() => {
-    setTimer(20);
-  }, [currentIndex]);
-
-  const timerString = `0:${timer.toString().padStart(2, "0")}`;
+    resetTimer();
+  }, [currentIndex, resetTimer]);
 
   const progress =
     questions.length > 0 ? ((currentIndex + 1) / questions.length) * 100 : 0;

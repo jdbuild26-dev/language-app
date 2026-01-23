@@ -22,6 +22,8 @@ import { Button } from "@/components/ui/button";
  */
 export default function PracticeGameLayout({
   questionType,
+  questionTypeFr, // New: French specific question type heading
+  questionTypeEn, // New: English specific question type heading
   instructionFr,
   instructionEn,
   progress,
@@ -78,39 +80,43 @@ export default function PracticeGameLayout({
           />
         </div>
 
-        {/* Instructions */}
-        <div className="flex items-center justify-center gap-3">
-          <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white tracking-tight">
-            {showTranslation
-              ? instructionEn || instructionFr
-              : instructionFr || instructionEn}
-          </h1>
+        {/* Instructions (Main Heading) */}
+        <div className="flex flex-col items-center justify-center gap-2">
+          <div className="flex items-center justify-center gap-3">
+            <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white tracking-tight">
+              {showTranslation
+                ? instructionEn || instructionFr
+                : instructionFr || instructionEn}
+            </h1>
 
-          {instructionFr && instructionEn && (
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setShowTranslation(!showTranslation)}
-              className="rounded-full w-8 h-8 text-gray-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
-              title="Translate"
-            >
-              <Languages className="w-5 h-5" />
-            </Button>
+            {instructionFr && instructionEn && (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setShowTranslation(!showTranslation)}
+                className="rounded-full w-8 h-8 text-gray-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
+                title="Translate"
+              >
+                <Languages className="w-5 h-5" />
+              </Button>
+            )}
+          </div>
+
+          {/* Secondary Heading / Question Type */}
+          {(questionType || (questionTypeFr && questionTypeEn)) && (
+            <div className="flex items-center justify-center gap-2 mt-1">
+              <h2 className="text-lg md:text-xl font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">
+                {showTranslation
+                  ? questionTypeEn || questionType
+                  : questionTypeFr || questionType}
+              </h2>
+            </div>
           )}
         </div>
       </div>
 
       {/* CONTENT AREA */}
       <div className="flex-1 flex flex-col items-center justify-center p-6 overflow-y-auto w-full max-w-[95%] mx-auto">
-        {/* Question Type Label (Optional, maybe less prominent now) */}
-        {questionType && (
-          <div className="mb-8">
-            <span className="text-base font-bold uppercase tracking-widest text-black dark:text-white">
-              {questionType}
-            </span>
-          </div>
-        )}
-
         <div className="w-full h-full flex flex-col justify-center items-center">
           {children}
         </div>

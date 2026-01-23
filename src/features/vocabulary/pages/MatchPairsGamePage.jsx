@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useExerciseTimer } from "@/hooks/useExerciseTimer";
 import { Loader2, Volume2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
@@ -59,7 +60,6 @@ export default function MatchPairsGamePage() {
   const [matchedIds, setMatchedIds] = useState([]); // Array of pairIds
   const [errorIds, setErrorIds] = useState([]); // Array of cardIds showing error
 
-  const [timer, setTimer] = useState(60);
   const [isGameOver, setIsGameOver] = useState(false);
   const [score, setScore] = useState(0);
 
@@ -70,15 +70,13 @@ export default function MatchPairsGamePage() {
     initializeGame();
   }, []);
 
-  // Timer Tick
-  useEffect(() => {
-    if (!loading && !isGameOver && timer > 0) {
-      const interval = setInterval(() => setTimer((t) => t - 1), 1000);
-      return () => clearInterval(interval);
-    } else if (timer === 0 && !isGameOver) {
-      setIsGameOver(true);
-    }
-  }, [timer, loading, isGameOver]);
+  // Timer Hook
+  const { timerString, resetTimer, isPaused } = useExerciseTimer({
+    duration: 60,
+    mode: "timer",
+    onExpire: () => setIsGameOver(true),
+    isPaused: loading || isGameOver,
+  });
 
   const initializeGame = () => {
     setLoading(true);
@@ -173,7 +171,6 @@ export default function MatchPairsGamePage() {
   const instructionFr = MOCK_DATA[0].instructionFr;
   const instructionEn = MOCK_DATA[0].instructionEn;
   const progress = (matchedIds.length / PAIRS_PER_ROUND) * 100;
-  const timerString = `0:${timer.toString().padStart(2, "0")}`;
 
   if (loading)
     return (
