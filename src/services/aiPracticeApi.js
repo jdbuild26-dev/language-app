@@ -15,9 +15,8 @@ export async function fetchChatTopics({ level, formality, limit } = {}) {
   if (limit) params.append("limit", limit.toString());
 
   const queryString = params.toString();
-  const url = `${API_URL}/api/ai-practice/topics${
-    queryString ? `?${queryString}` : ""
-  }`;
+  const url = `${API_URL}/api/ai-practice/topics${queryString ? `?${queryString}` : ""
+    }`;
 
   const response = await fetch(url);
   if (!response.ok) {
@@ -129,3 +128,28 @@ export async function translateText(text, targetLang = "en") {
   }
   return response.json();
 }
+
+/**
+ * Get a hint for what to say next in the conversation.
+ * @param {Array} conversationHistory - Previous messages
+ * @param {Object} scenario - Scenario metadata
+ * @returns {Promise<{hint: string}>}
+ */
+export async function getHint(conversationHistory, scenario) {
+  const url = `${API_URL}/api/ai-practice/hint`;
+
+  const response = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      conversation_history: conversationHistory,
+      scenario,
+    }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Hint request failed: ${response.statusText}`);
+  }
+  return response.json();
+}
+

@@ -5,9 +5,8 @@ import AudioRecorder from "../AudioRecorder";
 export default function ChatInput({ onSend, onHint, disabled = false }) {
   const [message, setMessage] = useState("");
   const [showHint, setShowHint] = useState(false);
-
-  // Hardcoded hint for static UI
-  const hintText = "Tu pourrais dire : « Bonjour, je m'appelle... »";
+  const [hintText, setHintText] = useState("");
+  const [isLoadingHint, setIsLoadingHint] = useState(false);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -17,13 +16,25 @@ export default function ChatInput({ onSend, onHint, disabled = false }) {
     }
   };
 
-  const handleHintClick = () => {
+  const handleHintClick = async () => {
+    if (!showHint) {
+      // Fetch hint when opening
+      setIsLoadingHint(true);
+      try {
+        const hint = await onHint?.();
+        setHintText(hint || "Je ne sais pas quoi dire...");
+      } catch (err) {
+        console.error("Failed to get hint:", err);
+        setHintText("Je ne sais pas quoi dire...");
+      } finally {
+        setIsLoadingHint(false);
+      }
+    }
     setShowHint(!showHint);
-    onHint?.();
   };
 
   const useHint = () => {
-    setMessage(hintText.replace("Tu pourrais dire : « ", "").replace(" »", ""));
+    setMessage(hintText);
     setShowHint(false);
   };
 
@@ -40,17 +51,25 @@ export default function ChatInput({ onSend, onHint, disabled = false }) {
                   <span className="text-xs font-semibold text-amber-700 dark:text-amber-400 block mb-1">
                     Hint
                   </span>
-                  <p className="text-sm text-amber-800 dark:text-amber-300">
-                    {hintText}
-                  </p>
+                  {isLoadingHint ? (
+                    <p className="text-sm text-amber-600 dark:text-amber-400 italic">
+                      Generating hint...
+                    </p>
+                  ) : (
+                    <p className="text-sm text-amber-800 dark:text-amber-300">
+                      {hintText}
+                    </p>
+                  )}
                 </div>
               </div>
-              <button
-                onClick={useHint}
-                className="px-3 py-1.5 text-xs font-medium bg-amber-500 hover:bg-amber-600 text-white rounded-lg transition-colors"
-              >
-                Use
-              </button>
+              {!isLoadingHint && hintText && (
+                <button
+                  onClick={useHint}
+                  className="px-3 py-1.5 text-xs font-medium bg-amber-500 hover:bg-amber-600 text-white rounded-lg transition-colors"
+                >
+                  Use
+                </button>
+              )}
             </div>
           </div>
         )}

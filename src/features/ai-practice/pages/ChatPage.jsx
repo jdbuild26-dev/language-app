@@ -77,7 +77,7 @@ export default function ChatPage() {
               hour: "2-digit",
               minute: "2-digit",
             }),
-            autoPlay: true, // This will be handled by the component
+            autoPlay: false, // Will be set to true after warmup
           },
         ]);
       } catch (err) {
@@ -93,8 +93,16 @@ export default function ChatPage() {
 
   const handleWarmupComplete = () => {
     setShowWarmup(false);
-    // You might want to trigger the first message audio here if needed,
-    // but the autoPlay prop on the first message should handle it once rendered/active.
+    // Trigger audio playback for the first message after warmup
+    setMessages((prev) => {
+      if (prev.length > 0 && prev[0].sender === "ai") {
+        return [
+          { ...prev[0], autoPlay: true },
+          ...prev.slice(1)
+        ];
+      }
+      return prev;
+    });
   };
 
   const handleEndSession = async () => {
@@ -207,9 +215,35 @@ export default function ChatPage() {
     }
   };
 
-  const handleHint = () => {
-    // TODO: Will be implemented in Iteration 5
-    console.log("Hint requested");
+  const handleHint = async () => {
+    if (!scenario) return null;
+
+    try {
+      // Build conversation history for API
+      const conversationHistory = messages.map((msg) => ({
+        sender: msg.sender,
+        text: msg.text,
+        correction: msg.correction || null,
+      }));
+
+      // Fetch hint from backend
+      const { getHint } = await import("../../../services/aiPracticeApi");
+      const response = await getHint(conversationHistory, {
+        level: scenario.level,
+        formality: scenario.formality,
+        title: scenario.title,
+        aiPrompt: scenario.aiPrompt,
+        aiRole: scenario.aiRole,
+        userRole: scenario.userRole,
+        mode: scenario.mode || "chat",
+        objective: scenario.objective,
+      });
+
+      return response.hint;
+    } catch (err) {
+      console.error("Failed to get hint:", err);
+      return "Je ne sais pas quoi dire...";
+    }
   };
 
   // Loading state
