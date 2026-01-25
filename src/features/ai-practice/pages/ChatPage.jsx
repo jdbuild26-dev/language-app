@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { Loader2, AlertCircle } from "lucide-react";
 import ChatHeader from "../components/chat/ChatHeader";
 import ChatInput from "../components/chat/ChatInput";
@@ -15,6 +15,7 @@ import {
 export default function ChatPage() {
   const { topicSlug } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const messagesEndRef = useRef(null);
 
   // State
@@ -40,8 +41,18 @@ export default function ChatPage() {
         setIsLoading(true);
         setError(null);
 
-        // Fetch scenario details
-        const scenarioData = await fetchTopicBySlug(topicSlug);
+        let scenarioData;
+
+        // Check availability of scenario in location state (for General/Mission/Profession modes)
+        if (location.state?.scenario) {
+          scenarioData = location.state.scenario;
+        } else if (topicSlug) {
+          // Fallback to fetching by slug (for standard Scenarios)
+          scenarioData = await fetchTopicBySlug(topicSlug);
+        } else {
+          throw new Error("No scenario provided");
+        }
+
         setScenario(scenarioData);
 
         // Get initial AI greeting
@@ -52,6 +63,8 @@ export default function ChatPage() {
           aiPrompt: scenarioData.aiPrompt,
           aiRole: scenarioData.aiRole,
           userRole: scenarioData.userRole,
+          mode: scenarioData.mode || "chat", // Pass mode
+          objective: scenarioData.objective, // Pass objective
         });
 
         // Add initial greeting to messages
@@ -75,10 +88,8 @@ export default function ChatPage() {
       }
     }
 
-    if (topicSlug) {
-      initializeChat();
-    }
-  }, [topicSlug]);
+    initializeChat();
+  }, [topicSlug, location.state]);
 
   const handleWarmupComplete = () => {
     setShowWarmup(false);
@@ -151,6 +162,8 @@ export default function ChatPage() {
           aiPrompt: scenario.aiPrompt,
           aiRole: scenario.aiRole,
           userRole: scenario.userRole,
+          mode: scenario.mode || "chat",
+          objective: scenario.objective,
         },
       });
 

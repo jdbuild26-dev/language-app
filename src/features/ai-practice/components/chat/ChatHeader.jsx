@@ -38,8 +38,8 @@ export default function ChatHeader({ scenario, onEndSession }) {
             {/* Formality Badge */}
             <span
               className={`px-2.5 py-1 rounded-full text-xs font-semibold ${scenario.formality === "formal"
-                  ? "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400"
-                  : "bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-400"
+                ? "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400"
+                : "bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-400"
                 }`}
             >
               {scenario.formality === "formal" ? "Formal" : "Casual"}
@@ -60,10 +60,12 @@ export default function ChatHeader({ scenario, onEndSession }) {
         </h1>
 
         {/* Objective */}
-        <p className="text-sm text-gray-500 dark:text-slate-400 flex items-start gap-2">
-          <Sparkles className="w-4 h-4 mt-0.5 flex-shrink-0 text-sky-500" />
-          <span>{scenario.objective}</span>
-        </p>
+        {scenario.objective && (
+          <p className="text-sm text-gray-500 dark:text-slate-400 flex items-start gap-2">
+            <Sparkles className="w-4 h-4 mt-0.5 flex-shrink-0 text-sky-500" />
+            <span>{scenario.objective}</span>
+          </p>
+        )}
       </div>
     </div>
   );
