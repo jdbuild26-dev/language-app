@@ -59,6 +59,7 @@ export default function MatchPairsGamePage() {
 
   const [matchedIds, setMatchedIds] = useState([]); // Array of pairIds
   const [errorIds, setErrorIds] = useState([]); // Array of cardIds showing error
+  const [successIds, setSuccessIds] = useState([]); // Array of cardIds showing success (Green)
 
   const [isGameOver, setIsGameOver] = useState(false);
   const [score, setScore] = useState(0);
@@ -108,7 +109,12 @@ export default function MatchPairsGamePage() {
   };
 
   const handleTopClick = (card) => {
-    if (isGameOver || matchedIds.includes(card.pairId)) return;
+    if (
+      isGameOver ||
+      matchedIds.includes(card.pairId) ||
+      successIds.includes(card.id)
+    )
+      return;
 
     // Play Audio (Top only)
     speak(card.content, "fr-FR");
@@ -123,7 +129,12 @@ export default function MatchPairsGamePage() {
   };
 
   const handleBottomClick = (card) => {
-    if (isGameOver || matchedIds.includes(card.pairId)) return;
+    if (
+      isGameOver ||
+      matchedIds.includes(card.pairId) ||
+      successIds.includes(card.id)
+    )
+      return;
 
     // No Audio for bottom
 
@@ -144,17 +155,25 @@ export default function MatchPairsGamePage() {
 
     if (topCard.pairId === bottomCard.pairId) {
       // MATCH
-      setMatchedIds((prev) => [...prev, topCard.pairId]);
-      setScore((prev) => prev + 1);
+      // 1. Show Green Success State
+      setSuccessIds([topId, bottomId]);
       setSelectedTopId(null);
       setSelectedBottomId(null);
 
-      // Check Win
-      if (matchedIds.length + 1 === PAIRS_PER_ROUND) {
-        // Game Over Success handling if needed, or refill
-        // For now let's just finish
-        setTimeout(() => setIsGameOver(true), 1000); // Simple finish
-      }
+      // 2. Wait 1 second (Green Phase)
+      setTimeout(() => {
+        // 3. Make them disappear (Matched Phase)
+        setSuccessIds([]);
+        setMatchedIds((prev) => [...prev, topCard.pairId]);
+        setScore((prev) => prev + 1);
+
+        // Check Win
+        if (matchedIds.length + 1 === PAIRS_PER_ROUND) {
+          // Game Over Success handling if needed, or refill
+          // For now let's just finish
+          setTimeout(() => setIsGameOver(true), 500); // Slight delay after disappearance
+        }
+      }, 1000);
     } else {
       // MISMATCH
       // Show error state for a brief moment then reset selection
@@ -179,11 +198,17 @@ export default function MatchPairsGamePage() {
       </div>
     );
 
-  const getCardStyle = (card, isSelected, isError, isMatched) => {
+  const getCardStyle = (card, isSelected, isError, isMatched, isSuccess) => {
     let base =
       "aspect-square rounded-2xl border-2 flex items-center justify-center p-4 text-center font-bold text-lg md:text-xl transition-all duration-200 cursor-pointer shadow-sm relative relative";
 
     if (isMatched) return "opacity-0 pointer-events-none"; // Disappear
+
+    if (isSuccess)
+      return (
+        base +
+        " bg-green-100 border-green-500 text-green-800 scale-105 shadow-md"
+      );
 
     if (isError)
       return base + " bg-red-100 border-red-500 text-red-800 animate-shake";
@@ -206,6 +231,7 @@ export default function MatchPairsGamePage() {
       instructionFr={instructionFr || "Associez les paires"}
       instructionEn={instructionEn || "Match the pairs"}
       progress={progress}
+      currentQuestionIndex={matchedIds.length}
       isGameOver={isGameOver}
       score={score}
       totalQuestions={PAIRS_PER_ROUND}
@@ -227,6 +253,7 @@ export default function MatchPairsGamePage() {
                   selectedTopId === card.id,
                   errorIds.includes(card.id),
                   matchedIds.includes(card.pairId),
+                  successIds.includes(card.id),
                 )}
               >
                 {card.content}
@@ -251,6 +278,7 @@ export default function MatchPairsGamePage() {
                   selectedBottomId === card.id,
                   errorIds.includes(card.id),
                   matchedIds.includes(card.pairId),
+                  successIds.includes(card.id),
                 )}
               >
                 {card.content}

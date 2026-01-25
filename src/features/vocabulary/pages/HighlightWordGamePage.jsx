@@ -154,6 +154,7 @@ export default function HighlightWordGamePage() {
         instructionFr={currentItem?.Instruction_FR}
         instructionEn={currentItem?.Instruction_EN}
         progress={progress}
+        currentQuestionIndex={currentIndex}
         isGameOver={isGameOver}
         score={score}
         totalQuestions={questions.length}
@@ -173,8 +174,8 @@ export default function HighlightWordGamePage() {
       >
         <div className="flex flex-col items-center justify-center w-full max-w-5xl">
           {/* Specific Prompt Instruction */}
-          <div className="mb-12 text-center w-full">
-            <h3 className="text-xl md:text-2xl font-bold text-gray-800 dark:text-gray-100 mb-6 pb-4 border-b border-gray-100 dark:border-gray-800">
+          <div className="mb-6 text-center w-full">
+            <h3 className="text-xl md:text-2xl font-bold text-gray-800 dark:text-gray-100 mb-2">
               {currentItem?.prompt}
             </h3>
           </div>

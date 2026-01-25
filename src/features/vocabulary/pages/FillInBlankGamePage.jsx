@@ -6,6 +6,7 @@ import { fetchPracticeQuestions } from "../../../services/vocabularyApi";
 import { cn } from "@/lib/utils";
 import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
 import FeedbackBanner from "@/components/ui/FeedbackBanner";
+import SegmentedInput from "../components/ui/SegmentedInput";
 import { getFeedbackMessage } from "@/utils/feedbackMessages";
 
 export default function FillInBlankGamePage() {
@@ -41,7 +42,10 @@ export default function FillInBlankGamePage() {
     mode: "timer",
     onExpire: () => {
       if (!isCompleted && !showFeedback) {
-        handleSubmit();
+        // Time's up logic
+        setIsCorrect(false);
+        setFeedbackMessage("Time's up!");
+        setShowFeedback(true);
       }
     },
     isPaused: loading || isCompleted || showFeedback,
@@ -256,51 +260,16 @@ export default function FillInBlankGamePage() {
                     return (
                       <React.Fragment key={idx}>
                         <span className="inline-flex gap-1 mx-1 align-baseline">
-                          {userInputs.map((val, inputIdx) => {
-                            const isHint =
-                              inputIdx === 0 ||
-                              inputIdx === userInputs.length - 1;
-                            let borderColorClass =
-                              "border-gray-300 dark:border-gray-600 focus:border-blue-500 focus:ring-blue-200";
-
-                            // Hint boxes get distinct styling
-                            if (isHint) {
-                              borderColorClass =
-                                "border-blue-400 bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-600";
-                            }
-
-                            if (showFeedback) {
-                              borderColorClass = isCorrect
-                                ? "border-green-500 bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-400"
-                                : "border-red-500 bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-400";
-                            }
-
-                            return (
-                              <input
-                                key={inputIdx}
-                                ref={(el) => (inputsRef.current[inputIdx] = el)}
-                                type="text"
-                                maxLength={1}
-                                value={val}
-                                onChange={(e) =>
-                                  handleInputChange(inputIdx, e.target.value)
-                                }
-                                onKeyDown={(e) => handleKeyDown(inputIdx, e)}
-                                disabled={showFeedback || isHint}
-                                readOnly={isHint}
-                                className={`
-                                w-7 h-9 md:w-8 md:h-10 
-                                border-2 rounded-md 
-                                text-center text-base md:text-lg font-semibold uppercase 
-                                shadow-sm transition-all duration-200
-                                focus:outline-none focus:ring-2 
-                                ${borderColorClass}
-                                ${isHint ? "cursor-default" : ""}
-                                dark:bg-gray-800 dark:text-white
-                              `}
-                              />
-                            );
-                          })}
+                          <SegmentedInput
+                            values={userInputs}
+                            onChange={(idx, val) => handleInputChange(idx, val)}
+                            onKeyDown={(idx, e) => handleKeyDown(idx, e)}
+                            disabled={showFeedback}
+                            hints={[0, userInputs.length - 1]}
+                            showFeedback={showFeedback}
+                            isCorrect={isCorrect}
+                            inputRefs={inputsRef}
+                          />
                         </span>
                         {spacer}
                       </React.Fragment>

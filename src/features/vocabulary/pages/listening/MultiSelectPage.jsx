@@ -165,14 +165,14 @@ export default function MultiSelectPage() {
       submitLabel={submitLabel}
       timerValue={timerString}
     >
-      <div className="flex flex-col items-center w-full max-w-3xl">
+      <div className="flex flex-col items-center w-full max-w-5xl">
         {/* Audio Player Section */}
         <div className="mb-10 w-full flex flex-col items-center justify-center">
           <AudioPlayer text={questions[currentIndex]?.audioText || ""} />
         </div>
 
         {/* Options Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 w-full">
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-6 w-full">
           {currentQ?.options.map((opt, idx) => {
             const isSelected = selectedIndices.includes(idx);
             const isActuallyCorrect = currentQ.correctIndices.includes(idx);
@@ -195,7 +195,7 @@ export default function MultiSelectPage() {
                 key={idx}
                 onClick={() => handleOptionToggle(idx)}
                 disabled={isChecked}
-                className={`py-4 px-2 rounded-xl text-center font-medium transition-all transform active:scale-95 shadow-sm ${style}`}
+                className={`py-12 px-4 rounded-2xl text-center text-xl md:text-2xl font-medium transition-all transform active:scale-95 shadow-sm ${style}`}
               >
                 {opt}
               </button>
