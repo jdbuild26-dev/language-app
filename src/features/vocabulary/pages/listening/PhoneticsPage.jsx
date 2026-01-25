@@ -56,11 +56,11 @@ export default function PhoneticsPage() {
           instruction: item["Instruction_EN"] || "What do you hear?",
           explanation: item["CorrectExplanation_EN"],
           options: [
-            item["Option1"],
-            item["Option2"],
-            item["Option3"],
-            item["Option4"],
-          ].filter(Boolean),
+            { text: item["Option1"], translation: item["Option1_Translation"] },
+            { text: item["Option2"], translation: item["Option2_Translation"] },
+            { text: item["Option3"], translation: item["Option3_Translation"] },
+            { text: item["Option4"], translation: item["Option4_Translation"] },
+          ].filter((opt) => opt.text),
           correctIndex: parseInt(item["CorrectOptionIndex"]) - 1,
         }));
         setQuestions(gameQuestions);
@@ -178,7 +178,14 @@ export default function PhoneticsPage() {
                       <span className="text-[10px] font-bold">✓</span>
                     </div>
 
-                    <span className="flex-1">{opt}</span>
+                    <div className="flex-1 flex flex-col text-left">
+                      <span>{opt.text}</span>
+                      {showFeedback && opt.translation && (
+                        <span className="text-sm font-normal text-slate-500 dark:text-slate-400">
+                          {opt.translation}
+                        </span>
+                      )}
+                    </div>
                   </button>
                 );
               })}
@@ -192,7 +199,7 @@ export default function PhoneticsPage() {
         <FeedbackBanner
           isCorrect={isCorrect}
           correctAnswer={
-            !isCorrect ? currentQ.options[currentQ.correctIndex] : null
+            !isCorrect ? currentQ.options[currentQ.correctIndex]?.text : null
           }
           onContinue={handleContinue}
           message={feedbackMessage}

@@ -6,6 +6,7 @@ import { fetchPracticeQuestions } from "../../../services/vocabularyApi";
 import { cn } from "@/lib/utils";
 import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
 import FeedbackBanner from "@/components/ui/FeedbackBanner";
+import SegmentedInput from "../components/ui/SegmentedInput";
 import { getFeedbackMessage } from "@/utils/feedbackMessages";
 
 export default function CorrectSpellingGamePage() {
@@ -42,7 +43,11 @@ export default function CorrectSpellingGamePage() {
     mode: "timer",
     onExpire: () => {
       if (!isCompleted && !showFeedback) {
-        handleSubmit();
+        // Time's up logic
+        setIsCorrect(false);
+        setFeedbackMessage("Time's up!");
+        setShowFeedback(true);
+        setFeedbackState("incorrect");
       }
     },
     isPaused: loading || isCompleted || showFeedback,
@@ -259,27 +264,16 @@ export default function CorrectSpellingGamePage() {
 
           {/* Input Boxes */}
           <div className="flex flex-nowrap justify-center gap-2 mb-8 max-w-full overflow-x-auto pb-2 px-2 scrollbar-hide">
-            {userInputs.map((val, idx) => (
-              <input
-                key={idx}
-                ref={(el) => (inputsRef.current[idx] = el)}
-                type="text"
-                maxLength={1}
-                value={val}
-                onChange={(e) => handleInputChange(idx, e.target.value)}
-                onKeyDown={(e) => handleKeyDown(idx, e)}
-                onPaste={(e) => handlePaste(idx, e)}
-                disabled={showFeedback}
-                className={cn(
-                  "w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 border-2 rounded-xl text-center text-xl sm:text-2xl md:text-3xl font-bold uppercase transition-all bg-transparent focus:outline-none focus:border-sky-400 focus:shadow-md shrink-0",
-                  showFeedback
-                    ? isCorrect
-                      ? "border-green-400 text-green-600 bg-green-50"
-                      : "border-red-400 text-red-600 bg-red-50"
-                    : "border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200",
-                )}
-              />
-            ))}
+            <SegmentedInput
+              values={userInputs}
+              onChange={(idx, val) => handleInputChange(idx, val)}
+              onKeyDown={(idx, e) => handleKeyDown(idx, e)}
+              onPaste={(idx, e) => handlePaste(idx, e)}
+              disabled={showFeedback}
+              showFeedback={showFeedback}
+              isCorrect={isCorrect}
+              inputRefs={inputsRef}
+            />
           </div>
         </div>
       </PracticeGameLayout>

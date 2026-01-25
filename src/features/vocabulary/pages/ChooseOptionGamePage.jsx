@@ -94,7 +94,13 @@ export default function ChooseOptionGamePage() {
     onExpire: () => {
       // Auto-submit when time expires
       if (!isGameOver && !showFeedback) {
-        handleSubmit();
+        if (!selectedOption) {
+          setIsCorrect(false);
+          setFeedbackMessage("Time's up!");
+          setShowFeedback(true);
+        } else {
+          handleSubmit();
+        }
       }
     },
     isPaused: loading || isGameOver || showFeedback,

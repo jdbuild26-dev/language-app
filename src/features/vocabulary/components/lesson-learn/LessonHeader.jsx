@@ -1,6 +1,7 @@
 import { Link, useParams } from "react-router-dom";
 import { XMarkIcon, CheckIcon } from "@heroicons/react/24/outline";
 import { Loader2 } from "lucide-react";
+import { ProgressBar } from "@/components/ui/ProgressBar";
 
 export default function LessonHeader({
   currentIndex,
@@ -41,20 +42,15 @@ export default function LessonHeader({
 
           {/* Progress Bar */}
           <div className="flex-1 max-w-xl mx-4">
-            <div className="h-2 bg-gray-100 dark:bg-slate-800 rounded-full overflow-hidden">
-              <div
-                className="h-full bg-sky-500 rounded-full transition-all duration-300"
-                style={{ width: `${((currentIndex + 1) / total) * 100}%` }}
-              />
-            </div>
+            <ProgressBar
+              current={currentIndex + 1}
+              total={total}
+              label="Learning Progress"
+            />
           </div>
 
           {/* Controls */}
           <div className="flex items-center gap-2">
-            <span className="text-sm font-bold text-sky-500 mr-2">
-              {currentIndex + 1} / {total}
-            </span>
-
             {/* Save & Exit Button */}
             {onSaveAndExit && (
               <button

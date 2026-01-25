@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useExerciseTimer } from "@/hooks/useExerciseTimer";
 import { fetchPracticeQuestions } from "../../../../services/vocabularyApi";
-import { Loader2, CheckCircle, XCircle } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import AudioPlayer from "../../components/shared/AudioPlayer";
 import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
 import { useTextToSpeech } from "@/hooks/useTextToSpeech";
@@ -175,9 +175,13 @@ export default function AudioToAudioPage() {
               {currentQ?.instruction || "Choose the correct option"}
             </h3>
 
-            <div className="flex flex-col gap-3 w-full">
+            <div className="grid grid-cols-1 gap-3 w-full">
               {currentQ?.options.map((opt, idx) => {
                 const isSelected = selectedOption === opt;
+                const isCorrect = opt === currentQ?.correctAnswer;
+                const isWrongSelection =
+                  showFeedback && isSelected && opt !== currentQ?.correctAnswer;
+                const isCorrectHighlight = showFeedback && isCorrect;
 
                 return (
                   <button
@@ -185,204 +189,139 @@ export default function AudioToAudioPage() {
                     onClick={() => handleOptionSelect(opt)}
                     disabled={showFeedback}
                     className={cn(
-                      "group relative p-6 rounded-2xl border-[3px] transition-all flex items-center justify-center bg-white dark:bg-slate-800 shadow-sm",
-                      // Default
-                      "border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700",
-                      // Selected
+                      "group relative p-4 rounded-2xl border-[3px] text-left font-medium text-lg md:text-xl transition-all flex items-center gap-4 bg-white dark:bg-slate-800 shadow-sm",
+                      // Default (Base border/text)
+                      "border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700",
+                      // Selected (Pre-submission)
                       isSelected &&
-                        "border-sky-400 bg-sky-50 dark:bg-sky-900/20",
-                      // Feedback states
-                      showFeedback &&
-                        opt === currentQ?.correctAnswer &&
-                        "border-green-400 bg-green-50 dark:bg-green-900/20",
-                      showFeedback &&
-                        isSelected &&
-                        opt !== currentQ?.correctAnswer &&
-                        "border-red-400 bg-red-50 dark:bg-red-900/20",
+                        !showFeedback &&
+                        "border-sky-400 bg-sky-50 dark:bg-sky-900/20 text-sky-600 dark:text-sky-300",
+                      // Feedback: Correct
+                      isCorrectHighlight &&
+                        "border-green-500 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300",
+                      // Feedback: Wrong
+                      isWrongSelection &&
+                        "border-red-500 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300",
                     )}
                   >
-                    {/* Static Waveform SVG */}
-                    <svg
-                      width="120"
-                      height="40"
-                      viewBox="0 0 120 40"
+                    {/* Circle Indicator (from Phonetics design) */}
+                    <div
                       className={cn(
-                        "transition-colors",
-                        isSelected
-                          ? "text-sky-500"
-                          : showFeedback && opt === currentQ?.correctAnswer
-                            ? "text-green-500"
-                            : showFeedback &&
-                                isSelected &&
-                                opt !== currentQ?.correctAnswer
-                              ? "text-red-500"
-                              : "text-slate-400 dark:text-slate-500",
+                        "w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors flex-shrink-0",
+                        isSelected || isCorrectHighlight
+                          ? "border-sky-500 bg-sky-500 text-white"
+                          : "border-slate-300 dark:border-slate-500 text-transparent",
+                        // Override color for feedback
+                        isCorrectHighlight && "border-green-500 bg-green-500",
+                        isWrongSelection && "border-red-500 bg-red-500",
                       )}
                     >
-                      <rect
-                        x="2"
-                        y="15"
-                        width="3"
-                        height="10"
-                        fill="currentColor"
-                        rx="1.5"
-                      />
-                      <rect
-                        x="8"
-                        y="10"
-                        width="3"
-                        height="20"
-                        fill="currentColor"
-                        rx="1.5"
-                      />
-                      <rect
-                        x="14"
-                        y="12"
-                        width="3"
-                        height="16"
-                        fill="currentColor"
-                        rx="1.5"
-                      />
-                      <rect
-                        x="20"
-                        y="8"
-                        width="3"
-                        height="24"
-                        fill="currentColor"
-                        rx="1.5"
-                      />
-                      <rect
-                        x="26"
-                        y="14"
-                        width="3"
-                        height="12"
-                        fill="currentColor"
-                        rx="1.5"
-                      />
-                      <rect
-                        x="32"
-                        y="11"
-                        width="3"
-                        height="18"
-                        fill="currentColor"
-                        rx="1.5"
-                      />
-                      <rect
-                        x="38"
-                        y="16"
-                        width="3"
-                        height="8"
-                        fill="currentColor"
-                        rx="1.5"
-                      />
-                      <rect
-                        x="44"
-                        y="13"
-                        width="3"
-                        height="14"
-                        fill="currentColor"
-                        rx="1.5"
-                      />
-                      <rect
-                        x="50"
-                        y="9"
-                        width="3"
-                        height="22"
-                        fill="currentColor"
-                        rx="1.5"
-                      />
-                      <rect
-                        x="56"
-                        y="17"
-                        width="3"
-                        height="6"
-                        fill="currentColor"
-                        rx="1.5"
-                      />
-                      <rect
-                        x="62"
-                        y="12"
-                        width="3"
-                        height="16"
-                        fill="currentColor"
-                        rx="1.5"
-                      />
-                      <rect
-                        x="68"
-                        y="15"
-                        width="3"
-                        height="10"
-                        fill="currentColor"
-                        rx="1.5"
-                      />
-                      <rect
-                        x="74"
-                        y="11"
-                        width="3"
-                        height="18"
-                        fill="currentColor"
-                        rx="1.5"
-                      />
-                      <rect
-                        x="80"
-                        y="14"
-                        width="3"
-                        height="12"
-                        fill="currentColor"
-                        rx="1.5"
-                      />
-                      <rect
-                        x="86"
-                        y="10"
-                        width="3"
-                        height="20"
-                        fill="currentColor"
-                        rx="1.5"
-                      />
-                      <rect
-                        x="92"
-                        y="16"
-                        width="3"
-                        height="8"
-                        fill="currentColor"
-                        rx="1.5"
-                      />
-                      <rect
-                        x="98"
-                        y="13"
-                        width="3"
-                        height="14"
-                        fill="currentColor"
-                        rx="1.5"
-                      />
-                      <rect
-                        x="104"
-                        y="15"
-                        width="3"
-                        height="10"
-                        fill="currentColor"
-                        rx="1.5"
-                      />
-                      <rect
-                        x="110"
-                        y="18"
-                        width="3"
-                        height="4"
-                        fill="currentColor"
-                        rx="1.5"
-                      />
-                    </svg>
+                      <span className="text-[10px] font-bold">
+                        {isWrongSelection ? "✕" : "✓"}
+                      </span>
+                    </div>
 
-                    {/* Feedback Icons */}
-                    {showFeedback && (
-                      <div className="absolute top-2 right-2">
-                        {opt === currentQ?.correctAnswer ? (
-                          <CheckCircle className="w-5 h-5 text-green-600" />
-                        ) : isSelected && opt !== currentQ?.correctAnswer ? (
-                          <XCircle className="w-5 h-5 text-red-600" />
-                        ) : null}
-                      </div>
-                    )}
+                    <div className="flex-1 flex flex-col justify-center">
+                      {!showFeedback ? (
+                        /* Waveform SVG (Visible before submit) */
+                        <svg
+                          width="120"
+                          height="30"
+                          viewBox="0 0 120 40"
+                          className={cn(
+                            "transition-colors",
+                            isSelected
+                              ? "text-sky-500"
+                              : "text-slate-400 dark:text-slate-500",
+                          )}
+                        >
+                          {/* Simplified bars for cleaner look in the new layout */}
+                          <rect
+                            x="10"
+                            y="15"
+                            width="3"
+                            height="10"
+                            fill="currentColor"
+                            rx="1.5"
+                          />
+                          <rect
+                            x="16"
+                            y="10"
+                            width="3"
+                            height="20"
+                            fill="currentColor"
+                            rx="1.5"
+                          />
+                          <rect
+                            x="22"
+                            y="5"
+                            width="3"
+                            height="30"
+                            fill="currentColor"
+                            rx="1.5"
+                          />
+                          <rect
+                            x="28"
+                            y="12"
+                            width="3"
+                            height="16"
+                            fill="currentColor"
+                            rx="1.5"
+                          />
+                          <rect
+                            x="34"
+                            y="18"
+                            width="3"
+                            height="4"
+                            fill="currentColor"
+                            rx="1.5"
+                          />
+                          <rect
+                            x="40"
+                            y="8"
+                            width="3"
+                            height="24"
+                            fill="currentColor"
+                            rx="1.5"
+                          />
+                          <rect
+                            x="46"
+                            y="14"
+                            width="3"
+                            height="12"
+                            fill="currentColor"
+                            rx="1.5"
+                          />
+                          <rect
+                            x="52"
+                            y="11"
+                            width="3"
+                            height="18"
+                            fill="currentColor"
+                            rx="1.5"
+                          />
+                          <rect
+                            x="58"
+                            y="16"
+                            width="3"
+                            height="8"
+                            fill="currentColor"
+                            rx="1.5"
+                          />
+                          <rect
+                            x="64"
+                            y="13"
+                            width="3"
+                            height="14"
+                            fill="currentColor"
+                            rx="1.5"
+                          />
+                        </svg>
+                      ) : (
+                        /* Text Reveal (Visible after submit) */
+                        <span className="text-lg font-medium">{opt}</span>
+                      )}
+                    </div>
                   </button>
                 );
               })}

@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { ArrowLeft, XCircle, RotateCcw, Languages } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { ProgressBar } from "@/components/ui/ProgressBar";
 
 /**
  * Standard Layout for Practice Games
@@ -37,6 +38,7 @@ export default function PracticeGameLayout({
   showSubmitButton = true,
   submitLabel = "Submit",
   timerValue, // New prop for Timer string (e.g. "0:17")
+  currentQuestionIndex, // Optional: Explicit current question index (0-based) for display "X / Y"
   children,
 }) {
   const [showTranslation, setShowTranslation] = useState(false);
@@ -72,14 +74,6 @@ export default function PracticeGameLayout({
     <div className="flex flex-col h-screen max-h-screen bg-white dark:bg-slate-950 overflow-hidden font-sans">
       {/* HEADER */}
       <div className="pt-12 pb-6 px-4 text-center border-b-[1px] border-red-100 dark:border-red-900/30 shrink-0 relative bg-white dark:bg-slate-950 z-10">
-        {/* Progress Bar (Thin line at VERY top) */}
-        <div className="absolute top-0 left-0 w-full h-1 bg-gray-100 dark:bg-gray-800">
-          <div
-            className="bg-blue-500 h-full transition-all duration-500 ease-out"
-            style={{ width: `${progress}%` }}
-          />
-        </div>
-
         {/* Instructions (Main Heading) */}
         <div className="flex flex-col items-center justify-center gap-2">
           <div className="flex items-center justify-center gap-3">
@@ -102,16 +96,20 @@ export default function PracticeGameLayout({
             )}
           </div>
 
-          {/* Secondary Heading / Question Type */}
-          {(questionType || (questionTypeFr && questionTypeEn)) && (
-            <div className="flex items-center justify-center gap-2 mt-1">
-              <h2 className="text-lg md:text-xl font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">
-                {showTranslation
-                  ? questionTypeEn || questionType
-                  : questionTypeFr || questionType}
-              </h2>
-            </div>
-          )}
+          {/* Secondary Heading / Question Type - REMOVED */}
+
+          {/* Progress Bar */}
+          <div className="w-full max-w-sm mt-4">
+            <ProgressBar
+              current={
+                currentQuestionIndex !== undefined
+                  ? currentQuestionIndex
+                  : Math.round((progress / 100) * totalQuestions)
+              }
+              total={totalQuestions}
+              label="Questions"
+            />
+          </div>
         </div>
       </div>
 
