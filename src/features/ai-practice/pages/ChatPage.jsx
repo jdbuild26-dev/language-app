@@ -106,30 +106,45 @@ export default function ChatPage() {
   };
 
   const handleEndSession = async () => {
-    // In a real implementation, we would call an API here to generate the analysis
-    // For now, we'll simulate a loading delay then show the modal
-    // TODO: Call /ai-practice/analyze endpoint
+    if (!scenario) return;
 
-    // Simulate data fetch
-    setAnalysisData(null); // Reset to trigger loading state in modal if handled
+    // Show modal with loading state
+    setAnalysisData(null);
     setShowAnalyze(true);
 
-    // Mock data for immediate testing - will be replaced by API call later
-    setTimeout(() => {
-      setAnalysisData({
-        cefr_assessment: "A2",
-        grammar_score: 85,
-        vocabulary_score: 70,
-        fluency_note: "You showed good understanding of basic phrases. Try to use more complex sentence structures in the future.",
-        feedback_points: [
-          {
-            error: "Je suis appelle John",
-            correction: "Je m'appelle John",
-            explanation: "Use reflexive verb 's'appeler' for names."
-          }
-        ]
+    try {
+      // Build conversation history for API
+      const conversationHistory = messages.map((msg) => ({
+        sender: msg.sender,
+        text: msg.text,
+        correction: msg.correction || null,
+      }));
+
+      // Call the analyze endpoint
+      const { analyzeSession } = await import("../../../services/aiPracticeApi");
+      const analysis = await analyzeSession(conversationHistory, {
+        level: scenario.level,
+        formality: scenario.formality,
+        title: scenario.title,
+        aiPrompt: scenario.aiPrompt,
+        aiRole: scenario.aiRole,
+        userRole: scenario.userRole,
+        mode: scenario.mode || "chat",
+        objective: scenario.objective,
       });
-    }, 1500);
+
+      setAnalysisData(analysis);
+    } catch (err) {
+      console.error("Failed to analyze session:", err);
+      // Set fallback data on error
+      setAnalysisData({
+        cefr_assessment: scenario.level || "A1",
+        grammar_score: 0,
+        vocabulary_score: 0,
+        fluency_note: "Analysis failed. Please try again.",
+        feedback_points: [],
+      });
+    }
   };
 
   const handleSendMessage = async (messageText) => {

@@ -153,3 +153,26 @@ export async function getHint(conversationHistory, scenario) {
   return response.json();
 }
 
+/**
+ * Analyze a completed conversation session.
+ * @param {Array} conversationHistory - All messages from the session
+ * @param {Object} scenario - Scenario metadata
+ * @returns {Promise<{cefr_assessment: string, grammar_score: number, vocabulary_score: number, fluency_note: string, mission_success: boolean|null, mission_feedback: string|null, feedback_points: Array}>}
+ */
+export async function analyzeSession(conversationHistory, scenario) {
+  const url = `${API_URL}/api/ai-practice/analyze`;
+
+  const response = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      conversation_history: conversationHistory,
+      scenario,
+    }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Analysis request failed: ${response.statusText}`);
+  }
+  return response.json();
+}
