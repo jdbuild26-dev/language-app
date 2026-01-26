@@ -10,43 +10,9 @@ import PageTabs from "@/components/ui/PageTabs";
 import ChatsContent from "../components/ChatsContent";
 import ChatPage from "./ChatPage";
 
-// Placeholder content components
-function MissionsContent() {
-  return (
-    <div className="text-gray-600 dark:text-slate-400">
-      <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
-        Missions
-      </h2>
-      <p>Complete AI-guided missions to improve your French skills.</p>
-    </div>
-  );
-}
-
-function ProfessionContent() {
-  return (
-    <div className="text-gray-600 dark:text-slate-400">
-      <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
-        Profession
-      </h2>
-      <p>
-        Practice professional French conversations for various career fields.
-      </p>
-    </div>
-  );
-}
-
-function GeneralContent() {
-  return (
-    <div className="text-gray-600 dark:text-slate-400">
-      <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
-        General Practice
-      </h2>
-      <p>
-        General AI-powered practice sessions for everyday French conversations.
-      </p>
-    </div>
-  );
-}
+import GeneralModeContent from "../components/GeneralModeContent";
+import MissionsContent from "../components/MissionsContent";
+import ProfessionContent from "../components/ProfessionContent";
 
 // Tab configuration
 const aiPracticeTabs = [
@@ -83,7 +49,7 @@ export default function AIPracticePage() {
         <Route path="scenarios/chats/:topicSlug/chat" element={<ChatPage />} />
         <Route path="scenarios/missions" element={<MissionsContent />} />
         <Route path="scenarios/profession" element={<ProfessionContent />} />
-        <Route path="general" element={<GeneralContent />} />
+        <Route path="general" element={<GeneralModeContent />} />
 
         <Route path="*" element={<Navigate to="scenarios/chats" replace />} />
       </Routes>

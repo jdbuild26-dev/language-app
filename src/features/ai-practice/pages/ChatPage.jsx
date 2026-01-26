@@ -1,9 +1,11 @@
 import { useState, useEffect, useRef } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { Loader2, AlertCircle } from "lucide-react";
 import ChatHeader from "../components/chat/ChatHeader";
 import ChatInput from "../components/chat/ChatInput";
 import MessageBubble from "../components/chat/MessageBubble";
+import ConversationWarmup from "../components/ConversationWarmup";
+import AnalyzeModal from "../components/AnalyzeModal";
 import {
   fetchTopicBySlug,
   sendChatMessage,
@@ -13,6 +15,7 @@ import {
 export default function ChatPage() {
   const { topicSlug } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const messagesEndRef = useRef(null);
 
   // State
@@ -21,6 +24,10 @@ export default function ChatPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSending, setIsSending] = useState(false);
   const [error, setError] = useState(null);
+
+  const [showWarmup, setShowWarmup] = useState(true);
+  const [showAnalyze, setShowAnalyze] = useState(false);
+  const [analysisData, setAnalysisData] = useState(null);
 
   // Auto-scroll to bottom when messages change
   useEffect(() => {
@@ -34,8 +41,18 @@ export default function ChatPage() {
         setIsLoading(true);
         setError(null);
 
-        // Fetch scenario details
-        const scenarioData = await fetchTopicBySlug(topicSlug);
+        let scenarioData;
+
+        // Check availability of scenario in location state (for General/Mission/Profession modes)
+        if (location.state?.scenario) {
+          scenarioData = location.state.scenario;
+        } else if (topicSlug) {
+          // Fallback to fetching by slug (for standard Scenarios)
+          scenarioData = await fetchTopicBySlug(topicSlug);
+        } else {
+          throw new Error("No scenario provided");
+        }
+
         setScenario(scenarioData);
 
         // Get initial AI greeting
@@ -46,6 +63,8 @@ export default function ChatPage() {
           aiPrompt: scenarioData.aiPrompt,
           aiRole: scenarioData.aiRole,
           userRole: scenarioData.userRole,
+          mode: scenarioData.mode || "chat", // Pass mode
+          objective: scenarioData.objective, // Pass objective
         });
 
         // Add initial greeting to messages
@@ -58,7 +77,7 @@ export default function ChatPage() {
               hour: "2-digit",
               minute: "2-digit",
             }),
-            autoPlay: true,
+            autoPlay: false, // Will be set to true after warmup
           },
         ]);
       } catch (err) {
@@ -69,10 +88,64 @@ export default function ChatPage() {
       }
     }
 
-    if (topicSlug) {
-      initializeChat();
+    initializeChat();
+  }, [topicSlug, location.state]);
+
+  const handleWarmupComplete = () => {
+    setShowWarmup(false);
+    // Trigger audio playback for the first message after warmup
+    setMessages((prev) => {
+      if (prev.length > 0 && prev[0].sender === "ai") {
+        return [
+          { ...prev[0], autoPlay: true },
+          ...prev.slice(1)
+        ];
+      }
+      return prev;
+    });
+  };
+
+  const handleEndSession = async () => {
+    if (!scenario) return;
+
+    // Show modal with loading state
+    setAnalysisData(null);
+    setShowAnalyze(true);
+
+    try {
+      // Build conversation history for API
+      const conversationHistory = messages.map((msg) => ({
+        sender: msg.sender,
+        text: msg.text,
+        correction: msg.correction || null,
+      }));
+
+      // Call the analyze endpoint
+      const { analyzeSession } = await import("../../../services/aiPracticeApi");
+      const analysis = await analyzeSession(conversationHistory, {
+        level: scenario.level,
+        formality: scenario.formality,
+        title: scenario.title,
+        aiPrompt: scenario.aiPrompt,
+        aiRole: scenario.aiRole,
+        userRole: scenario.userRole,
+        mode: scenario.mode || "chat",
+        objective: scenario.objective,
+      });
+
+      setAnalysisData(analysis);
+    } catch (err) {
+      console.error("Failed to analyze session:", err);
+      // Set fallback data on error
+      setAnalysisData({
+        cefr_assessment: scenario.level || "A1",
+        grammar_score: 0,
+        vocabulary_score: 0,
+        fluency_note: "Analysis failed. Please try again.",
+        feedback_points: [],
+      });
     }
-  }, [topicSlug]);
+  };
 
   const handleSendMessage = async (messageText) => {
     if (!messageText.trim() || isSending || !scenario) return;
@@ -112,6 +185,8 @@ export default function ChatPage() {
           aiPrompt: scenario.aiPrompt,
           aiRole: scenario.aiRole,
           userRole: scenario.userRole,
+          mode: scenario.mode || "chat",
+          objective: scenario.objective,
         },
       });
 
@@ -155,9 +230,35 @@ export default function ChatPage() {
     }
   };
 
-  const handleHint = () => {
-    // TODO: Will be implemented in Iteration 5
-    console.log("Hint requested");
+  const handleHint = async () => {
+    if (!scenario) return null;
+
+    try {
+      // Build conversation history for API
+      const conversationHistory = messages.map((msg) => ({
+        sender: msg.sender,
+        text: msg.text,
+        correction: msg.correction || null,
+      }));
+
+      // Fetch hint from backend
+      const { getHint } = await import("../../../services/aiPracticeApi");
+      const response = await getHint(conversationHistory, {
+        level: scenario.level,
+        formality: scenario.formality,
+        title: scenario.title,
+        aiPrompt: scenario.aiPrompt,
+        aiRole: scenario.aiRole,
+        userRole: scenario.userRole,
+        mode: scenario.mode || "chat",
+        objective: scenario.objective,
+      });
+
+      return response.hint;
+    } catch (err) {
+      console.error("Failed to get hint:", err);
+      return "Je ne sais pas quoi dire...";
+    }
   };
 
   // Loading state
@@ -194,8 +295,18 @@ export default function ChatPage() {
 
   return (
     <div className="fixed inset-0 top-[64px] z-40 flex flex-col bg-gray-50 dark:bg-slate-950">
+      {/* Warmup Overlay */}
+      {showWarmup && <ConversationWarmup onComplete={handleWarmupComplete} />}
+
+      {/* Analysis Modal */}
+      <AnalyzeModal
+        isOpen={showAnalyze}
+        onClose={() => navigate("/ai-practice")}
+        analysisData={analysisData}
+      />
+
       {/* Fixed Header */}
-      <ChatHeader scenario={scenario} />
+      <ChatHeader scenario={scenario} onEndSession={handleEndSession} />
 
       {/* Messages Container */}
       <div className="flex-1 overflow-y-auto px-4 py-6">
@@ -241,7 +352,7 @@ export default function ChatPage() {
       <ChatInput
         onSend={handleSendMessage}
         onHint={handleHint}
-        disabled={isSending}
+        disabled={isSending || showWarmup}
       />
     </div>
   );

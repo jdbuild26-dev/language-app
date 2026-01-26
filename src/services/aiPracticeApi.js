@@ -15,9 +15,8 @@ export async function fetchChatTopics({ level, formality, limit } = {}) {
   if (limit) params.append("limit", limit.toString());
 
   const queryString = params.toString();
-  const url = `${API_URL}/api/ai-practice/topics${
-    queryString ? `?${queryString}` : ""
-  }`;
+  const url = `${API_URL}/api/ai-practice/topics${queryString ? `?${queryString}` : ""
+    }`;
 
   const response = await fetch(url);
   if (!response.ok) {
@@ -126,6 +125,54 @@ export async function translateText(text, targetLang = "en") {
 
   if (!response.ok) {
     throw new Error(`Translation request failed: ${response.statusText}`);
+  }
+  return response.json();
+}
+
+/**
+ * Get a hint for what to say next in the conversation.
+ * @param {Array} conversationHistory - Previous messages
+ * @param {Object} scenario - Scenario metadata
+ * @returns {Promise<{hint: string}>}
+ */
+export async function getHint(conversationHistory, scenario) {
+  const url = `${API_URL}/api/ai-practice/hint`;
+
+  const response = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      conversation_history: conversationHistory,
+      scenario,
+    }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Hint request failed: ${response.statusText}`);
+  }
+  return response.json();
+}
+
+/**
+ * Analyze a completed conversation session.
+ * @param {Array} conversationHistory - All messages from the session
+ * @param {Object} scenario - Scenario metadata
+ * @returns {Promise<{cefr_assessment: string, grammar_score: number, vocabulary_score: number, fluency_note: string, mission_success: boolean|null, mission_feedback: string|null, feedback_points: Array}>}
+ */
+export async function analyzeSession(conversationHistory, scenario) {
+  const url = `${API_URL}/api/ai-practice/analyze`;
+
+  const response = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      conversation_history: conversationHistory,
+      scenario,
+    }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Analysis request failed: ${response.statusText}`);
   }
   return response.json();
 }
