@@ -7,6 +7,7 @@ export default function AudioRecorder({ onRecordingComplete, disabled }) {
     const mediaRecorderRef = useRef(null);
     const chunksRef = useRef([]);
     const timerRef = useRef(null);
+    const userInitiatedRef = useRef(false);
 
     useEffect(() => {
         return () => {
@@ -17,7 +18,20 @@ export default function AudioRecorder({ onRecordingComplete, disabled }) {
         };
     }, [isRecording]);
 
+    // Stop recording if disabled prop changes to true while recording
+    useEffect(() => {
+        if (disabled && isRecording) {
+            stopRecording();
+        }
+    }, [disabled]);
+
     const startRecording = async () => {
+        // Guard: Don't start if disabled
+        if (disabled) {
+            console.warn("Recording attempted while disabled");
+            return;
+        }
+
         try {
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
             mediaRecorderRef.current = new MediaRecorder(stream);
@@ -78,8 +92,8 @@ export default function AudioRecorder({ onRecordingComplete, disabled }) {
                     onClick={startRecording}
                     disabled={disabled}
                     className={`p-3 rounded-full transition-all shadow-sm ${disabled
-                            ? "bg-gray-100 dark:bg-slate-800 text-gray-400 cursor-not-allowed"
-                            : "bg-sky-500 hover:bg-sky-600 text-white"
+                        ? "bg-gray-100 dark:bg-slate-800 text-gray-400 cursor-not-allowed"
+                        : "bg-sky-500 hover:bg-sky-600 text-white"
                         }`}
                     title="Start Recording"
                 >
