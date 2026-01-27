@@ -127,7 +127,8 @@ export default function AudioFillBlankPage() {
     }
 
     const char = value.slice(-1).toUpperCase();
-    if (!/^[A-Z\u00C0-\u00FF]$/.test(char)) {
+    // Allow letters, numbers, and common punctuation (apostrophe, hyphen, space, etc.)
+    if (!/^[A-Z0-9\u00C0-\u00FF\s\-'.,!?]$/.test(char)) {
       return;
     }
 
@@ -185,8 +186,10 @@ export default function AudioFillBlankPage() {
     const normalizedAnswer = currentQ.answer
       .trim()
       .toUpperCase()
-      .replace(/[.,!?;:]/g, "");
-    const normalizedInput = userAnswer.replace(/[.,!?;:]/g, "");
+      .replace(/[^A-Z0-9\u00C0-\u00FF]/g, ""); // Keep only letters and numbers
+    const normalizedInput = userAnswer
+      .toUpperCase()
+      .replace(/[^A-Z0-9\u00C0-\u00FF]/g, ""); // Keep only letters and numbers
 
     const correct = normalizedInput === normalizedAnswer;
     setIsCorrect(correct);
