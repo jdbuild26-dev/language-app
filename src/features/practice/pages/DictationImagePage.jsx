@@ -230,9 +230,6 @@ export default function DictationImagePage() {
               <h2 className="text-2xl md:text-4xl font-bold text-slate-800 dark:text-slate-100 mb-2">
                 {currentQuestion.question}
               </h2>
-              <p className="text-slate-500 dark:text-slate-400 text-lg">
-                Spell the word
-              </p>
             </div>
 
             {/* Inputs */}

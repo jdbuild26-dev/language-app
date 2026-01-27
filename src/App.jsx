@@ -64,6 +64,43 @@ import RepeatSentencePage from "@/features/practice/pages/RepeatSentencePage";
 import WhatDoYouSeePage from "@/features/practice/pages/WhatDoYouSeePage";
 import DictationImagePage from "@/features/practice/pages/DictationImagePage";
 
+// Practice Module Reading Exercises
+import MatchPairsPage from "@/features/practice/pages/reading/MatchPairsPage";
+import BubbleSelectionPage from "@/features/practice/pages/reading/BubbleSelectionPage";
+import HighlightPage from "@/features/practice/pages/reading/HighlightPage";
+import ImageMCQPage from "@/features/practice/pages/reading/ImageMCQPage";
+import ComprehensionPage from "@/features/practice/pages/reading/ComprehensionPage";
+import FillBlanksPage from "@/features/practice/pages/reading/FillBlanksPage";
+import CompletePassagePage from "@/features/practice/pages/reading/CompletePassagePage";
+import ReorderPage from "@/features/practice/pages/reading/ReorderPage";
+import TrueFalsePage from "@/features/practice/pages/reading/TrueFalsePage";
+import ConversationPage from "@/features/practice/pages/reading/ConversationPage";
+
+// Practice Module Listening Exercises
+import ListenSelectPage from "@/features/practice/pages/listening/ListenSelectPage";
+import ListenTypePage from "@/features/practice/pages/listening/ListenTypePage";
+import ListenFillBlanksPage from "@/features/practice/pages/listening/ListenFillBlanksPage";
+import ListenMatchPage from "@/features/practice/pages/listening/ListenMatchPage";
+import ListenOrderPage from "@/features/practice/pages/listening/ListenOrderPage";
+import ListenPassagePage from "@/features/practice/pages/listening/ListenPassagePage";
+import ListenInteractivePage from "@/features/practice/pages/listening/ListenInteractivePage";
+
+// Practice Module Writing Exercises
+import TranslateTypedPage from "@/features/practice/pages/writing/TranslateTypedPage";
+import SpellingPage from "@/features/practice/pages/writing/SpellingPage";
+import WriteFillBlanksPage from "@/features/practice/pages/writing/WriteFillBlanksPage";
+import WriteTopicPage from "@/features/practice/pages/writing/WriteTopicPage";
+import WriteImagePage from "@/features/practice/pages/writing/WriteImagePage";
+import WriteDocumentsPage from "@/features/practice/pages/writing/WriteDocumentsPage";
+import WriteFormPage from "@/features/practice/pages/writing/WriteFormPage";
+import WriteInteractivePage from "@/features/practice/pages/writing/WriteInteractivePage";
+
+// Practice Module Speaking Exercises
+import SpeakTranslatePage from "@/features/practice/pages/speaking/SpeakTranslatePage";
+import SpeakTopicPage from "@/features/practice/pages/speaking/SpeakTopicPage";
+import SpeakImagePage from "@/features/practice/pages/speaking/SpeakImagePage";
+import SpeakInteractivePage from "@/features/practice/pages/speaking/SpeakInteractivePage";
+
 function App() {
   return (
     <Router>
@@ -346,6 +383,304 @@ function App() {
             <ProtectedRoute>
               <FullScreenLayout>
                 <DictationPage />
+              </FullScreenLayout>
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Practice Module Routes - READING */}
+        <Route
+          path="/practice/reading/match-pairs"
+          element={
+            <ProtectedRoute>
+              <FullScreenLayout>
+                <MatchPairsPage />
+              </FullScreenLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/practice/reading/bubble-selection"
+          element={
+            <ProtectedRoute>
+              <FullScreenLayout>
+                <BubbleSelectionPage />
+              </FullScreenLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/practice/reading/highlight"
+          element={
+            <ProtectedRoute>
+              <FullScreenLayout>
+                <HighlightPage />
+              </FullScreenLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/practice/reading/image-mcq"
+          element={
+            <ProtectedRoute>
+              <FullScreenLayout>
+                <ImageMCQPage />
+              </FullScreenLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/practice/reading/comprehension"
+          element={
+            <ProtectedRoute>
+              <FullScreenLayout>
+                <ComprehensionPage />
+              </FullScreenLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/practice/reading/fill-blanks"
+          element={
+            <ProtectedRoute>
+              <FullScreenLayout>
+                <FillBlanksPage />
+              </FullScreenLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/practice/reading/complete-passage"
+          element={
+            <ProtectedRoute>
+              <FullScreenLayout>
+                <CompletePassagePage />
+              </FullScreenLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/practice/reading/reorder"
+          element={
+            <ProtectedRoute>
+              <FullScreenLayout>
+                <ReorderPage />
+              </FullScreenLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/practice/reading/true-false"
+          element={
+            <ProtectedRoute>
+              <FullScreenLayout>
+                <TrueFalsePage />
+              </FullScreenLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/practice/reading/conversation"
+          element={
+            <ProtectedRoute>
+              <FullScreenLayout>
+                <ConversationPage />
+              </FullScreenLayout>
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Practice Module Routes - LISTENING */}
+        <Route
+          path="/practice/listening/select"
+          element={
+            <ProtectedRoute>
+              <FullScreenLayout>
+                <ListenSelectPage />
+              </FullScreenLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/practice/listening/type"
+          element={
+            <ProtectedRoute>
+              <FullScreenLayout>
+                <ListenTypePage />
+              </FullScreenLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/practice/listening/fill-blanks"
+          element={
+            <ProtectedRoute>
+              <FullScreenLayout>
+                <ListenFillBlanksPage />
+              </FullScreenLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/practice/listening/match"
+          element={
+            <ProtectedRoute>
+              <FullScreenLayout>
+                <ListenMatchPage />
+              </FullScreenLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/practice/listening/order"
+          element={
+            <ProtectedRoute>
+              <FullScreenLayout>
+                <ListenOrderPage />
+              </FullScreenLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/practice/listening/passage"
+          element={
+            <ProtectedRoute>
+              <FullScreenLayout>
+                <ListenPassagePage />
+              </FullScreenLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/practice/listening/interactive"
+          element={
+            <ProtectedRoute>
+              <FullScreenLayout>
+                <ListenInteractivePage />
+              </FullScreenLayout>
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Practice Module Routes - WRITING */}
+        <Route
+          path="/practice/writing/translate"
+          element={
+            <ProtectedRoute>
+              <FullScreenLayout>
+                <TranslateTypedPage />
+              </FullScreenLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/practice/writing/spelling"
+          element={
+            <ProtectedRoute>
+              <FullScreenLayout>
+                <SpellingPage />
+              </FullScreenLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/practice/writing/fill-blanks"
+          element={
+            <ProtectedRoute>
+              <FullScreenLayout>
+                <WriteFillBlanksPage />
+              </FullScreenLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/practice/writing/topic"
+          element={
+            <ProtectedRoute>
+              <FullScreenLayout>
+                <WriteTopicPage />
+              </FullScreenLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/practice/writing/image"
+          element={
+            <ProtectedRoute>
+              <FullScreenLayout>
+                <WriteImagePage />
+              </FullScreenLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/practice/writing/documents"
+          element={
+            <ProtectedRoute>
+              <FullScreenLayout>
+                <WriteDocumentsPage />
+              </FullScreenLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/practice/writing/form"
+          element={
+            <ProtectedRoute>
+              <FullScreenLayout>
+                <WriteFormPage />
+              </FullScreenLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/practice/writing/interactive"
+          element={
+            <ProtectedRoute>
+              <FullScreenLayout>
+                <WriteInteractivePage />
+              </FullScreenLayout>
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Practice Module Routes - SPEAKING */}
+        <Route
+          path="/practice/speaking/translate"
+          element={
+            <ProtectedRoute>
+              <FullScreenLayout>
+                <SpeakTranslatePage />
+              </FullScreenLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/practice/speaking/topic"
+          element={
+            <ProtectedRoute>
+              <FullScreenLayout>
+                <SpeakTopicPage />
+              </FullScreenLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/practice/speaking/image"
+          element={
+            <ProtectedRoute>
+              <FullScreenLayout>
+                <SpeakImagePage />
+              </FullScreenLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/practice/speaking/interactive"
+          element={
+            <ProtectedRoute>
+              <FullScreenLayout>
+                <SpeakInteractivePage />
               </FullScreenLayout>
             </ProtectedRoute>
           }

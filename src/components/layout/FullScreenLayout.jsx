@@ -11,7 +11,7 @@ export default function FullScreenLayout({ children }) {
         <Button
           variant="outline"
           size="icon"
-          onClick={() => navigate("/vocabulary/practice")}
+          onClick={() => navigate(-1)}
           className="rounded-full h-10 w-10 bg-white/10 hover:bg-white/20 border-0 backdrop-blur-md shadow-sm"
           title="Exit Practice"
         >

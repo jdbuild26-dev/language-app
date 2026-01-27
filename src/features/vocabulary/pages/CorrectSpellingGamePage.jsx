@@ -53,14 +53,28 @@ export default function CorrectSpellingGamePage() {
     isPaused: loading || isCompleted || showFeedback,
   });
 
+  // Clean string helper
+  const cleanString = (str) => {
+    if (!str) return "";
+    return str
+      .trim()
+      .replace(/\u200B/g, "") // Remove zero-width space
+      .normalize("NFC"); // Normalize unicode
+  };
+
   // Reset logic
   useEffect(() => {
     if (questions.length > 0 && !isCompleted) {
       resetTimer();
       // Setup inputs
-      const answer = currentQuestion?.correctAnswer
-        ? currentQuestion.correctAnswer.trim()
-        : "";
+      const rawAnswer = currentQuestion?.correctAnswer || "";
+      const answer = cleanString(rawAnswer);
+
+      // Debugging log (can be removed later)
+      console.log(
+        `[SpellingGame] Cleaned answer: "${answer}" (len: ${answer.length}) from "${rawAnswer}"`,
+      );
+
       setUserInputs(new Array(answer.length).fill(""));
 
       setTimeout(() => {
@@ -186,8 +200,23 @@ export default function CorrectSpellingGamePage() {
   const handleSubmit = () => {
     if (showFeedback) return;
 
+    // Helper must be accessible here or duplicated if scoped inside effect.
+    // Moving helper to top level or memoizing is better, but simple duplication or hoist is fine for now.
+    // Let's rely on cleaning the correctAnswer from state or re-cleaning.
+
+    // Better: Helper function defined inside component body is accessible here.
+    // Wait, the previous edit put `cleanString` inside component body before useEffect.
+    // So good to go.
+
     const userAnswer = userInputs.join("");
-    const rightAnswer = questions[currentIndex].correctAnswer.trim();
+    // We must clean the right answer same way to ensure match
+    const rightAnswer = currentQuestion?.correctAnswer
+      ? currentQuestion.correctAnswer
+          .trim()
+          .replace(/\u200B/g, "")
+          .normalize("NFC")
+      : "";
+
     const correct = userAnswer.toLowerCase() === rightAnswer.toLowerCase();
 
     setIsCorrect(correct);
