@@ -11,7 +11,7 @@ const levelColors = {
   C2: "bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400",
 };
 
-export default function ChatHeader({ scenario }) {
+export default function ChatHeader({ scenario, onEndSession }) {
   const levelColor = levelColors[scenario.level] || levelColors.A1;
 
   return (
@@ -37,15 +37,21 @@ export default function ChatHeader({ scenario }) {
 
             {/* Formality Badge */}
             <span
-              className={`px-2.5 py-1 rounded-full text-xs font-semibold ${
-                scenario.formality === "formal"
-                  ? "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400"
-                  : "bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-400"
-              }`}
+              className={`px-2.5 py-1 rounded-full text-xs font-semibold ${scenario.formality === "formal"
+                ? "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400"
+                : "bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-400"
+                }`}
             >
               {scenario.formality === "formal" ? "Formal" : "Casual"}
             </span>
           </div>
+
+          <button
+            onClick={onEndSession}
+            className="text-sm font-medium text-red-500 hover:text-red-600 dark:text-red-400 dark:hover:text-red-300 transition-colors"
+          >
+            End Session
+          </button>
         </div>
 
         {/* Title */}
@@ -54,10 +60,12 @@ export default function ChatHeader({ scenario }) {
         </h1>
 
         {/* Objective */}
-        <p className="text-sm text-gray-500 dark:text-slate-400 flex items-start gap-2">
-          <Sparkles className="w-4 h-4 mt-0.5 flex-shrink-0 text-sky-500" />
-          <span>{scenario.objective}</span>
-        </p>
+        {scenario.objective && (
+          <p className="text-sm text-gray-500 dark:text-slate-400 flex items-start gap-2">
+            <Sparkles className="w-4 h-4 mt-0.5 flex-shrink-0 text-sky-500" />
+            <span>{scenario.objective}</span>
+          </p>
+        )}
       </div>
     </div>
   );
