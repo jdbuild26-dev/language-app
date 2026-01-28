@@ -104,7 +104,7 @@ export const PRACTICE_SECTIONS = [
         description: "Find and highlight specific text in a passage",
         path: "/practice/reading/highlight",
         icon: "🖍️",
-        isLive: false,
+        isLive: true,
       },
       {
         id: "G4",
@@ -112,7 +112,7 @@ export const PRACTICE_SECTIONS = [
         description: "Select the description that matches the image",
         path: "/practice/reading/image-mcq",
         icon: "🖼️",
-        isLive: false,
+        isLive: true,
       },
       {
         id: "G5",
@@ -120,7 +120,7 @@ export const PRACTICE_SECTIONS = [
         description: "Read a passage and answer questions",
         path: "/practice/reading/comprehension",
         icon: "📖",
-        isLive: false,
+        isLive: true,
       },
       {
         id: "G6",
@@ -128,7 +128,7 @@ export const PRACTICE_SECTIONS = [
         description: "Complete passages with missing words",
         path: "/practice/reading/fill-blanks",
         icon: "📝",
-        isLive: false,
+        isLive: true,
       },
       {
         id: "G7",
@@ -136,7 +136,7 @@ export const PRACTICE_SECTIONS = [
         description: "Fill in missing sentences in a passage",
         path: "/practice/reading/complete-passage",
         icon: "📄",
-        isLive: false,
+        isLive: true,
       },
       {
         id: "G8",
@@ -144,7 +144,7 @@ export const PRACTICE_SECTIONS = [
         description: "Arrange sentences in the correct order",
         path: "/practice/reading/reorder",
         icon: "🔀",
-        isLive: false,
+        isLive: true,
       },
       {
         id: "G9",
@@ -152,7 +152,7 @@ export const PRACTICE_SECTIONS = [
         description: "Determine if statements are true, false, or not given",
         path: "/practice/reading/true-false",
         icon: "✅",
-        isLive: false,
+        isLive: true,
       },
       {
         id: "G10",
@@ -160,7 +160,7 @@ export const PRACTICE_SECTIONS = [
         description: "Follow a conversation and choose responses",
         path: "/practice/reading/conversation",
         icon: "💬",
-        isLive: false,
+        isLive: true,
       },
     ],
   },
@@ -174,7 +174,7 @@ export const PRACTICE_SECTIONS = [
         description: "Listen to audio and choose the correct answer",
         path: "/practice/listening/select",
         icon: "🎧",
-        isLive: false,
+        isLive: true,
       },
       {
         id: "E2",
@@ -182,7 +182,7 @@ export const PRACTICE_SECTIONS = [
         description: "Type what you hear",
         path: "/practice/listening/type",
         icon: "⌨️",
-        isLive: false,
+        isLive: true,
       },
       {
         id: "E3",
@@ -190,7 +190,7 @@ export const PRACTICE_SECTIONS = [
         description: "Fill in missing words from audio",
         path: "/practice/listening/fill-blanks",
         icon: "📝",
-        isLive: false,
+        isLive: true,
       },
       {
         id: "E4",
@@ -198,7 +198,7 @@ export const PRACTICE_SECTIONS = [
         description: "Match audio clips to descriptions",
         path: "/practice/listening/match",
         icon: "🔗",
-        isLive: false,
+        isLive: true,
       },
       {
         id: "E5",
@@ -206,7 +206,7 @@ export const PRACTICE_SECTIONS = [
         description: "Arrange audio clips in order",
         path: "/practice/listening/order",
         icon: "🔢",
-        isLive: false,
+        isLive: true,
       },
       {
         id: "E6",
@@ -214,7 +214,7 @@ export const PRACTICE_SECTIONS = [
         description: "Listen to a passage and answer questions",
         path: "/practice/listening/passage",
         icon: "📖",
-        isLive: false,
+        isLive: true,
       },
       {
         id: "E7",
@@ -222,7 +222,7 @@ export const PRACTICE_SECTIONS = [
         description: "Follow an audio conversation and respond",
         path: "/practice/listening/interactive",
         icon: "💬",
-        isLive: false,
+        isLive: true,
       },
     ],
   },
@@ -236,7 +236,7 @@ export const PRACTICE_SECTIONS = [
         description: "Type translations of sentences",
         path: "/practice/writing/translate",
         icon: "✍️",
-        isLive: false,
+        isLive: true,
       },
       {
         id: "F2",
@@ -244,7 +244,7 @@ export const PRACTICE_SECTIONS = [
         description: "Correct spelling mistakes in text",
         path: "/practice/writing/spelling",
         icon: "🔍",
-        isLive: false,
+        isLive: true,
       },
       {
         id: "F3",
@@ -252,7 +252,7 @@ export const PRACTICE_SECTIONS = [
         description: "Type missing words in passages",
         path: "/practice/writing/fill-blanks",
         icon: "📝",
-        isLive: false,
+        isLive: true,
       },
       {
         id: "F4",
@@ -260,7 +260,7 @@ export const PRACTICE_SECTIONS = [
         description: "Write an essay on a given topic",
         path: "/practice/writing/topic",
         icon: "📄",
-        isLive: false,
+        isLive: true,
       },
       {
         id: "F5",
@@ -268,7 +268,7 @@ export const PRACTICE_SECTIONS = [
         description: "Describe an image in writing",
         path: "/practice/writing/image",
         icon: "🖼️",
-        isLive: false,
+        isLive: true,
       },
       {
         id: "F6",
@@ -276,7 +276,7 @@ export const PRACTICE_SECTIONS = [
         description: "Write formal documents like letters and emails",
         path: "/practice/writing/documents",
         icon: "📧",
-        isLive: false,
+        isLive: true,
       },
       {
         id: "F7",
@@ -284,7 +284,7 @@ export const PRACTICE_SECTIONS = [
         description: "Complete form fields correctly",
         path: "/practice/writing/form",
         icon: "📋",
-        isLive: false,
+        isLive: true,
       },
       {
         id: "F8",
@@ -292,7 +292,7 @@ export const PRACTICE_SECTIONS = [
         description: "AI-assisted writing practice",
         path: "/practice/writing/interactive",
         icon: "🤖",
-        isLive: false,
+        isLive: true,
       },
     ],
   },

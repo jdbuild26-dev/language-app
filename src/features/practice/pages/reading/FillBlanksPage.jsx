@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { usePracticeExit } from "@/hooks/usePracticeExit";
 import { useExerciseTimer } from "@/hooks/useExerciseTimer";
 import { Loader2, Volume2 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -53,7 +53,7 @@ const MOCK_QUESTIONS = [
 ];
 
 export default function FillBlanksPage() {
-  const navigate = useNavigate();
+  const handleExit = usePracticeExit();
   const { speak, isSpeaking } = useTextToSpeech();
 
   const [questions] = useState(MOCK_QUESTIONS);
@@ -154,7 +154,7 @@ export default function FillBlanksPage() {
         isGameOver={isCompleted}
         score={score}
         totalQuestions={questions.length}
-        onExit={() => navigate("/practice")}
+        onExit={handleExit}
         onNext={handleSubmit}
         onRestart={() => window.location.reload()}
         isSubmitEnabled={!!selectedWord && !showFeedback}
