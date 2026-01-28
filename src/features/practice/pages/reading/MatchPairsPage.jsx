@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from "react";
 import { useExerciseTimer } from "@/hooks/useExerciseTimer";
 import { Loader2, Volume2 } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { usePracticeExit } from "@/hooks/usePracticeExit";
 import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
 import { useTextToSpeech } from "@/hooks/useTextToSpeech";
 import { MATCH_PAIRS_DATA } from "../../data/mockData";
 
 export default function MatchPairsPage() {
-  const navigate = useNavigate();
+  const handleExit = usePracticeExit();
   const { speak } = useTextToSpeech();
 
   const [loading, setLoading] = useState(false);
@@ -191,7 +191,7 @@ export default function MatchPairsPage() {
       isGameOver={isGameOver}
       score={score}
       totalQuestions={topCards.length}
-      onExit={() => navigate("/practice")}
+      onExit={handleExit}
       onRestart={initializeGame}
       showSubmitButton={false}
       timerValue={timerString}

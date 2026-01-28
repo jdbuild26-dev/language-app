@@ -1,5 +1,4 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import {
   BookOpen,
@@ -69,6 +68,7 @@ const practiceActivities = [
     category: "reading",
     color: "from-emerald-400 to-teal-500",
     shadow: "shadow-emerald-200 dark:shadow-emerald-900/20",
+    isLive: true,
   },
   {
     id: "G4",
@@ -79,6 +79,7 @@ const practiceActivities = [
     category: "reading",
     color: "from-yellow-400 to-amber-500",
     shadow: "shadow-yellow-200 dark:shadow-yellow-900/20",
+    isLive: true,
   },
   {
     id: "G5",
@@ -89,6 +90,7 @@ const practiceActivities = [
     category: "reading",
     color: "from-rose-400 to-red-500",
     shadow: "shadow-rose-200 dark:shadow-rose-900/20",
+    isLive: true,
   },
   {
     id: "G6",
@@ -110,6 +112,7 @@ const practiceActivities = [
     category: "reading",
     color: "from-sky-400 to-indigo-500",
     shadow: "shadow-sky-200 dark:shadow-sky-900/20",
+    isLive: true,
   },
   {
     id: "G8",
@@ -120,6 +123,7 @@ const practiceActivities = [
     category: "reading",
     color: "from-teal-400 to-cyan-500",
     shadow: "shadow-teal-200 dark:shadow-teal-900/20",
+    isLive: true,
   },
   {
     id: "G9",
@@ -130,6 +134,7 @@ const practiceActivities = [
     category: "reading",
     color: "from-pink-400 to-rose-500",
     shadow: "shadow-pink-200 dark:shadow-pink-900/20",
+    isLive: true,
   },
   {
     id: "G10",
@@ -140,6 +145,7 @@ const practiceActivities = [
     category: "reading",
     color: "from-indigo-400 to-purple-500",
     shadow: "shadow-indigo-200 dark:shadow-indigo-900/20",
+    isLive: true,
   },
 
   // ========================================
@@ -187,6 +193,7 @@ const practiceActivities = [
     category: "listening",
     color: "from-emerald-400 to-teal-500",
     shadow: "shadow-emerald-200 dark:shadow-emerald-900/20",
+    isLive: true,
   },
   {
     id: "E5",
@@ -197,6 +204,7 @@ const practiceActivities = [
     category: "listening",
     color: "from-orange-400 to-amber-500",
     shadow: "shadow-orange-200 dark:shadow-orange-900/20",
+    isLive: true,
   },
   {
     id: "E6",
@@ -207,6 +215,7 @@ const practiceActivities = [
     category: "listening",
     color: "from-rose-400 to-red-500",
     shadow: "shadow-rose-200 dark:shadow-rose-900/20",
+    isLive: true,
   },
   {
     id: "E7",
@@ -217,6 +226,7 @@ const practiceActivities = [
     category: "listening",
     color: "from-pink-400 to-rose-500",
     shadow: "shadow-pink-200 dark:shadow-pink-900/20",
+    isLive: true,
   },
 
   // ========================================
@@ -231,6 +241,7 @@ const practiceActivities = [
     category: "writing",
     color: "from-cyan-400 to-blue-500",
     shadow: "shadow-cyan-200 dark:shadow-cyan-900/20",
+    isLive: true,
   },
   {
     id: "F2",
@@ -241,6 +252,7 @@ const practiceActivities = [
     category: "writing",
     color: "from-emerald-400 to-teal-500",
     shadow: "shadow-emerald-200 dark:shadow-emerald-900/20",
+    isLive: true,
   },
   {
     id: "F3",
@@ -251,6 +263,7 @@ const practiceActivities = [
     category: "writing",
     color: "from-purple-400 to-violet-500",
     shadow: "shadow-purple-200 dark:shadow-purple-900/20",
+    isLive: true,
   },
   {
     id: "F4",
@@ -261,6 +274,7 @@ const practiceActivities = [
     category: "writing",
     color: "from-orange-400 to-amber-500",
     shadow: "shadow-orange-200 dark:shadow-orange-900/20",
+    isLive: true,
   },
   {
     id: "F5",
@@ -271,6 +285,7 @@ const practiceActivities = [
     category: "writing",
     color: "from-rose-400 to-red-500",
     shadow: "shadow-rose-200 dark:shadow-rose-900/20",
+    isLive: true,
   },
   {
     id: "F6",
@@ -281,6 +296,7 @@ const practiceActivities = [
     category: "writing",
     color: "from-sky-400 to-indigo-500",
     shadow: "shadow-sky-200 dark:shadow-sky-900/20",
+    isLive: true,
   },
   {
     id: "F7",
@@ -291,6 +307,7 @@ const practiceActivities = [
     category: "writing",
     color: "from-teal-400 to-cyan-500",
     shadow: "shadow-teal-200 dark:shadow-teal-900/20",
+    isLive: true,
   },
   {
     id: "F8",
@@ -301,6 +318,7 @@ const practiceActivities = [
     category: "writing",
     color: "from-pink-400 to-rose-500",
     shadow: "shadow-pink-200 dark:shadow-pink-900/20",
+    isLive: true,
   },
 
   // ========================================
@@ -350,11 +368,21 @@ const practiceActivities = [
 
 export default function PracticePage() {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState("all");
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  // Derive active tab from URL or default to "all"
+  const tabFromUrl = searchParams.get("tab");
+  const activeTab =
+    tabFromUrl && tabs.some((t) => t.id === tabFromUrl) ? tabFromUrl : "all";
+
+  const handleTabChange = (tabId) => {
+    setSearchParams({ tab: tabId });
+  };
 
   const handleCardClick = (activity) => {
     if (activity.path) {
-      navigate(activity.path);
+      // Pass the current category as a query param so we can return to it
+      navigate(`${activity.path}?from=${activity.category}`);
     }
   };
 
@@ -382,7 +410,7 @@ export default function PracticePage() {
             {tabs.map((tab) => (
               <button
                 key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
+                onClick={() => handleTabChange(tab.id)}
                 className={cn(
                   "pb-3 text-sm font-semibold tracking-wide transition-colors relative",
                   activeTab === tab.id
