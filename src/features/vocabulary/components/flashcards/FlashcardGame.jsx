@@ -3,6 +3,7 @@ import { useSpeechSynthesis } from "../../../../hooks/useSpeechSynthesis";
 import { Volume2, X, Check, Star } from "lucide-react";
 import { cn } from "@/lib/utils";
 import LearningCard from "../lesson-learn/LearningCard";
+import { trackEvent } from "../../../../services/eventTrackerApi";
 
 export default function FlashcardGame({
   words,
@@ -12,6 +13,8 @@ export default function FlashcardGame({
   total,
 }) {
   const [isFlipped, setIsFlipped] = useState(false);
+  // Generate a transient session ID for this game instance
+  const [sessionId] = useState(() => crypto.randomUUID());
 
   // We handle the first word in the queue
   const currentWord = words[0];
@@ -33,7 +36,20 @@ export default function FlashcardGame({
 
   const handleFlip = (e) => {
     if (e) e.stopPropagation();
-    setIsFlipped(!isFlipped);
+    const newFlipState = !isFlipped;
+    setIsFlipped(newFlipState);
+
+    if (currentWord?.id) {
+      trackEvent({
+        sessionId,
+        itemId: currentWord.id,
+        interactionType: "flip",
+        metadata: {
+          direction: newFlipState ? "front-to-back" : "back-to-front",
+          word: currentWord.english,
+        },
+      });
+    }
   };
 
   // If backface-hidden is not working, we can use conditional z-index or visibility
@@ -49,7 +65,7 @@ export default function FlashcardGame({
         <div
           className={cn(
             "relative w-full h-full duration-500 preserve-3d transition-transform",
-            isFlipped ? "rotate-y-180" : ""
+            isFlipped ? "rotate-y-180" : "",
           )}
         >
           {/* Front Side (Target Word - French) */}
@@ -95,7 +111,7 @@ export default function FlashcardGame({
                 However, for now, let's just render it. The user interaction with buttons inside LearningCard needs to be verified.
              */}
             <div onClick={(e) => e.stopPropagation()}>
-              <LearningCard word={currentWord} />
+              <LearningCard word={currentWord} sessionId={sessionId} />
             </div>
           </div>
         </div>
@@ -104,7 +120,7 @@ export default function FlashcardGame({
         <div
           className={cn(
             "absolute bottom-6 right-6 transition-opacity duration-300 cursor-pointer z-20",
-            "opacity-100 hover:scale-105 active:scale-95"
+            "opacity-100 hover:scale-105 active:scale-95",
           )}
           onClick={handleFlip}
         >
@@ -118,7 +134,17 @@ export default function FlashcardGame({
       <div className="flex items-center justify-center gap-8 mt-12 w-full max-w-md px-4">
         {/* Wrong / Don't Know */}
         <button
-          onClick={() => onUpdateStats("unknown")}
+          onClick={() => {
+            if (currentWord?.id) {
+              trackEvent({
+                sessionId,
+                itemId: currentWord.id,
+                interactionType: "unknown",
+                metadata: { word: currentWord.english },
+              });
+            }
+            onUpdateStats("unknown");
+          }}
           className="w-16 h-16 rounded-full bg-white dark:bg-slate-800 shadow-xl border-4 border-slate-50 dark:border-slate-700 flex items-center justify-center text-orange-500 hover:bg-orange-50 hover:border-orange-200 hover:scale-110 active:scale-95 transition-all"
           aria-label="Don't Know"
         >
@@ -127,7 +153,17 @@ export default function FlashcardGame({
 
         {/* Tick / Known */}
         <button
-          onClick={() => onUpdateStats("know")}
+          onClick={() => {
+            if (currentWord?.id) {
+              trackEvent({
+                sessionId,
+                itemId: currentWord.id,
+                interactionType: "know",
+                metadata: { word: currentWord.english },
+              });
+            }
+            onUpdateStats("know");
+          }}
           className="w-16 h-16 rounded-full bg-white dark:bg-slate-800 shadow-xl border-4 border-slate-50 dark:border-slate-700 flex items-center justify-center text-emerald-500 hover:bg-emerald-50 hover:border-emerald-200 hover:scale-110 active:scale-95 transition-all"
           aria-label="Know"
         >
@@ -136,7 +172,17 @@ export default function FlashcardGame({
 
         {/* Mastered Button */}
         <button
-          onClick={() => onUpdateStats("mastered")}
+          onClick={() => {
+            if (currentWord?.id) {
+              trackEvent({
+                sessionId,
+                itemId: currentWord.id,
+                interactionType: "mastered",
+                metadata: { word: currentWord.english },
+              });
+            }
+            onUpdateStats("mastered");
+          }}
           className="h-16 px-6 rounded-2xl bg-emerald-500 shadow-lg shadow-emerald-200 dark:shadow-emerald-900/20 flex items-center justify-center text-white font-bold text-lg hover:bg-emerald-600 transition-all hover:-translate-y-1 active:scale-95"
         >
           Mastered

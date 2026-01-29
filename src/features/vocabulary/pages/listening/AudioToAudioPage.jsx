@@ -6,7 +6,6 @@ import AudioPlayer from "../../components/shared/AudioPlayer";
 import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
 import { useTextToSpeech } from "@/hooks/useTextToSpeech";
 import { cn } from "@/lib/utils";
-import FeedbackBanner from "@/components/ui/FeedbackBanner";
 import { getFeedbackMessage } from "@/utils/feedbackMessages";
 
 export default function AudioToAudioPage() {
@@ -145,12 +144,22 @@ export default function AudioToAudioPage() {
         score={score}
         totalQuestions={questions.length}
         onExit={() => (window.location.href = "/vocabulary/practice")}
-        onNext={handleSubmit}
+        onNext={showFeedback ? handleContinue : handleSubmit}
         onRestart={() => window.location.reload()}
-        isSubmitEnabled={!!selectedOption && !showFeedback}
-        showSubmitButton={!showFeedback}
-        submitLabel="Submit"
+        isSubmitEnabled={(!!selectedOption && !showFeedback) || showFeedback}
+        showSubmitButton={true}
+        submitLabel={
+          showFeedback
+            ? currentIndex + 1 === questions.length
+              ? "FINISH"
+              : "CONTINUE"
+            : "CHECK"
+        }
         timerValue={timerString}
+        showFeedback={showFeedback}
+        isCorrect={isCorrect}
+        correctAnswer={!isCorrect ? currentQ.correctAnswer : null}
+        feedbackMessage={feedbackMessage}
       >
         <div className="flex flex-col md:flex-row items-center justify-center w-full max-w-5xl gap-8 md:gap-16 px-4 pb-32">
           {/* Left Side: Audio & Sentence */}
@@ -329,19 +338,6 @@ export default function AudioToAudioPage() {
           </div>
         </div>
       </PracticeGameLayout>
-
-      {/* Feedback Banner */}
-      {showFeedback && (
-        <FeedbackBanner
-          isCorrect={isCorrect}
-          correctAnswer={!isCorrect ? currentQ.correctAnswer : null}
-          onContinue={handleContinue}
-          message={feedbackMessage}
-          continueLabel={
-            currentIndex + 1 === questions.length ? "FINISH" : "CONTINUE"
-          }
-        />
-      )}
     </>
   );
 }

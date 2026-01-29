@@ -5,7 +5,6 @@ import { useNavigate } from "react-router-dom";
 import { fetchPracticeQuestions } from "../../../services/vocabularyApi";
 import { cn } from "@/lib/utils";
 import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
-import FeedbackBanner from "@/components/ui/FeedbackBanner";
 import SegmentedInput from "../components/ui/SegmentedInput";
 import { getFeedbackMessage } from "@/utils/feedbackMessages";
 
@@ -267,12 +266,24 @@ export default function CorrectSpellingGamePage() {
         score={score}
         totalQuestions={questions.length}
         onExit={() => navigate("/vocabulary/practice")}
-        onNext={handleSubmit}
+        onNext={showFeedback ? handleContinue : handleSubmit}
         onRestart={() => window.location.reload()}
-        isSubmitEnabled={userInputs.every((i) => i !== "") && !showFeedback}
+        isSubmitEnabled={
+          (userInputs.every((i) => i !== "") && !showFeedback) || showFeedback
+        }
         showSubmitButton={true}
-        submitLabel="Submit"
+        submitLabel={
+          showFeedback
+            ? currentIndex + 1 === questions.length
+              ? "FINISH"
+              : "CONTINUE"
+            : "CHECK"
+        }
         timerValue={timerString}
+        showFeedback={showFeedback}
+        isCorrect={isCorrect}
+        correctAnswer={!isCorrect ? currentQuestion.correctAnswer : null}
+        feedbackMessage={feedbackMessage}
       >
         <div className="flex flex-col items-center justify-center w-full max-w-4xl">
           {/* Hint / Context */}
@@ -306,18 +317,6 @@ export default function CorrectSpellingGamePage() {
           </div>
         </div>
       </PracticeGameLayout>
-
-      {showFeedback && (
-        <FeedbackBanner
-          isCorrect={isCorrect}
-          correctAnswer={!isCorrect ? currentQuestion.correctAnswer : null}
-          onContinue={handleContinue}
-          message={feedbackMessage}
-          continueLabel={
-            currentIndex + 1 === questions.length ? "FINISH" : "CONTINUE"
-          }
-        />
-      )}
     </>
   );
 }

@@ -5,7 +5,6 @@ import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { fetchPracticeQuestions } from "@/services/vocabularyApi";
 import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
-import FeedbackBanner from "@/components/ui/FeedbackBanner";
 import { getFeedbackMessage } from "@/utils/feedbackMessages";
 import { cn } from "@/lib/utils";
 
@@ -176,11 +175,21 @@ export default function ChooseOptionGamePage() {
         score={score}
         totalQuestions={questions.length}
         onExit={() => navigate("/vocabulary/practice")}
-        onNext={handleSubmit}
+        onNext={showFeedback ? handleContinue : handleSubmit}
         onRestart={() => window.location.reload()}
-        isSubmitEnabled={!!selectedOption && !showFeedback}
-        submitLabel="Submit"
+        isSubmitEnabled={(!!selectedOption && !showFeedback) || showFeedback} // Enabled if option selected OR if showing feedback (for continue)
+        submitLabel={
+          showFeedback
+            ? currentIndex + 1 === questions.length
+              ? "FINISH"
+              : "CONTINUE"
+            : "CHECK"
+        }
         timerValue={timerString}
+        showFeedback={showFeedback}
+        isCorrect={isCorrect}
+        correctAnswer={!isCorrect ? currentQuestion.correctAnswer : null}
+        feedbackMessage={feedbackMessage}
       >
         <div className="flex flex-col md:flex-row items-center md:items-start justify-center w-full max-w-6xl gap-8 md:gap-16">
           {/* Left Side: Question / Prompt */}
@@ -310,19 +319,6 @@ export default function ChooseOptionGamePage() {
           </div>
         </div>
       </PracticeGameLayout>
-
-      {/* Feedback Banner */}
-      {showFeedback && (
-        <FeedbackBanner
-          isCorrect={isCorrect}
-          correctAnswer={!isCorrect ? currentQuestion.correctAnswer : null}
-          onContinue={handleContinue}
-          message={feedbackMessage}
-          continueLabel={
-            currentIndex + 1 === questions.length ? "FINISH" : "CONTINUE"
-          }
-        />
-      )}
     </>
   );
 }

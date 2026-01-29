@@ -3,7 +3,6 @@ import { useExerciseTimer } from "@/hooks/useExerciseTimer";
 import { useNavigate } from "react-router-dom";
 import { Check, X, Loader2 } from "lucide-react";
 import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
-import FeedbackBanner from "@/components/ui/FeedbackBanner";
 import { getFeedbackMessage } from "@/utils/feedbackMessages";
 import { cn } from "@/lib/utils";
 
@@ -113,10 +112,28 @@ export default function IsThisFrenchWordPage() {
         score={score}
         totalQuestions={questions.length}
         onExit={() => navigate("/vocabulary/practice")}
+        onNext={showFeedback ? handleContinue : undefined}
         onRestart={() => window.location.reload()}
-        isSubmitEnabled={false}
-        showSubmitButton={false}
+        isSubmitEnabled={showFeedback}
+        showSubmitButton={showFeedback}
+        submitLabel={
+          showFeedback
+            ? currentIndex + 1 === questions.length
+              ? "FINISH"
+              : "CONTINUE"
+            : "CHECK"
+        }
         timerValue={timerString}
+        showFeedback={showFeedback}
+        isCorrect={isCorrect}
+        correctAnswer={
+          !isCorrect
+            ? currentQ.isFrench
+              ? "Yes, it's French!"
+              : "No, it's not French"
+            : null
+        }
+        feedbackMessage={feedbackMessage}
       >
         <div className="flex flex-col items-center justify-center w-full max-w-2xl gap-12">
           {/* Word Display */}
@@ -176,25 +193,6 @@ export default function IsThisFrenchWordPage() {
           </div>
         </div>
       </PracticeGameLayout>
-
-      {/* Feedback Banner */}
-      {showFeedback && (
-        <FeedbackBanner
-          isCorrect={isCorrect}
-          correctAnswer={
-            !isCorrect
-              ? currentQ.isFrench
-                ? "Yes, it's French!"
-                : "No, it's not French"
-              : null
-          }
-          onContinue={handleContinue}
-          message={feedbackMessage}
-          continueLabel={
-            currentIndex + 1 === questions.length ? "FINISH" : "CONTINUE"
-          }
-        />
-      )}
     </>
   );
 }

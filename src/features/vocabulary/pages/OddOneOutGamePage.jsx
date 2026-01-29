@@ -4,7 +4,6 @@ import { CheckCircle, XCircle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
-import FeedbackBanner from "@/components/ui/FeedbackBanner";
 import { getFeedbackMessage } from "@/utils/feedbackMessages";
 
 // MOCK DATA for "Odd One Out"
@@ -156,12 +155,26 @@ export default function OddOneOutGamePage() {
         score={score}
         totalQuestions={totalQuestions}
         onExit={() => navigate("/vocabulary/practice")}
-        onNext={handleSubmit}
+        onNext={showFeedback ? handleSubmit : handleSubmit} // handleSubmit handles both submit and continue logic
         onRestart={() => window.location.reload()}
-        isSubmitEnabled={!!selectedWord}
+        isSubmitEnabled={!!selectedWord || showFeedback}
         showSubmitButton={true}
-        submitLabel={submitLabel}
+        submitLabel={
+          showFeedback
+            ? currentIndex + 1 === totalQuestions
+              ? "FINISH"
+              : "CONTINUE"
+            : "CHECK"
+        }
         timerValue={timerString}
+        showFeedback={showFeedback}
+        isCorrect={isCorrect}
+        correctAnswer={
+          !isCorrect
+            ? `${currentQuestion.correctAnswer} - ${currentQuestion.reason}`
+            : null
+        }
+        feedbackMessage={feedbackMessage}
       >
         <div className="flex-1 flex flex-col items-center justify-center -mt-10">
           {/* Grid */}
@@ -191,23 +204,6 @@ export default function OddOneOutGamePage() {
           </div>
         </div>
       </PracticeGameLayout>
-
-      {/* Feedback Banner */}
-      {showFeedback && (
-        <FeedbackBanner
-          isCorrect={isCorrect}
-          correctAnswer={
-            !isCorrect
-              ? `${currentQuestion.correctAnswer} - ${currentQuestion.reason}`
-              : null
-          }
-          onContinue={handleSubmit}
-          message={feedbackMessage}
-          continueLabel={
-            currentIndex + 1 === totalQuestions ? "FINISH" : "CONTINUE"
-          }
-        />
-      )}
     </>
   );
 }
