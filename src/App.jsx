@@ -61,6 +61,7 @@ import DictationPage from "@/features/vocabulary/pages/listening/DictationPage";
 // Full Screen Layout
 import FullScreenLayout from "@/components/layout/FullScreenLayout";
 import RepeatSentencePage from "@/features/practice/pages/RepeatSentencePage";
+import RepeatWordPage from "@/features/practice/pages/RepeatWordPage";
 import WhatDoYouSeePage from "@/features/practice/pages/WhatDoYouSeePage";
 import DictationImagePage from "@/features/practice/pages/DictationImagePage";
 
@@ -693,6 +694,16 @@ function App() {
             <ProtectedRoute>
               <FullScreenLayout>
                 <RepeatSentencePage />
+              </FullScreenLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/vocabulary/practice/repeat-word"
+          element={
+            <ProtectedRoute>
+              <FullScreenLayout>
+                <RepeatWordPage />
               </FullScreenLayout>
             </ProtectedRoute>
           }
