@@ -185,14 +185,24 @@ const practiceActivities = [
 
   // Speaking Activities
   {
-    id: "repeat-sentence",
-    name: "Repeat Sentence",
+    id: "repeat-word",
+    name: "Repeat Word",
     icon: Volume2,
     desc: "Speak the missing word",
-    path: "repeat-sentence",
+    path: "repeat-word",
     category: "speaking",
     color: "from-cyan-400 to-blue-500",
     shadow: "shadow-cyan-200 dark:shadow-cyan-900/20",
+  },
+  {
+    id: "repeat-sentence",
+    name: "Repeat Sentence",
+    icon: Volume2,
+    desc: "Speak the complete sentence",
+    path: "repeat-sentence",
+    category: "speaking",
+    color: "from-purple-400 to-indigo-500",
+    shadow: "shadow-purple-200 dark:shadow-purple-900/20",
   },
   {
     id: "what-do-you-see",
