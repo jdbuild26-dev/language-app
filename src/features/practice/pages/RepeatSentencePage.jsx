@@ -70,6 +70,8 @@ export default function RepeatSentencePage() {
 
   // Fetch Data
   useEffect(() => {
+    let ignore = false;
+
     const fetchData = async () => {
       try {
         const response = await fetch(
@@ -78,17 +80,25 @@ export default function RepeatSentencePage() {
         if (!response.ok) throw new Error("Failed to fetch data");
         const data = await response.json();
 
-        // Shuffle or just use as is
-        const shuffled = data.sort(() => 0.5 - Math.random());
-        setQuestions(shuffled);
+        if (!ignore) {
+          // Shuffle once
+          const shuffled = data.sort(() => 0.5 - Math.random());
+          setQuestions(shuffled);
+        }
       } catch (error) {
         console.error("Error fetching repeat sentence data:", error);
       } finally {
-        setIsLoading(false);
+        if (!ignore) {
+          setIsLoading(false);
+        }
       }
     };
 
     fetchData();
+
+    return () => {
+      ignore = true;
+    };
   }, []);
 
   // Timer (Stopwatch mode)
@@ -116,6 +126,12 @@ export default function RepeatSentencePage() {
   };
 
   const handleSubmit = () => {
+    // If feedback is already shown, acting as "Continue" button
+    if (feedback) {
+      handleNext();
+      return;
+    }
+
     if (!currentQuestion) return;
 
     // Check logic: Correct answer should be IN the spoken text OR match exactly
@@ -144,10 +160,7 @@ export default function RepeatSentencePage() {
       setFeedback("incorrect");
     }
 
-    // Auto-advance after small delay
-    setTimeout(() => {
-      handleNext();
-    }, 1500);
+    // Auto-advance removed as per request
   };
 
   const handleNext = () => {
@@ -209,14 +222,17 @@ export default function RepeatSentencePage() {
       onExit={() => navigate("/vocabulary/practice")}
       onNext={handleSubmit}
       onRestart={handleRestart}
-      isSubmitEnabled={Boolean(spokenText) && !feedback}
-      submitLabel={
+      // Enable submit if spoken text exists (for initial submit) OR if feedback is already shown (for continue)
+      isSubmitEnabled={(Boolean(spokenText) && !feedback) || !!feedback}
+      submitLabel={feedback ? "Continue" : "Submit"}
+      showFeedback={!!feedback}
+      isCorrect={feedback === "correct"}
+      feedbackMessage={
         feedback === "correct"
-          ? "Correct!"
-          : feedback === "incorrect"
-            ? "Incorrect"
-            : "Submit"
+          ? "Excellent! You got it right."
+          : "Keep trying! Here is the correct answer."
       }
+      correctAnswer={currentQuestion.correctAnswer}
     >
       <div className="flex flex-col items-center justify-center max-w-3xl w-full gap-12">
         {/* Sentence Display with Inline Input Boxes */}
@@ -349,6 +365,13 @@ export default function RepeatSentencePage() {
               "{spokenText}"
             </p>
           )}
+        </div>
+
+        {/* DEBUG: Show Answer for Testing */}
+        <div className="mt-4 p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-200 dark:border-yellow-800">
+          <p className="text-sm text-yellow-800 dark:text-yellow-200 font-mono">
+            Hint (Testing): {currentQuestion?.correctAnswer}
+          </p>
         </div>
       </div>
     </PracticeGameLayout>
