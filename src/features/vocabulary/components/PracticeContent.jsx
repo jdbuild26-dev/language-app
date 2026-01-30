@@ -197,11 +197,11 @@ const practiceActivities = [
   {
     id: "repeat-sentence",
     name: "Repeat Sentence",
-    icon: Volume2,
-    desc: "Speak the complete sentence",
+    icon: Mic,
+    desc: "Repeat the full sentence",
     path: "repeat-sentence",
     category: "speaking",
-    color: "from-purple-400 to-indigo-500",
+    color: "from-purple-400 to-violet-500",
     shadow: "shadow-purple-200 dark:shadow-purple-900/20",
   },
   {
