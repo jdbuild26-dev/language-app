@@ -4,7 +4,6 @@ import { CheckCircle, AlertCircle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
-import FeedbackBanner from "@/components/ui/FeedbackBanner";
 import { cn } from "@/lib/utils";
 
 // MOCK DATA for "Pick 4" (Group Words)
@@ -164,12 +163,22 @@ export default function GroupWordsGamePage() {
         score={score}
         totalQuestions={totalQuestions}
         onExit={() => navigate("/vocabulary/practice")}
-        onNext={handleSubmit}
+        onNext={showFeedback ? handleSubmit : handleSubmit}
         onRestart={() => window.location.reload()}
-        isSubmitEnabled={selectedWords.length === targetCount}
+        isSubmitEnabled={selectedWords.length === targetCount || showFeedback}
         showSubmitButton={true}
-        submitLabel={submitLabel}
+        submitLabel={
+          showFeedback
+            ? currentIndex + 1 === totalQuestions
+              ? "FINISH"
+              : "CONTINUE"
+            : "CHECK"
+        }
         timerValue={timerString}
+        showFeedback={showFeedback}
+        isCorrect={isCorrect}
+        correctAnswer={!isCorrect ? currentQuestion.reason : null}
+        feedbackMessage={feedbackMessage}
       >
         <div className="flex-1 flex flex-col items-center justify-center -mt-10 w-full max-w-7xl">
           <div className="mb-10 text-center">
@@ -231,19 +240,6 @@ export default function GroupWordsGamePage() {
           </div>
         </div>
       </PracticeGameLayout>
-
-      {/* Feedback Banner */}
-      {showFeedback && (
-        <FeedbackBanner
-          isCorrect={isCorrect}
-          correctAnswer={!isCorrect ? currentQuestion.reason : null}
-          onContinue={handleSubmit}
-          message={feedbackMessage}
-          continueLabel={
-            currentIndex + 1 === totalQuestions ? "FINISH" : "CONTINUE"
-          }
-        />
-      )}
     </>
   );
 }

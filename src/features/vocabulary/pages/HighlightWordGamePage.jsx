@@ -4,7 +4,6 @@ import { Loader2, XCircle } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
-import FeedbackBanner from "@/components/ui/FeedbackBanner";
 import { fetchPracticeQuestions } from "@/services/vocabularyApi";
 import { getFeedbackMessage } from "@/utils/feedbackMessages";
 
@@ -159,18 +158,24 @@ export default function HighlightWordGamePage() {
         score={score}
         totalQuestions={questions.length}
         onExit={() => navigate("/vocabulary/practice")}
-        onNext={handleNext}
+        onNext={showFeedback ? handleNext : handleNext}
         onRestart={() => window.location.reload()}
         isSubmitEnabled={selectedWordIndex !== null}
         showSubmitButton={true}
         submitLabel={
-          isAnswered
-            ? currentIndex < questions.length - 1
+          showFeedback
+            ? currentIndex + 1 === questions.length
+              ? "FINISH"
+              : "CONTINUE"
+            : isAnswered
               ? "Next"
-              : "Finish"
-            : "Submit"
+              : "Submit"
         }
         timerValue={timerString}
+        showFeedback={showFeedback}
+        isCorrect={isCorrect}
+        correctAnswer={!isCorrect ? currentItem.correctWord : null}
+        feedbackMessage={feedbackMessage}
       >
         <div className="flex flex-col items-center justify-center w-full max-w-5xl">
           {/* Specific Prompt Instruction */}
@@ -222,19 +227,6 @@ export default function HighlightWordGamePage() {
           </div>
         </div>
       </PracticeGameLayout>
-
-      {/* Feedback Banner */}
-      {showFeedback && (
-        <FeedbackBanner
-          isCorrect={isCorrect}
-          correctAnswer={!isCorrect ? currentItem.correctWord : null}
-          onContinue={handleNext}
-          message={feedbackMessage}
-          continueLabel={
-            currentIndex + 1 === questions.length ? "FINISH" : "CONTINUE"
-          }
-        />
-      )}
     </>
   );
 }

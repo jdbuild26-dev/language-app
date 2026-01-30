@@ -6,7 +6,6 @@ import { Loader2, CheckCircle2, XCircle } from "lucide-react";
 import AudioPlayer from "../../components/shared/AudioPlayer";
 import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
 import { cn } from "@/lib/utils";
-import FeedbackBanner from "@/components/ui/FeedbackBanner";
 import { getFeedbackMessage } from "@/utils/feedbackMessages";
 
 export default function PhoneticsPage() {
@@ -127,12 +126,26 @@ export default function PhoneticsPage() {
         score={score}
         totalQuestions={questions.length}
         onExit={() => (window.location.href = "/vocabulary/practice")}
-        onNext={handleSubmit}
+        onNext={showFeedback ? handleContinue : handleSubmit}
         onRestart={() => window.location.reload()}
-        isSubmitEnabled={selectedOptionIndex !== null && !showFeedback}
-        showSubmitButton={!showFeedback}
-        submitLabel="Submit"
+        isSubmitEnabled={
+          (selectedOptionIndex !== null && !showFeedback) || showFeedback
+        }
+        showSubmitButton={true}
+        submitLabel={
+          showFeedback
+            ? currentIndex + 1 === questions.length
+              ? "FINISH"
+              : "CONTINUE"
+            : "CHECK"
+        }
         timerValue={timerString}
+        showFeedback={showFeedback}
+        isCorrect={isCorrect}
+        correctAnswer={
+          !isCorrect ? currentQ.options[currentQ.correctIndex]?.text : null
+        }
+        feedbackMessage={feedbackMessage}
       >
         <div className="flex flex-col md:flex-row items-center justify-center w-full max-w-5xl gap-8 md:gap-16 px-4">
           {/* Left Side: Large Audio Button */}
@@ -193,21 +206,6 @@ export default function PhoneticsPage() {
           </div>
         </div>
       </PracticeGameLayout>
-
-      {/* Feedback Banner */}
-      {showFeedback && (
-        <FeedbackBanner
-          isCorrect={isCorrect}
-          correctAnswer={
-            !isCorrect ? currentQ.options[currentQ.correctIndex]?.text : null
-          }
-          onContinue={handleContinue}
-          message={feedbackMessage}
-          continueLabel={
-            currentIndex + 1 === questions.length ? "FINISH" : "CONTINUE"
-          }
-        />
-      )}
     </>
   );
 }

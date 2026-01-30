@@ -6,7 +6,6 @@ import { Loader2, CheckCircle2 } from "lucide-react";
 import AudioPlayer from "../../components/shared/AudioPlayer";
 import { motion, AnimatePresence } from "framer-motion";
 import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
-import FeedbackBanner from "@/components/ui/FeedbackBanner";
 import { getFeedbackMessage } from "@/utils/feedbackMessages";
 
 export default function AudioMatchingPage() {
@@ -144,11 +143,26 @@ export default function AudioMatchingPage() {
         isGameOver={isCompleted}
         score={score}
         totalQuestions={questions.length}
-        onExit={() => (window.location.href = "/vocabulary/practice")}
+        onNext={showFeedback ? handleContinue : undefined}
         onRestart={() => window.location.reload()}
-        isSubmitEnabled={false}
-        showSubmitButton={false}
+        isSubmitEnabled={showFeedback}
+        showSubmitButton={showFeedback}
+        submitLabel={
+          showFeedback
+            ? currentIndex + 1 === questions.length
+              ? "FINISH"
+              : "CONTINUE"
+            : "CHECK"
+        }
         timerValue={timerString}
+        showFeedback={showFeedback}
+        isCorrect={isCorrect}
+        correctAnswer={
+          !isCorrect
+            ? currentQ.options.find((opt) => opt.isCorrect)?.text
+            : null
+        }
+        feedbackMessage={feedbackMessage}
       >
         <div className="flex flex-col items-center w-full max-w-2xl pb-32">
           {/* Audio Button */}
@@ -198,22 +212,7 @@ export default function AudioMatchingPage() {
             </AnimatePresence>
           </div>
         </div>
-      </PracticeGameLayout>
-
-      {/* Feedback Banner */}
-      {showFeedback && (
-        <FeedbackBanner
-          isCorrect={isCorrect}
-          correctAnswer={
-            !isCorrect
-              ? currentQ.options.find((opt) => opt.isCorrect)?.text
-              : null
-          }
-          onContinue={handleContinue}
-          message={feedbackMessage}
-          continueLabel={
-            currentIndex + 1 === questions.length ? "FINISH" : "CONTINUE"
-          }
+      </PracticeGameLayout>          hideButton={true}
         />
       )}
     </>

@@ -7,12 +7,13 @@ import {
   removeFromReview,
   checkIsBookmarked,
 } from "../../../../services/reviewCardsApi";
+import { trackEvent } from "../../../../services/eventTrackerApi";
 
 // Placeholder image for words without images
 const PLACEHOLDER_IMAGE =
   "https://images.unsplash.com/photo-1546410531-bb4caa6b424d?auto=format&fit=crop&q=80&w=500";
 
-export default function LearningCard({ word }) {
+export default function LearningCard({ word, sessionId }) {
   const { user } = useUser();
   const { getToken } = useAuth();
   const [isBookmarked, setIsBookmarked] = useState(false);
@@ -57,6 +58,17 @@ export default function LearningCard({ word }) {
         await addToReview(token, word);
         setIsBookmarked(true);
       }
+
+      // Track bookmark event
+      trackEvent({
+        sessionId,
+        itemId: word.id,
+        interactionType: "bookmark",
+        metadata: {
+          action: !isBookmarked ? "add" : "remove",
+          word: word.english,
+        },
+      });
     } catch (error) {
       console.error("Failed to toggle bookmark:", error);
     } finally {
@@ -71,6 +83,14 @@ export default function LearningCard({ word }) {
     }
     setSpeakingId(id);
     speak(text, "fr-FR");
+
+    // Track speak event
+    trackEvent({
+      sessionId,
+      itemId: word.id,
+      interactionType: "speak",
+      metadata: { text, context: id },
+    });
   };
 
   return (
