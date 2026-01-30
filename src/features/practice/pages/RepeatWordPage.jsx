@@ -16,7 +16,7 @@ const normalizeText = (text) => {
     .trim();
 };
 
-export default function RepeatSentencePage() {
+export default function RepeatWordPage() {
   const navigate = useNavigate();
 
   // Game State
@@ -30,6 +30,7 @@ export default function RepeatSentencePage() {
   const [isListening, setIsListening] = useState(false);
   const [spokenText, setSpokenText] = useState("");
   const [feedback, setFeedback] = useState(null); // 'correct', 'incorrect'
+  const [displaySentence, setDisplaySentence] = useState("");
 
   const recognitionRef = useRef(null);
 
@@ -67,6 +68,7 @@ export default function RepeatSentencePage() {
     };
   }, []);
 
+  // Fetch Data
   // Fetch Data
   const hasFetched = useRef(false);
   useEffect(() => {
@@ -121,35 +123,28 @@ export default function RepeatSentencePage() {
   const handleSubmit = () => {
     if (!currentQuestion) return;
 
-    // Check logic: User must speak the COMPLETE sentence
+    // Check logic: Correct answer should be IN the spoken text OR match exactly
+    // OR if the user speaks the full sentence, we check for that too?
+    // Let's check if the *correctAnswer* is present in the spoken text.
+    // This allows natural speaking ("Le chien et le chat...") or just the word ("chat").
+
     const normalizedSpoken = normalizeText(spokenText);
+    const normalizedAnswer = normalizeText(currentQuestion.correctAnswer);
+
+    // Also support checking against the full sentence just in case
     const normalizedFullSentence = normalizeText(
-      currentQuestion.completeSentence ||
-        currentQuestion.sentenceWithBlank.replace(
-          /_+/g,
-          currentQuestion.correctAnswer,
-        ), // Fallback if completeSentence missing
+      currentQuestion.completeSentence,
     );
 
-    // Allow some fuzziness (e.g. 80% match or just verify key parts)
-    // For now, simple includes using a threshold or direct comparison
-    // We'll require at least 50% length match and inclusion, or 80% similarity.
-    // Let's stick to standard inclusion of the core sentence for now.
-
     const isCorrect =
-      normalizedSpoken.includes(normalizedFullSentence) ||
-      normalizedSpoken === normalizedFullSentence ||
-      (normalizedFullSentence.length > 5 &&
-        normalizedSpoken.includes(
-          normalizedFullSentence.substring(
-            0,
-            Math.floor(normalizedFullSentence.length * 0.8),
-          ),
-        ));
+      normalizedSpoken.includes(normalizedAnswer) ||
+      (normalizedFullSentence &&
+        normalizedSpoken.includes(normalizedFullSentence.substring(0, 10))); // fuzzy check if too long? No, stick to answer containment.
 
     if (isCorrect) {
       setScore((prev) => prev + 1);
       setFeedback("correct");
+      // Play success sound?
     } else {
       setFeedback("incorrect");
     }
@@ -200,20 +195,12 @@ export default function RepeatSentencePage() {
     );
   }
 
-  // Construct full sentence for display
-  const fullSentence =
-    currentQuestion.completeSentence ||
-    currentQuestion.sentenceWithBlank.replace(
-      /_+/g,
-      currentQuestion.correctAnswer,
-    );
-
   return (
     <PracticeGameLayout
-      title="Repeat Sentence"
-      questionType="Listen and repeat the full sentence"
-      instructionFr="Répétez la phrase complète"
-      instructionEn="Repeat the full sentence"
+      title="Repeat Word"
+      questionType="Fill in the blank by speaking the missing word"
+      instructionFr={currentQuestion.instructionFr}
+      instructionEn={currentQuestion.instructionEn}
       progress={((currentIndex + 1) / questions.length) * 100}
       score={score}
       totalQuestions={questions.length}
@@ -223,7 +210,10 @@ export default function RepeatSentencePage() {
       onNext={feedback ? handleNext : handleSubmit}
       onRestart={handleRestart}
       isSubmitEnabled={Boolean(spokenText)}
-      showSubmitButton={true}
+      showFeedback={!!feedback}
+      isCorrect={feedback === "correct"}
+      feedbackMessage={feedback === "correct" ? "Excellent!" : "Try again"}
+      correctAnswer={currentQuestion?.correctAnswer}
       submitLabel={
         feedback === "correct"
           ? "Continue"
@@ -231,15 +221,9 @@ export default function RepeatSentencePage() {
             ? "Continue"
             : "Submit"
       }
-      showFeedback={!!feedback}
-      isCorrect={feedback === "correct"}
-      feedbackMessage={feedback === "correct" ? "Excellent!" : "Try again"}
-      correctAnswer={
-        currentQuestion?.completeSentence || currentQuestion?.sentenceWithBlank
-      }
     >
       <div className="flex flex-col items-center justify-center max-w-3xl w-full gap-12">
-        {/* Full Sentence Display */}
+        {/* Sentence Display with Inline Input Boxes */}
         <div className="w-full bg-white dark:bg-slate-800 rounded-2xl p-8 shadow-sm border border-slate-100 dark:border-slate-700 text-center relative overflow-hidden">
           {feedback === "correct" && (
             <div className="absolute inset-0 bg-green-500/10 z-0" />
@@ -248,26 +232,101 @@ export default function RepeatSentencePage() {
             <div className="absolute inset-0 bg-red-500/10 z-0" />
           )}
 
-          <div className="text-2xl md:text-3xl text-slate-800 dark:text-slate-100 leading-relaxed font-semibold relative z-10">
-            {fullSentence}
-          </div>
+          <div className="text-lg md:text-xl text-slate-800 dark:text-slate-100 leading-relaxed font-medium relative z-10">
+            {(() => {
+              const sentence = currentQuestion.sentenceWithBlank || "";
+              const correctAnswer = currentQuestion.correctAnswer || "";
+              const words = sentence.split(" ");
 
-          {/* Audio Player Icon (Simulated for now, can add actual TTS here) */}
-          <div className="mt-4 flex justify-center">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="rounded-full w-12 h-12 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600"
-            >
-              <Volume2 className="w-6 h-6 text-slate-700 dark:text-slate-200" />
-            </Button>
+              return words.map((word, idx) => {
+                const isLast = idx === words.length - 1;
+                const spacer = !isLast ? " " : "";
+
+                // Check if this word contains the blank (underscores)
+                if (word.includes("_____") || word.includes("______")) {
+                  // Split by _ to get surrounding punctuation/text
+                  const parts = word.split(/_{3,}/);
+                  const beforeBlank = parts[0] || "";
+                  const afterBlank = parts[1] || "";
+
+                  // Create character boxes for the correct answer
+                  const answerChars = correctAnswer.toUpperCase().split("");
+
+                  // Determine what to show in boxes based on spoken text
+                  const spokenChars = spokenText.toUpperCase().split("");
+
+                  return (
+                    <React.Fragment key={idx}>
+                      {beforeBlank}
+                      <span className="inline-flex gap-1 mx-1 align-baseline">
+                        {answerChars.map((char, charIdx) => {
+                          // First and last are hints
+                          const isHint =
+                            charIdx === 0 || charIdx === answerChars.length - 1;
+
+                          // Determine the displayed value
+                          let displayValue = "";
+                          if (isHint) {
+                            displayValue = char; // Show hint
+                          } else if (feedback) {
+                            // After submission, show correct answer
+                            displayValue = char;
+                          }
+
+                          // Styling based on feedback state
+                          let borderColorClass =
+                            "border-gray-300 dark:border-gray-600";
+                          if (isHint) {
+                            borderColorClass =
+                              "border-blue-400 bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-600";
+                          }
+                          if (feedback === "correct") {
+                            borderColorClass =
+                              "border-green-500 bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-400";
+                          } else if (feedback === "incorrect") {
+                            borderColorClass =
+                              "border-red-500 bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-400";
+                          }
+
+                          return (
+                            <span
+                              key={charIdx}
+                              className={`
+                                inline-flex items-center justify-center
+                                w-7 h-9 md:w-8 md:h-10 
+                                border-2 rounded-md 
+                                text-center text-base md:text-lg font-semibold uppercase 
+                                transition-all duration-200
+                                ${borderColorClass}
+                                ${isHint ? "cursor-default" : ""}
+                              `}
+                            >
+                              {displayValue}
+                            </span>
+                          );
+                        })}
+                      </span>
+                      {afterBlank}
+                      {spacer}
+                    </React.Fragment>
+                  );
+                }
+
+                return (
+                  <span key={idx}>
+                    {word}
+                    {spacer}
+                  </span>
+                );
+              });
+            })()}
           </div>
         </div>
 
         {/* DEBUG: Show Answer for Testing */}
         <div className="w-full bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-200 dark:border-yellow-800 p-4 text-center">
           <p className="text-sm text-yellow-800 dark:text-yellow-200 font-mono">
-            Hint (Testing): {fullSentence}
+            Hint (Testing): {currentQuestion?.correctAnswer}
           </p>
         </div>
 
