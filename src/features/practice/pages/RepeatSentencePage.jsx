@@ -70,12 +70,8 @@ export default function RepeatSentencePage() {
   // Fetch Data
   const hasFetched = useRef(false);
   useEffect(() => {
-<<<<<<< HEAD
-    let ignore = false;
-=======
     if (hasFetched.current) return;
     hasFetched.current = true;
->>>>>>> main
 
     const fetchData = async () => {
       try {
@@ -85,25 +81,17 @@ export default function RepeatSentencePage() {
         if (!response.ok) throw new Error("Failed to fetch data");
         const data = await response.json();
 
-        if (!ignore) {
-          // Shuffle once
-          const shuffled = data.sort(() => 0.5 - Math.random());
-          setQuestions(shuffled);
-        }
+        // Shuffle or just use as is
+        const shuffled = data.sort(() => 0.5 - Math.random());
+        setQuestions(shuffled);
       } catch (error) {
         console.error("Error fetching repeat sentence data:", error);
       } finally {
-        if (!ignore) {
-          setIsLoading(false);
-        }
+        setIsLoading(false);
       }
     };
 
     fetchData();
-
-    return () => {
-      ignore = true;
-    };
   }, []);
 
   // Timer (Stopwatch mode)
@@ -131,25 +119,8 @@ export default function RepeatSentencePage() {
   };
 
   const handleSubmit = () => {
-    // If feedback is already shown, acting as "Continue" button
-    if (feedback) {
-      handleNext();
-      return;
-    }
-
     if (!currentQuestion) return;
 
-<<<<<<< HEAD
-    const normalizedSpoken = normalizeText(spokenText);
-    const normalizedFullSentence = normalizeText(
-      currentQuestion.completeSentence || "",
-    );
-
-    // Simple containment check: Does spoken text contain the full sentence?
-    // Or does it match closely?
-    // For now, checking if the spoken text includes the core sentence.
-    const isCorrect = normalizedSpoken.includes(normalizedFullSentence);
-=======
     // Check logic: User must speak the COMPLETE sentence
     const normalizedSpoken = normalizeText(spokenText);
     const normalizedFullSentence = normalizeText(
@@ -175,7 +146,6 @@ export default function RepeatSentencePage() {
             Math.floor(normalizedFullSentence.length * 0.8),
           ),
         ));
->>>>>>> main
 
     if (isCorrect) {
       setScore((prev) => prev + 1);
@@ -240,17 +210,10 @@ export default function RepeatSentencePage() {
 
   return (
     <PracticeGameLayout
-<<<<<<< HEAD
-      title="Repeat Full Sentence"
-      questionType="Speak the complete sentence"
-      instructionFr={currentQuestion.instructionFr}
-      instructionEn={currentQuestion.instructionEn}
-=======
       title="Repeat Sentence"
       questionType="Listen and repeat the full sentence"
       instructionFr="Répétez la phrase complète"
       instructionEn="Repeat the full sentence"
->>>>>>> main
       progress={((currentIndex + 1) / questions.length) * 100}
       score={score}
       totalQuestions={questions.length}
@@ -259,19 +222,6 @@ export default function RepeatSentencePage() {
       onExit={() => navigate("/vocabulary/practice")}
       onNext={feedback ? handleNext : handleSubmit}
       onRestart={handleRestart}
-<<<<<<< HEAD
-      // Enable submit if spoken text exists (for initial submit) OR if feedback is already shown (for continue)
-      isSubmitEnabled={(Boolean(spokenText) && !feedback) || !!feedback}
-      submitLabel={feedback ? "Continue" : "Submit"}
-      showFeedback={!!feedback}
-      isCorrect={feedback === "correct"}
-      feedbackMessage={
-        feedback === "correct"
-          ? "Excellent! Perfect pronunciation."
-          : "Keep trying! Speak the full sentence clearly."
-      }
-      correctAnswer={currentQuestion.completeSentence}
-=======
       isSubmitEnabled={Boolean(spokenText)}
       showSubmitButton={true}
       submitLabel={
@@ -287,7 +237,6 @@ export default function RepeatSentencePage() {
       correctAnswer={
         currentQuestion?.completeSentence || currentQuestion?.sentenceWithBlank
       }
->>>>>>> main
     >
       <div className="flex flex-col items-center justify-center max-w-3xl w-full gap-12">
         {/* Full Sentence Display */}
@@ -299,15 +248,8 @@ export default function RepeatSentencePage() {
             <div className="absolute inset-0 bg-red-500/10 z-0" />
           )}
 
-<<<<<<< HEAD
-          <div className="relative z-10">
-            <h2 className="text-2xl md:text-3xl font-medium text-slate-900 dark:text-white leading-relaxed">
-              {currentQuestion.completeSentence}
-            </h2>
-=======
           <div className="text-2xl md:text-3xl text-slate-800 dark:text-slate-100 leading-relaxed font-semibold relative z-10">
             {fullSentence}
->>>>>>> main
           </div>
 
           {/* Audio Player Icon (Simulated for now, can add actual TTS here) */}
@@ -359,13 +301,6 @@ export default function RepeatSentencePage() {
               "{spokenText}"
             </p>
           )}
-        </div>
-
-        {/* DEBUG: Show Answer for Testing */}
-        <div className="mt-4 p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-200 dark:border-yellow-800">
-          <p className="text-sm text-yellow-800 dark:text-yellow-200 font-mono">
-            Hint (Testing): {currentQuestion?.completeSentence}
-          </p>
         </div>
       </div>
     </PracticeGameLayout>

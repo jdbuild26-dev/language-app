@@ -69,16 +69,11 @@ export default function RepeatWordPage() {
   }, []);
 
   // Fetch Data
-<<<<<<< HEAD
-  useEffect(() => {
-    let ignore = false;
-=======
   // Fetch Data
   const hasFetched = useRef(false);
   useEffect(() => {
     if (hasFetched.current) return;
     hasFetched.current = true;
->>>>>>> main
 
     const fetchData = async () => {
       try {
@@ -88,19 +83,6 @@ export default function RepeatWordPage() {
         if (!response.ok) throw new Error("Failed to fetch data");
         const data = await response.json();
 
-<<<<<<< HEAD
-        if (!ignore) {
-          // Shuffle once
-          const shuffled = data.sort(() => 0.5 - Math.random());
-          setQuestions(shuffled);
-        }
-      } catch (error) {
-        console.error("Error fetching repeat sentence data:", error);
-      } finally {
-        if (!ignore) {
-          setIsLoading(false);
-        }
-=======
         // Shuffle or just use as is
         const shuffled = data.sort(() => 0.5 - Math.random());
         setQuestions(shuffled);
@@ -108,18 +90,10 @@ export default function RepeatWordPage() {
         console.error("Error fetching repeat sentence data:", error);
       } finally {
         setIsLoading(false);
->>>>>>> main
       }
     };
 
     fetchData();
-<<<<<<< HEAD
-
-    return () => {
-      ignore = true;
-    };
-=======
->>>>>>> main
   }, []);
 
   // Timer (Stopwatch mode)
@@ -147,15 +121,6 @@ export default function RepeatWordPage() {
   };
 
   const handleSubmit = () => {
-<<<<<<< HEAD
-    // If feedback is already shown, acting as "Continue" button
-    if (feedback) {
-      handleNext();
-      return;
-    }
-
-=======
->>>>>>> main
     if (!currentQuestion) return;
 
     // Check logic: Correct answer should be IN the spoken text OR match exactly
@@ -183,11 +148,6 @@ export default function RepeatWordPage() {
     } else {
       setFeedback("incorrect");
     }
-<<<<<<< HEAD
-
-    // Auto-advance removed as per request
-=======
->>>>>>> main
   };
 
   const handleNext = () => {
@@ -237,13 +197,8 @@ export default function RepeatWordPage() {
 
   return (
     <PracticeGameLayout
-<<<<<<< HEAD
-      title="Repeat Sentence"
-      questionType="Repeat the sentence with correct word"
-=======
       title="Repeat Word"
       questionType="Fill in the blank by speaking the missing word"
->>>>>>> main
       instructionFr={currentQuestion.instructionFr}
       instructionEn={currentQuestion.instructionEn}
       progress={((currentIndex + 1) / questions.length) * 100}
@@ -252,21 +207,6 @@ export default function RepeatWordPage() {
       isGameOver={isGameOver}
       timerValue={timerString}
       onExit={() => navigate("/vocabulary/practice")}
-<<<<<<< HEAD
-      onNext={handleSubmit}
-      onRestart={handleRestart}
-      // Enable submit if spoken text exists (for initial submit) OR if feedback is already shown (for continue)
-      isSubmitEnabled={(Boolean(spokenText) && !feedback) || !!feedback}
-      submitLabel={feedback ? "Continue" : "Submit"}
-      showFeedback={!!feedback}
-      isCorrect={feedback === "correct"}
-      feedbackMessage={
-        feedback === "correct"
-          ? "Excellent! You got it right."
-          : "Keep trying! Here is the correct answer."
-      }
-      correctAnswer={currentQuestion.correctAnswer}
-=======
       onNext={feedback ? handleNext : handleSubmit}
       onRestart={handleRestart}
       isSubmitEnabled={Boolean(spokenText)}
@@ -281,7 +221,6 @@ export default function RepeatWordPage() {
             ? "Continue"
             : "Submit"
       }
->>>>>>> main
     >
       <div className="flex flex-col items-center justify-center max-w-3xl w-full gap-12">
         {/* Sentence Display with Inline Input Boxes */}
@@ -384,8 +323,6 @@ export default function RepeatWordPage() {
           </div>
         </div>
 
-<<<<<<< HEAD
-=======
         {/* DEBUG: Show Answer for Testing */}
         <div className="w-full bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-200 dark:border-yellow-800 p-4 text-center">
           <p className="text-sm text-yellow-800 dark:text-yellow-200 font-mono">
@@ -393,7 +330,6 @@ export default function RepeatWordPage() {
           </p>
         </div>
 
->>>>>>> main
         {/* Mic Button & Interaction */}
         <div className="relative">
           <button
@@ -425,16 +361,6 @@ export default function RepeatWordPage() {
             </p>
           )}
         </div>
-<<<<<<< HEAD
-
-        {/* DEBUG: Show Answer for Testing */}
-        <div className="mt-4 p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-200 dark:border-yellow-800">
-          <p className="text-sm text-yellow-800 dark:text-yellow-200 font-mono">
-            Hint (Testing): {currentQuestion?.correctAnswer}
-          </p>
-        </div>
-=======
->>>>>>> main
       </div>
     </PracticeGameLayout>
   );
