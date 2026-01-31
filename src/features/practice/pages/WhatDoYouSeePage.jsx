@@ -7,15 +7,7 @@ import { cn } from "@/lib/utils";
 import FeedbackBanner from "@/components/ui/FeedbackBanner";
 import { getFeedbackMessage } from "@/utils/feedbackMessages";
 
-// Helper to normalize text for comparison
-const normalizeText = (text) => {
-  return text
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^\w\s]/g, "")
-    .trim();
-};
+import { fuzzyIncludes, matchSpeechToAnswer } from "@/utils/textComparison";
 
 export default function WhatDoYouSeePage() {
   const navigate = useNavigate();
@@ -125,10 +117,10 @@ export default function WhatDoYouSeePage() {
   const handleSubmit = () => {
     if (!currentQuestion || showFeedback) return;
 
-    const normalizedSpoken = normalizeText(spokenText);
-    const normalizedAnswer = normalizeText(currentQuestion.correctAnswer);
-
-    const correct = normalizedSpoken.includes(normalizedAnswer);
+    const correct = matchSpeechToAnswer(
+      spokenText,
+      currentQuestion.correctAnswer,
+    );
     setIsCorrect(correct);
     setFeedbackMessage(getFeedbackMessage(correct));
     setShowFeedback(true);
