@@ -7,15 +7,10 @@ import { cn } from "@/lib/utils";
 import FeedbackBanner from "@/components/ui/FeedbackBanner";
 import { getFeedbackMessage } from "@/utils/feedbackMessages";
 
+import { fuzzyIncludes } from "@/utils/textComparison";
+
 // Helper to normalize text for comparison
-const normalizeText = (text) => {
-  return text
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^\w\s]/g, "")
-    .trim();
-};
+// REMOVED local normalizeText in favor of utils
 
 export default function WhatDoYouSeePage() {
   const navigate = useNavigate();
@@ -125,10 +120,7 @@ export default function WhatDoYouSeePage() {
   const handleSubmit = () => {
     if (!currentQuestion || showFeedback) return;
 
-    const normalizedSpoken = normalizeText(spokenText);
-    const normalizedAnswer = normalizeText(currentQuestion.correctAnswer);
-
-    const correct = normalizedSpoken.includes(normalizedAnswer);
+    const correct = fuzzyIncludes(spokenText, currentQuestion.correctAnswer);
     setIsCorrect(correct);
     setFeedbackMessage(getFeedbackMessage(correct));
     setShowFeedback(true);
@@ -220,7 +212,7 @@ export default function WhatDoYouSeePage() {
           {/* Image Section */}
           <div className="w-full max-w-md aspect-square bg-slate-200 dark:bg-slate-800 rounded-2xl overflow-hidden shadow-lg flex items-center justify-center">
             {currentQuestion.imageUrl &&
-            !currentQuestion.imageUrl.includes("placeholder") ? (
+              !currentQuestion.imageUrl.includes("placeholder") ? (
               <img
                 src={currentQuestion.imageUrl}
                 alt="What do you see?"

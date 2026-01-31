@@ -6,15 +6,10 @@ import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
 import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 
+import { fuzzyIncludes } from "@/utils/textComparison";
+
 // Helper to normalize text for comparison
-const normalizeText = (text) => {
-  return text
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^\w\s]/g, "")
-    .trim();
-};
+// REMOVED local normalizeText in favor of utils
 
 export default function RepeatWordPage() {
   const navigate = useNavigate();
@@ -128,18 +123,7 @@ export default function RepeatWordPage() {
     // Let's check if the *correctAnswer* is present in the spoken text.
     // This allows natural speaking ("Le chien et le chat...") or just the word ("chat").
 
-    const normalizedSpoken = normalizeText(spokenText);
-    const normalizedAnswer = normalizeText(currentQuestion.correctAnswer);
-
-    // Also support checking against the full sentence just in case
-    const normalizedFullSentence = normalizeText(
-      currentQuestion.completeSentence,
-    );
-
-    const isCorrect =
-      normalizedSpoken.includes(normalizedAnswer) ||
-      (normalizedFullSentence &&
-        normalizedSpoken.includes(normalizedFullSentence.substring(0, 10))); // fuzzy check if too long? No, stick to answer containment.
+    const isCorrect = fuzzyIncludes(spokenText, currentQuestion.correctAnswer);
 
     if (isCorrect) {
       setScore((prev) => prev + 1);

@@ -6,15 +6,10 @@ import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
 import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 
+import { fuzzyIncludes } from "@/utils/textComparison";
+
 // Helper to normalize text for comparison
-const normalizeText = (text) => {
-  return text
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^\w\s]/g, "")
-    .trim();
-};
+// REMOVED local normalizeText in favor of utils
 
 export default function RepeatSentencePage() {
   const navigate = useNavigate();
@@ -122,30 +117,15 @@ export default function RepeatSentencePage() {
     if (!currentQuestion) return;
 
     // Check logic: User must speak the COMPLETE sentence
-    const normalizedSpoken = normalizeText(spokenText);
-    const normalizedFullSentence = normalizeText(
+    // Uses fuzzy matching to allow for small mistakes or slight variations
+    const fullSentence =
       currentQuestion.completeSentence ||
-        currentQuestion.sentenceWithBlank.replace(
-          /_+/g,
-          currentQuestion.correctAnswer,
-        ), // Fallback if completeSentence missing
-    );
+      currentQuestion.sentenceWithBlank.replace(
+        /_+/g,
+        currentQuestion.correctAnswer,
+      );
 
-    // Allow some fuzziness (e.g. 80% match or just verify key parts)
-    // For now, simple includes using a threshold or direct comparison
-    // We'll require at least 50% length match and inclusion, or 80% similarity.
-    // Let's stick to standard inclusion of the core sentence for now.
-
-    const isCorrect =
-      normalizedSpoken.includes(normalizedFullSentence) ||
-      normalizedSpoken === normalizedFullSentence ||
-      (normalizedFullSentence.length > 5 &&
-        normalizedSpoken.includes(
-          normalizedFullSentence.substring(
-            0,
-            Math.floor(normalizedFullSentence.length * 0.8),
-          ),
-        ));
+    const isCorrect = fuzzyIncludes(spokenText, fullSentence, 0.70);
 
     if (isCorrect) {
       setScore((prev) => prev + 1);
