@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useLocation } from "react-router-dom";
 import { useUser, useAuth } from "@clerk/clerk-react";
 import { ChevronLeftIcon } from "@heroicons/react/24/outline";
 
@@ -16,6 +16,7 @@ import {
 
 export default function SrsLearnPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user } = useUser();
   const { getToken } = useAuth();
 
