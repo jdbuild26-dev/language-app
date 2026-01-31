@@ -243,6 +243,7 @@ export default function FlashcardsActivityGamePage() {
             words={queue}
             onUpdateStats={handleUpdateStats}
             total={stats.total}
+            user={user}
           />
         )}
       </div>

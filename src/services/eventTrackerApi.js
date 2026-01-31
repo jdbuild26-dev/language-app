@@ -10,6 +10,7 @@ const API_BASE_URL =
  * @param {Object} event.metadata - Additional data
  */
 export async function trackEvent({
+  userId,
   sessionId,
   itemId,
   interactionType,
@@ -17,6 +18,7 @@ export async function trackEvent({
 }) {
   try {
     const payload = {
+      userId,
       sessionId,
       itemId,
       interactionType,

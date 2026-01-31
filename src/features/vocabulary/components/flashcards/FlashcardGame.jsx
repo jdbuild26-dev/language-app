@@ -11,6 +11,7 @@ export default function FlashcardGame({
   onUpdateStats,
   currentIndex,
   total,
+  user,
 }) {
   const [isFlipped, setIsFlipped] = useState(false);
   // Generate a transient session ID for this game instance
@@ -41,6 +42,7 @@ export default function FlashcardGame({
 
     if (currentWord?.id) {
       trackEvent({
+        userId: user?.id,
         sessionId,
         itemId: currentWord.id,
         interactionType: "flip",
@@ -137,6 +139,7 @@ export default function FlashcardGame({
           onClick={() => {
             if (currentWord?.id) {
               trackEvent({
+                userId: user?.id,
                 sessionId,
                 itemId: currentWord.id,
                 interactionType: "unknown",
@@ -156,9 +159,10 @@ export default function FlashcardGame({
           onClick={() => {
             if (currentWord?.id) {
               trackEvent({
+                userId: user?.id,
                 sessionId,
                 itemId: currentWord.id,
-                interactionType: "know",
+                interactionType: "known",
                 metadata: { word: currentWord.english },
               });
             }
@@ -175,6 +179,7 @@ export default function FlashcardGame({
           onClick={() => {
             if (currentWord?.id) {
               trackEvent({
+                userId: user?.id,
                 sessionId,
                 itemId: currentWord.id,
                 interactionType: "mastered",
