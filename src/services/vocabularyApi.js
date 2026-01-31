@@ -319,3 +319,56 @@ export async function fetchPracticeQuestions(sheetName, limit) {
 
   return response.json();
 }
+
+/**
+ * Track user event (SRS)
+ */
+export async function trackEvent(eventData) {
+  console.log("[vocabularyApi] Tracking Event:", eventData);
+  // Use /api/event-tracker endpoint which we updated to handle SRS
+  const response = await fetch(`${API_BASE_URL}/api/event_tracker`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(eventData),
+  });
+
+  if (!response.ok) {
+    throw new Error("Failed to track event");
+  }
+
+  return response.json();
+}
+
+/**
+ * Fetch SRS Learning Queue
+ */
+export async function fetchLearningQueue({
+  userId,
+  dailyLimitReviews,
+  dailyLimitNew,
+  level,
+  category,
+} = {}) {
+  const params = new URLSearchParams();
+  if (userId) params.append("user_id", userId);
+  if (dailyLimitReviews)
+    params.append("daily_limit_reviews", dailyLimitReviews);
+  if (dailyLimitNew) params.append("daily_limit_new", dailyLimitNew);
+  if (level) params.append("level", level);
+  if (category) params.append("category", category);
+
+  console.log(
+    `[vocabularyApi] Fetching queue with params: ${params.toString()}`,
+  );
+  const response = await fetch(
+    `${API_BASE_URL}/api/vocabulary/learn?${params}`,
+  );
+
+  if (!response.ok) {
+    throw new Error("Failed to fetch learning queue");
+  }
+
+  return response.json();
+}

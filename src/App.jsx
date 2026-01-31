@@ -26,6 +26,7 @@ import SignUpPage from "@/features/auth/pages/SignUpPage";
 // Learning features
 import VocabularyPage from "@/features/vocabulary/pages/VocabularyPage";
 import FlashcardsPage from "@/features/vocabulary/pages/FlashcardsPage";
+import SrsLearnPage from "@/features/vocabulary/pages/SrsLearnPage";
 import GrammarPage from "@/features/grammar/pages/GrammarPage";
 import GrammarNotePage from "@/features/grammar/pages/GrammarNotePage";
 import StoriesPage from "@/features/stories/pages/StoriesPage";
@@ -131,6 +132,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <FlashcardsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="vocabulary/learn"
+            element={
+              <ProtectedRoute>
+                <SrsLearnPage />
               </ProtectedRoute>
             }
           />

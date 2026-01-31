@@ -11,7 +11,7 @@ import LearnContent from "../components/LearnContent";
 import ReviewContent from "../components/ReviewContent";
 import PracticeContent from "../components/PracticeContent";
 import LevelBasedPage from "./LevelBasedPage";
-import LessonLearnPage from "./LessonLearnPage";
+import SrsLearnPage from "./SrsLearnPage"; // Replaces LessonLearnPage for SRS defaults
 import CEFRLevelPage from "./CEFRLevelPage";
 import ReviewWordsPage from "./ReviewWordsPage";
 import ReviewSessionPage from "./ReviewSessionPage";
@@ -77,7 +77,7 @@ export default function VocabularyPage() {
         {/* Flashcard learning route - level + category */}
         <Route
           path="lessons/learn/:level/:category"
-          element={<LessonLearnPage />}
+          element={<SrsLearnPage />}
         />
 
         {/* Level-Based route */}
@@ -85,10 +85,7 @@ export default function VocabularyPage() {
 
         {/* Topics routes */}
         <Route path="lessons/learn/topics" element={<TopicsPage />} />
-        <Route
-          path="lessons/learn/topic/:topic"
-          element={<LessonLearnPage />}
-        />
+        <Route path="lessons/learn/topic/:topic" element={<SrsLearnPage />} />
 
         {/* Activity Routes */}
         <Route
