@@ -6,20 +6,7 @@ import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
 import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 
-<<<<<<< Updated upstream
-=======
 import { fuzzyIncludes, matchSpeechToAnswer } from "@/utils/textComparison";
-
->>>>>>> Stashed changes
-// Helper to normalize text for comparison
-const normalizeText = (text) => {
-  return text
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^\w\s]/g, "")
-    .trim();
-};
 
 export default function RepeatSentencePage() {
   const navigate = useNavigate();
@@ -136,25 +123,7 @@ export default function RepeatSentencePage() {
         ), // Fallback if completeSentence missing
     );
 
-<<<<<<< Updated upstream
-    // Allow some fuzziness (e.g. 80% match or just verify key parts)
-    // For now, simple includes using a threshold or direct comparison
-    // We'll require at least 50% length match and inclusion, or 80% similarity.
-    // Let's stick to standard inclusion of the core sentence for now.
-
-    const isCorrect =
-      normalizedSpoken.includes(normalizedFullSentence) ||
-      normalizedSpoken === normalizedFullSentence ||
-      (normalizedFullSentence.length > 5 &&
-        normalizedSpoken.includes(
-          normalizedFullSentence.substring(
-            0,
-            Math.floor(normalizedFullSentence.length * 0.8),
-          ),
-        ));
-=======
     const isCorrect = matchSpeechToAnswer(spokenText, fullSentence, 0.7);
->>>>>>> Stashed changes
 
     if (isCorrect) {
       setScore((prev) => prev + 1);
