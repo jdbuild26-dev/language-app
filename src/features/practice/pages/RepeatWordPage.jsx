@@ -6,6 +6,11 @@ import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
 import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 
+<<<<<<< Updated upstream
+=======
+import { fuzzyIncludes, matchSpeechToAnswer } from "@/utils/textComparison";
+
+>>>>>>> Stashed changes
 // Helper to normalize text for comparison
 const normalizeText = (text) => {
   return text
@@ -128,6 +133,7 @@ export default function RepeatWordPage() {
     // Let's check if the *correctAnswer* is present in the spoken text.
     // This allows natural speaking ("Le chien et le chat...") or just the word ("chat").
 
+<<<<<<< Updated upstream
     const normalizedSpoken = normalizeText(spokenText);
     const normalizedAnswer = normalizeText(currentQuestion.correctAnswer);
 
@@ -140,6 +146,12 @@ export default function RepeatWordPage() {
       normalizedSpoken.includes(normalizedAnswer) ||
       (normalizedFullSentence &&
         normalizedSpoken.includes(normalizedFullSentence.substring(0, 10))); // fuzzy check if too long? No, stick to answer containment.
+=======
+    const isCorrect = matchSpeechToAnswer(
+      spokenText,
+      currentQuestion.correctAnswer,
+    );
+>>>>>>> Stashed changes
 
     if (isCorrect) {
       setScore((prev) => prev + 1);

@@ -6,6 +6,11 @@ import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
 import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 
+<<<<<<< Updated upstream
+=======
+import { fuzzyIncludes, matchSpeechToAnswer } from "@/utils/textComparison";
+
+>>>>>>> Stashed changes
 // Helper to normalize text for comparison
 const normalizeText = (text) => {
   return text
@@ -131,6 +136,7 @@ export default function RepeatSentencePage() {
         ), // Fallback if completeSentence missing
     );
 
+<<<<<<< Updated upstream
     // Allow some fuzziness (e.g. 80% match or just verify key parts)
     // For now, simple includes using a threshold or direct comparison
     // We'll require at least 50% length match and inclusion, or 80% similarity.
@@ -146,6 +152,9 @@ export default function RepeatSentencePage() {
             Math.floor(normalizedFullSentence.length * 0.8),
           ),
         ));
+=======
+    const isCorrect = matchSpeechToAnswer(spokenText, fullSentence, 0.7);
+>>>>>>> Stashed changes
 
     if (isCorrect) {
       setScore((prev) => prev + 1);
