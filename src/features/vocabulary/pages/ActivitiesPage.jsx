@@ -91,7 +91,7 @@ export default function ActivitiesPage() {
             <div
               className={cn(
                 "absolute inset-0 rounded-3xl bg-gradient-to-br opacity-10 transition-all duration-300 group-hover:opacity-20",
-                activity.color
+                activity.color,
               )}
             />
 
@@ -99,14 +99,14 @@ export default function ActivitiesPage() {
               className={cn(
                 "relative h-full overflow-hidden rounded-3xl border border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-950/50 p-6 backdrop-blur-sm transition-all duration-300",
                 "hover:-translate-y-1 hover:shadow-xl",
-                activity.shadow
+                activity.shadow,
               )}
             >
               {/* Decorative Circle */}
               <div
                 className={cn(
                   "absolute -right-6 -top-6 h-24 w-24 rounded-full bg-gradient-to-br opacity-20 blur-xl transition-all duration-500 group-hover:scale-150 group-hover:opacity-30",
-                  activity.color
+                  activity.color,
                 )}
               />
 
@@ -115,7 +115,7 @@ export default function ActivitiesPage() {
                 <div
                   className={cn(
                     "flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br text-white shadow-lg transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3",
-                    activity.color
+                    activity.color,
                   )}
                 >
                   <activity.icon className="h-6 w-6" />

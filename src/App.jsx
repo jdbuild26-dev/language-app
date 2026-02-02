@@ -70,13 +70,14 @@ import DictationImagePage from "@/features/practice/pages/DictationImagePage";
 import MatchPairsPage from "@/features/practice/pages/reading/MatchPairsPage";
 import BubbleSelectionPage from "@/features/practice/pages/reading/BubbleSelectionPage";
 import HighlightPage from "@/features/practice/pages/reading/HighlightPage";
+import HighlightTextPage from "@/features/practice/pages/reading/HighlightTextPage";
 import ImageMCQPage from "@/features/practice/pages/reading/ImageMCQPage";
 import ComprehensionPage from "@/features/practice/pages/reading/ComprehensionPage";
-import FillBlanksPage from "@/features/practice/pages/reading/FillBlanksPage";
 import CompletePassagePage from "@/features/practice/pages/reading/CompletePassagePage";
 import ReorderPage from "@/features/practice/pages/reading/ReorderPage";
 import TrueFalsePage from "@/features/practice/pages/reading/TrueFalsePage";
 import ConversationPage from "@/features/practice/pages/reading/ConversationPage";
+import DiagramLabellingPage from "@/features/practice/pages/reading/DiagramLabellingPage";
 
 // Practice Module Listening Exercises
 import ListenSelectPage from "@/features/practice/pages/listening/ListenSelectPage";
@@ -102,6 +103,10 @@ import SpeakTranslatePage from "@/features/practice/pages/speaking/SpeakTranslat
 import SpeakTopicPage from "@/features/practice/pages/speaking/SpeakTopicPage";
 import SpeakImagePage from "@/features/practice/pages/speaking/SpeakImagePage";
 import SpeakInteractivePage from "@/features/practice/pages/speaking/SpeakInteractivePage";
+
+import MatchDescToImagePage from "@/features/practice/pages/reading/MatchDescToImagePage";
+import ImageLabellingPage from "@/features/practice/pages/reading/ImageLabellingPage";
+import SentenceCompletionPage from "@/features/practice/pages/reading/SentenceCompletionPage";
 
 function App() {
   return (
@@ -325,12 +330,54 @@ function App() {
             </ProtectedRoute>
           }
         />
+
         <Route
           path="/vocabulary/practice/is-french-word"
           element={
             <ProtectedRoute>
               <FullScreenLayout>
                 <IsThisFrenchWordPage />
+              </FullScreenLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/vocabulary/practice/reading/diagram-labelling"
+          element={
+            <ProtectedRoute>
+              <FullScreenLayout>
+                <DiagramLabellingPage />
+              </FullScreenLayout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/vocabulary/practice/reading/diagram-labelling"
+          element={
+            <ProtectedRoute>
+              <FullScreenLayout>
+                <DiagramLabellingPage />
+              </FullScreenLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/practice/reading/match-desc-to-image"
+          element={
+            <ProtectedRoute>
+              <FullScreenLayout>
+                <MatchDescToImagePage />
+              </FullScreenLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/practice/reading/image-labelling"
+          element={
+            <ProtectedRoute>
+              <FullScreenLayout>
+                <ImageLabellingPage />
               </FullScreenLayout>
             </ProtectedRoute>
           }
@@ -430,6 +477,16 @@ function App() {
           }
         />
         <Route
+          path="/practice/reading/highlight-text"
+          element={
+            <ProtectedRoute>
+              <FullScreenLayout>
+                <HighlightTextPage />
+              </FullScreenLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
           path="/practice/reading/image-mcq"
           element={
             <ProtectedRoute>
@@ -450,17 +507,7 @@ function App() {
           }
         />
         <Route
-          path="/practice/reading/fill-blanks"
-          element={
-            <ProtectedRoute>
-              <FullScreenLayout>
-                <FillBlanksPage />
-              </FullScreenLayout>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/practice/reading/complete-passage"
+          path="/practice/reading/fill-blanks-passage"
           element={
             <ProtectedRoute>
               <FullScreenLayout>
@@ -495,6 +542,26 @@ function App() {
             <ProtectedRoute>
               <FullScreenLayout>
                 <ConversationPage />
+              </FullScreenLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/practice/reading/diagram-labelling"
+          element={
+            <ProtectedRoute>
+              <FullScreenLayout>
+                <DiagramLabellingPage />
+              </FullScreenLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/practice/reading/complete-passage"
+          element={
+            <ProtectedRoute>
+              <FullScreenLayout>
+                <SentenceCompletionPage />
               </FullScreenLayout>
             </ProtectedRoute>
           }

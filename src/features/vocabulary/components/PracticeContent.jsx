@@ -38,16 +38,7 @@ const practiceActivities = [
     color: "from-cyan-400 to-blue-500",
     shadow: "shadow-cyan-200 dark:shadow-cyan-900/20",
   },
-  {
-    id: "match-pairs",
-    name: "Match the Pairs",
-    icon: Layers,
-    desc: "Connect words with meanings",
-    path: "match-pairs",
-    category: "reading",
-    color: "from-orange-400 to-amber-500",
-    shadow: "shadow-orange-200 dark:shadow-orange-900/20",
-  },
+
   {
     id: "highlight-word",
     name: "Highlight the Word",
@@ -78,6 +69,8 @@ const practiceActivities = [
     color: "from-rose-400 to-red-500",
     shadow: "shadow-rose-200 dark:shadow-rose-900/20",
   },
+
+  // Listening Activities
 
   // Listening Activities
   {

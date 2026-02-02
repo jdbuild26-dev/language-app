@@ -239,7 +239,7 @@ export default function ListenInteractivePage() {
           !showFeedback &&
           currentExchange?.isQuestion
         }
-        showSubmitButton={currentExchange?.isQuestion}
+        showSubmitButton={currentExchange?.isQuestion && !showFeedback}
         submitLabel="Reply"
         timerValue={timerString}
       >

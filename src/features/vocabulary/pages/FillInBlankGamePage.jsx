@@ -1,11 +1,9 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useExerciseTimer } from "@/hooks/useExerciseTimer";
-import { Loader2 } from "lucide-react";
+import { Loader2, ChevronDown } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { fetchPracticeQuestions } from "../../../services/vocabularyApi";
-import { cn } from "@/lib/utils";
 import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
-import SegmentedInput from "../components/ui/SegmentedInput";
 import { getFeedbackMessage } from "@/utils/feedbackMessages";
 
 export default function FillInBlankGamePage() {
@@ -16,7 +14,7 @@ export default function FillInBlankGamePage() {
 
   // Game State
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [userInputs, setUserInputs] = useState([]); // Array of characters
+  const [userInputs, setUserInputs] = useState([]); // Array of selected words
   const [isCompleted, setIsCompleted] = useState(false);
   const [showFeedback, setShowFeedback] = useState(false);
   const [isCorrect, setIsCorrect] = useState(false);
@@ -28,15 +26,12 @@ export default function FillInBlankGamePage() {
   // Calculate duration securely
   const timerDuration = parseInt(currentQuestion?.TimeLimitSeconds) || 60;
 
-  // Ref for input fields
-  const inputsRef = useRef([]);
-
   // Load questions on mount
   useEffect(() => {
     loadQuestions();
   }, []);
 
-  const { timerString, resetTimer, isPaused } = useExerciseTimer({
+  const { timerString, resetTimer } = useExerciseTimer({
     duration: timerDuration,
     mode: "timer",
     onExpire: () => {
@@ -52,38 +47,25 @@ export default function FillInBlankGamePage() {
 
   // Reset logic when question changes
   useEffect(() => {
-    if (questions.length > 0 && !isCompleted) {
-      // Pre-fill logic moved here or kept?
-      // Logic below depends on currentQuestion.
-      // We need to coordinate resetTimer with this.
+    if (questions.length > 0 && !isCompleted && currentQuestion) {
       resetTimer();
 
-      const answer = currentQuestion?.CorrectAnswer
-        ? currentQuestion.CorrectAnswer.trim().toUpperCase()
-        : "";
+      // Determine number of blanks
+      // Assuming '______' denotes a blank.
+      // If we don't find it, we assume 1 blank at end or relevant pos.
+      const sentenceParts = currentQuestion.SentenceWithBlank?.split("______");
+      const blankCount =
+        sentenceParts && sentenceParts.length > 1
+          ? sentenceParts.length - 1
+          : 1;
 
-      // Pre-fill first and last characters as hints
-      const initialInputs = new Array(answer.length).fill("");
-      if (answer.length > 0) {
-        initialInputs[0] = answer[0]; // First character hint
-        if (answer.length > 1) {
-          initialInputs[answer.length - 1] = answer[answer.length - 1]; // Last character hint
-        }
-      }
-      setUserInputs(initialInputs);
-
-      // Auto-focus second input (first is a hint)
-      setTimeout(() => {
-        if (inputsRef.current[1]) {
-          inputsRef.current[1].focus();
-        }
-      }, 100);
+      // Initialize inputs with empty strings
+      setUserInputs(new Array(blankCount).fill(""));
+      setShowFeedback(false);
+      setIsCorrect(false);
+      setFeedbackMessage("");
     }
-  }, [currentIndex, questions, isCompleted, resetTimer]);
-  // removed 'currentQuestion' dependency to avoid cyclic dependency if defined inside component body before this effect.
-  // Actually currentQuestion is defined above hook now.
-
-  // Old Timer Tick Effect Removed
+  }, [currentIndex, questions, isCompleted, resetTimer, currentQuestion]);
 
   const loadQuestions = async () => {
     try {
@@ -100,73 +82,47 @@ export default function FillInBlankGamePage() {
     }
   };
 
-  const handleInputChange = (index, value) => {
+  // Generate options (Distractors + Correct Answer)
+  const options = useMemo(() => {
+    if (!currentQuestion || questions.length === 0) return [];
+
+    // Safety check: ensure we have distractors
+    const allAnswers = questions
+      .map((q) => (q.CorrectAnswer ? q.CorrectAnswer.trim() : ""))
+      .filter((a) => a && a !== currentQuestion.CorrectAnswer?.trim());
+
+    // Shuffle and pick 3 distractors
+    const distractors = allAnswers.sort(() => 0.5 - Math.random()).slice(0, 3);
+
+    // Add correct answer
+    const currentAnswer = currentQuestion.CorrectAnswer?.trim() || "";
+    // If not enough distractors from other questions, add some dummies (if absolute fallback needed, but usually we have questions)
+    // For now we assume we have questions.
+
+    const mixedOptions = [...distractors, currentAnswer];
+
+    // Remove duplicates
+    const uniqueOptions = [...new Set(mixedOptions)];
+
+    // Shuffle final options
+    return uniqueOptions.sort(() => 0.5 - Math.random());
+  }, [currentQuestion, questions]);
+
+  const handleSelectChange = (index, value) => {
     const newInputs = [...userInputs];
-
-    if (!value) {
-      // Allow clearing the input
-      newInputs[index] = "";
-      setUserInputs(newInputs);
-      return;
-    }
-
-    const char = value.slice(-1).toUpperCase();
-
-    // Validate: Allow only letters (basic Latin + French accents)
-    if (!/^[A-Z\u00C0-\u00FF]$/.test(char)) {
-      return; // Ignore invalid characters
-    }
-
-    newInputs[index] = char;
+    newInputs[index] = value;
     setUserInputs(newInputs);
-
-    if (index < userInputs.length - 1) {
-      inputsRef.current[index + 1]?.focus();
-    }
-  };
-
-  const handleKeyDown = (index, e) => {
-    if (e.key === "Backspace") {
-      const isHint = (idx) => idx === 0 || idx === userInputs.length - 1;
-
-      if (userInputs[index]) {
-        // Clear current input if not a hint
-        if (!isHint(index)) {
-          const newInputs = [...userInputs];
-          newInputs[index] = "";
-          setUserInputs(newInputs);
-        }
-      } else if (index > 0) {
-        // Move to previous input
-        const prevIndex = index - 1;
-        // Only clear and focus if previous is NOT a hint
-        if (!isHint(prevIndex)) {
-          const newInputs = [...userInputs];
-          newInputs[prevIndex] = "";
-          setUserInputs(newInputs);
-          inputsRef.current[prevIndex]?.focus();
-        } else {
-          // If previous is hint, just strictly focus it (optional) or do nothing?
-          // Focusing it lets user see they are at start, but they can't edit it.
-          // Let's just focus it so navigation feels natural, but DO NOT CLEAR content.
-          inputsRef.current[prevIndex]?.focus();
-        }
-      }
-    } else if (e.key === "ArrowLeft" && index > 0) {
-      inputsRef.current[index - 1]?.focus();
-    } else if (e.key === "ArrowRight" && index < userInputs.length - 1) {
-      inputsRef.current[index + 1]?.focus();
-    }
   };
 
   const handleSubmit = () => {
     if (showFeedback) return;
 
-    const userAnswer = userInputs.join("");
-    const correctAnswer =
-      questions[currentIndex].CorrectAnswer.trim().toUpperCase();
+    const correctAns = currentQuestion.CorrectAnswer.trim();
+    // Assuming single answer string for now as per data structure
 
-    const correct = userAnswer === correctAnswer;
+    const userAnswer = userInputs.join("");
+    const correct = userAnswer.toLowerCase() === correctAns.toLowerCase();
+
     setIsCorrect(correct);
     setFeedbackMessage(getFeedbackMessage(correct));
     setShowFeedback(true);
@@ -178,7 +134,6 @@ export default function FillInBlankGamePage() {
 
   const handleContinue = () => {
     setShowFeedback(false);
-
     handleNext();
   };
 
@@ -190,17 +145,9 @@ export default function FillInBlankGamePage() {
     }
   };
 
-  // Constants re-added
+  // Progress percentage
   const progress =
     questions.length > 0 ? ((currentIndex + 1) / questions.length) * 100 : 0;
-
-  // Sentence Parsing
-  const sentenceParts = currentQuestion?.SentenceWithBlank?.split("______") || [
-    "",
-    "",
-  ];
-  const prefix = sentenceParts[0];
-  const suffix = sentenceParts[1] || "";
 
   if (loading) {
     return (
@@ -214,13 +161,28 @@ export default function FillInBlankGamePage() {
     return <div className="text-center p-8 text-red-500">{error}</div>;
   }
 
+  // Parse sentence parts
+  const sentenceParts = currentQuestion?.SentenceWithBlank?.split("______") || [
+    "",
+    "",
+  ];
+  // If no split happened (no ______ found), treat as [text, ""] effectively putting blank at end if we forced blankCount=1?
+  // Code in useEffect ensures blankKey count matches logic here if we are consistent.
+  // Actually, if split returns 1 element (no separator), we still need to show a blank?
+  // Current logic: split('______'). If length==1, NO blank in text.
+  // But we force blankCount=1 in useEffect.
+  // Let's handle this case in rendering: if sentenceParts.length === 1, we append a [1] at end.
+  const displayParts =
+    sentenceParts.length === 1 ? [sentenceParts[0], ""] : sentenceParts;
+
   return (
     <>
       <PracticeGameLayout
-        questionType="Fill in the Blank"
+        questionType="Fill in the blanks - Passage"
         instructionFr={currentQuestion?.Instruction_FR || "Complétez la phrase"}
         instructionEn={
-          currentQuestion?.Instruction_EN || "Complete the sentence"
+          currentQuestion?.Instruction_EN ||
+          "Select the best option for each missing word"
         }
         progress={progress}
         isGameOver={isCompleted}
@@ -246,63 +208,71 @@ export default function FillInBlankGamePage() {
         correctAnswer={!isCorrect ? currentQuestion.CorrectAnswer : null}
         feedbackMessage={feedbackMessage}
       >
-        <div className="flex flex-col items-center w-full px-2">
-          {/* Sentence with Inline Input Boxes */}
-          <div className="w-fit max-w-full text-left">
-            {/* Standard block layout for natural text wrapping */}
-            <div className="text-lg md:text-xl text-slate-800 dark:text-slate-100 leading-relaxed font-medium py-8">
-              {(() => {
-                const fullSentence = currentQuestion?.SentenceWithBlank || "";
-                // We split by space to handle word wrapping, but we need to identify the blank segment
-                const words = fullSentence.split(" ");
+        <div className="w-full max-w-6xl mx-auto p-4 md:p-6 h-full flex flex-col justify-center">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 w-full">
+            {/* LEFT COLUMN: PASSAGE */}
+            <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-8 flex flex-col min-h-[400px]">
+              <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-6">
+                Passage
+              </h3>
 
-                return words.map((word, idx) => {
-                  const shouldUnderline = [
-                    "soir,",
-                    "ils",
-                    "que",
-                    "dorment.",
-                  ].some((w) => word.toLowerCase().includes(w.toLowerCase()));
-
-                  const isLast = idx === words.length - 1;
-                  const spacer = !isLast ? " " : "";
-
-                  if (word.includes("______")) {
-                    return (
-                      <React.Fragment key={idx}>
-                        <span className="inline-flex gap-1 mx-1 align-baseline">
-                          <SegmentedInput
-                            values={userInputs}
-                            onChange={(idx, val) => handleInputChange(idx, val)}
-                            onKeyDown={(idx, e) => handleKeyDown(idx, e)}
-                            disabled={showFeedback}
-                            hints={[0, userInputs.length - 1]}
-                            showFeedback={showFeedback}
-                            isCorrect={isCorrect}
-                            inputRefs={inputsRef}
-                          />
-                        </span>
-                        {spacer}
-                      </React.Fragment>
-                    );
-                  }
-
-                  return (
-                    <React.Fragment key={idx}>
-                      <span
-                        className={
-                          shouldUnderline
-                            ? "underline decoration-red-500 decoration-2 underline-offset-8"
-                            : ""
-                        }
-                      >
-                        {word}
+              <div className="text-lg leading-loose text-slate-800 font-medium">
+                {displayParts.map((part, idx) => (
+                  <React.Fragment key={idx}>
+                    <span>{part}</span>
+                    {idx < displayParts.length - 1 && (
+                      <span className="inline-flex items-center justify-center w-8 h-8 rounded border border-slate-300 bg-slate-50 text-slate-500 text-sm font-bold mx-2 align-middle select-none">
+                        {idx + 1}
                       </span>
-                      {spacer}
-                    </React.Fragment>
-                  );
-                });
-              })()}
+                    )}
+                  </React.Fragment>
+                ))}
+              </div>
+            </div>
+
+            {/* RIGHT COLUMN: OPTIONS */}
+            <div className="flex flex-col h-full">
+              <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-8 flex-1 min-h-[400px]">
+                <h3 className="text-lg font-bold text-slate-900 mb-6">
+                  Select the best option for each missing word
+                </h3>
+
+                <div className="space-y-4">
+                  {/* Render a select for each blank */}
+                  {Array.from({ length: displayParts.length - 1 }).map(
+                    (_, idx) => (
+                      <div key={idx} className="flex items-center gap-4">
+                        <div className="flex-shrink-0 w-8 h-8 flex items-center justify-center rounded border border-slate-200 bg-white text-slate-400 font-bold text-sm bg-slate-50 select-none">
+                          {idx + 1}
+                        </div>
+
+                        <div className="relative w-full">
+                          <select
+                            className="w-full appearance-none bg-white border border-slate-200 text-slate-700 py-3 px-4 pr-8 rounded-lg outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all font-medium disabled:opacity-50 cursor-pointer"
+                            value={userInputs[idx] || ""}
+                            onChange={(e) =>
+                              handleSelectChange(idx, e.target.value)
+                            }
+                            disabled={showFeedback}
+                          >
+                            <option value="" disabled>
+                              Select a word
+                            </option>
+                            {options.map((opt, optIdx) => (
+                              <option key={optIdx} value={opt}>
+                                {opt}
+                              </option>
+                            ))}
+                          </select>
+                          <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                            <ChevronDown size={16} strokeWidth={2.5} />
+                          </div>
+                        </div>
+                      </div>
+                    ),
+                  )}
+                </div>
+              </div>
             </div>
           </div>
         </div>

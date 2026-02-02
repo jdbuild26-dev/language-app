@@ -160,58 +160,73 @@ export default function ImageMCQPage() {
         onNext={handleSubmit}
         onRestart={() => window.location.reload()}
         isSubmitEnabled={selectedOption !== null && !showFeedback}
-        showSubmitButton={true}
+        showSubmitButton={!showFeedback}
         submitLabel="Check"
         timerValue={timerString}
       >
-        <div className="flex flex-col items-center w-full max-w-2xl mx-auto px-4 py-6">
-          {/* Image Display */}
-          <div className="w-48 h-48 bg-gradient-to-br from-amber-100 to-yellow-200 dark:from-amber-900/30 dark:to-yellow-900/30 rounded-2xl flex items-center justify-center mb-6 shadow-lg border-4 border-white dark:border-slate-700">
-            <span className="text-8xl">{currentQuestion?.imageEmoji}</span>
+        <div className="flex flex-col md:flex-row items-center justify-center w-full max-w-6xl mx-auto gap-8 md:gap-16 px-4 py-6 md:py-12 h-full">
+          {/* Left Column: Image Area */}
+          <div className="w-full md:w-1/2 flex justify-center md:justify-end">
+            <div className="relative w-full max-w-md aspect-square bg-gradient-to-br from-amber-100 to-yellow-200 dark:from-amber-900/30 dark:to-yellow-900/30 rounded-3xl flex items-center justify-center shadow-2xl border-4 border-white dark:border-slate-700 overflow-hidden transform transition-transform hover:scale-[1.02] duration-500">
+              <span className="text-9xl md:text-[10rem] filter drop-shadow-xl animate-bounce-subtle">
+                {currentQuestion?.imageEmoji}
+              </span>
+            </div>
           </div>
 
-          {/* Question */}
-          <h3 className="text-lg font-semibold text-slate-700 dark:text-slate-200 mb-6 text-center">
-            {currentQuestion?.question}
-          </h3>
+          {/* Right Column: Question & Options */}
+          <div className="w-full md:w-1/2 flex flex-col items-center md:items-start space-y-8 max-w-lg">
+            {/* Question */}
+            <h3 className="text-xl md:text-2xl font-bold text-slate-700 dark:text-slate-200 text-center w-full">
+              {currentQuestion?.question}
+            </h3>
 
-          {/* Options */}
-          <div className="w-full space-y-3">
-            {currentQuestion?.options.map((option, index) => (
-              <button
-                key={index}
-                onClick={() => handleOptionSelect(index)}
-                disabled={showFeedback}
-                className={cn(
-                  "w-full py-4 px-6 rounded-xl text-left text-base font-medium transition-all duration-200 border-2",
-                  selectedOption === index
-                    ? "bg-amber-500 text-white border-amber-500 shadow-lg"
-                    : "bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700 hover:border-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/20",
-                  showFeedback && index === currentQuestion.correctIndex
-                    ? "bg-emerald-500 text-white border-emerald-500"
-                    : "",
-                  showFeedback &&
-                    selectedOption === index &&
-                    index !== currentQuestion.correctIndex
-                    ? "bg-red-500 text-white border-red-500"
-                    : "",
-                )}
-              >
-                <span className="inline-flex items-center gap-3">
-                  <span
-                    className={cn(
-                      "w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold",
-                      selectedOption === index
-                        ? "bg-white/20 text-white"
-                        : "bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300",
-                    )}
-                  >
-                    {String.fromCharCode(65 + index)}
-                  </span>
-                  {option}
-                </span>
-              </button>
-            ))}
+            {/* Options */}
+            <div className="w-full space-y-4">
+              {currentQuestion?.options.map((option, index) => (
+                <button
+                  key={index}
+                  onClick={() => handleOptionSelect(index)}
+                  disabled={showFeedback}
+                  className={cn(
+                    "group w-full p-4 rounded-2xl text-left text-lg font-medium transition-all duration-300 border-2 shadow-sm hover:shadow-md",
+                    selectedOption === index
+                      ? "bg-amber-50 border-amber-500 text-amber-900 dark:bg-amber-900/40 dark:border-amber-500 dark:text-amber-100 ring-2 ring-amber-200 dark:ring-amber-900"
+                      : "bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border-transparent hover:border-amber-200 dark:hover:border-slate-600",
+                    showFeedback && index === currentQuestion.correctIndex
+                      ? "bg-emerald-50 border-emerald-500 text-emerald-900 dark:bg-emerald-900/40 dark:border-emerald-500 dark:text-emerald-100 ring-2 ring-emerald-200"
+                      : "",
+                    showFeedback &&
+                      selectedOption === index &&
+                      index !== currentQuestion.correctIndex
+                      ? "bg-red-50 border-red-500 text-red-900 dark:bg-red-900/40 dark:border-red-500 dark:text-red-100 ring-2 ring-red-200"
+                      : "",
+                  )}
+                >
+                  <div className="flex items-center gap-5">
+                    <span
+                      className={cn(
+                        "w-10 h-10 rounded-xl flex items-center justify-center text-base font-bold transition-colors duration-300 shadow-sm",
+                        selectedOption === index
+                          ? "bg-amber-500 text-white shadow-amber-200"
+                          : "bg-slate-100 text-slate-500 group-hover:bg-amber-100 group-hover:text-amber-600 dark:bg-slate-700 dark:text-slate-400 dark:group-hover:bg-slate-600",
+                        showFeedback && index === currentQuestion.correctIndex
+                          ? "bg-emerald-500 text-white"
+                          : "",
+                        showFeedback &&
+                          selectedOption === index &&
+                          index !== currentQuestion.correctIndex
+                          ? "bg-red-500 text-white"
+                          : "",
+                      )}
+                    >
+                      {String.fromCharCode(65 + index)}
+                    </span>
+                    <span className="flex-1">{option}</span>
+                  </div>
+                </button>
+              ))}
+            </div>
           </div>
         </div>
       </PracticeGameLayout>

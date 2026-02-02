@@ -158,7 +158,7 @@ export default function ListenOrderPage() {
         onNext={handleSubmit}
         onRestart={() => window.location.reload()}
         isSubmitEnabled={playedAudio && !showFeedback}
-        showSubmitButton={true}
+        showSubmitButton={!showFeedback}
         submitLabel="Check"
         timerValue={playedAudio ? timerString : "--:--"}
       >

@@ -218,7 +218,7 @@ export default function WriteInteractivePage() {
           !showFeedback &&
           currentExchange?.isQuestion
         }
-        showSubmitButton={currentExchange?.isQuestion}
+        showSubmitButton={currentExchange?.isQuestion && !showFeedback}
         submitLabel="Send"
         timerValue={timerString}
       >

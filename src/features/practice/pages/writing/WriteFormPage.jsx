@@ -163,7 +163,7 @@ export default function WriteFormPage() {
         onNext={handleSubmit}
         onRestart={() => window.location.reload()}
         isSubmitEnabled={allFieldsFilled && !showFeedback}
-        showSubmitButton={true}
+        showSubmitButton={!showFeedback}
         submitLabel="Submit"
         timerValue={timerString}
       >

@@ -156,7 +156,7 @@ export default function WriteTopicPage() {
         onNext={handleSubmit}
         onRestart={() => window.location.reload()}
         isSubmitEnabled={wordCount >= 5 && !showFeedback}
-        showSubmitButton={true}
+        showSubmitButton={!showFeedback}
         submitLabel="Submit"
         timerValue={timerString}
       >
