@@ -1,12 +1,22 @@
 import React, { useState, useEffect } from "react";
 import { usePracticeExit } from "@/hooks/usePracticeExit";
 import { useExerciseTimer } from "@/hooks/useExerciseTimer";
-import { Loader2, Volume2, X } from "lucide-react";
+import { useTextToSpeech } from "@/hooks/useTextToSpeech";
+import { Loader2, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
 import FeedbackBanner from "@/components/ui/FeedbackBanner";
 import { getFeedbackMessage } from "@/utils/feedbackMessages";
-import { useTextToSpeech } from "@/hooks/useTextToSpeech";
+
+// Fisher-Yates shuffle algorithm
+function shuffleArray(array) {
+  const shuffled = [...array];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return shuffled;
+}
 
 // Mock data for Bubble Selection exercise
 const MOCK_QUESTIONS = [
@@ -58,7 +68,7 @@ const MOCK_QUESTIONS = [
 
 export default function BubbleSelectionPage() {
   const handleExit = usePracticeExit();
-  const { speak, isSpeaking } = useTextToSpeech();
+  const { speak } = useTextToSpeech();
 
   const [questions] = useState(MOCK_QUESTIONS);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -86,10 +96,11 @@ export default function BubbleSelectionPage() {
     isPaused: isCompleted || showFeedback,
   });
 
-  // Initialize available words when question changes
+  // Initialize available words when question changes (shuffled)
   useEffect(() => {
     if (currentQuestion) {
-      setAvailableWords([...currentQuestion.wordBubbles]);
+      // Shuffle the word bubbles for randomized display
+      setAvailableWords(shuffleArray(currentQuestion.wordBubbles));
       setSelectedWords([]);
       resetTimer();
     }
@@ -97,6 +108,9 @@ export default function BubbleSelectionPage() {
 
   const handleWordSelect = (word, index) => {
     if (showFeedback) return;
+
+    // Play audio for the selected word
+    speak(word, "fr-FR");
 
     // Add word to selected and remove from available
     setSelectedWords([...selectedWords, word]);
@@ -108,17 +122,14 @@ export default function BubbleSelectionPage() {
   const handleWordRemove = (word, index) => {
     if (showFeedback) return;
 
+    // Play audio for the removed word
+    speak(word, "fr-FR");
+
     // Remove word from selected and add back to available
     const newSelected = [...selectedWords];
     newSelected.splice(index, 1);
     setSelectedWords(newSelected);
     setAvailableWords([...availableWords, word]);
-  };
-
-  const handleSpeak = () => {
-    if (currentQuestion) {
-      speak(currentQuestion.correctAnswer, "fr-FR");
-    }
   };
 
   const handleSubmit = () => {
@@ -236,21 +247,6 @@ export default function BubbleSelectionPage() {
               ))}
             </div>
           </div>
-
-          {/* Audio Preview Button */}
-          <button
-            onClick={handleSpeak}
-            disabled={isSpeaking}
-            className={cn(
-              "mt-6 flex items-center gap-2 px-4 py-2 rounded-full transition-all duration-200",
-              isSpeaking
-                ? "bg-blue-100 dark:bg-blue-900/30 text-blue-500"
-                : "bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-blue-100 dark:hover:bg-blue-900/30 hover:text-blue-500",
-            )}
-          >
-            <Volume2 className="w-5 h-5" />
-            <span className="text-sm font-medium">Listen to answer</span>
-          </button>
         </div>
       </PracticeGameLayout>
 

@@ -73,7 +73,6 @@ import HighlightPage from "@/features/practice/pages/reading/HighlightPage";
 import HighlightTextPage from "@/features/practice/pages/reading/HighlightTextPage";
 import ImageMCQPage from "@/features/practice/pages/reading/ImageMCQPage";
 import ComprehensionPage from "@/features/practice/pages/reading/ComprehensionPage";
-import FillBlanksPage from "@/features/practice/pages/reading/FillBlanksPage";
 import CompletePassagePage from "@/features/practice/pages/reading/CompletePassagePage";
 import ReorderPage from "@/features/practice/pages/reading/ReorderPage";
 import TrueFalsePage from "@/features/practice/pages/reading/TrueFalsePage";
@@ -107,6 +106,7 @@ import SpeakInteractivePage from "@/features/practice/pages/speaking/SpeakIntera
 
 import MatchDescToImagePage from "@/features/practice/pages/reading/MatchDescToImagePage";
 import ImageLabellingPage from "@/features/practice/pages/reading/ImageLabellingPage";
+import SentenceCompletionPage from "@/features/practice/pages/reading/SentenceCompletionPage";
 
 function App() {
   return (
@@ -507,17 +507,7 @@ function App() {
           }
         />
         <Route
-          path="/practice/reading/fill-blanks"
-          element={
-            <ProtectedRoute>
-              <FullScreenLayout>
-                <FillBlanksPage />
-              </FullScreenLayout>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/practice/reading/complete-passage"
+          path="/practice/reading/fill-blanks-passage"
           element={
             <ProtectedRoute>
               <FullScreenLayout>
@@ -562,6 +552,16 @@ function App() {
             <ProtectedRoute>
               <FullScreenLayout>
                 <DiagramLabellingPage />
+              </FullScreenLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/practice/reading/complete-passage"
+          element={
+            <ProtectedRoute>
+              <FullScreenLayout>
+                <SentenceCompletionPage />
               </FullScreenLayout>
             </ProtectedRoute>
           }

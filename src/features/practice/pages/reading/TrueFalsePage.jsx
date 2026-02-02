@@ -1,12 +1,10 @@
 import React, { useState, useEffect } from "react";
 import { usePracticeExit } from "@/hooks/usePracticeExit";
 import { useExerciseTimer } from "@/hooks/useExerciseTimer";
-import { Volume2, Check, X, HelpCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
 import FeedbackBanner from "@/components/ui/FeedbackBanner";
 import { getFeedbackMessage } from "@/utils/feedbackMessages";
-import { useTextToSpeech } from "@/hooks/useTextToSpeech";
 
 // Mock data for True/False/Not Given exercise
 const MOCK_QUESTIONS = [
@@ -53,19 +51,13 @@ const MOCK_QUESTIONS = [
 ];
 
 const OPTIONS = [
-  { value: "true", label: "Vrai", icon: Check, color: "emerald" },
-  { value: "false", label: "Faux", icon: X, color: "red" },
-  {
-    value: "not-given",
-    label: "Non mentionné",
-    icon: HelpCircle,
-    color: "amber",
-  },
+  { value: "true", label: "Vrai" },
+  { value: "false", label: "Faux" },
+  { value: "not-given", label: "Non mentionné" },
 ];
 
 export default function TrueFalsePage() {
   const handleExit = usePracticeExit();
-  const { speak, isSpeaking } = useTextToSpeech();
 
   const [questions] = useState(MOCK_QUESTIONS);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -98,12 +90,6 @@ export default function TrueFalsePage() {
       resetTimer();
     }
   }, [currentIndex, currentQuestion, isCompleted, resetTimer]);
-
-  const handlePlayAudio = () => {
-    if (currentQuestion) {
-      speak(currentQuestion.passage, "fr-FR");
-    }
-  };
 
   const handleOptionSelect = (value) => {
     if (showFeedback) return;
@@ -142,7 +128,7 @@ export default function TrueFalsePage() {
   return (
     <>
       <PracticeGameLayout
-        questionType="True/False/Not Given"
+        questionType="Identify Information"
         instructionFr="L'affirmation est-elle vraie, fausse, ou non mentionnée?"
         instructionEn="Is the statement true, false, or not mentioned?"
         progress={progress}
@@ -157,67 +143,80 @@ export default function TrueFalsePage() {
         submitLabel="Check"
         timerValue={timerString}
       >
-        <div className="flex flex-col items-center w-full max-w-3xl mx-auto px-4 py-6">
-          {/* Passage */}
-          <div className="w-full bg-white dark:bg-slate-800 rounded-2xl p-6 mb-4 shadow-lg border border-slate-200 dark:border-slate-700">
-            <p className="text-base leading-relaxed text-slate-700 dark:text-slate-200">
-              {currentQuestion?.passage}
-            </p>
-          </div>
+        <div className="w-full max-w-6xl mx-auto px-6 py-8">
+          {/* Two Column Layout */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            {/* Left Column - Passage */}
+            <div className="bg-white dark:bg-slate-800 rounded-xl shadow-md border border-slate-200 dark:border-slate-700 overflow-hidden min-h-[300px]">
+              <div className="bg-slate-100 dark:bg-slate-700 px-5 py-3 border-b border-slate-200 dark:border-slate-600">
+                <span className="text-sm font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300">
+                  Passage
+                </span>
+              </div>
+              <div className="p-6">
+                <p className="text-base leading-relaxed text-slate-700 dark:text-slate-200">
+                  {currentQuestion?.passage}
+                </p>
+              </div>
+            </div>
 
-          {/* Audio button */}
-          <button
-            onClick={handlePlayAudio}
-            disabled={isSpeaking}
-            className={cn(
-              "flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all mb-4",
-              isSpeaking
-                ? "bg-pink-100 text-pink-600"
-                : "bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-pink-100 hover:text-pink-600",
-            )}
-          >
-            <Volume2 className="w-4 h-4" />
-            Listen to passage
-          </button>
+            {/* Right Column - Question & Options */}
+            <div className="flex flex-col">
+              {/* Statement/Question */}
+              <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-100 mb-5">
+                {currentQuestion?.statement}
+              </h3>
 
-          {/* Statement */}
-          <div className="w-full bg-gradient-to-r from-pink-500 to-rose-600 rounded-2xl p-5 mb-6 shadow-lg">
-            <p className="text-lg text-white font-semibold text-center">
-              "{currentQuestion?.statement}"
-            </p>
-          </div>
+              {/* Options as Radio Buttons */}
+              <div className="flex flex-col gap-4">
+                {OPTIONS.map((option) => {
+                  const isSelected = selectedAnswer === option.value;
+                  const isCorrectAnswer =
+                    showFeedback && option.value === currentQuestion.answer;
+                  const isWrongSelection =
+                    showFeedback && isSelected && !isCorrectAnswer;
 
-          {/* Options */}
-          <div className="w-full grid grid-cols-3 gap-4">
-            {OPTIONS.map((option) => {
-              const Icon = option.icon;
-              const isSelected = selectedAnswer === option.value;
-              const isCorrectAnswer =
-                showFeedback && option.value === currentQuestion.answer;
-              const isWrongSelection =
-                showFeedback && isSelected && !isCorrectAnswer;
-
-              return (
-                <button
-                  key={option.value}
-                  onClick={() => handleOptionSelect(option.value)}
-                  disabled={showFeedback}
-                  className={cn(
-                    "flex flex-col items-center gap-2 py-4 px-4 rounded-xl border-2 transition-all duration-200",
-                    isCorrectAnswer
-                      ? "bg-emerald-500 text-white border-emerald-500"
-                      : isWrongSelection
-                        ? "bg-red-500 text-white border-red-500"
-                        : isSelected
-                          ? `bg-${option.color}-500 text-white border-${option.color}-500`
-                          : "bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700 hover:border-slate-400",
-                  )}
-                >
-                  <Icon className="w-8 h-8" />
-                  <span className="font-semibold">{option.label}</span>
-                </button>
-              );
-            })}
+                  return (
+                    <button
+                      key={option.value}
+                      onClick={() => handleOptionSelect(option.value)}
+                      disabled={showFeedback}
+                      className={cn(
+                        "flex items-center gap-4 px-5 py-4 rounded-xl border transition-all duration-200 text-left",
+                        isCorrectAnswer
+                          ? "bg-emerald-50 dark:bg-emerald-900/30 border-emerald-500 text-emerald-700 dark:text-emerald-300"
+                          : isWrongSelection
+                            ? "bg-red-50 dark:bg-red-900/30 border-red-500 text-red-700 dark:text-red-300"
+                            : isSelected
+                              ? "bg-sky-50 dark:bg-sky-900/30 border-sky-500 text-sky-700 dark:text-sky-300"
+                              : "bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-200 hover:border-slate-400 dark:hover:border-slate-500",
+                      )}
+                    >
+                      {/* Radio Circle */}
+                      <div
+                        className={cn(
+                          "w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0",
+                          isCorrectAnswer
+                            ? "border-emerald-500 bg-emerald-500"
+                            : isWrongSelection
+                              ? "border-red-500 bg-red-500"
+                              : isSelected
+                                ? "border-sky-500 bg-sky-500"
+                                : "border-slate-300 dark:border-slate-500",
+                        )}
+                      >
+                        {(isSelected || isCorrectAnswer) && (
+                          <div className="w-2.5 h-2.5 rounded-full bg-white" />
+                        )}
+                      </div>
+                      <span className="font-medium text-base">
+                        {option.label}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
           </div>
         </div>
       </PracticeGameLayout>

@@ -1,12 +1,10 @@
 import React, { useState, useEffect } from "react";
 import { usePracticeExit } from "@/hooks/usePracticeExit";
 import { useExerciseTimer } from "@/hooks/useExerciseTimer";
-import { Volume2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
 import FeedbackBanner from "@/components/ui/FeedbackBanner";
 import { getFeedbackMessage } from "@/utils/feedbackMessages";
-import { useTextToSpeech } from "@/hooks/useTextToSpeech";
 
 // Mock data for Translate the Sentence (Typed) exercise
 const MOCK_QUESTIONS = [
@@ -70,7 +68,6 @@ const MOCK_QUESTIONS = [
 
 export default function TranslateTypedPage() {
   const handleExit = usePracticeExit();
-  const { speak, isSpeaking } = useTextToSpeech();
 
   const [questions] = useState(MOCK_QUESTIONS);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -103,12 +100,6 @@ export default function TranslateTypedPage() {
       resetTimer();
     }
   }, [currentIndex, currentQuestion, isCompleted, resetTimer]);
-
-  const handlePlayAudio = () => {
-    if (currentQuestion) {
-      speak(currentQuestion.correctAnswer, "fr-FR");
-    }
-  };
 
   // Normalize for comparison
   const normalize = (str) =>
@@ -203,21 +194,8 @@ export default function TranslateTypedPage() {
             />
           </div>
 
-          {/* Character count & audio */}
-          <div className="w-full flex justify-between items-center">
-            <button
-              onClick={handlePlayAudio}
-              disabled={isSpeaking}
-              className={cn(
-                "flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all",
-                isSpeaking
-                  ? "bg-blue-100 text-blue-600"
-                  : "bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-blue-100 hover:text-blue-600",
-              )}
-            >
-              <Volume2 className="w-4 h-4" />
-              Listen to answer
-            </button>
+          {/* Character count */}
+          <div className="w-full flex justify-end items-center">
             <span className="text-sm text-slate-400">
               {userInput.length} characters
             </span>
