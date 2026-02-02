@@ -113,15 +113,13 @@ export default function RepeatSentencePage() {
   const handleSubmit = () => {
     if (!currentQuestion) return;
 
-    // Check logic: User must speak the COMPLETE sentence
-    const normalizedSpoken = normalizeText(spokenText);
-    const normalizedFullSentence = normalizeText(
+    // Construct full sentence for comparison
+    const fullSentence =
       currentQuestion.completeSentence ||
-        currentQuestion.sentenceWithBlank.replace(
-          /_+/g,
-          currentQuestion.correctAnswer,
-        ), // Fallback if completeSentence missing
-    );
+      currentQuestion.sentenceWithBlank.replace(
+        /_+/g,
+        currentQuestion.correctAnswer,
+      );
 
     const isCorrect = matchSpeechToAnswer(spokenText, fullSentence, 0.7);
 
