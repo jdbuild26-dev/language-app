@@ -140,7 +140,7 @@ export default function SpellingPage() {
         onNext={handleSubmit}
         onRestart={() => window.location.reload()}
         isSubmitEnabled={userInput.trim().length > 0 && !showFeedback}
-        showSubmitButton={true}
+        showSubmitButton={!showFeedback}
         submitLabel="Check"
         timerValue={timerString}
       >

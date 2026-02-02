@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { usePracticeExit } from "@/hooks/usePracticeExit";
 import { useExerciseTimer } from "@/hooks/useExerciseTimer";
-import { GripVertical, ArrowUp, ArrowDown } from "lucide-react";
+import { GripVertical } from "lucide-react";
+import { Reorder, useDragControls } from "framer-motion";
 import { cn } from "@/lib/utils";
 import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
 import FeedbackBanner from "@/components/ui/FeedbackBanner";
@@ -106,21 +107,6 @@ export default function ReorderPage() {
     }
   }, [currentIndex, currentQuestion, isCompleted, resetTimer]);
 
-  const moveItem = (index, direction) => {
-    if (showFeedback) return;
-
-    const newOrder = [...currentOrder];
-    const newIndex = direction === "up" ? index - 1 : index + 1;
-
-    if (newIndex < 0 || newIndex >= newOrder.length) return;
-
-    [newOrder[index], newOrder[newIndex]] = [
-      newOrder[newIndex],
-      newOrder[index],
-    ];
-    setCurrentOrder(newOrder);
-  };
-
   const handleSubmit = () => {
     if (showFeedback) return;
 
@@ -163,85 +149,37 @@ export default function ReorderPage() {
         onNext={handleSubmit}
         onRestart={() => window.location.reload()}
         isSubmitEnabled={!showFeedback}
-        showSubmitButton={true}
+        showSubmitButton={!showFeedback}
         submitLabel="Check"
         timerValue={timerString}
       >
         <div className="flex flex-col items-center w-full max-w-2xl mx-auto px-4 py-6">
           {/* Sentence list */}
           <div className="w-full space-y-3">
-            {currentOrder.map((sentence, index) => {
-              const isCorrectPosition =
-                showFeedback &&
-                sentence === currentQuestion.correctOrder[index];
-              const isWrongPosition = showFeedback && !isCorrectPosition;
+            <Reorder.Group
+              axis="y"
+              values={currentOrder}
+              onReorder={setCurrentOrder}
+              className="w-full space-y-3"
+            >
+              {currentOrder.map((sentence, index) => {
+                const isCorrectPosition =
+                  showFeedback &&
+                  sentence === currentQuestion.correctOrder[index];
+                const isWrongPosition = showFeedback && !isCorrectPosition;
 
-              return (
-                <div
-                  key={sentence}
-                  className={cn(
-                    "flex items-center gap-3 p-4 rounded-xl border-2 transition-all duration-200",
-                    isCorrectPosition
-                      ? "bg-emerald-50 dark:bg-emerald-900/20 border-emerald-500"
-                      : isWrongPosition
-                        ? "bg-red-50 dark:bg-red-900/20 border-red-500"
-                        : "bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700",
-                  )}
-                >
-                  {/* Position number */}
-                  <span
-                    className={cn(
-                      "w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold",
-                      isCorrectPosition
-                        ? "bg-emerald-500 text-white"
-                        : isWrongPosition
-                          ? "bg-red-500 text-white"
-                          : "bg-teal-100 dark:bg-teal-900/30 text-teal-600",
-                    )}
-                  >
-                    {index + 1}
-                  </span>
-
-                  {/* Grip icon */}
-                  <GripVertical className="w-5 h-5 text-slate-400" />
-
-                  {/* Sentence text */}
-                  <span className="flex-1 text-slate-700 dark:text-slate-200 font-medium">
-                    {sentence}
-                  </span>
-
-                  {/* Movement buttons */}
-                  {!showFeedback && (
-                    <div className="flex flex-col gap-1">
-                      <button
-                        onClick={() => moveItem(index, "up")}
-                        disabled={index === 0}
-                        className={cn(
-                          "p-1 rounded transition-colors",
-                          index === 0
-                            ? "text-slate-300 cursor-not-allowed"
-                            : "text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700",
-                        )}
-                      >
-                        <ArrowUp className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => moveItem(index, "down")}
-                        disabled={index === currentOrder.length - 1}
-                        className={cn(
-                          "p-1 rounded transition-colors",
-                          index === currentOrder.length - 1
-                            ? "text-slate-300 cursor-not-allowed"
-                            : "text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700",
-                        )}
-                      >
-                        <ArrowDown className="w-4 h-4" />
-                      </button>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
+                return (
+                  <SortableItem
+                    key={sentence}
+                    sentence={sentence}
+                    index={index}
+                    isCorrectPosition={isCorrectPosition}
+                    isWrongPosition={isWrongPosition}
+                    showFeedback={showFeedback}
+                  />
+                );
+              })}
+            </Reorder.Group>
           </div>
         </div>
       </PracticeGameLayout>
@@ -260,3 +198,59 @@ export default function ReorderPage() {
     </>
   );
 }
+
+const SortableItem = ({
+  sentence,
+  index,
+  isCorrectPosition,
+  isWrongPosition,
+  showFeedback,
+}) => {
+  return (
+    <Reorder.Item
+      value={sentence}
+      className={cn(
+        "flex items-center gap-3 p-4 rounded-xl border-2 transition-colors duration-200 select-none bg-white dark:bg-slate-800",
+        !showFeedback &&
+          "cursor-grab active:cursor-grabbing hover:border-slate-300 dark:hover:border-slate-600",
+        isCorrectPosition
+          ? "bg-emerald-50 dark:bg-emerald-900/20 border-emerald-500"
+          : isWrongPosition
+            ? "bg-red-50 dark:bg-red-900/20 border-red-500"
+            : "border-slate-200 dark:border-slate-700",
+      )}
+      whileDrag={{
+        scale: 1.02,
+        boxShadow: "0 10px 30px -10px rgba(0,0,0,0.15)",
+        zIndex: 50,
+      }}
+      transition={{ type: "spring", stiffness: 400, damping: 25 }}
+    >
+      {/* Position number */}
+      <span
+        className={cn(
+          "w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold shrink-0",
+          isCorrectPosition
+            ? "bg-emerald-500 text-white"
+            : isWrongPosition
+              ? "bg-red-500 text-white"
+              : "bg-teal-100 dark:bg-teal-900/30 text-teal-600",
+        )}
+      >
+        {index + 1}
+      </span>
+
+      {/* Grip icon - Visual cue only, entire card is draggable */}
+      {!showFeedback && (
+        <div className="text-slate-400">
+          <GripVertical className="w-5 h-5" />
+        </div>
+      )}
+
+      {/* Sentence text */}
+      <span className="flex-1 text-slate-700 dark:text-slate-200 font-medium select-none">
+        {sentence}
+      </span>
+    </Reorder.Item>
+  );
+};

@@ -206,6 +206,7 @@ export default function WhatDoYouSeePage() {
         onNext={handleSubmit}
         onRestart={handleRestart}
         isSubmitEnabled={Boolean(spokenText) && !showFeedback}
+        showSubmitButton={!showFeedback}
         submitLabel="Submit"
       >
         <div className="flex flex-col lg:flex-row items-center justify-center max-w-5xl w-full gap-8 lg:gap-16">

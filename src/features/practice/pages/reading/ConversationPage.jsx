@@ -228,7 +228,7 @@ export default function ConversationPage() {
         onNext={handleSubmit}
         onRestart={() => window.location.reload()}
         isSubmitEnabled={selectedOption !== null && !showFeedback}
-        showSubmitButton={true}
+        showSubmitButton={!showFeedback}
         submitLabel="Reply"
         timerValue={timerString}
       >

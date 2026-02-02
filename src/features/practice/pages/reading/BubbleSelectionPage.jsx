@@ -172,7 +172,7 @@ export default function BubbleSelectionPage() {
         onNext={handleSubmit}
         onRestart={() => window.location.reload()}
         isSubmitEnabled={selectedWords.length > 0 && !showFeedback}
-        showSubmitButton={true}
+        showSubmitButton={!showFeedback}
         submitLabel="Check"
         timerValue={timerString}
       >

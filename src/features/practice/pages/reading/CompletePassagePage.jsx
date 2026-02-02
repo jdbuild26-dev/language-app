@@ -1,246 +1,300 @@
 import React, { useState, useEffect } from "react";
 import { usePracticeExit } from "@/hooks/usePracticeExit";
 import { useExerciseTimer } from "@/hooks/useExerciseTimer";
-import { Volume2 } from "lucide-react";
+import { Volume2, CheckCircle, XCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
 import FeedbackBanner from "@/components/ui/FeedbackBanner";
 import { getFeedbackMessage } from "@/utils/feedbackMessages";
 import { useTextToSpeech } from "@/hooks/useTextToSpeech";
 
-// Mock data for Complete the Passage exercise
-const MOCK_QUESTIONS = [
-  {
-    id: 1,
-    context:
-      "Il fait beau aujourd'hui. _____ Les enfants sont contents de pouvoir sortir.",
-    options: [
-      "Il pleut beaucoup.",
-      "Le soleil brille.",
-      "Il neige fort.",
-      "Il fait très froid.",
-    ],
-    correctIndex: 1,
-    fullText:
-      "Il fait beau aujourd'hui. Le soleil brille. Les enfants sont contents de pouvoir sortir.",
-    timeLimitSeconds: 45,
-  },
-  {
-    id: 2,
-    context:
-      "Marie va au supermarché. _____ Elle achète aussi des légumes frais.",
-    options: [
-      "Elle va au cinéma.",
-      "Elle achète du pain et du lait.",
-      "Elle rentre chez elle.",
-      "Elle lit un livre.",
-    ],
-    correctIndex: 1,
-    fullText:
-      "Marie va au supermarché. Elle achète du pain et du lait. Elle achète aussi des légumes frais.",
-    timeLimitSeconds: 45,
-  },
-  {
-    id: 3,
-    context:
-      "Le restaurant est plein ce soir. _____ Les serveurs travaillent très vite.",
-    options: [
-      "Il n'y a personne.",
-      "Tous les clients sont partis.",
-      "Beaucoup de gens dînent ici.",
-      "Le restaurant est fermé.",
-    ],
-    correctIndex: 2,
-    fullText:
-      "Le restaurant est plein ce soir. Beaucoup de gens dînent ici. Les serveurs travaillent très vite.",
-    timeLimitSeconds: 45,
-  },
-  {
-    id: 4,
-    context:
-      "Pierre est fatigué après le travail. _____ Il se couche à neuf heures.",
-    options: [
-      "Il va au cinéma.",
-      "Il fait du sport.",
-      "Il mange léger et se repose.",
-      "Il sort avec ses amis.",
-    ],
-    correctIndex: 2,
-    fullText:
-      "Pierre est fatigué après le travail. Il mange léger et se repose. Il se couche à neuf heures.",
-    timeLimitSeconds: 45,
-  },
-  {
-    id: 5,
-    context: "Nous partons en vacances demain. _____ Nous sommes très excités!",
-    options: [
-      "Nous allons à la mer.",
-      "Nous travaillons au bureau.",
-      "Nous restons à la maison.",
-      "Nous étudions pour l'examen.",
-    ],
-    correctIndex: 0,
-    fullText:
-      "Nous partons en vacances demain. Nous allons à la mer. Nous sommes très excités!",
-    timeLimitSeconds: 45,
-  },
+/* 
+  Data for the exercise: 
+  A longer passage with multiple blanks.
+*/
+const PASSAGE_SEGMENTS = [
+  "Firefighters are the people who fight fires on a ",
+  { id: 1, type: "blank" },
+  " basis. They work for fire departments, which ",
+  { id: 2, type: "blank" },
+  " organizations of trained professionals that keep the community ",
+  { id: 3, type: "blank" },
+  " from fires. When a fire ",
+  { id: 4, type: "blank" },
+  " out, firefighters enter buildings to look ",
+  { id: 5, type: "blank" },
+  " people and pets, rescue them, and ",
+  { id: 6, type: "blank" },
+  " out the fire to prevent ",
+  { id: 7, type: "blank" },
+  " from spreading. They also conduct ",
+  { id: 8, type: "blank" },
+  " drills and inspections to ",
+  { id: 9, type: "blank" },
+  " businesses and agencies safe.",
 ];
+
+const BLANKS_DATA = {
+  1: { options: ["regular", "routine", "daily", "common"], correct: "daily" },
+  2: { options: ["is", "are", "was", "were"], correct: "are" },
+  3: { options: ["safe", "danger", "risk", "harm"], correct: "safe" },
+  4: { options: ["breaks", "goes", "runs", "comes"], correct: "breaks" },
+  5: { options: ["at", "for", "to", "in"], correct: "for" },
+  6: { options: ["put", "take", "get", "let"], correct: "put" },
+  7: { options: ["it", "them", "fire", "water"], correct: "it" },
+  8: { options: ["safety", "fire", "emergency", "routine"], correct: "safety" },
+  9: { options: ["make", "keep", "stay", "hold"], correct: "keep" },
+};
+
+const FULL_TEXT =
+  "Firefighters are the people who fight fires on a daily basis. They work for fire departments, which are organizations of trained professionals that keep the community safe from fires. When a fire breaks out, firefighters enter buildings to look for people and pets, rescue them, and put out the fire to prevent it from spreading. They also conduct safety drills and inspections to keep businesses and agencies safe.";
 
 export default function CompletePassagePage() {
   const handleExit = usePracticeExit();
   const { speak, isSpeaking } = useTextToSpeech();
 
-  const [questions] = useState(MOCK_QUESTIONS);
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [selectedOption, setSelectedOption] = useState(null);
-  const [isCompleted, setIsCompleted] = useState(false);
+  // State
+  const [answers, setAnswers] = useState({}); // { 1: "option", 2: "option" }
   const [showFeedback, setShowFeedback] = useState(false);
   const [isCorrect, setIsCorrect] = useState(false);
   const [feedbackMessage, setFeedbackMessage] = useState("");
   const [score, setScore] = useState(0);
+  const [isCompleted, setIsCompleted] = useState(false);
 
-  const currentQuestion = questions[currentIndex];
-  const timerDuration = currentQuestion?.timeLimitSeconds || 45;
-
-  const { timerString, resetTimer } = useExerciseTimer({
-    duration: timerDuration,
+  // Timer: 8 minutes (480s) to match screenshot mostly
+  const { timerString, resetTimer, pauseTimer } = useExerciseTimer({
+    duration: 480,
     mode: "timer",
     onExpire: () => {
-      if (!isCompleted && !showFeedback) {
-        setIsCorrect(false);
-        setFeedbackMessage("Time's up!");
-        setShowFeedback(true);
+      if (!showFeedback && !isCompleted) {
+        checkAnswers(true);
       }
     },
-    isPaused: isCompleted || showFeedback,
+    isPaused: showFeedback || isCompleted,
   });
 
-  useEffect(() => {
-    if (currentQuestion && !isCompleted) {
-      setSelectedOption(null);
-      resetTimer();
-    }
-  }, [currentIndex, currentQuestion, isCompleted, resetTimer]);
-
   const handlePlayAudio = () => {
-    if (currentQuestion) {
-      speak(currentQuestion.fullText, "fr-FR");
-    }
+    speak(FULL_TEXT, "en-US"); // English text
   };
 
-  const handleOptionSelect = (index) => {
+  const handleOptionSelect = (blankId, value) => {
     if (showFeedback) return;
-    setSelectedOption(index);
+    setAnswers((prev) => ({ ...prev, [blankId]: value }));
   };
 
-  const handleSubmit = () => {
-    if (showFeedback || selectedOption === null) return;
+  const checkAnswers = (timeExpired = false) => {
+    // Count correct answers
+    let correctCount = 0;
+    const totalBlanks = Object.keys(BLANKS_DATA).length;
 
-    const correct = selectedOption === currentQuestion.correctIndex;
-    setIsCorrect(correct);
-    setFeedbackMessage(getFeedbackMessage(correct));
-    setShowFeedback(true);
+    Object.keys(BLANKS_DATA).forEach((key) => {
+      const id = parseInt(key);
+      if (answers[id] === BLANKS_DATA[id].correct) {
+        correctCount++;
+      }
+    });
 
-    if (correct) {
-      setScore((prev) => prev + 1);
-    }
-  };
+    const verifyAllCorrect = correctCount === totalBlanks;
+    setIsCorrect(verifyAllCorrect);
 
-  const handleContinue = () => {
-    setShowFeedback(false);
-
-    if (currentIndex < questions.length - 1) {
-      setCurrentIndex((prev) => prev + 1);
+    if (verifyAllCorrect) {
+      setScore(correctCount);
+      setFeedbackMessage("Excellent! All answers are correct.");
     } else {
+      setScore(correctCount);
+      setFeedbackMessage(
+        timeExpired
+          ? "Time's up!"
+          : `You got ${correctCount} out of ${totalBlanks} correct.`,
+      );
+    }
+
+    setShowFeedback(true);
+    if (verifyAllCorrect) {
       setIsCompleted(true);
     }
   };
 
-  const progress =
-    questions.length > 0 ? ((currentIndex + 1) / questions.length) * 100 : 0;
-
-  // Render context with highlighted blank
-  const renderContext = () => {
-    const parts = currentQuestion?.context.split("_____");
-    return (
-      <>
-        <span>{parts?.[0]}</span>
-        <span className="inline-block mx-2 px-4 py-1 bg-sky-100 dark:bg-sky-900/30 border-2 border-dashed border-sky-400 rounded-lg text-sky-600 dark:text-sky-400 font-semibold min-w-[120px] text-center">
-          {selectedOption !== null
-            ? currentQuestion.options[selectedOption]
-            : "?"}
-        </span>
-        <span>{parts?.[1]}</span>
-      </>
-    );
+  const handleSubmit = () => {
+    if (showFeedback) return;
+    // Verify that all are selected? Or allow partial?
+    // Let's require all to be selected for "Check", or at least warn logic.
+    // Usually "Check" is available.
+    checkAnswers();
   };
+
+  const handleContinue = () => {
+    // Logic after feedback
+    if (isCorrect) {
+      // Exit or show completion
+      setIsCompleted(true);
+      handleExit(); // Or manual exit
+    } else {
+      // Allow retry? Or finish?
+      // Usually practice games allow retry or just show results.
+      // Based on other games, "Continue" might go to next question.
+      // Since this is a single page game, "Continue" could finish.
+      setIsCompleted(true);
+      handleExit();
+    }
+  };
+
+  const allAnswered = Object.keys(BLANKS_DATA).every((key) => answers[key]);
+  const progress =
+    (Object.keys(answers).length / Object.keys(BLANKS_DATA).length) * 100;
 
   return (
     <>
       <PracticeGameLayout
-        questionType="Complete the Passage"
-        instructionFr="Complétez le passage avec la phrase correcte"
-        instructionEn="Complete the passage with the correct sentence"
+        questionType="Fill in the blanks - Passage"
+        instructionFr="Complétez le passage"
+        instructionEn="Select the best option for each missing word"
         progress={progress}
         isGameOver={isCompleted}
         score={score}
-        totalQuestions={questions.length}
+        totalQuestions={Object.keys(BLANKS_DATA).length}
         onExit={handleExit}
-        onNext={handleSubmit}
+        onNext={handleSubmit} // Using onNext as Submit trigger from layout if needed
         onRestart={() => window.location.reload()}
-        isSubmitEnabled={selectedOption !== null && !showFeedback}
-        showSubmitButton={true}
+        isSubmitEnabled={allAnswered && !showFeedback}
+        showSubmitButton={!showFeedback}
         submitLabel="Check"
         timerValue={timerString}
       >
-        <div className="flex flex-col items-center w-full max-w-3xl mx-auto px-4 py-6">
-          {/* Passage with blank */}
-          <div className="w-full bg-white dark:bg-slate-800 rounded-2xl p-6 mb-6 shadow-lg border border-slate-200 dark:border-slate-700">
-            <p className="text-lg leading-relaxed text-slate-700 dark:text-slate-200">
-              {renderContext()}
-            </p>
-          </div>
+        <div className="flex flex-col lg:flex-row w-full max-w-7xl mx-auto gap-6 p-4 h-full md:items-stretch overflow-hidden">
+          {/* Left Column: Passage */}
+          <div className="flex-1 flex flex-col bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden min-h-[400px]">
+            <div className="p-6 md:p-8 overflow-y-auto custom-scrollbar">
+              <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-6">
+                PASSAGE
+              </h3>
+              <div className="text-lg md:text-xl leading-loose text-slate-800 dark:text-slate-100 font-serif">
+                {PASSAGE_SEGMENTS.map((segment, index) => {
+                  if (typeof segment === "string") {
+                    return <span key={index}>{segment}</span>;
+                  } else if (segment.type === "blank") {
+                    const id = segment.id;
+                    const userAnswer = answers[id];
+                    const isCorrectAnswer =
+                      userAnswer === BLANKS_DATA[id].correct;
 
-          {/* Audio button */}
-          <button
-            onClick={handlePlayAudio}
-            disabled={isSpeaking}
-            className={cn(
-              "flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all mb-4",
-              isSpeaking
-                ? "bg-sky-100 text-sky-600"
-                : "bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-sky-100 hover:text-sky-600",
-            )}
-          >
-            <Volume2 className="w-4 h-4" />
-            Listen to complete passage
-          </button>
+                    return (
+                      <span
+                        key={index}
+                        className="mx-1 inline-flex items-center"
+                      >
+                        <span
+                          className={cn(
+                            "inline-flex items-center justify-center px-1.5 py-0.5 rounded border border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 text-sm font-bold text-slate-500 mr-1 min-w-[24px]",
+                            showFeedback &&
+                              isCorrectAnswer &&
+                              "bg-green-100 border-green-400 text-green-700",
+                            showFeedback &&
+                              !isCorrectAnswer &&
+                              "bg-red-100 border-red-400 text-red-700",
+                          )}
+                        >
+                          {id}
+                        </span>
+                        {showFeedback && (
+                          <span
+                            className={cn(
+                              "font-bold underline decoration-2 underline-offset-4",
+                              isCorrectAnswer
+                                ? "text-green-600 decoration-green-500"
+                                : "text-red-600 decoration-red-500",
+                            )}
+                          >
+                            {userAnswer || "(empty)"}
+                          </span>
+                        )}
+                      </span>
+                    );
+                  }
+                  return null;
+                })}
+              </div>
+            </div>
 
-          {/* Options */}
-          <div className="w-full space-y-3">
-            {currentQuestion?.options.map((option, index) => (
+            {/* Audio Control */}
+            <div className="p-4 border-t border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 mt-auto">
               <button
-                key={index}
-                onClick={() => handleOptionSelect(index)}
-                disabled={showFeedback}
+                onClick={handlePlayAudio}
+                disabled={isSpeaking}
                 className={cn(
-                  "w-full py-3 px-5 rounded-xl text-left text-base font-medium transition-all duration-200 border-2",
-                  selectedOption === index
-                    ? "bg-sky-500 text-white border-sky-500 shadow-lg"
-                    : "bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700 hover:border-sky-400 hover:bg-sky-50 dark:hover:bg-sky-900/20",
-                  showFeedback && index === currentQuestion.correctIndex
-                    ? "bg-emerald-500 text-white border-emerald-500"
-                    : "",
-                  showFeedback &&
-                    selectedOption === index &&
-                    index !== currentQuestion.correctIndex
-                    ? "bg-red-500 text-white border-red-500"
-                    : "",
+                  "flex items-center gap-2 text-sm font-medium transition-colors",
+                  isSpeaking
+                    ? "text-sky-500"
+                    : "text-slate-500 hover:text-sky-600",
                 )}
               >
-                {option}
+                <Volume2 className="w-4 h-4" />
+                {isSpeaking ? "Playing..." : "Listen to full text"}
               </button>
-            ))}
+            </div>
+          </div>
+
+          {/* Right Column: Questions */}
+          <div className="flex-1 flex flex-col justify-start lg:max-w-md overflow-hidden">
+            <div className="bg-white dark:bg-slate-800/50 rounded-xl p-6 h-full overflow-y-auto custom-scrollbar border border-slate-200 dark:border-slate-700 shadow-sm">
+              <h2 className="text-xl font-bold text-slate-800 dark:text-white mb-6">
+                Select the best option for each missing word
+              </h2>
+
+              <div className="space-y-4">
+                {Object.keys(BLANKS_DATA).map((key) => {
+                  const id = parseInt(key);
+                  const blank = BLANKS_DATA[id];
+                  const userAnswer = answers[id];
+                  const isCorrectAnswer = userAnswer === blank.correct;
+
+                  return (
+                    <div key={id} className="flex items-center gap-3">
+                      <div className="flex-shrink-0 w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center font-bold text-slate-500 border border-slate-200 dark:border-slate-600">
+                        {id}
+                      </div>
+                      <div className="flex-grow">
+                        <select
+                          value={userAnswer || ""}
+                          onChange={(e) =>
+                            handleOptionSelect(id, e.target.value)
+                          }
+                          disabled={showFeedback}
+                          className={cn(
+                            "w-full p-3 rounded-lg border bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 outline-none transition-all appearance-none cursor-pointer",
+                            "focus:ring-2 focus:ring-sky-500 border-slate-200 dark:border-slate-700",
+                            showFeedback &&
+                              isCorrectAnswer &&
+                              "border-green-500 bg-green-50 dark:bg-green-900/20 text-green-900 dark:text-green-100",
+                            showFeedback &&
+                              !isCorrectAnswer &&
+                              "border-red-500 bg-red-50 dark:bg-red-900/20 text-red-900 dark:text-red-100",
+                          )}
+                        >
+                          <option value="" disabled>
+                            Select a word
+                          </option>
+                          {blank.options.map((opt, i) => (
+                            <option key={i} value={opt}>
+                              {opt}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      {showFeedback && (
+                        <div className="flex-shrink-0">
+                          {isCorrectAnswer ? (
+                            <CheckCircle className="w-6 h-6 text-green-500" />
+                          ) : (
+                            <XCircle className="w-6 h-6 text-red-500" />
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
           </div>
         </div>
       </PracticeGameLayout>
@@ -249,16 +303,10 @@ export default function CompletePassagePage() {
       {showFeedback && (
         <FeedbackBanner
           isCorrect={isCorrect}
-          correctAnswer={
-            !isCorrect
-              ? currentQuestion.options[currentQuestion.correctIndex]
-              : null
-          }
+          correctAnswer={null} // Not used for multi-answer
           onContinue={handleContinue}
           message={feedbackMessage}
-          continueLabel={
-            currentIndex + 1 === questions.length ? "FINISH" : "CONTINUE"
-          }
+          continueLabel="FINISH"
         />
       )}
     </>

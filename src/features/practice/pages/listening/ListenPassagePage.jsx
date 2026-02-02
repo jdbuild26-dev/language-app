@@ -163,7 +163,7 @@ export default function ListenPassagePage() {
         onNext={handleSubmit}
         onRestart={() => window.location.reload()}
         isSubmitEnabled={selectedOption !== null && !showFeedback}
-        showSubmitButton={true}
+        showSubmitButton={!showFeedback}
         submitLabel="Check"
         timerValue={hasPlayed ? timerString : "--:--"}
       >
