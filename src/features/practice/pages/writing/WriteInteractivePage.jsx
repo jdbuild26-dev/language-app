@@ -7,6 +7,8 @@ import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
 import FeedbackBanner from "@/components/ui/FeedbackBanner";
 import { getFeedbackMessage } from "@/utils/feedbackMessages";
 import { useTextToSpeech } from "@/hooks/useTextToSpeech";
+import { useWritingEvaluation } from "../../hooks/useWritingEvaluation";
+import WritingFeedbackResult from "../../components/WritingFeedbackResult";
 
 // Single continuous conversation mock data for Interactive Writing
 const LONG_CONVERSATION = {
@@ -80,6 +82,8 @@ export default function WriteInteractivePage() {
   const [feedbackMessage, setFeedbackMessage] = useState("");
   const [score, setScore] = useState(0);
 
+  const { evaluation, isSubmitting, evaluate, resetEvaluation } = useWritingEvaluation();
+
   const currentExchange = conversation.exchanges[currentExchangeIndex];
   const timerDuration = conversation.timeLimitSeconds;
 
@@ -139,35 +143,39 @@ export default function WriteInteractivePage() {
     return text.trim().split(/\s+/).filter((word) => word.length > 0).length;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     if (e) e.preventDefault();
-    if (showFeedback || !currentExchange?.isQuestion || !userInput.trim()) return;
+    if (showFeedback || !currentExchange?.isQuestion || !userInput.trim() || isSubmitting) return;
 
-    const wordCount = getWordCount(userInput);
-    const meetsMinWords = wordCount >= (currentExchange.minWords || 2);
+    const result = await evaluate({
+      task_type: "interactive",
+      user_text: userInput,
+      topic: conversation.context,
+      reference: currentExchange.sampleAnswer,
+      context: `Participant: ${currentExchange.speaker}. Instruction for user: ${currentExchange.prompt}`
+    });
 
-    setIsCorrect(meetsMinWords);
-    setFeedbackMessage(
-      meetsMinWords
-        ? getFeedbackMessage(true)
-        : `Veuillez écrire au moins ${currentExchange.minWords} mots.`
-    );
-    setShowFeedback(true);
+    if (result) {
+      setIsCorrect(result.score >= 70);
+      setFeedbackMessage(result.feedback);
+      setShowFeedback(true);
 
-    // Add user's response to display
-    setDisplayedExchanges((prev) => [
-      ...prev,
-      { speaker: "You", text: userInput, isQuestion: false },
-    ]);
+      // Add user's response to display
+      setDisplayedExchanges((prev) => [
+        ...prev,
+        { speaker: "You", text: userInput, isQuestion: false },
+      ]);
 
-    if (meetsMinWords) {
-      setScore((prev) => prev + 1);
+      if (result.score >= 70) {
+        setScore((prev) => prev + 1);
+      }
     }
   };
 
   const handleContinue = () => {
     setShowFeedback(false);
     setUserInput("");
+    resetEvaluation();
 
     if (currentExchangeIndex < conversation.exchanges.length - 1) {
       setCurrentExchangeIndex((prev) => prev + 1);
@@ -271,15 +279,15 @@ export default function WriteInteractivePage() {
                   />
                   <button
                     type="submit"
-                    disabled={userInput.trim().length < 2}
+                    disabled={userInput.trim().length < 2 || isSubmitting}
                     className={cn(
                       "w-14 h-14 rounded-2xl flex items-center justify-center transition-all shadow-md active:scale-95",
-                      userInput.trim().length >= 2
+                      userInput.trim().length >= 2 && !isSubmitting
                         ? "bg-emerald-600 text-white hover:bg-emerald-700"
                         : "bg-slate-200 dark:bg-slate-700 text-slate-400 cursor-not-allowed"
                     )}
                   >
-                    <Send className="w-6 h-6" />
+                    <Send className={cn("w-6 h-6", isSubmitting && "animate-pulse")} />
                   </button>
                 </form>
 
@@ -301,7 +309,6 @@ export default function WriteInteractivePage() {
       {showFeedback && (
         <FeedbackBanner
           isCorrect={isCorrect}
-          correctAnswer={!isCorrect ? currentExchange?.sampleAnswer : null}
           onContinue={handleContinue}
           message={feedbackMessage}
           continueLabel={
@@ -309,7 +316,13 @@ export default function WriteInteractivePage() {
               ? "FINISH"
               : "CONTINUE"
           }
-        />
+        >
+          {evaluation && (
+            <div className="max-w-xl mx-auto mt-4 px-4 overflow-y-auto max-h-[40vh] custom-scrollbar">
+              <WritingFeedbackResult evaluation={evaluation} />
+            </div>
+          )}
+        </FeedbackBanner>
       )}
     </>
   );

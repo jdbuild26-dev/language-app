@@ -88,11 +88,11 @@ export default function PracticeGameLayout({
   return (
     <div className="flex flex-col h-screen max-h-screen bg-white dark:bg-slate-950 overflow-hidden font-sans">
       {/* HEADER */}
-      <div className="pt-12 pb-6 px-4 text-center border-b-[1px] border-red-100 dark:border-red-900/30 shrink-0 relative bg-white dark:bg-slate-950 z-10">
+      <div className="pt-8 md:pt-12 pb-4 md:pb-6 px-4 text-center border-b-[1px] border-red-100 dark:border-red-900/30 shrink-0 relative bg-white dark:bg-slate-950 z-10">
         {/* Instructions (Main Heading) */}
         <div className="flex flex-col items-center justify-center gap-2">
           <div className="flex items-center justify-center gap-3">
-            <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white tracking-tight">
+            <h1 className="text-xl md:text-3xl font-bold text-gray-900 dark:text-white tracking-tight">
               {showTranslation
                 ? instructionEn || instructionFr
                 : instructionFr || instructionEn}
@@ -137,7 +137,7 @@ export default function PracticeGameLayout({
 
       <div
         className={cn(
-          "py-6 px-8 border-t-[1px] shrink-0 flex items-center justify-between w-full z-10 transition-colors duration-300",
+          "py-4 md:py-6 px-4 md:px-8 border-t-[1px] shrink-0 flex items-center justify-between w-full z-10 transition-colors duration-300",
           showFeedback
             ? isCorrect
               ? "bg-green-100 dark:bg-green-900/30 border-green-500"
@@ -157,7 +157,7 @@ export default function PracticeGameLayout({
               <div className="flex flex-col">
                 <span
                   className={cn(
-                    "text-xl font-bold leading-tight",
+                    "text-lg md:text-xl font-bold leading-tight",
                     isCorrect
                       ? "text-green-800 dark:text-green-200"
                       : "text-red-800 dark:text-red-200",
@@ -175,7 +175,7 @@ export default function PracticeGameLayout({
           ) : (
             <div
               className={cn(
-                "text-3xl font-bold font-mono tracking-wider min-w-[80px] transition-colors",
+                "text-xl md:text-3xl font-bold font-mono tracking-wider min-w-[60px] md:min-w-[80px] transition-colors",
                 // Timer Styling default
                 "text-gray-800 dark:text-gray-200",
               )}
@@ -188,11 +188,11 @@ export default function PracticeGameLayout({
         {/* Right: Action Button */}
         <div className="shrink-0 ml-4">
           {showSubmitButton && (
-            <Button
+            <button
               onClick={onNext}
               disabled={!isSubmitEnabled}
               className={cn(
-                "px-8 py-6 text-lg font-bold rounded-xl uppercase tracking-wider shadow-lg transition-transform active:scale-95 min-w-[140px]",
+                "px-6 md:px-8 py-3 md:py-6 text-base md:text-lg font-bold rounded-xl uppercase tracking-wider shadow-lg transition-transform active:scale-95 min-w-[120px] md:min-w-[140px]",
                 showFeedback
                   ? isCorrect
                     ? "bg-green-600 hover:bg-green-700 text-white border-b-4 border-green-700 active:border-b-0"
@@ -203,7 +203,7 @@ export default function PracticeGameLayout({
               )}
             >
               {submitLabel}
-            </Button>
+            </button>
           )}
         </div>
       </div>

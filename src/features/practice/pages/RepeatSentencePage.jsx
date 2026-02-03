@@ -8,6 +8,39 @@ import { cn } from "@/lib/utils";
 
 import { fuzzyIncludes, matchSpeechToAnswer } from "@/utils/textComparison";
 
+const MOCK_DATA = [
+  {
+    id: 1,
+    completeSentence: "Je voudrais un café s'il vous plaît.",
+    sentenceWithBlank: "Je voudrais un _____ s'il vous plaît.",
+    correctAnswer: "café",
+  },
+  {
+    id: 2,
+    completeSentence: "Où se trouve la gare la plus proche ?",
+    sentenceWithBlank: "Où se trouve la _____ la plus proche ?",
+    correctAnswer: "gare",
+  },
+  {
+    id: 3,
+    completeSentence: "Le chat noir dort sur le canapé.",
+    sentenceWithBlank: "Le chat noir dort sur le _____.",
+    correctAnswer: "canapé",
+  },
+  {
+    id: 4,
+    completeSentence: "Il fait très beau aujourd'hui à Paris.",
+    sentenceWithBlank: "Il fait très _____ aujourd'hui à Paris.",
+    correctAnswer: "beau",
+  },
+  {
+    id: 5,
+    completeSentence: "Pouvez-vous m'aider avec mes bagages ?",
+    sentenceWithBlank: "Pouvez-vous m'aider avec mes _____ ?",
+    correctAnswer: "bagages",
+  },
+];
+
 export default function RepeatSentencePage() {
   const navigate = useNavigate();
 
@@ -21,7 +54,8 @@ export default function RepeatSentencePage() {
   // Interaction State
   const [isListening, setIsListening] = useState(false);
   const [spokenText, setSpokenText] = useState("");
-  const [feedback, setFeedback] = useState(null); // 'correct', 'incorrect'
+  const [evaluation, setEvaluation] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const recognitionRef = useRef(null);
 
@@ -59,31 +93,11 @@ export default function RepeatSentencePage() {
     };
   }, []);
 
-  // Fetch Data
-  const hasFetched = useRef(false);
+  // Fetch Data (Now using Mock Data)
   useEffect(() => {
-    if (hasFetched.current) return;
-    hasFetched.current = true;
-
-    const fetchData = async () => {
-      try {
-        const response = await fetch(
-          `${import.meta.env.VITE_API_URL}/api/practice/repeat-sentence`,
-        );
-        if (!response.ok) throw new Error("Failed to fetch data");
-        const data = await response.json();
-
-        // Shuffle or just use as is
-        const shuffled = data.sort(() => 0.5 - Math.random());
-        setQuestions(shuffled);
-      } catch (error) {
-        console.error("Error fetching repeat sentence data:", error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchData();
+    const shuffled = [...MOCK_DATA].sort(() => 0.5 - Math.random());
+    setQuestions(shuffled);
+    setIsLoading(false);
   }, []);
 
   // Timer (Stopwatch mode)
@@ -93,6 +107,20 @@ export default function RepeatSentencePage() {
   });
 
   const currentQuestion = questions[currentIndex];
+
+  const handlePlayAudio = () => {
+    if ("speechSynthesis" in window) {
+      // Stop any current speech
+      window.speechSynthesis.cancel();
+
+      const utterance = new SpeechSynthesisUtterance(fullSentence);
+      utterance.lang = "fr-FR";
+      utterance.rate = 0.8; // Slightly slower for learning
+      window.speechSynthesis.speak(utterance);
+    } else {
+      alert("TTS is not supported in this browser.");
+    }
+  };
 
   const handleToggleListening = () => {
     if (!recognitionRef.current) {
@@ -104,36 +132,51 @@ export default function RepeatSentencePage() {
       recognitionRef.current.stop();
     } else {
       setSpokenText(""); // Clear previous
-      setFeedback(null);
+      setEvaluation(null);
       recognitionRef.current.start();
       setIsListening(true);
     }
   };
 
-  const handleSubmit = () => {
-    if (!currentQuestion) return;
+  const handleSubmit = async () => {
+    if (!spokenText || !currentQuestion || isSubmitting) return;
 
-    // Construct full sentence for comparison
-    const fullSentence =
-      currentQuestion.completeSentence ||
-      currentQuestion.sentenceWithBlank.replace(
-        /_+/g,
-        currentQuestion.correctAnswer,
-      );
+    setIsSubmitting(true);
+    try {
+      const fullSentence =
+        currentQuestion.completeSentence ||
+        currentQuestion.sentenceWithBlank?.replace(
+          /_+/g,
+          currentQuestion.correctAnswer,
+        );
 
-    const isCorrect = matchSpeechToAnswer(spokenText, fullSentence, 0.7);
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/practice/evaluate-speaking`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          task_type: "translate", // Repeat sentence is similar to translation evaluation
+          transcript: spokenText,
+          reference: fullSentence,
+          context: "Repeat the sentence exactly as shown."
+        }),
+      });
 
-    if (isCorrect) {
-      setScore((prev) => prev + 1);
-      setFeedback("correct");
-    } else {
-      setFeedback("incorrect");
+      if (!response.ok) throw new Error("Failed to evaluate");
+      const result = await response.json();
+      setEvaluation(result);
+      if (result.score >= 70) {
+        setScore((prev) => prev + 1);
+      }
+    } catch (error) {
+      console.error("Evaluation error:", error);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   const handleNext = () => {
     setSpokenText("");
-    setFeedback(null);
+    setEvaluation(null);
     setIsListening(false);
 
     if (currentIndex < questions.length - 1) {
@@ -196,31 +239,31 @@ export default function RepeatSentencePage() {
       isGameOver={isGameOver}
       timerValue={timerString}
       onExit={() => navigate("/vocabulary/practice")}
-      onNext={feedback ? handleNext : handleSubmit}
+      onNext={evaluation ? handleNext : handleSubmit}
       onRestart={handleRestart}
-      isSubmitEnabled={Boolean(spokenText)}
+      isSubmitEnabled={Boolean(spokenText) && !isSubmitting}
       showSubmitButton={true}
       submitLabel={
-        feedback === "correct"
-          ? "Continue"
-          : feedback === "incorrect"
+        isSubmitting
+          ? "Evaluating..."
+          : evaluation
             ? "Continue"
             : "Submit"
       }
-      showFeedback={!!feedback}
-      isCorrect={feedback === "correct"}
-      feedbackMessage={feedback === "correct" ? "Excellent!" : "Try again"}
+      showFeedback={!!evaluation}
+      isCorrect={evaluation?.score >= 70}
+      feedbackMessage={evaluation?.feedback || ""}
       correctAnswer={
         currentQuestion?.completeSentence || currentQuestion?.sentenceWithBlank
       }
     >
-      <div className="flex flex-col items-center justify-center max-w-3xl w-full gap-12">
+      <div className="flex flex-col items-center justify-center max-w-3xl w-full gap-8">
         {/* Full Sentence Display */}
-        <div className="w-full bg-white dark:bg-slate-800 rounded-2xl p-8 shadow-sm border border-slate-100 dark:border-slate-700 text-center relative overflow-hidden">
-          {feedback === "correct" && (
+        <div className="w-full bg-white dark:bg-slate-800 rounded-3xl p-6 md:p-8 shadow-xl border border-slate-100 dark:border-slate-700 text-center relative overflow-hidden">
+          {evaluation && evaluation.score >= 70 && (
             <div className="absolute inset-0 bg-green-500/10 z-0" />
           )}
-          {feedback === "incorrect" && (
+          {evaluation && evaluation.score < 70 && (
             <div className="absolute inset-0 bg-red-500/10 z-0" />
           )}
 
@@ -228,17 +271,47 @@ export default function RepeatSentencePage() {
             {fullSentence}
           </div>
 
-          {/* Audio Player Icon (Simulated for now, can add actual TTS here) */}
-          <div className="mt-4 flex justify-center">
+          <div className="mt-4 flex justify-center relative z-10">
             <Button
               variant="ghost"
               size="icon"
-              className="rounded-full w-12 h-12 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600"
+              onClick={handlePlayAudio}
+              className="rounded-full w-12 h-12 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 shadow-sm transition-all hover:scale-110 active:scale-95"
             >
               <Volume2 className="w-6 h-6 text-slate-700 dark:text-slate-200" />
             </Button>
           </div>
         </div>
+
+        {/* AI Evaluation Result */}
+        {evaluation && (
+          <div className={cn(
+            "w-full rounded-2xl p-4 md:p-6 border animate-in slide-in-from-bottom-4 duration-500",
+            evaluation.score >= 70
+              ? "bg-emerald-50 border-emerald-200 dark:bg-emerald-950/20 dark:border-emerald-800"
+              : "bg-amber-50 border-amber-200 dark:bg-amber-950/20 dark:border-amber-800"
+          )}>
+            <div className="flex items-center gap-3 md:gap-4">
+              <div className={cn(
+                "w-10 h-10 md:w-12 md:h-12 rounded-full flex items-center justify-center text-base md:text-xl font-bold border-2 shrink-0",
+                evaluation.score >= 70 ? "bg-emerald-500 text-white border-emerald-400" : "bg-amber-500 text-white border-amber-400"
+              )}>
+                {evaluation.score}
+              </div>
+              <div>
+                <h4 className="font-bold text-slate-900 dark:text-white text-sm md:text-base">AI Analysis</h4>
+                <p className="text-xs md:text-sm text-slate-600 dark:text-slate-400">{evaluation.feedback}</p>
+              </div>
+            </div>
+
+            {evaluation.correction && evaluation.score < 90 && (
+              <div className="mt-4 p-4 bg-white/50 dark:bg-slate-900/50 rounded-xl border border-white dark:border-slate-800">
+                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Recommended</p>
+                <p className="text-slate-800 dark:text-slate-200 font-medium">{evaluation.correction}</p>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* DEBUG: Show Answer for Testing */}
         <div className="w-full bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-200 dark:border-yellow-800 p-4 text-center">
