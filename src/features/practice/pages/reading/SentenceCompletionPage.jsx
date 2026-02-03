@@ -149,10 +149,68 @@ export default function SentenceCompletionPage() {
               <p>{currentQuestion?.passageBefore}</p>
 
               {/* Blank indicator */}
-              <div className="py-3 px-4 bg-slate-100 dark:bg-slate-700/50 border-l-4 border-cyan-500 rounded-r-lg">
-                <span className="text-slate-400 dark:text-slate-500 italic">
-                  [Select the best sentence to complete the passage]
-                </span>
+              <div className={cn(
+                "py-3 px-4 bg-slate-100 dark:bg-slate-700/50 border-l-4 rounded-r-lg transition-all duration-300",
+                showFeedback
+                  ? (isCorrect ? "border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20" : "border-red-500 bg-red-50 dark:bg-red-900/20")
+                  : "border-cyan-500",
+                !selectedOption && !showFeedback && "py-4 px-2 bg-slate-50 dark:bg-slate-800/50"
+              )}>
+                {/* Mobile: Horizontal options carousel when nothing is selected */}
+                {!selectedOption && !showFeedback ? (
+                  <>
+                    <div className="lg:hidden flex flex-col gap-2">
+                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tight mb-1 px-1">Choose the best sentence:</p>
+                      <div className="flex gap-3 overflow-x-auto pb-2 -mx-1 px-1 snap-x scrollbar-hide">
+                        {currentQuestion?.options.map((option, index) => (
+                          <button
+                            key={index}
+                            onClick={() => handleOptionSelect(index)}
+                            className="flex-shrink-0 w-64 snap-center p-3 rounded-xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm text-left shadow-sm active:scale-[0.98] transition-all"
+                          >
+                            <div className="flex gap-2 items-start">
+                              <span className="flex-shrink-0 w-5 h-5 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-[10px] font-bold text-slate-500 border border-slate-200 dark:border-slate-600">
+                                {String.fromCharCode(65 + index)}
+                              </span>
+                              <span className="text-slate-700 dark:text-slate-200 leading-snug">{option}</span>
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    {/* Desktop: Placeholder */}
+                    <span className="hidden lg:inline text-slate-400 dark:text-slate-500 italic">
+                      [Select the best sentence to complete the passage]
+                    </span>
+                  </>
+                ) : (
+                  <div
+                    className={cn(
+                      "flex flex-col gap-1",
+                      !showFeedback && selectedOption !== null && "cursor-pointer group"
+                    )}
+                    onClick={() => !showFeedback && selectedOption !== null && setSelectedOption(null)}
+                  >
+                    <span className={cn(
+                      "italic transition-all duration-300",
+                      selectedOption !== null
+                        ? "text-slate-900 dark:text-slate-100 font-medium not-italic"
+                        : "text-slate-400 dark:text-slate-500",
+                      showFeedback && selectedOption !== null && (
+                        isCorrect ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400"
+                      )
+                    )}>
+                      {selectedOption !== null
+                        ? currentQuestion.options[selectedOption]
+                        : "[Select the best sentence to complete the passage]"}
+                    </span>
+                    {!showFeedback && selectedOption !== null && (
+                      <span className="lg:hidden text-[10px] font-bold text-cyan-600 dark:text-cyan-400 uppercase flex items-center gap-1 opacity-70">
+                        Tap to change
+                      </span>
+                    )}
+                  </div>
+                )}
               </div>
 
               <p>{currentQuestion?.passageAfter}</p>
@@ -162,8 +220,8 @@ export default function SentenceCompletionPage() {
           {/* Vertical Divider (visible on lg screens) */}
           <div className="hidden lg:block w-px bg-cyan-400 dark:bg-cyan-500 self-stretch" />
 
-          {/* Right Column - Question & Options */}
-          <div className="flex-1 lg:max-w-md">
+          {/* Right Column - Question & Options (Hidden on Mobile) */}
+          <div className="hidden lg:block flex-1 lg:max-w-md">
             <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6 md:p-8">
               {/* Question */}
               <h3 className="text-base md:text-lg font-bold text-slate-800 dark:text-slate-100 mb-6">
@@ -217,7 +275,7 @@ export default function SentenceCompletionPage() {
                               index === currentQuestion.correctIndex
                               ? "bg-emerald-500 dark:bg-emerald-400"
                               : showFeedback &&
-                                  index !== currentQuestion.correctIndex
+                                index !== currentQuestion.correctIndex
                                 ? "bg-red-500 dark:bg-red-400"
                                 : "bg-cyan-500 dark:bg-cyan-400",
                           )}
