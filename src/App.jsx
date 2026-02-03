@@ -99,6 +99,8 @@ import WriteImagePage from "@/features/practice/pages/writing/WriteImagePage";
 import WriteDocumentsPage from "@/features/practice/pages/writing/WriteDocumentsPage";
 import WriteFormPage from "@/features/practice/pages/writing/WriteFormPage";
 import WriteInteractivePage from "@/features/practice/pages/writing/WriteInteractivePage";
+import WriteAnalysisPage from "@/features/practice/pages/writing/WriteAnalysisPage";
+import WriteSentenceCompletionPage from "@/features/practice/pages/writing/WriteSentenceCompletionPage";
 
 // Practice Module Speaking Exercises
 import SpeakTranslatePage from "@/features/practice/pages/speaking/SpeakTranslatePage";
@@ -752,6 +754,26 @@ function App() {
             <ProtectedRoute>
               <FullScreenLayout>
                 <WriteInteractivePage />
+              </FullScreenLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/practice/writing/analysis"
+          element={
+            <ProtectedRoute>
+              <FullScreenLayout>
+                <WriteAnalysisPage />
+              </FullScreenLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/practice/writing/sentence-completion"
+          element={
+            <ProtectedRoute>
+              <FullScreenLayout>
+                <WriteSentenceCompletionPage />
               </FullScreenLayout>
             </ProtectedRoute>
           }

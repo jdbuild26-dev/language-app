@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { usePracticeExit } from "@/hooks/usePracticeExit";
 import { useExerciseTimer } from "@/hooks/useExerciseTimer";
 import { Volume2, MessageCircle, Send } from "lucide-react";
@@ -8,78 +8,69 @@ import FeedbackBanner from "@/components/ui/FeedbackBanner";
 import { getFeedbackMessage } from "@/utils/feedbackMessages";
 import { useTextToSpeech } from "@/hooks/useTextToSpeech";
 
-// Mock data for Interactive Writing (chat-style) exercise
-const MOCK_CONVERSATIONS = [
-  {
-    id: 1,
-    context: "Meeting a new friend",
-    exchanges: [
-      {
-        speaker: "Friend",
-        text: "Salut! Comment tu t'appelles?",
-        isQuestion: false,
-      },
-      {
-        speaker: "You",
-        isQuestion: true,
-        prompt: "Introduce yourself",
-        sampleAnswer: "Je m'appelle [votre nom]. Et toi?",
-        minWords: 3,
-      },
-      {
-        speaker: "Friend",
-        text: "Moi, c'est Sophie. Tu viens d'où?",
-        isQuestion: false,
-      },
-      {
-        speaker: "You",
-        isQuestion: true,
-        prompt: "Tell them where you're from",
-        sampleAnswer: "Je viens de Paris. C'est une belle ville.",
-        minWords: 3,
-      },
-    ],
-    timeLimitSeconds: 180,
-  },
-  {
-    id: 2,
-    context: "At a café",
-    exchanges: [
-      {
-        speaker: "Waiter",
-        text: "Bonjour! Qu'est-ce que vous désirez?",
-        isQuestion: false,
-      },
-      {
-        speaker: "You",
-        isQuestion: true,
-        prompt: "Order a coffee and croissant",
-        sampleAnswer: "Un café et un croissant, s'il vous plaît.",
-        minWords: 4,
-      },
-      {
-        speaker: "Waiter",
-        text: "Bien sûr. Autre chose?",
-        isQuestion: false,
-      },
-      {
-        speaker: "You",
-        isQuestion: true,
-        prompt: "Ask for the bill",
-        sampleAnswer: "Non merci. L'addition, s'il vous plaît.",
-        minWords: 3,
-      },
-    ],
-    timeLimitSeconds: 180,
-  },
-];
+// Single continuous conversation mock data for Interactive Writing
+const LONG_CONVERSATION = {
+  id: 1,
+  context: "Planifier une sortie à Paris",
+  timeLimitSeconds: 300,
+  exchanges: [
+    {
+      speaker: "Marc",
+      text: "Salut ! On se voit ce week-end pour explorer Paris ?",
+      isQuestion: false,
+    },
+    {
+      speaker: "You",
+      isQuestion: true,
+      prompt: "Accept the invitation and ask what time",
+      sampleAnswer: "Salut Marc ! Oui, avec plaisir. À quelle heure ?",
+      minWords: 5,
+    },
+    {
+      speaker: "Marc",
+      text: "Super ! Je pensais vers 14h. On pourrait aller voir l'exposition au Louvre.",
+      isQuestion: false,
+    },
+    {
+      speaker: "You",
+      isQuestion: true,
+      prompt: "Agree and suggest meeting in front of the museum",
+      sampleAnswer: "C'est une excellente idée. On se retrouve devant le musée ?",
+      minWords: 5,
+    },
+    {
+      speaker: "Marc",
+      text: "Parfait. Et après le musée, on pourrait prendre un café dans le quartier Latin.",
+      isQuestion: false,
+    },
+    {
+      speaker: "You",
+      isQuestion: true,
+      prompt: "Say you know a good café there",
+      sampleAnswer: "D'accord, je connais un petit café très sympa là-bas.",
+      minWords: 5,
+    },
+    {
+      speaker: "Marc",
+      text: "Génial ! J'ai hâte d'y être. À samedi alors !",
+      isQuestion: false,
+    },
+    {
+      speaker: "You",
+      isQuestion: true,
+      prompt: "Say goodbye and see you soon",
+      sampleAnswer: "À samedi Marc, bonne journée !",
+      minWords: 3,
+    }
+  ],
+};
 
 export default function WriteInteractivePage() {
   const handleExit = usePracticeExit();
   const { speak, isSpeaking } = useTextToSpeech();
+  const chatEndRef = useRef(null);
 
-  const [conversations] = useState(MOCK_CONVERSATIONS);
-  const [currentConvIndex, setCurrentConvIndex] = useState(0);
+  const [conversation] = useState(LONG_CONVERSATION);
   const [currentExchangeIndex, setCurrentExchangeIndex] = useState(0);
   const [displayedExchanges, setDisplayedExchanges] = useState([]);
   const [userInput, setUserInput] = useState("");
@@ -89,15 +80,10 @@ export default function WriteInteractivePage() {
   const [feedbackMessage, setFeedbackMessage] = useState("");
   const [score, setScore] = useState(0);
 
-  const currentConv = conversations[currentConvIndex];
-  const currentExchange = currentConv?.exchanges[currentExchangeIndex];
-  const timerDuration = currentConv?.timeLimitSeconds || 180;
+  const currentExchange = conversation.exchanges[currentExchangeIndex];
+  const timerDuration = conversation.timeLimitSeconds;
 
-  // Count total user responses needed
-  const totalQuestions = conversations.reduce(
-    (acc, conv) => acc + conv.exchanges.filter((e) => e.isQuestion).length,
-    0,
-  );
+  const totalQuestions = conversation.exchanges.filter((e) => e.isQuestion).length;
 
   const { timerString, resetTimer } = useExerciseTimer({
     duration: timerDuration,
@@ -112,43 +98,50 @@ export default function WriteInteractivePage() {
     isPaused: isCompleted || showFeedback,
   });
 
+  // Auto-scroll to bottom
   useEffect(() => {
-    if (currentConv && !isCompleted) {
-      setDisplayedExchanges([]);
-      setCurrentExchangeIndex(0);
-      resetTimer();
-    }
-  }, [currentConvIndex, currentConv, isCompleted, resetTimer]);
+    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [displayedExchanges, currentExchange]);
 
-  // Auto-advance through non-question exchanges
+  // Initial setup and auto-advance logic for statements
   useEffect(() => {
-    if (currentExchange && !currentExchange.isQuestion && !showFeedback) {
-      speak(currentExchange.text, "fr-FR");
-      setDisplayedExchanges((prev) => [...prev, currentExchange]);
+    if (!currentExchange || isCompleted) return;
 
-      const timer = setTimeout(() => {
-        if (currentExchangeIndex < currentConv.exchanges.length - 1) {
-          setCurrentExchangeIndex((prev) => prev + 1);
+    if (!currentExchange.isQuestion && !showFeedback) {
+      // Add and speak Marc's message
+      setDisplayedExchanges((prev) => {
+        const last = prev[prev.length - 1];
+        if (last !== currentExchange) {
+          speak(currentExchange.text, "fr-FR");
+          return [...prev, currentExchange];
         }
-      }, 2000);
+        return prev;
+      });
+
+      const delay = 1500 + currentExchange.text.length * 50;
+      const timer = setTimeout(() => {
+        if (currentExchangeIndex < conversation.exchanges.length - 1) {
+          setCurrentExchangeIndex((prev) => prev + 1);
+        } else {
+          setIsCompleted(true);
+        }
+      }, delay);
 
       return () => clearTimeout(timer);
     }
-  }, [currentExchangeIndex, currentExchange, showFeedback]);
+  }, [currentExchangeIndex, currentExchange, showFeedback, isCompleted, speak]);
 
   const handlePlayMessage = (text) => {
     speak(text, "fr-FR");
   };
 
   const getWordCount = (text) => {
-    return text
-      .trim()
-      .split(/\s+/)
-      .filter((word) => word.length > 0).length;
+    return text.trim().split(/\s+/).filter((word) => word.length > 0).length;
   };
 
-  const handleSubmit = () => {
-    if (showFeedback || !currentExchange?.isQuestion) return;
+  const handleSubmit = (e) => {
+    if (e) e.preventDefault();
+    if (showFeedback || !currentExchange?.isQuestion || !userInput.trim()) return;
 
     const wordCount = getWordCount(userInput);
     const meetsMinWords = wordCount >= (currentExchange.minWords || 2);
@@ -157,7 +150,7 @@ export default function WriteInteractivePage() {
     setFeedbackMessage(
       meetsMinWords
         ? getFeedbackMessage(true)
-        : `Try to write at least ${currentExchange.minWords} words.`,
+        : `Veuillez écrire au moins ${currentExchange.minWords} mots.`
     );
     setShowFeedback(true);
 
@@ -176,36 +169,21 @@ export default function WriteInteractivePage() {
     setShowFeedback(false);
     setUserInput("");
 
-    // Move to next exchange
-    if (currentExchangeIndex < currentConv.exchanges.length - 1) {
+    if (currentExchangeIndex < conversation.exchanges.length - 1) {
       setCurrentExchangeIndex((prev) => prev + 1);
-    } else if (currentConvIndex < conversations.length - 1) {
-      setCurrentConvIndex((prev) => prev + 1);
     } else {
       setIsCompleted(true);
     }
   };
 
-  // Calculate progress
-  let completedQuestions = 0;
-  for (let i = 0; i < currentConvIndex; i++) {
-    completedQuestions += conversations[i].exchanges.filter(
-      (e) => e.isQuestion,
-    ).length;
-  }
-  const currentConvQuestions =
-    currentConv?.exchanges
-      .slice(0, currentExchangeIndex + 1)
-      .filter((e) => e.isQuestion).length || 0;
-  completedQuestions += currentConvQuestions;
-  const progress = (completedQuestions / totalQuestions) * 100;
+  const progress = (currentExchangeIndex / conversation.exchanges.length) * 100;
 
   return (
     <>
       <PracticeGameLayout
         questionType="Interactive Writing"
-        instructionFr="Participez à la conversation"
-        instructionEn="Participate in the conversation"
+        instructionFr="Répondez à la conversation par écrit"
+        instructionEn="Respond to the conversation in writing"
         progress={progress}
         isGameOver={isCompleted}
         score={score}
@@ -213,109 +191,113 @@ export default function WriteInteractivePage() {
         onExit={handleExit}
         onNext={handleSubmit}
         onRestart={() => window.location.reload()}
-        isSubmitEnabled={
-          getWordCount(userInput) >= 2 &&
-          !showFeedback &&
-          currentExchange?.isQuestion
-        }
+        isSubmitEnabled={userInput.trim().length >= 2 && !showFeedback && currentExchange?.isQuestion}
         showSubmitButton={currentExchange?.isQuestion && !showFeedback}
         submitLabel="Send"
         timerValue={timerString}
       >
-        <div className="flex flex-col items-center w-full max-w-2xl mx-auto px-4 py-4">
+        <div className="flex flex-col h-full w-full max-w-2xl mx-auto px-4 py-4 min-h-[600px]">
           {/* Context badge */}
-          <div className="flex items-center gap-2 mb-4">
-            <MessageCircle className="w-4 h-4 text-lime-600" />
+          <div className="flex items-center gap-2 mb-4 shrink-0">
+            <MessageCircle className="w-4 h-4 text-emerald-500" />
             <span className="text-sm font-medium text-slate-600 dark:text-slate-400">
-              {currentConv?.context}
+              {conversation.context}
             </span>
           </div>
 
-          {/* Chat display */}
-          <div className="w-full bg-slate-50 dark:bg-slate-900 rounded-2xl p-4 mb-4 max-h-48 overflow-y-auto">
-            <div className="space-y-3">
+          {/* Chat display - Scrollable Area */}
+          <div className="flex-1 bg-slate-50 dark:bg-slate-900 rounded-[2rem] p-6 mb-6 overflow-y-auto shadow-inner border border-slate-200 dark:border-slate-800">
+            <div className="space-y-6">
               {displayedExchanges.map((exchange, index) => (
                 <div
                   key={index}
                   className={cn(
-                    "flex",
-                    exchange.speaker === "You"
-                      ? "justify-end"
-                      : "justify-start",
+                    "flex animate-in fade-in slide-in-from-bottom-2 duration-300",
+                    exchange.speaker === "You" ? "justify-end" : "justify-start"
                   )}
                 >
                   <div
                     className={cn(
-                      "max-w-[80%] px-4 py-2 rounded-2xl",
+                      "max-w-[85%] px-5 py-3 rounded-2xl shadow-sm relative group",
                       exchange.speaker === "You"
-                        ? "bg-lime-500 text-white rounded-br-md"
-                        : "bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 rounded-bl-md",
+                        ? "bg-emerald-600 text-white rounded-br-sm"
+                        : "bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 rounded-bl-sm"
                     )}
                   >
-                    <div className="flex items-center gap-2">
-                      <p className="text-sm">{exchange.text}</p>
+                    <p className="text-[10px] opacity-70 mb-1 font-bold uppercase tracking-wider">
+                      {exchange.speaker}
+                    </p>
+                    <div className="flex items-start gap-3">
+                      <p className="text-base leading-relaxed">{exchange.text}</p>
                       {exchange.speaker !== "You" && (
                         <button
                           onClick={() => handlePlayMessage(exchange.text)}
-                          className="text-slate-400 hover:text-lime-500"
+                          className="text-slate-400 hover:text-emerald-500 dark:hover:text-emerald-400 mt-1"
                         >
-                          <Volume2 className="w-3 h-3" />
+                          <Volume2 className="w-4 h-4" />
                         </button>
                       )}
                     </div>
                   </div>
                 </div>
               ))}
+              <div ref={chatEndRef} />
             </div>
           </div>
 
-          {/* Writing prompt */}
-          {currentExchange?.isQuestion && !showFeedback && (
-            <>
-              <div className="w-full bg-lime-50 dark:bg-lime-900/20 rounded-xl p-3 mb-3 border border-lime-200 dark:border-lime-800">
-                <p className="text-sm text-lime-700 dark:text-lime-300 text-center">
-                  <span className="font-semibold">Your turn: </span>
-                  {currentExchange.prompt}
+          {/* Interaction Area */}
+          <div className="shrink-0">
+            {currentExchange?.isQuestion && !showFeedback && (
+              <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                <div className="w-full bg-emerald-50 dark:bg-emerald-900/20 rounded-2xl p-4 mb-4 border border-emerald-100 dark:border-emerald-800/50">
+                  <p className="text-sm text-emerald-700 dark:text-emerald-300 text-center">
+                    <span className="font-bold">Prompt: </span>
+                    {currentExchange.prompt}
+                  </p>
+                </div>
+
+                <form onSubmit={handleSubmit} className="flex gap-3">
+                  <input
+                    type="text"
+                    value={userInput}
+                    onChange={(e) => setUserInput(e.target.value)}
+                    placeholder="Type your response in French..."
+                    className={cn(
+                      "flex-1 px-6 py-4 rounded-2xl border-2 text-base transition-all outline-none shadow-sm",
+                      "bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200",
+                      "border-slate-200 dark:border-slate-700 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10"
+                    )}
+                    autoFocus
+                  />
+                  <button
+                    type="submit"
+                    disabled={userInput.trim().length < 2}
+                    className={cn(
+                      "w-14 h-14 rounded-2xl flex items-center justify-center transition-all shadow-md active:scale-95",
+                      userInput.trim().length >= 2
+                        ? "bg-emerald-600 text-white hover:bg-emerald-700"
+                        : "bg-slate-200 dark:bg-slate-700 text-slate-400 cursor-not-allowed"
+                    )}
+                  >
+                    <Send className="w-6 h-6" />
+                  </button>
+                </form>
+
+                <p className="text-xs text-slate-400 mt-4 text-center italic">
+                  Example: {currentExchange.sampleAnswer}
                 </p>
               </div>
+            )}
 
-              {/* Text input */}
-              <div className="w-full flex gap-2">
-                <input
-                  type="text"
-                  value={userInput}
-                  onChange={(e) => setUserInput(e.target.value)}
-                  placeholder="Type your response in French..."
-                  className={cn(
-                    "flex-1 px-4 py-3 rounded-xl border-2 text-base",
-                    "bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200",
-                    "focus:outline-none focus:ring-2 border-slate-200 dark:border-slate-700 focus:border-lime-500 focus:ring-lime-200",
-                  )}
-                />
-                <button
-                  onClick={handleSubmit}
-                  disabled={getWordCount(userInput) < 2}
-                  className={cn(
-                    "px-4 py-3 rounded-xl font-semibold transition-all",
-                    getWordCount(userInput) >= 2
-                      ? "bg-lime-500 text-white hover:bg-lime-600"
-                      : "bg-slate-200 dark:bg-slate-700 text-slate-400 cursor-not-allowed",
-                  )}
-                >
-                  <Send className="w-5 h-5" />
-                </button>
+            {!currentExchange?.isQuestion && !showFeedback && !isCompleted && (
+              <div className="h-16 flex items-center justify-center text-slate-400 text-sm animate-pulse italic">
+                {currentExchange?.speaker} is typing...
               </div>
-
-              {/* Sample hint */}
-              <p className="text-xs text-slate-400 mt-2">
-                Example: {currentExchange.sampleAnswer}
-              </p>
-            </>
-          )}
+            )}
+          </div>
         </div>
       </PracticeGameLayout>
 
-      {/* Feedback Banner */}
       {showFeedback && (
         <FeedbackBanner
           isCorrect={isCorrect}
@@ -323,8 +305,7 @@ export default function WriteInteractivePage() {
           onContinue={handleContinue}
           message={feedbackMessage}
           continueLabel={
-            currentConvIndex === conversations.length - 1 &&
-            currentExchangeIndex === currentConv?.exchanges.length - 1
+            currentExchangeIndex === conversation.exchanges.length - 1
               ? "FINISH"
               : "CONTINUE"
           }

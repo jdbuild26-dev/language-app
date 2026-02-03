@@ -20,6 +20,7 @@ import {
   ClipboardList,
   Bot,
   Tags,
+  TrendingUp,
 } from "lucide-react";
 
 // Tab configuration
@@ -384,6 +385,28 @@ const practiceActivities = [
     category: "writing",
     color: "from-pink-400 to-rose-500",
     shadow: "shadow-pink-200 dark:shadow-pink-900/20",
+    isLive: true,
+  },
+  {
+    id: "F9",
+    name: "Sentence Completion",
+    icon: Edit3,
+    desc: "Complete sentences logically",
+    path: "/practice/writing/sentence-completion",
+    category: "writing",
+    color: "from-blue-400 to-indigo-500",
+    shadow: "shadow-blue-200 dark:shadow-blue-900/20",
+    isLive: true,
+  },
+  {
+    id: "F10",
+    name: "Write About Data",
+    icon: TrendingUp,
+    desc: "Analyse a graph or table",
+    path: "/practice/writing/analysis",
+    category: "writing",
+    color: "from-rose-400 to-red-500",
+    shadow: "shadow-rose-200 dark:shadow-rose-900/20",
     isLive: true,
   },
 

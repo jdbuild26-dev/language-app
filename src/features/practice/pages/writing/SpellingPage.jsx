@@ -83,7 +83,7 @@ export default function SpellingPage() {
 
   useEffect(() => {
     if (currentQuestion && !isCompleted) {
-      setUserInput(currentQuestion.incorrectText);
+      setUserInput(""); // Start with empty input for typing exercise
       resetTimer();
     }
   }, [currentIndex, currentQuestion, isCompleted, resetTimer]);
@@ -144,62 +144,84 @@ export default function SpellingPage() {
         submitLabel="Check"
         timerValue={timerString}
       >
-        <div className="flex flex-col items-center w-full max-w-2xl mx-auto px-4 py-6">
-          {/* Error indicator */}
-          <div className="w-full flex items-center justify-center gap-2 mb-4">
-            <AlertCircle className="w-5 h-5 text-amber-500" />
-            <span className="text-sm text-slate-600 dark:text-slate-400">
-              This text contains{" "}
-              <strong className="text-amber-600">
-                {currentQuestion?.errorCount} errors
-              </strong>
-            </span>
-          </div>
+        <div className="flex flex-col items-center w-full max-w-3xl mx-auto px-4 py-4 lg:py-8 gap-6 lg:gap-8">
+          {/* Header Info */}
+          <div className="w-full flex flex-col md:flex-row items-center justify-between gap-4">
+            <div className="flex items-center gap-3 bg-amber-50 dark:bg-amber-900/20 px-4 py-2 rounded-2xl border border-amber-200 dark:border-amber-800">
+              <AlertCircle className="w-5 h-5 text-amber-500" />
+              <span className="text-sm font-semibold text-amber-700 dark:text-amber-400">
+                {currentQuestion?.errorCount} Errors to fix
+              </span>
+            </div>
 
-          {/* Hint */}
-          <div className="w-full mb-4">
-            <p className="text-sm text-slate-500 dark:text-slate-400 text-center italic">
-              Hint: {currentQuestion?.hint}
-            </p>
-          </div>
-
-          {/* Text Editor */}
-          <div className="w-full mb-4">
-            <textarea
-              value={userInput}
-              onChange={(e) => setUserInput(e.target.value)}
-              disabled={showFeedback}
-              rows={3}
-              className={cn(
-                "w-full py-4 px-6 rounded-xl text-lg font-medium transition-all duration-200 border-2 outline-none resize-none",
-                "bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100",
-                "border-amber-300 dark:border-amber-700",
-                "focus:border-amber-500 focus:ring-4 focus:ring-amber-500/20",
-                showFeedback && isCorrect && "border-emerald-500 bg-emerald-50",
-                showFeedback && !isCorrect && "border-red-500 bg-red-50",
-              )}
-            />
-          </div>
-
-          {/* Audio button */}
-          <div className="w-full flex justify-between items-center">
             <button
               onClick={handlePlayAudio}
               disabled={isSpeaking}
               className={cn(
-                "flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all",
+                "flex items-center gap-2 px-5 py-2.5 rounded-2xl text-sm font-bold transition-all shadow-sm active:scale-95",
                 isSpeaking
-                  ? "bg-amber-100 text-amber-600"
-                  : "bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-amber-100 hover:text-amber-600",
+                  ? "bg-amber-100 text-amber-600 ring-2 ring-amber-200"
+                  : "bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-2 border-slate-200 dark:border-slate-700 hover:border-amber-300 hover:text-amber-600"
               )}
             >
-              <Volume2 className="w-4 h-4" />
+              <Volume2 className={cn("w-4 h-4", isSpeaking && "animate-pulse")} />
               Listen to correct version
             </button>
-            <span className="text-sm text-slate-400">
-              {userInput.length} characters
-            </span>
           </div>
+
+          {/* Dual Interface Grid */}
+          <div className="w-full grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch">
+            {/* Wrong Passage Side */}
+            <div className="flex flex-col h-full">
+              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2 ml-2">
+                WRONG VERSION
+              </label>
+              <div className="flex-1 bg-slate-50 dark:bg-slate-900/50 rounded-2xl border-2 border-dashed border-slate-200 dark:border-slate-700 p-6 flex items-center justify-center min-h-[120px]">
+                <p className="text-xl lg:text-2xl font-serif italic text-slate-700 dark:text-slate-300 text-center leading-relaxed">
+                  "{currentQuestion?.incorrectText}"
+                </p>
+              </div>
+            </div>
+
+            {/* Answer Box Side */}
+            <div className="flex flex-col h-full">
+              <div className="flex justify-between items-end mb-2 ml-2">
+                <label className="text-[10px] font-bold text-sky-500 uppercase tracking-widest">
+                  YOUR CORRECTION
+                </label>
+                <span className="text-[10px] font-mono text-slate-400">
+                  {userInput.length} chars
+                </span>
+              </div>
+              <textarea
+                value={userInput}
+                onChange={(e) => setUserInput(e.target.value)}
+                placeholder="Type the correct version here..."
+                disabled={showFeedback}
+                rows={4}
+                autoFocus
+                className={cn(
+                  "w-full h-full min-h-[160px] lg:min-h-0 py-6 px-6 rounded-2xl text-lg lg:text-xl font-medium transition-all duration-300 border-2 outline-none resize-none shadow-sm",
+                  "bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100",
+                  "border-sky-200 dark:border-slate-700",
+                  "focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10",
+                  showFeedback && isCorrect && "border-emerald-500 bg-emerald-50 dark:bg-emerald-900/10",
+                  showFeedback && !isCorrect && "border-red-500 bg-red-50 dark:bg-red-900/10",
+                )}
+              />
+            </div>
+          </div>
+
+          {/* Hint Footer */}
+          {currentQuestion?.hint && (
+            <div className="w-full bg-indigo-50/50 dark:bg-indigo-900/10 p-4 rounded-2xl border border-indigo-100/50 dark:border-indigo-900/30 flex items-start gap-3">
+              <span className="text-lg">💡</span>
+              <p className="text-sm text-indigo-700/80 dark:text-indigo-400 leading-snug">
+                <span className="font-bold uppercase text-[10px] tracking-wide mr-2">Hint:</span>
+                {currentQuestion.hint}
+              </p>
+            </div>
+          )}
         </div>
       </PracticeGameLayout>
 
