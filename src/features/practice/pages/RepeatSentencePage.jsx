@@ -133,9 +133,17 @@ export default function RepeatSentencePage() {
   const handleSubmit = () => {
     if (!spokenText || !currentQuestion) return;
 
-    // Compare spoken text to the full correct sentence or missing word
-    // Usually for repeat sentence, we want to match against the target word or full sentence
-    const correct = matchSpeechToAnswer(spokenText, currentQuestion.correctAnswer);
+    // 1. First check if they said the full correct sentence (standard similarity)
+    let correct = matchSpeechToAnswer(spokenText, fullSentence);
+
+    // 2. If full sentence didn't match perfectly, check if they at least said the specific 'correctAnswer' word
+    // This makes the 'blank' part of the exercise more forgiving if they struggle with the whole sentence
+    if (!correct && currentQuestion.correctAnswer) {
+      correct = fuzzyIncludes(spokenText, currentQuestion.correctAnswer, 0.75); // Slightly higher threshold for single word
+      if (correct) {
+        console.log(`✨ Full sentence check failed, but fuzzy matched target word: "${currentQuestion.correctAnswer}"`);
+      }
+    }
 
     setIsCorrect(correct);
     setFeedbackMessage(getFeedbackMessage(correct));
