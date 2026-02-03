@@ -8,37 +8,55 @@ import FeedbackBanner from "@/components/ui/FeedbackBanner";
 import { getFeedbackMessage } from "@/utils/feedbackMessages";
 import { useTextToSpeech } from "@/hooks/useTextToSpeech";
 
-// Mock data for Listen and Type exercise
+// Mock data for Listen and Type exercise - Longer sentences for advanced practice
 const MOCK_QUESTIONS = [
   {
     id: 1,
-    audioText: "Bonjour",
-    hint: "A greeting",
-    timeLimitSeconds: 45,
+    audioText: "Je voudrais réserver une table pour deux personnes ce soir",
+    hint: "Making a restaurant reservation",
+    timeLimitSeconds: 60,
   },
   {
     id: 2,
-    audioText: "Merci beaucoup",
-    hint: "Expressing gratitude",
-    timeLimitSeconds: 45,
+    audioText: "Est-ce que vous pourriez m'indiquer le chemin vers la gare",
+    hint: "Asking for directions",
+    timeLimitSeconds: 60,
   },
   {
     id: 3,
-    audioText: "Je m'appelle Pierre",
-    hint: "Introducing yourself",
-    timeLimitSeconds: 45,
+    audioText: "Le train arrive à la gare du nord à dix-huit heures trente",
+    hint: "Train schedule information",
+    timeLimitSeconds: 60,
   },
   {
     id: 4,
-    audioText: "Comment ça va?",
-    hint: "Asking about wellbeing",
-    timeLimitSeconds: 45,
+    audioText: "J'ai besoin d'acheter des fruits et des légumes au marché",
+    hint: "Shopping at the market",
+    timeLimitSeconds: 60,
   },
   {
     id: 5,
-    audioText: "Au revoir",
-    hint: "A farewell",
-    timeLimitSeconds: 45,
+    audioText: "Ma sœur travaille dans un hôpital depuis cinq ans",
+    hint: "Talking about someone's job",
+    timeLimitSeconds: 60,
+  },
+  {
+    id: 6,
+    audioText: "Nous allons partir en vacances la semaine prochaine",
+    hint: "Talking about vacation plans",
+    timeLimitSeconds: 60,
+  },
+  {
+    id: 7,
+    audioText: "Il fait très beau aujourd'hui et le soleil brille",
+    hint: "Describing the weather",
+    timeLimitSeconds: 60,
+  },
+  {
+    id: 8,
+    audioText: "Je préfère prendre un café avec du lait le matin",
+    hint: "Morning coffee preferences",
+    timeLimitSeconds: 60,
   },
 ];
 
@@ -126,21 +144,15 @@ export default function ListenTypePage() {
     }
   };
 
-  const handleKeyDown = (e) => {
-    if (e.key === "Enter" && !showFeedback && userInput.trim()) {
-      handleSubmit();
-    }
-  };
-
   const progress =
     questions.length > 0 ? ((currentIndex + 1) / questions.length) * 100 : 0;
 
   return (
     <>
       <PracticeGameLayout
-        questionType="Listen and Type"
-        instructionFr="Écoutez et tapez ce que vous entendez"
-        instructionEn="Listen and type what you hear"
+        questionType="Listen and Type the Sentence"
+        instructionFr="Écoutez attentivement et tapez la phrase complète"
+        instructionEn="Listen carefully and type the full sentence"
         progress={progress}
         isGameOver={isCompleted}
         score={score}
@@ -191,17 +203,27 @@ export default function ListenTypePage() {
             </p>
           </div>
 
-          {/* Text Input */}
+          {/* Text Input - Textarea for longer sentences */}
           <div className="w-full">
-            <input
-              type="text"
+            <textarea
               value={userInput}
               onChange={(e) => setUserInput(e.target.value)}
-              onKeyDown={handleKeyDown}
+              onKeyDown={(e) => {
+                // Submit on Ctrl+Enter or Cmd+Enter for textarea
+                if (
+                  (e.ctrlKey || e.metaKey) &&
+                  e.key === "Enter" &&
+                  !showFeedback &&
+                  userInput.trim()
+                ) {
+                  handleSubmit();
+                }
+              }}
               disabled={showFeedback}
-              placeholder="Type what you hear..."
+              placeholder="Type the full sentence you hear..."
+              rows={3}
               className={cn(
-                "w-full py-4 px-6 rounded-xl text-lg font-medium transition-all duration-200 border-2 outline-none",
+                "w-full py-4 px-6 rounded-xl text-lg font-medium transition-all duration-200 border-2 outline-none resize-none",
                 "bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100",
                 "border-slate-200 dark:border-slate-700",
                 "focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/20",
@@ -211,6 +233,9 @@ export default function ListenTypePage() {
               )}
               autoFocus
             />
+            <p className="text-xs text-slate-400 dark:text-slate-500 mt-2 text-center">
+              Press Ctrl+Enter to submit
+            </p>
           </div>
 
           {/* Character count */}

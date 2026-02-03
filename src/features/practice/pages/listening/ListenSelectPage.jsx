@@ -115,6 +115,8 @@ export default function ListenSelectPage() {
 
   const handleOptionSelect = (index) => {
     if (showFeedback) return;
+    // Play TTS for the option
+    speak(currentQuestion.options[index], "en-US");
     setSelectedOption(index);
   };
 
@@ -201,42 +203,154 @@ export default function ListenSelectPage() {
           </div>
 
           {/* Options */}
-          <div className="w-full space-y-3">
-            {currentQuestion?.options.map((option, index) => (
-              <button
-                key={index}
-                onClick={() => handleOptionSelect(index)}
-                disabled={showFeedback}
-                className={cn(
-                  "w-full py-4 px-6 rounded-xl text-left text-lg font-medium transition-all duration-200 border-2",
-                  selectedOption === index
-                    ? "bg-indigo-500 text-white border-indigo-500 shadow-lg"
-                    : "bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700 hover:border-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20",
-                  showFeedback && index === currentQuestion.correctIndex
-                    ? "bg-emerald-500 text-white border-emerald-500"
-                    : "",
-                  showFeedback &&
-                    selectedOption === index &&
-                    index !== currentQuestion.correctIndex
-                    ? "bg-red-500 text-white border-red-500"
-                    : "",
-                )}
-              >
-                <span className="inline-flex items-center gap-3">
-                  <span
+          <div className="w-full grid grid-cols-1 gap-3">
+            {currentQuestion?.options.map((option, index) => {
+              const isSelected = selectedOption === index;
+              const isCorrectOption = index === currentQuestion.correctIndex;
+              const isWrongSelection =
+                showFeedback && isSelected && !isCorrectOption;
+              const isCorrectHighlight = showFeedback && isCorrectOption;
+
+              return (
+                <button
+                  key={index}
+                  onClick={() => handleOptionSelect(index)}
+                  disabled={showFeedback}
+                  className={cn(
+                    "group relative p-4 rounded-2xl border-[3px] text-left font-medium text-lg transition-all flex items-center gap-4 bg-white dark:bg-slate-800 shadow-sm",
+                    // Default state
+                    "border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700",
+                    // Selected (pre-submission)
+                    isSelected &&
+                      !showFeedback &&
+                      "border-indigo-400 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-300",
+                    // Feedback: Correct
+                    isCorrectHighlight &&
+                      "border-green-500 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300",
+                    // Feedback: Wrong
+                    isWrongSelection &&
+                      "border-red-500 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300",
+                  )}
+                >
+                  {/* Circle Indicator */}
+                  <div
                     className={cn(
-                      "w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold",
-                      selectedOption === index
-                        ? "bg-white/20 text-white"
-                        : "bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300",
+                      "w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors flex-shrink-0",
+                      isSelected || isCorrectHighlight
+                        ? "border-indigo-500 bg-indigo-500 text-white"
+                        : "border-slate-300 dark:border-slate-500 text-transparent",
+                      isCorrectHighlight && "border-green-500 bg-green-500",
+                      isWrongSelection && "border-red-500 bg-red-500",
                     )}
                   >
-                    {String.fromCharCode(65 + index)}
-                  </span>
-                  {option}
-                </span>
-              </button>
-            ))}
+                    <span className="text-[10px] font-bold">
+                      {isWrongSelection ? "✕" : "✓"}
+                    </span>
+                  </div>
+
+                  <div className="flex-1 flex flex-col justify-center">
+                    {!showFeedback ? (
+                      /* Waveform SVG (Visible before submit) */
+                      <svg
+                        width="120"
+                        height="30"
+                        viewBox="0 0 120 40"
+                        className={cn(
+                          "transition-colors",
+                          isSelected
+                            ? "text-indigo-500"
+                            : "text-slate-400 dark:text-slate-500",
+                        )}
+                      >
+                        <rect
+                          x="10"
+                          y="15"
+                          width="3"
+                          height="10"
+                          fill="currentColor"
+                          rx="1.5"
+                        />
+                        <rect
+                          x="16"
+                          y="10"
+                          width="3"
+                          height="20"
+                          fill="currentColor"
+                          rx="1.5"
+                        />
+                        <rect
+                          x="22"
+                          y="5"
+                          width="3"
+                          height="30"
+                          fill="currentColor"
+                          rx="1.5"
+                        />
+                        <rect
+                          x="28"
+                          y="12"
+                          width="3"
+                          height="16"
+                          fill="currentColor"
+                          rx="1.5"
+                        />
+                        <rect
+                          x="34"
+                          y="18"
+                          width="3"
+                          height="4"
+                          fill="currentColor"
+                          rx="1.5"
+                        />
+                        <rect
+                          x="40"
+                          y="8"
+                          width="3"
+                          height="24"
+                          fill="currentColor"
+                          rx="1.5"
+                        />
+                        <rect
+                          x="46"
+                          y="14"
+                          width="3"
+                          height="12"
+                          fill="currentColor"
+                          rx="1.5"
+                        />
+                        <rect
+                          x="52"
+                          y="11"
+                          width="3"
+                          height="18"
+                          fill="currentColor"
+                          rx="1.5"
+                        />
+                        <rect
+                          x="58"
+                          y="16"
+                          width="3"
+                          height="8"
+                          fill="currentColor"
+                          rx="1.5"
+                        />
+                        <rect
+                          x="64"
+                          y="13"
+                          width="3"
+                          height="14"
+                          fill="currentColor"
+                          rx="1.5"
+                        />
+                      </svg>
+                    ) : (
+                      /* Text Reveal (Visible after submit) */
+                      <span className="text-lg font-medium">{option}</span>
+                    )}
+                  </div>
+                </button>
+              );
+            })}
           </div>
         </div>
       </PracticeGameLayout>

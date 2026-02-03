@@ -263,10 +263,60 @@ export default function ImageLabellingPage() {
         submitLabel="Check Answers"
         timerValue={timerString}
       >
-        <div className="flex flex-col items-center w-full max-w-5xl mx-auto gap-4 px-4 py-2 h-full overflow-hidden">
-          <div className="w-full h-full flex flex-col gap-4">
-            {/* Image Container - Flexible */}
-            <div className="flex-1 min-h-0 flex items-center justify-center">
+        {/* Main Container - Two Column Layout */}
+        <div className="flex flex-row w-full h-full gap-4 p-4 overflow-hidden">
+          {/* Left Column - Label Bank */}
+          <div className="w-48 shrink-0 flex flex-col bg-slate-100 dark:bg-slate-900 rounded-xl border-2 border-slate-200 dark:border-slate-700 overflow-hidden">
+            {/* Bank Header */}
+            <div className="px-4 py-3 bg-slate-200/70 dark:bg-slate-800 border-b border-slate-300 dark:border-slate-600">
+              <h3 className="text-sm font-bold text-slate-700 dark:text-slate-200 uppercase tracking-wide text-center">
+                Labels
+              </h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400 text-center mt-1">
+                {bankItems.length} / {KITCHEN_ITEMS.length} remaining
+              </p>
+            </div>
+
+            {/* Bank Items */}
+            <div className="flex-1 p-3 flex flex-col gap-2 overflow-y-auto">
+              {bankItems.length === 0 &&
+              placedItems.length === KITCHEN_ITEMS.length ? (
+                <div className="flex flex-col items-center justify-center h-full gap-2 text-slate-400">
+                  <CheckCircle2 className="w-8 h-8 opacity-50" />
+                  <span className="text-xs font-medium text-center">
+                    All items placed!
+                  </span>
+                </div>
+              ) : (
+                bankItems.map((name) => (
+                  <div
+                    key={name}
+                    onMouseDown={(e) => startDrag(e, name, "bank")}
+                    onTouchStart={(e) => startDrag(e, name, "bank")}
+                    className="px-3 py-2 bg-white dark:bg-slate-700 text-slate-800 dark:text-white rounded-lg font-medium text-sm shadow-sm border border-slate-200 dark:border-slate-600 cursor-grab active:cursor-grabbing hover:shadow-md hover:bg-blue-50 dark:hover:bg-slate-600 hover:border-blue-300 dark:hover:border-blue-500 transition-all active:scale-95 select-none touch-none text-center"
+                  >
+                    {name}
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+
+          {/* Right Column - Image Workspace */}
+          <div className="flex-1 flex flex-col min-w-0 bg-slate-50 dark:bg-slate-900/50 rounded-xl border-2 border-slate-200 dark:border-slate-700 overflow-hidden">
+            {/* Workspace Header */}
+            <div className="px-4 py-2 bg-slate-200/70 dark:bg-slate-800 border-b border-slate-300 dark:border-slate-600 flex items-center justify-between">
+              <span className="text-sm font-semibold text-slate-600 dark:text-slate-300">
+                🎯 Drag labels to the correct positions
+              </span>
+              <span className="text-xs text-slate-500 dark:text-slate-400 bg-slate-300/50 dark:bg-slate-700 px-2 py-1 rounded-full">
+                {placedItems.length} placed
+              </span>
+            </div>
+
+            {/* Image Container */}
+            <div className="flex-1 flex items-center justify-center p-4 min-h-0 overflow-hidden">
+              {/* Drop zone wraps tightly around the image using inline-block */}
               <div
                 ref={dropZoneRef}
                 className="relative inline-block max-w-full max-h-full"
@@ -274,15 +324,18 @@ export default function ImageLabellingPage() {
                 <img
                   src={kitchenImage}
                   alt="Kitchen"
-                  className="block w-auto h-auto max-w-full max-h-[60vh] object-contain rounded-xl shadow-lg border border-slate-200 dark:border-slate-700 pointer-events-none select-none"
+                  className="block max-w-full max-h-[calc(100vh-280px)] w-auto h-auto object-contain rounded-lg shadow-lg border-2 border-slate-300 dark:border-slate-600 pointer-events-none select-none"
                 />
 
-                {/* Targets (Hints) */}
+                {/* Targets (Hints) - positioned relative to image */}
                 {KITCHEN_ITEMS.map((item, idx) => (
                   <div
                     key={idx}
-                    className="absolute w-4 h-4 border-2 border-red-400/50 bg-red-400/20 rounded-full transform -translate-x-1/2 -translate-y-1/2 pointer-events-none"
-                    style={{ left: `${item.x}%`, top: `${item.y}%` }}
+                    className="absolute w-5 h-5 border-2 border-amber-400/70 bg-amber-400/30 rounded-full transform -translate-x-1/2 -translate-y-1/2 pointer-events-none animate-pulse"
+                    style={{
+                      left: `${item.x}%`,
+                      top: `${item.y}%`,
+                    }}
                   />
                 ))}
 
@@ -293,15 +346,15 @@ export default function ImageLabellingPage() {
                     onMouseDown={(e) => startDrag(e, item.name, "placed")}
                     onTouchStart={(e) => startDrag(e, item.name, "placed")}
                     className={cn(
-                      "absolute px-3 py-1.5 md:px-4 md:py-2 rounded-full font-semibold text-xs md:text-sm shadow-md cursor-grab active:cursor-grabbing transform -translate-x-1/2 -translate-y-1/2 transition-all z-10 select-none touch-none whitespace-nowrap",
+                      "absolute px-3 py-1.5 rounded-lg font-semibold text-sm shadow-lg cursor-grab active:cursor-grabbing transform -translate-x-1/2 -translate-y-1/2 transition-all z-10 select-none touch-none whitespace-nowrap border-2",
                       item.isCorrect === true
-                        ? "bg-emerald-500 text-white border-emerald-600"
+                        ? "bg-emerald-500 text-white border-emerald-400 ring-2 ring-emerald-300"
                         : "",
                       item.isCorrect === false
-                        ? "bg-red-500 text-white border-red-600"
+                        ? "bg-red-500 text-white border-red-400 ring-2 ring-red-300"
                         : "",
                       item.isCorrect === null
-                        ? "bg-white text-slate-800 dark:bg-slate-700 dark:text-white border-slate-200 dark:border-slate-600"
+                        ? "bg-white text-slate-800 dark:bg-slate-700 dark:text-white border-slate-300 dark:border-slate-500 hover:border-blue-400 dark:hover:border-blue-400"
                         : "",
                     )}
                     style={{ left: `${item.x}%`, top: `${item.y}%` }}
@@ -310,29 +363,6 @@ export default function ImageLabellingPage() {
                   </div>
                 ))}
               </div>
-            </div>
-
-            {/* Label Bank */}
-            <div className="min-h-[80px] md:min-h-[100px] shrink-0 bg-slate-50 dark:bg-slate-900/50 rounded-xl p-4 border-2 border-dashed border-slate-200 dark:border-slate-700 flex flex-wrap gap-2 justify-center items-center overflow-y-auto max-h-[150px]">
-              {bankItems.length === 0 &&
-                placedItems.length === KITCHEN_ITEMS.length && (
-                  <div className="flex flex-col items-center gap-1 text-slate-400">
-                    <CheckCircle2 className="w-6 h-6 opacity-50" />
-                    <span className="text-xs font-medium">
-                      All items placed
-                    </span>
-                  </div>
-                )}
-              {bankItems.map((name) => (
-                <div
-                  key={name}
-                  onMouseDown={(e) => startDrag(e, name, "bank")}
-                  onTouchStart={(e) => startDrag(e, name, "bank")}
-                  className="px-3 py-1.5 bg-white dark:bg-slate-700 text-slate-800 dark:text-white rounded-full font-semibold text-xs md:text-sm shadow-sm border border-slate-200 dark:border-slate-600 cursor-grab active:cursor-grabbing hover:shadow-md hover:-translate-y-0.5 transition-all active:scale-95 select-none touch-none whitespace-nowrap"
-                >
-                  {name}
-                </div>
-              ))}
             </div>
           </div>
         </div>

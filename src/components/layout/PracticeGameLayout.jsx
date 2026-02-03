@@ -129,8 +129,8 @@ export default function PracticeGameLayout({
       </div>
 
       {/* CONTENT AREA */}
-      <div className="flex-1 flex flex-col items-center justify-center p-6 overflow-y-auto w-full max-w-[95%] mx-auto">
-        <div className="w-full h-full flex flex-col justify-center items-center">
+      <div className="flex-1 flex flex-col items-center justify-start p-6 overflow-y-auto w-full max-w-[95%] mx-auto">
+        <div className="w-full h-full flex flex-col justify-start items-center pt-8">
           {children}
         </div>
       </div>

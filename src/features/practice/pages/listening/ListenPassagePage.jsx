@@ -167,70 +167,86 @@ export default function ListenPassagePage() {
         submitLabel="Check"
         timerValue={hasPlayed ? timerString : "--:--"}
       >
-        <div className="flex flex-col items-center w-full max-w-3xl mx-auto px-4 py-6">
-          {/* Audio Player */}
-          <div className="w-full bg-gradient-to-r from-rose-500 to-red-600 rounded-2xl p-6 mb-6 shadow-lg">
-            <div className="flex flex-col items-center gap-4">
-              <button
-                onClick={handlePlayAudio}
-                disabled={isSpeaking}
-                className={cn(
-                  "w-16 h-16 rounded-full flex items-center justify-center transition-all duration-300",
-                  isSpeaking
-                    ? "bg-white/30 animate-pulse"
-                    : "bg-white/20 hover:bg-white/30 hover:scale-105",
-                )}
-              >
-                <Volume2
-                  className={cn(
-                    "w-8 h-8 text-white",
-                    isSpeaking && "animate-pulse",
-                  )}
-                />
-              </button>
-              <div className="flex items-center gap-2 text-white/70 text-sm">
-                <RotateCcw className="w-4 h-4" />
-                <span>Click to {hasPlayed ? "replay" : "play"} passage</span>
+        <div className="flex flex-col lg:flex-row w-full h-full">
+          {/* Left Section - Audio Player */}
+          <div className="flex-1 flex items-center justify-center p-6 lg:p-8 min-h-[400px] lg:min-h-[500px]">
+            <div className="w-full max-w-md">
+              <div className="bg-gradient-to-r from-rose-500 to-red-600 rounded-2xl p-8 shadow-lg">
+                <div className="flex flex-col items-center gap-4">
+                  <button
+                    onClick={handlePlayAudio}
+                    disabled={isSpeaking}
+                    className={cn(
+                      "w-20 h-20 rounded-full flex items-center justify-center transition-all duration-300",
+                      isSpeaking
+                        ? "bg-white/30 animate-pulse"
+                        : "bg-white/20 hover:bg-white/30 hover:scale-105",
+                    )}
+                  >
+                    <Volume2
+                      className={cn(
+                        "w-10 h-10 text-white",
+                        isSpeaking && "animate-pulse",
+                      )}
+                    />
+                  </button>
+                  <div className="flex items-center gap-2 text-white/90 text-base font-medium">
+                    <RotateCcw className="w-5 h-5" />
+                    <span>
+                      Click to {hasPlayed ? "replay" : "play"} passage
+                    </span>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
 
-          {/* Question indicator */}
-          <div className="text-sm text-slate-500 dark:text-slate-400 mb-2">
-            Question {currentQuestionIndex + 1} of{" "}
-            {currentPassage?.questions.length}
-          </div>
+          {/* Right Section - Questions */}
+          <div className="flex-1 flex items-center justify-center p-6 lg:p-8">
+            <div className="w-full max-w-md">
+              {/* Question indicator */}
+              <div className="text-sm text-slate-500 dark:text-slate-400 mb-3">
+                Question {currentQuestionIndex + 1} of{" "}
+                {currentPassage?.questions.length}
+              </div>
 
-          {/* Question */}
-          <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-100 mb-4 text-center">
-            {currentQuestion?.question}
-          </h3>
+              {/* Title */}
+              <h3 className="text-xl font-bold text-slate-800 dark:text-slate-100 mb-6">
+                Select the best title for the passage
+              </h3>
 
-          {/* Options */}
-          <div className="w-full space-y-3">
-            {currentQuestion?.options.map((option, index) => (
-              <button
-                key={index}
-                onClick={() => handleOptionSelect(index)}
-                disabled={showFeedback}
-                className={cn(
-                  "w-full py-4 px-6 rounded-xl text-left text-base font-medium transition-all duration-200 border-2",
-                  selectedOption === index
-                    ? "bg-rose-500 text-white border-rose-500 shadow-lg"
-                    : "bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700 hover:border-rose-400",
-                  showFeedback && index === currentQuestion.correctIndex
-                    ? "bg-emerald-500 text-white border-emerald-500"
-                    : "",
-                  showFeedback &&
-                    selectedOption === index &&
-                    index !== currentQuestion.correctIndex
-                    ? "bg-red-500 text-white border-red-500"
-                    : "",
-                )}
-              >
-                {option}
-              </button>
-            ))}
+              {/* Question */}
+              <p className="text-lg font-semibold text-slate-700 dark:text-slate-200 mb-4">
+                {currentQuestion?.question}
+              </p>
+
+              {/* Options */}
+              <div className="w-full space-y-3">
+                {currentQuestion?.options.map((option, index) => (
+                  <button
+                    key={index}
+                    onClick={() => handleOptionSelect(index)}
+                    disabled={showFeedback}
+                    className={cn(
+                      "w-full py-4 px-6 rounded-xl text-left text-base font-medium transition-all duration-200 border-2",
+                      selectedOption === index
+                        ? "bg-rose-500 text-white border-rose-500 shadow-lg"
+                        : "bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700 hover:border-rose-400",
+                      showFeedback && index === currentQuestion.correctIndex
+                        ? "bg-emerald-500 text-white border-emerald-500"
+                        : "",
+                      showFeedback &&
+                        selectedOption === index &&
+                        index !== currentQuestion.correctIndex
+                        ? "bg-red-500 text-white border-red-500"
+                        : "",
+                    )}
+                  >
+                    {option}
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
       </PracticeGameLayout>

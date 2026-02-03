@@ -140,7 +140,7 @@ export const PRACTICE_SECTIONS = [
       },
       {
         id: "G9",
-        title: "True/False/Not Given",
+        title: "Identify Information",
         description: "Determine if statements are true, false, or not given",
         path: "/practice/reading/true-false",
         icon: "✅",
@@ -184,14 +184,7 @@ export const PRACTICE_SECTIONS = [
         icon: "📝",
         isLive: true,
       },
-      {
-        id: "E4",
-        title: "Listen and Match",
-        description: "Match audio clips to descriptions",
-        path: "/practice/listening/match",
-        icon: "🔗",
-        isLive: true,
-      },
+
       {
         id: "E5",
         title: "Listen and Order",
