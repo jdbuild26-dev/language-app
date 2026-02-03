@@ -88,6 +88,7 @@ import ListenOrderPage from "@/features/practice/pages/listening/ListenOrderPage
 import ListenPassagePage from "@/features/practice/pages/listening/ListenPassagePage";
 import ListenInteractivePage from "@/features/practice/pages/listening/ListenInteractivePage";
 import ListeningComprehensionPage from "@/features/practice/pages/listening/ListeningComprehensionPage";
+import ListeningConversationPage from "@/features/practice/pages/listening/ListeningConversationPage";
 
 // Practice Module Writing Exercises
 import TranslateTypedPage from "@/features/practice/pages/writing/TranslateTypedPage";
@@ -637,6 +638,16 @@ function App() {
             <ProtectedRoute>
               <FullScreenLayout>
                 <ListeningComprehensionPage />
+              </FullScreenLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/practice/listening/conversation"
+          element={
+            <ProtectedRoute>
+              <FullScreenLayout>
+                <ListeningConversationPage />
               </FullScreenLayout>
             </ProtectedRoute>
           }

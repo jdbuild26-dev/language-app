@@ -261,6 +261,17 @@ const practiceActivities = [
     shadow: "shadow-blue-200 dark:shadow-blue-900/20",
     isLive: true,
   },
+  {
+    id: "E9",
+    name: "Running Conversation",
+    icon: MessageSquare,
+    desc: "Listen and respond to conversations",
+    path: "/practice/listening/conversation",
+    category: "listening",
+    color: "from-indigo-400 to-purple-500",
+    shadow: "shadow-indigo-200 dark:shadow-indigo-900/20",
+    isLive: true,
+  },
 
   // ========================================
   // WRITING Activities (F1-F8)
