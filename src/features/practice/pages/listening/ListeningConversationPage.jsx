@@ -1,155 +1,123 @@
 import React, { useState, useEffect } from "react";
 import { usePracticeExit } from "@/hooks/usePracticeExit";
 import { useExerciseTimer } from "@/hooks/useExerciseTimer";
-import { MessageSquare, Volume2, AudioWaveform } from "lucide-react";
+import { MessageSquare, Volume2, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
 import FeedbackBanner from "@/components/ui/FeedbackBanner";
 import { getFeedbackMessage } from "@/utils/feedbackMessages";
 import { useTextToSpeech } from "@/hooks/useTextToSpeech";
 
-// Mock data (Sharing same structure for now, can be specialized later)
-const MOCK_CONVERSATIONS = [
-  {
-    id: 1,
-    context: "At a café",
-    messages: [
-      {
-        speaker: "A",
-        text: "Bonjour! Qu'est-ce que vous désirez?",
-        isBot: true,
-      },
-    ],
-    currentPrompt: "You want to order a coffee with milk.",
-    options: [
-      "Un café au lait, s'il vous plaît.",
-      "Je voudrais une pizza.",
-      "L'addition, s'il vous plaît.",
-      "Où sont les toilettes?",
-    ],
-    correctIndex: 0,
-    nextMessage: { speaker: "A", text: "Très bien! Autre chose?", isBot: true },
-    timeLimitSeconds: 30,
-  },
-  {
-    id: 2,
-    context: "Asking for directions",
-    messages: [
-      { speaker: "You", text: "Excusez-moi, où est la gare?", isBot: false },
-      {
-        speaker: "A",
-        text: "La gare? C'est tout droit, puis à gauche.",
-        isBot: true,
-      },
-    ],
-    currentPrompt: "Thank the person for their help.",
-    options: [
-      "Je ne comprends pas.",
-      "Merci beaucoup!",
-      "C'est combien?",
-      "Je suis perdu.",
-    ],
-    correctIndex: 1,
-    nextMessage: { speaker: "A", text: "De rien! Bonne journée!", isBot: true },
-    timeLimitSeconds: 30,
-  },
-  {
-    id: 3,
-    context: "Shopping for clothes",
-    messages: [
-      { speaker: "A", text: "Bonjour, je peux vous aider?", isBot: true },
-      { speaker: "You", text: "Oui, je cherche une chemise.", isBot: false },
-      { speaker: "A", text: "Quelle taille faites-vous?", isBot: true },
-    ],
-    currentPrompt: "Tell them you wear size medium.",
-    options: [
-      "Je fais du petit.",
-      "Je fais du moyen.",
-      "Combien ça coûte?",
-      "Je n'aime pas cette couleur.",
-    ],
-    correctIndex: 1,
-    nextMessage: {
-      speaker: "A",
-      text: "Voici les chemises en taille moyen.",
-      isBot: true,
+// Mock conversation data - structured as progressive exchanges
+const MOCK_CONVERSATION = {
+  id: "conversation-1",
+  title: "Running conversation - E5 - A1",
+  scenario: "Participate in a conversation about this scenario",
+  exchanges: [
+    {
+      turnId: 1,
+      speakerText: "Combien de chapatis veux-tu?",
+      speakerAudio: "Combien de chapatis veux-tu?", // TTS will speak this
+      options: [
+        { id: "a", text: "Je veux 2 chapatis." },
+        { id: "b", text: "Je veux 3 chapatis." },
+        { id: "c", text: "Je veux 4 chapatis." },
+        { id: "d", text: "Je n'en veux pas." },
+      ],
+      correctOptionId: "a",
     },
-    timeLimitSeconds: 30,
-  },
-  {
-    id: 4,
-    context: "At a restaurant",
-    messages: [
-      { speaker: "A", text: "Vous avez choisi?", isBot: true },
-      {
-        speaker: "You",
-        text: "Oui, je voudrais le steak-frites.",
-        isBot: false,
-      },
-      { speaker: "A", text: "Et comme boisson?", isBot: true },
-    ],
-    currentPrompt: "Order a glass of red wine.",
-    options: [
-      "Un verre de vin rouge, s'il vous plaît.",
-      "Non merci, c'est tout.",
-      "Je voudrais le menu.",
-      "Où est la sortie?",
-    ],
-    correctIndex: 0,
-    nextMessage: {
-      speaker: "A",
-      text: "Parfait, je vous apporte ça tout de suite.",
-      isBot: true,
+    {
+      turnId: 2,
+      speakerText: "Non, je ne te donne pas 2 chapatis. Je t'en donne 4.",
+      speakerAudio: "Non, je ne te donne pas 2 chapatis. Je t'en donne 4.",
+      options: [
+        { id: "a", text: "Merci beaucoup!" },
+        { id: "b", text: "C'est trop!" },
+        { id: "c", text: "J'en veux plus." },
+        { id: "d", text: "Non merci." },
+      ],
+      correctOptionId: "a",
     },
-    timeLimitSeconds: 30,
-  },
-  {
-    id: 5,
-    context: "At the hotel",
-    messages: [
-      { speaker: "A", text: "Bonsoir, bienvenue à l'hôtel.", isBot: true },
-      { speaker: "You", text: "Bonsoir, j'ai une réservation.", isBot: false },
-      { speaker: "A", text: "Votre nom, s'il vous plaît?", isBot: true },
-    ],
-    currentPrompt: "Give your name (Marie Dupont).",
-    options: [
-      "Je m'appelle Marie Dupont.",
-      "Une chambre pour deux personnes.",
-      "C'est combien la nuit?",
-      "J'ai perdu ma clé.",
-    ],
-    correctIndex: 0,
-    nextMessage: {
-      speaker: "A",
-      text: "Ah oui, vous avez la chambre 205.",
-      isBot: true,
+    {
+      turnId: 3,
+      speakerText: "Tu veux du beurre aussi?",
+      speakerAudio: "Tu veux du beurre aussi?",
+      options: [
+        { id: "a", text: "Oui, s'il te plaît." },
+        { id: "b", text: "Non, ça va." },
+        { id: "c", text: "J'aime pas le beurre." },
+        { id: "d", text: "Peut-être plus tard." },
+      ],
+      correctOptionId: "a",
     },
-    timeLimitSeconds: 30,
-  },
-];
+    {
+      turnId: 4,
+      speakerText: "Voilà, bon appétit!",
+      speakerAudio: "Voilà, bon appétit!",
+      options: [
+        { id: "a", text: "Merci, toi aussi!" },
+        { id: "b", text: "D'accord." },
+        { id: "c", text: "Je n'ai pas faim." },
+        { id: "d", text: "À plus tard." },
+      ],
+      correctOptionId: "a",
+    },
+    {
+      turnId: 5,
+      speakerText: "Tu veux boire quelque chose?",
+      speakerAudio: "Tu veux boire quelque chose?",
+      options: [
+        { id: "a", text: "Oui, de l'eau s'il te plaît." },
+        { id: "b", text: "Non merci." },
+        { id: "c", text: "Je ne sais pas." },
+        { id: "d", text: "Plus tard peut-être." },
+      ],
+      correctOptionId: "a",
+    },
+  ],
+};
 
 export default function ListeningConversationPage() {
   const handleExit = usePracticeExit();
   const { speak } = useTextToSpeech();
 
-  const [conversations] = useState(MOCK_CONVERSATIONS);
-  const [currentIndex, setCurrentIndex] = useState(0);
+  // Current turn/exchange index (0-based)
+  const [currentTurnIndex, setCurrentTurnIndex] = useState(0);
+
+  // User's selected option for current turn
   const [selectedOption, setSelectedOption] = useState(null);
-  const [isCompleted, setIsCompleted] = useState(false);
+
+  // Whether user has submitted their answer for current turn
+  const [hasAnswered, setHasAnswered] = useState(false);
+
+  // Conversation history: array of {speakerText, userText, isRevealed}
+  const [conversationHistory, setConversationHistory] = useState([]);
+
+  // Feedback states
   const [showFeedback, setShowFeedback] = useState(false);
   const [isCorrect, setIsCorrect] = useState(false);
   const [feedbackMessage, setFeedbackMessage] = useState("");
-  const [score, setScore] = useState(0);
-  const [displayedMessages, setDisplayedMessages] = useState([]);
 
-  const currentConversation = conversations[currentIndex];
-  const timerDuration = currentConversation?.timeLimitSeconds || 30;
+  // Score tracking
+  const [score, setScore] = useState(0);
+
+  // Overall completion
+  const [isCompleted, setIsCompleted] = useState(false);
+
+  // Audio playback state
+  const [hasPlayedAudio, setHasPlayedAudio] = useState(false);
+
+  const conversation = MOCK_CONVERSATION;
+  const currentExchange = conversation.exchanges[currentTurnIndex];
+  const totalExchanges = conversation.exchanges.length;
+
+  const timerDuration = 45; // Increased for conversation context
 
   const { timerString, resetTimer } = useExerciseTimer({
     duration: timerDuration,
     mode: "timer",
     onExpire: () => {
-      if (!isCompleted && !showFeedback) {
+      if (!isCompleted && !showFeedback && !hasAnswered) {
         setIsCorrect(false);
         setFeedbackMessage("Time's up!");
         setShowFeedback(true);
@@ -158,396 +126,445 @@ export default function ListeningConversationPage() {
     isPaused: isCompleted || showFeedback,
   });
 
+  // Play audio when new turn starts
   useEffect(() => {
-    if (currentConversation && !isCompleted) {
-      setSelectedOption(null);
-      setDisplayedMessages([...currentConversation.messages]);
-      resetTimer();
+    if (currentExchange && !hasAnswered && !isCompleted && !hasPlayedAudio) {
+      // Play speaker's question audio
+      speak(currentExchange.speakerAudio, "fr-FR");
+      setHasPlayedAudio(true);
     }
-  }, [currentIndex, currentConversation, isCompleted, resetTimer]);
+  }, [
+    currentTurnIndex,
+    currentExchange,
+    hasAnswered,
+    isCompleted,
+    hasPlayedAudio,
+    speak,
+  ]);
 
-  const handlePlayMessage = (text) => {
-    speak(text, "fr-FR");
-  };
+  // Reset states when turn changes
+  useEffect(() => {
+    setSelectedOption(null);
+    setHasAnswered(false);
+    setShowFeedback(false);
+    setHasPlayedAudio(false);
+    resetTimer();
+  }, [currentTurnIndex, resetTimer]);
 
-  const handleOptionSelect = (index) => {
-    if (showFeedback) return;
-    setSelectedOption(index);
-    // Play the option audio when selected
-    speak(currentConversation.options[index], "fr-FR");
-  };
-
-  // Dedicated play button handler to prevent selection if needed (though requirement says click options -> play)
-  const handleOptionPlay = (e, text) => {
-    e.stopPropagation();
-    speak(text, "fr-FR");
+  const handleOptionSelect = (optionId) => {
+    if (hasAnswered || showFeedback) return;
+    setSelectedOption(optionId);
   };
 
   const handleSubmit = () => {
-    if (showFeedback || selectedOption === null) return;
+    if (hasAnswered || selectedOption === null || showFeedback) return;
 
-    const correct = selectedOption === currentConversation.correctIndex;
+    const selectedOptionObj = currentExchange.options.find(
+      (opt) => opt.id === selectedOption,
+    );
+    const correct = selectedOption === currentExchange.correctOptionId;
+
     setIsCorrect(correct);
     setFeedbackMessage(getFeedbackMessage(correct));
     setShowFeedback(true);
-
-    // Add user's response (as TEXT) and next message to display
-    setDisplayedMessages((prev) => [
-      ...prev,
-      {
-        speaker: "You",
-        text: currentConversation.options[selectedOption],
-        isBot: false,
-      },
-      currentConversation.nextMessage,
-    ]);
+    setHasAnswered(true);
 
     if (correct) {
       setScore((prev) => prev + 1);
     }
+
+    // Add to conversation history: speaker's question (now revealed as text) + user's response
+    setConversationHistory((prev) => [
+      ...prev,
+      {
+        speakerText: currentExchange.speakerText,
+        userText: selectedOptionObj.text,
+        userOptionId: selectedOption,
+        wasCorrect: correct,
+      },
+    ]);
   };
 
   const handleContinue = () => {
     setShowFeedback(false);
 
-    if (currentIndex < conversations.length - 1) {
-      setCurrentIndex((prev) => prev + 1);
+    if (currentTurnIndex < totalExchanges - 1) {
+      // Move to next turn
+      setCurrentTurnIndex((prev) => prev + 1);
     } else {
+      // Conversation complete
       setIsCompleted(true);
     }
   };
 
   const progress =
-    conversations.length > 0
-      ? ((currentIndex + 1) / conversations.length) * 100
-      : 0;
+    totalExchanges > 0 ? ((currentTurnIndex + 1) / totalExchanges) * 100 : 0;
 
   return (
     <>
       <PracticeGameLayout
-        questionType="Listening Conversation" // Updated title
-        instructionFr="Écoutez et choisissez la bonne réponse" // Updated instructions
-        instructionEn="Listen to the audio options and select the correct response"
+        questionType="Listening Conversation"
+        instructionFr="Écoutez et choisissez la bonne réponse"
+        instructionEn="Listen to the audio and select the best response"
         progress={progress}
         isGameOver={isCompleted}
         score={score}
-        totalQuestions={conversations.length}
+        totalQuestions={totalExchanges}
         onExit={handleExit}
         onNext={handleSubmit}
         onRestart={() => window.location.reload()}
-        isSubmitEnabled={selectedOption !== null && !showFeedback}
-        showSubmitButton={!showFeedback}
-        submitLabel="Reply"
+        isSubmitEnabled={
+          selectedOption !== null && !showFeedback && !hasAnswered
+        }
+        showSubmitButton={!showFeedback && !hasAnswered}
+        submitLabel="Submit"
         timerValue={timerString}
       >
-        <div className="flex flex-col items-center w-full max-w-2xl mx-auto px-4 py-4">
-          {/* Context badge */}
-          <div className="flex items-center gap-2 mb-4">
-            <MessageSquare className="w-4 h-4 text-indigo-500" />
-            <span className="text-sm font-medium text-slate-600 dark:text-slate-400">
-              {currentConversation?.context}
-            </span>
+        <div className="flex flex-col items-center w-full max-w-6xl mx-auto px-4 py-4">
+          {/* Title */}
+          <div className="flex items-center gap-2 mb-6">
+            <MessageSquare className="w-5 h-5 text-indigo-500" />
+            <h2 className="text-lg font-semibold text-slate-700 dark:text-slate-200">
+              {conversation.title}
+            </h2>
           </div>
 
-          {/* Chat messages */}
-          <div className="w-full bg-slate-50 dark:bg-slate-900 rounded-2xl p-4 mb-4 max-h-60 overflow-y-auto">
-            <div className="space-y-3">
-              {displayedMessages.map((msg, index) => (
-                <div
-                  key={index}
-                  className={cn(
-                    "flex",
-                    msg.isBot ? "justify-start" : "justify-end",
-                  )}
-                >
-                  <div
-                    className={cn(
-                      "max-w-[80%] px-4 py-2 rounded-2xl",
-                      msg.isBot
-                        ? "bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 rounded-bl-md"
-                        : "bg-indigo-500 text-white rounded-br-md",
-                    )}
-                  >
-                    <div className="flex items-center gap-2">
-                      <p className="text-sm">{msg.text}</p>
-                      {/* Always Show play button for history messages */}
-                      <button
-                        onClick={() => handlePlayMessage(msg.text)}
-                        className={cn(
-                          "text-slate-400 hover:text-indigo-500",
-                          !msg.isBot && "text-indigo-200 hover:text-white",
-                        )}
-                      >
-                        <Volume2 className="w-3 h-3" />
-                      </button>
+          {/* Two-column layout */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
+            {/* LEFT COLUMN: Conversation History */}
+            <div className="flex flex-col space-y-4">
+              <h3 className="text-sm font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wide">
+                Conversation
+              </h3>
+
+              <div className="bg-slate-50 dark:bg-slate-900 rounded-2xl p-4 min-h-[400px] max-h-[500px] overflow-y-auto space-y-4">
+                {/* Show conversation history */}
+                {conversationHistory.map((turn, index) => (
+                  <div key={index} className="space-y-3">
+                    {/* Speaker's message (revealed as text after answer) */}
+                    <div className="flex justify-start">
+                      <div className="flex items-start gap-2 max-w-[85%]">
+                        <div className="w-8 h-8 rounded-full bg-indigo-100 dark:bg-indigo-900 flex items-center justify-center flex-shrink-0 mt-1">
+                          <User className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                        </div>
+                        <div className="bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 px-4 py-2 rounded-2xl rounded-tl-md shadow-sm">
+                          <p className="text-sm">{turn.speakerText}</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* User's response */}
+                    <div className="flex justify-end">
+                      <div className="bg-indigo-500 text-white px-4 py-2 rounded-2xl rounded-br-md shadow-sm max-w-[85%]">
+                        <p className="text-sm">{turn.userText}</p>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
-            </div>
-          </div>
+                ))}
 
-          {/* Prompt */}
-          {!showFeedback && (
-            <div className="w-full bg-indigo-50 dark:bg-indigo-900/20 rounded-xl p-3 mb-4 border border-indigo-200 dark:border-indigo-800">
-              <p className="text-sm text-indigo-700 dark:text-indigo-300 text-center">
-                <span className="font-semibold">Your turn: </span>
-                {currentConversation?.currentPrompt}
-              </p>
-            </div>
-          )}
-
-          {/* Options (Audio Waveforms) */}
-          {!showFeedback && (
-            <div className="w-full space-y-2">
-              {currentConversation?.options.map((option, index) => (
-                <button
-                  key={index}
-                  onClick={() => handleOptionSelect(index)}
-                  disabled={showFeedback}
-                  className={cn(
-                    "w-full group relative p-4 rounded-xl border-[3px] text-left font-medium transition-all flex items-center gap-4 bg-white dark:bg-slate-800 shadow-sm",
-                    // Default state
-                    "border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700",
-                    // Selected
-                    selectedOption === index &&
-                      !showFeedback &&
-                      "border-indigo-400 bg-indigo-50 dark:bg-indigo-900/20",
-                  )}
-                >
-                  {/* Circle Indicator */}
-                  <div
-                    className={cn(
-                      "w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors flex-shrink-0",
-                      selectedOption === index
-                        ? "border-indigo-500 bg-indigo-500 text-white"
-                        : "border-slate-300 dark:border-slate-500 hover:border-indigo-400",
-                    )}
-                  >
-                    {selectedOption === index && (
-                      <div className="w-2.5 h-2.5 bg-white rounded-full" />
-                    )}
+                {/* Current turn: Show audio waveform if NOT answered yet */}
+                {!hasAnswered && currentExchange && (
+                  <div className="flex justify-start">
+                    <div className="flex items-start gap-2 max-w-[85%]">
+                      <div className="w-8 h-8 rounded-full bg-indigo-100 dark:bg-indigo-900 flex items-center justify-center flex-shrink-0 mt-1">
+                        <User className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                      </div>
+                      <div className="bg-white dark:bg-slate-800 px-4 py-3 rounded-2xl rounded-tl-md shadow-sm flex items-center gap-3">
+                        <Volume2 className="w-4 h-4 text-indigo-500 animate-pulse" />
+                        <svg
+                          width="120"
+                          height="24"
+                          viewBox="0 0 120 24"
+                          className="text-indigo-400"
+                        >
+                          <rect
+                            x="5"
+                            y="8"
+                            width="2"
+                            height="8"
+                            fill="currentColor"
+                            rx="1"
+                          />
+                          <rect
+                            x="9"
+                            y="5"
+                            width="2"
+                            height="14"
+                            fill="currentColor"
+                            rx="1"
+                          />
+                          <rect
+                            x="13"
+                            y="3"
+                            width="2"
+                            height="18"
+                            fill="currentColor"
+                            rx="1"
+                          />
+                          <rect
+                            x="17"
+                            y="7"
+                            width="2"
+                            height="10"
+                            fill="currentColor"
+                            rx="1"
+                          />
+                          <rect
+                            x="21"
+                            y="10"
+                            width="2"
+                            height="4"
+                            fill="currentColor"
+                            rx="1"
+                          />
+                          <rect
+                            x="25"
+                            y="4"
+                            width="2"
+                            height="16"
+                            fill="currentColor"
+                            rx="1"
+                          />
+                          <rect
+                            x="29"
+                            y="8"
+                            width="2"
+                            height="8"
+                            fill="currentColor"
+                            rx="1"
+                          />
+                          <rect
+                            x="33"
+                            y="6"
+                            width="2"
+                            height="12"
+                            fill="currentColor"
+                            rx="1"
+                          />
+                          <rect
+                            x="37"
+                            y="9"
+                            width="2"
+                            height="6"
+                            fill="currentColor"
+                            rx="1"
+                          />
+                          <rect
+                            x="41"
+                            y="7"
+                            width="2"
+                            height="10"
+                            fill="currentColor"
+                            rx="1"
+                          />
+                          <rect
+                            x="45"
+                            y="8"
+                            width="2"
+                            height="8"
+                            fill="currentColor"
+                            rx="1"
+                          />
+                          <rect
+                            x="49"
+                            y="5"
+                            width="2"
+                            height="14"
+                            fill="currentColor"
+                            rx="1"
+                          />
+                          <rect
+                            x="53"
+                            y="3"
+                            width="2"
+                            height="18"
+                            fill="currentColor"
+                            rx="1"
+                          />
+                          <rect
+                            x="57"
+                            y="7"
+                            width="2"
+                            height="10"
+                            fill="currentColor"
+                            rx="1"
+                          />
+                          <rect
+                            x="61"
+                            y="10"
+                            width="2"
+                            height="4"
+                            fill="currentColor"
+                            rx="1"
+                          />
+                          <rect
+                            x="65"
+                            y="4"
+                            width="2"
+                            height="16"
+                            fill="currentColor"
+                            rx="1"
+                          />
+                          <rect
+                            x="69"
+                            y="8"
+                            width="2"
+                            height="8"
+                            fill="currentColor"
+                            rx="1"
+                          />
+                          <rect
+                            x="73"
+                            y="6"
+                            width="2"
+                            height="12"
+                            fill="currentColor"
+                            rx="1"
+                          />
+                          <rect
+                            x="77"
+                            y="9"
+                            width="2"
+                            height="6"
+                            fill="currentColor"
+                            rx="1"
+                          />
+                          <rect
+                            x="81"
+                            y="7"
+                            width="2"
+                            height="10"
+                            fill="currentColor"
+                            rx="1"
+                          />
+                          <rect
+                            x="85"
+                            y="8"
+                            width="2"
+                            height="8"
+                            fill="currentColor"
+                            rx="1"
+                          />
+                          <rect
+                            x="89"
+                            y="5"
+                            width="2"
+                            height="14"
+                            fill="currentColor"
+                            rx="1"
+                          />
+                          <rect
+                            x="93"
+                            y="3"
+                            width="2"
+                            height="18"
+                            fill="currentColor"
+                            rx="1"
+                          />
+                          <rect
+                            x="97"
+                            y="7"
+                            width="2"
+                            height="10"
+                            fill="currentColor"
+                            rx="1"
+                          />
+                          <rect
+                            x="101"
+                            y="10"
+                            width="2"
+                            height="4"
+                            fill="currentColor"
+                            rx="1"
+                          />
+                          <rect
+                            x="105"
+                            y="6"
+                            width="2"
+                            height="12"
+                            fill="currentColor"
+                            rx="1"
+                          />
+                          <rect
+                            x="109"
+                            y="8"
+                            width="2"
+                            height="8"
+                            fill="currentColor"
+                            rx="1"
+                          />
+                        </svg>
+                      </div>
+                    </div>
                   </div>
+                )}
 
-                  <div className="flex-1 flex flex-col justify-center items-center">
-                    {/* Waveform SVG */}
-                    <svg
-                      width="200"
-                      height="30"
-                      viewBox="0 0 200 40"
+                {/* Empty state */}
+                {conversationHistory.length === 0 && hasAnswered === false && (
+                  <div className="flex items-center justify-center h-full text-slate-400 dark:text-slate-600">
+                    <p className="text-sm">Conversation will appear here...</p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* RIGHT COLUMN: Response Options */}
+            <div className="flex flex-col space-y-4">
+              <h3 className="text-sm font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wide">
+                Select the best response
+              </h3>
+
+              {!hasAnswered && currentExchange && (
+                <div className="space-y-3">
+                  {currentExchange.options.map((option) => (
+                    <button
+                      key={option.id}
+                      onClick={() => handleOptionSelect(option.id)}
+                      disabled={hasAnswered || showFeedback}
                       className={cn(
-                        "transition-colors",
-                        selectedOption === index
-                          ? "text-indigo-500"
-                          : "text-slate-400 dark:text-slate-500 group-hover:text-slate-500 dark:group-hover:text-slate-400",
+                        "w-full p-4 rounded-xl border-2 text-left font-medium transition-all",
+                        "bg-white dark:bg-slate-800 shadow-sm hover:shadow-md",
+                        selectedOption === option.id
+                          ? "border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20"
+                          : "border-slate-200 dark:border-slate-700 hover:border-indigo-300",
+                        hasAnswered && "cursor-not-allowed opacity-60",
                       )}
                     >
-                      <rect
-                        x="10"
-                        y="15"
-                        width="3"
-                        height="10"
-                        fill="currentColor"
-                        rx="1.5"
-                      />
-                      <rect
-                        x="16"
-                        y="10"
-                        width="3"
-                        height="20"
-                        fill="currentColor"
-                        rx="1.5"
-                      />
-                      <rect
-                        x="22"
-                        y="5"
-                        width="3"
-                        height="30"
-                        fill="currentColor"
-                        rx="1.5"
-                      />
-                      <rect
-                        x="28"
-                        y="12"
-                        width="3"
-                        height="16"
-                        fill="currentColor"
-                        rx="1.5"
-                      />
-                      <rect
-                        x="34"
-                        y="18"
-                        width="3"
-                        height="4"
-                        fill="currentColor"
-                        rx="1.5"
-                      />
-                      <rect
-                        x="40"
-                        y="8"
-                        width="3"
-                        height="24"
-                        fill="currentColor"
-                        rx="1.5"
-                      />
-                      <rect
-                        x="46"
-                        y="14"
-                        width="3"
-                        height="12"
-                        fill="currentColor"
-                        rx="1.5"
-                      />
-                      <rect
-                        x="52"
-                        y="11"
-                        width="3"
-                        height="18"
-                        fill="currentColor"
-                        rx="1.5"
-                      />
-                      <rect
-                        x="58"
-                        y="16"
-                        width="3"
-                        height="8"
-                        fill="currentColor"
-                        rx="1.5"
-                      />
-                      <rect
-                        x="64"
-                        y="13"
-                        width="3"
-                        height="14"
-                        fill="currentColor"
-                        rx="1.5"
-                      />
-                      <rect
-                        x="70"
-                        y="15"
-                        width="3"
-                        height="10"
-                        fill="currentColor"
-                        rx="1.5"
-                      />
-                      <rect
-                        x="76"
-                        y="10"
-                        width="3"
-                        height="20"
-                        fill="currentColor"
-                        rx="1.5"
-                      />
-                      <rect
-                        x="82"
-                        y="5"
-                        width="3"
-                        height="30"
-                        fill="currentColor"
-                        rx="1.5"
-                      />
-                      <rect
-                        x="88"
-                        y="12"
-                        width="3"
-                        height="16"
-                        fill="currentColor"
-                        rx="1.5"
-                      />
-                      <rect
-                        x="94"
-                        y="18"
-                        width="3"
-                        height="4"
-                        fill="currentColor"
-                        rx="1.5"
-                      />
-                      <rect
-                        x="100"
-                        y="8"
-                        width="3"
-                        height="24"
-                        fill="currentColor"
-                        rx="1.5"
-                      />
-                      <rect
-                        x="106"
-                        y="14"
-                        width="3"
-                        height="12"
-                        fill="currentColor"
-                        rx="1.5"
-                      />
-                      <rect
-                        x="112"
-                        y="11"
-                        width="3"
-                        height="18"
-                        fill="currentColor"
-                        rx="1.5"
-                      />
-                      <rect
-                        x="118"
-                        y="16"
-                        width="3"
-                        height="8"
-                        fill="currentColor"
-                        rx="1.5"
-                      />
-                      <rect
-                        x="124"
-                        y="13"
-                        width="3"
-                        height="14"
-                        fill="currentColor"
-                        rx="1.5"
-                      />
-                      <rect
-                        x="130"
-                        y="15"
-                        width="3"
-                        height="10"
-                        fill="currentColor"
-                        rx="1.5"
-                      />
-                      <rect
-                        x="136"
-                        y="10"
-                        width="3"
-                        height="20"
-                        fill="currentColor"
-                        rx="1.5"
-                      />
-                      <rect
-                        x="142"
-                        y="5"
-                        width="3"
-                        height="30"
-                        fill="currentColor"
-                        rx="1.5"
-                      />
-                      <rect
-                        x="148"
-                        y="12"
-                        width="3"
-                        height="16"
-                        fill="currentColor"
-                        rx="1.5"
-                      />
-                      <rect
-                        x="154"
-                        y="18"
-                        width="3"
-                        height="4"
-                        fill="currentColor"
-                        rx="1.5"
-                      />
-                    </svg>
-                  </div>
-                </button>
-              ))}
+                      <div className="flex items-center gap-3">
+                        {/* Radio circle */}
+                        <div
+                          className={cn(
+                            "w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0",
+                            selectedOption === option.id
+                              ? "border-indigo-500 bg-indigo-500"
+                              : "border-slate-300 dark:border-slate-500",
+                          )}
+                        >
+                          {selectedOption === option.id && (
+                            <div className="w-2 h-2 bg-white rounded-full" />
+                          )}
+                        </div>
+
+                        {/* Option text */}
+                        <span className="text-sm text-slate-700 dark:text-slate-200">
+                          {option.text}
+                        </span>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {/* After answer submitted, show placeholder */}
+              {hasAnswered && (
+                <div className="bg-slate-100 dark:bg-slate-800 rounded-xl p-6 text-center">
+                  <p className="text-sm text-slate-500 dark:text-slate-400">
+                    Waiting for feedback...
+                  </p>
+                </div>
+              )}
             </div>
-          )}
+          </div>
         </div>
       </PracticeGameLayout>
 
@@ -557,13 +574,15 @@ export default function ListeningConversationPage() {
           isCorrect={isCorrect}
           correctAnswer={
             !isCorrect
-              ? currentConversation.options[currentConversation.correctIndex]
+              ? currentExchange.options.find(
+                  (opt) => opt.id === currentExchange.correctOptionId,
+                )?.text
               : null
           }
           onContinue={handleContinue}
           message={feedbackMessage}
           continueLabel={
-            currentIndex + 1 === conversations.length ? "FINISH" : "CONTINUE"
+            currentTurnIndex + 1 === totalExchanges ? "FINISH" : "CONTINUE"
           }
         />
       )}
