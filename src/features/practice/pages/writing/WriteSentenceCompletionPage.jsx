@@ -5,49 +5,52 @@ import { cn } from "@/lib/utils";
 import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
 import FeedbackBanner from "@/components/ui/FeedbackBanner";
 import { getFeedbackMessage } from "@/utils/feedbackMessages";
+import { BookOpen, XCircle, CheckCircle, XCircle as XIcon } from "lucide-react";
 
-// Mock data for Write Sentence Completion
-const MOCK_QUESTIONS = [
-    {
-        id: 1,
-        sentenceStart: "Bien que le temps soit pluvieux, ",
-        correctEnding: "nous avons décidé de sortir.",
-        hint: "we decided to go out",
-        sampleAnswer: "nous avons décidé de sortir.",
-        timeLimitSeconds: 60,
-    },
-    {
-        id: 2,
-        sentenceStart: "Si j'avais plus de temps libre, ",
-        correctEnding: "j'apprendrais le piano.",
-        hint: "I would learn the piano",
-        sampleAnswer: "j'apprendrais le piano.",
-        timeLimitSeconds: 60,
-    },
-    {
-        id: 3,
-        sentenceStart: "Dès que je serai arrivé à la gare, ",
-        correctEnding: "je t'appellerai.",
-        hint: "I will call you",
-        sampleAnswer: "je t'appellerai.",
-        timeLimitSeconds: 60,
-    }
-];
+// Mock data for Write Sentence Completion (Passage-based)
+const MOCK_DATA = {
+    passageTitle: "La Révolution du Travail Hybride",
+    passageSubtitle: "Comment les entreprises s'adaptent à la nouvelle ère",
+    passageContent: [
+        "Depuis 2020, le monde du travail a connu une transformation radicale. Le modèle traditionnel du '9 à 5' au bureau est de plus en plus remplacé par des structures hybrides. Cette flexibilité permet aux employés de mieux équilibrer leur vie professionnelle et personnelle, tout en réduisant les temps de trajet quotidiens.",
+        "Cependant, ce nouveau mode de fonctionnement apporte aussi des défis. La communication informelle entre collègues, autrefois naturelle autour d'une machine à café, doit désormais être organisée de manière intentionnelle. De plus, les managers doivent apprendre à évaluer la performance basée sur les résultats plutôt que sur le temps de présence physique.",
+        "Pour réussir cette transition, les entreprises investissent massivement dans les technologies de collaboration. Les outils de vidéoconférence et de gestion de projet en ligne sont devenus essentiels. Enfin, il est crucial de maintenir une culture d'entreprise forte malgré la distance physique pour éviter l'isolement des travailleurs à domicile."
+    ],
+    questions: [
+        {
+            id: 1,
+            sentenceStart: "Le modèle hybride permet aux employés de ",
+            correctEnding: "mieux équilibrer leur vie",
+            hint: "better balance their lives",
+        },
+        {
+            id: 2,
+            sentenceStart: "Les managers doivent désormais évaluer la performance en se basant sur ",
+            correctEnding: "les résultats",
+            hint: "the results",
+        },
+        {
+            id: 3,
+            sentenceStart: "Pour éviter l'isolement, il est essentiel de maintenir ",
+            correctEnding: "une culture d'entreprise forte",
+            hint: "a strong company culture",
+        }
+    ],
+    timeLimitSeconds: 300,
+};
 
 export default function WriteSentenceCompletionPage() {
     const handleExit = usePracticeExit();
 
-    const [questions] = useState(MOCK_QUESTIONS);
-    const [currentIndex, setCurrentIndex] = useState(0);
-    const [userInput, setUserInput] = useState("");
-    const [isCompleted, setIsCompleted] = useState(false);
+    const [userInputs, setUserInputs] = useState({}); // { 1: "text", 2: "text" }
     const [showFeedback, setShowFeedback] = useState(false);
     const [isCorrect, setIsCorrect] = useState(false);
     const [feedbackMessage, setFeedbackMessage] = useState("");
     const [score, setScore] = useState(0);
+    const [isCompleted, setIsCompleted] = useState(false);
+    const [isPassageOpen, setIsPassageOpen] = useState(false);
 
-    const currentQuestion = questions[currentIndex];
-    const timerDuration = currentQuestion?.timeLimitSeconds || 60;
+    const timerDuration = MOCK_DATA.timeLimitSeconds;
 
     const { timerString, resetTimer } = useExerciseTimer({
         duration: timerDuration,
@@ -60,104 +63,173 @@ export default function WriteSentenceCompletionPage() {
         isPaused: isCompleted || showFeedback,
     });
 
-    useEffect(() => {
-        if (currentQuestion && !isCompleted) {
-            setUserInput("");
-            resetTimer();
-        }
-    }, [currentIndex, currentQuestion, isCompleted, resetTimer]);
-
     const normalize = (str) =>
-        str.toLowerCase().replace(/[.,!?;:'"]/g, "").replace(/\s+/g, " ").trim();
+        (str || "").toLowerCase().replace(/[.,!?;:'"]/g, "").replace(/\s+/g, " ").trim();
+
+    const handleInputChange = (id, value) => {
+        if (showFeedback) return;
+        setUserInputs(prev => ({ ...prev, [id]: value }));
+    };
 
     const handleSubmit = () => {
-        if (showFeedback || !userInput.trim()) return;
+        if (showFeedback) return;
 
-        // In a real app, this might use fuzzy matching or AI feedback
-        // For now, we compare against the correctEnding
-        const userNorm = normalize(userInput);
-        const correctNorm = normalize(currentQuestion.correctEnding);
+        let correctCount = 0;
+        const totalQuestions = MOCK_DATA.questions.length;
 
-        // Very basic comparison for mock purposes
-        const correct = userNorm === correctNorm;
+        MOCK_DATA.questions.forEach((q) => {
+            const userNorm = normalize(userInputs[q.id]);
+            const correctNorm = normalize(q.correctEnding);
+            if (userNorm === correctNorm) {
+                correctCount++;
+            }
+        });
 
-        setIsCorrect(correct);
-        setFeedbackMessage(getFeedbackMessage(correct));
-        setShowFeedback(true);
+        const verifyAllCorrect = correctCount === totalQuestions;
+        setIsCorrect(verifyAllCorrect);
+        setScore(correctCount);
 
-        if (correct) {
-            setScore((prev) => prev + 1);
+        if (verifyAllCorrect) {
+            setFeedbackMessage(getFeedbackMessage(true));
+        } else {
+            setFeedbackMessage(`Vous avez ${correctCount} sur ${totalQuestions} réponses correctes.`);
         }
+
+        setShowFeedback(true);
     };
 
     const handleContinue = () => {
         setShowFeedback(false);
-
-        if (currentIndex < questions.length - 1) {
-            setCurrentIndex((prev) => prev + 1);
-        } else {
-            setIsCompleted(true);
-        }
+        setIsCompleted(true);
+        handleExit();
     };
 
-    const progress = questions.length > 0 ? ((currentIndex + 1) / questions.length) * 100 : 0;
+    const allAnswered = MOCK_DATA.questions.every(q => (userInputs[q.id] || "").trim().length > 0);
+    const progress = (Object.keys(userInputs).length / MOCK_DATA.questions.length) * 100;
 
     return (
         <>
             <PracticeGameLayout
                 questionType="Sentence Completion"
-                instructionFr="Complétez la phrase"
-                instructionEn="Complete the sentence logically"
+                instructionFr="Complétez les phrases selon le texte"
+                instructionEn="Complete the sentences based on the passage"
                 progress={progress}
                 isGameOver={isCompleted}
                 score={score}
-                totalQuestions={questions.length}
+                totalQuestions={MOCK_DATA.questions.length}
                 onExit={handleExit}
                 onNext={handleSubmit}
-                isSubmitEnabled={userInput.trim().length > 0 && !showFeedback}
+                isSubmitEnabled={allAnswered && !showFeedback}
                 showSubmitButton={!showFeedback}
                 submitLabel="Check"
                 timerValue={timerString}
             >
-                <div className="flex flex-col items-center w-full max-w-4xl mx-auto px-4 py-8 lg:py-16">
-                    <div className="w-full bg-white dark:bg-slate-900 rounded-[2.5rem] p-8 lg:p-12 shadow-xl border border-slate-100 dark:border-slate-800">
-                        <h2 className="text-xl lg:text-2xl text-slate-400 dark:text-slate-500 font-medium mb-6">
-                            Complete the sentence:
-                        </h2>
+                <div className="flex flex-col lg:flex-row w-full max-w-7xl mx-auto gap-6 p-4 h-full md:items-stretch overflow-hidden">
+                    {/* Left Column: Passage (Hidden on mobile, shown on lg) */}
+                    <div className="hidden lg:flex flex-1 flex flex-col bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden">
+                        <div className="p-6 border-b border-slate-100 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50">
+                            <h3 className="text-xl font-bold text-slate-900 dark:text-slate-100">
+                                {MOCK_DATA.passageTitle}
+                            </h3>
+                            <p className="text-sm text-slate-500 dark:text-slate-400 mt-1 uppercase tracking-wider font-semibold">
+                                {MOCK_DATA.passageSubtitle}
+                            </p>
+                        </div>
 
-                        <div className="flex flex-col gap-6">
-                            <div className="text-2xl lg:text-3xl font-medium text-slate-800 dark:text-slate-100 leading-relaxed">
-                                <span className="text-blue-600 dark:text-blue-400">{currentQuestion?.sentenceStart}</span>
-                                <span className="border-b-4 border-slate-200 dark:border-slate-700 min-w-[200px] inline-block ml-2 italic text-slate-300 dark:text-slate-600">
-                                    {userInput || "..."}
-                                </span>
+                        <div className="p-8 overflow-y-auto custom-scrollbar flex-1">
+                            <div className="text-base leading-relaxed text-slate-700 dark:text-slate-300 space-y-6">
+                                {MOCK_DATA.passageContent.map((paragraph, idx) => (
+                                    <p key={idx}>{paragraph}</p>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Vertical Divider (visible on lg screens) */}
+                    <div className="hidden lg:block w-px bg-slate-200 dark:bg-slate-700 self-stretch my-4" />
+
+                    {/* Right Column: Questions & Inputs */}
+                    <div className="flex-1 flex flex-col justify-start lg:max-w-xl overflow-hidden">
+                        <div className="bg-white dark:bg-slate-800/50 rounded-2xl p-6 h-full overflow-y-auto custom-scrollbar border border-slate-200 dark:border-slate-700 shadow-sm">
+                            <h2 className="text-xl font-bold text-slate-800 dark:text-white mb-8 px-2">
+                                Questions
+                            </h2>
+
+                            <div className="space-y-10">
+                                {MOCK_DATA.questions.map((q) => {
+                                    const userVal = userInputs[q.id] || "";
+                                    const isCorrectAnswer = normalize(userVal) === normalize(q.correctEnding);
+
+                                    return (
+                                        <div key={q.id} className="flex flex-col gap-4 group">
+                                            <div className="flex items-start gap-4">
+                                                <div className="flex-shrink-0 w-8 h-8 rounded-xl bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center font-bold text-sm text-blue-600 border border-blue-100 dark:border-blue-800 mt-0.5">
+                                                    {q.id}
+                                                </div>
+                                                <div className="flex-1">
+                                                    <p className="text-lg text-slate-800 dark:text-slate-200 font-medium leading-relaxed">
+                                                        {q.sentenceStart}
+                                                        <span className="inline-block border-b-2 border-slate-300 dark:border-slate-600 min-w-[120px] ml-1 h-6"></span>
+                                                    </p>
+                                                </div>
+                                            </div>
+
+                                            <div className="pl-12 space-y-3">
+                                                <div className="relative">
+                                                    <input
+                                                        type="text"
+                                                        value={userVal}
+                                                        onChange={(e) => handleInputChange(q.id, e.target.value)}
+                                                        disabled={showFeedback}
+                                                        placeholder="Complete the sentence..."
+                                                        className={cn(
+                                                            "w-full p-4 rounded-xl border-2 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100 outline-none transition-all text-base",
+                                                            showFeedback
+                                                                ? isCorrectAnswer
+                                                                    ? "border-emerald-500 bg-emerald-50/50 dark:bg-emerald-900/10 text-emerald-700 dark:text-emerald-300"
+                                                                    : "border-red-500 bg-red-50/50 dark:bg-red-900/10 text-red-700 dark:text-red-300"
+                                                                : "border-slate-100 dark:border-slate-800 focus:border-blue-500 dark:focus:border-blue-400 focus:bg-white dark:focus:bg-slate-800 focus:ring-4 focus:ring-blue-500/5"
+                                                        )}
+                                                    />
+                                                    {showFeedback && (
+                                                        <div className="absolute right-4 top-1/2 -translate-y-1/2">
+                                                            {isCorrectAnswer ? (
+                                                                <CheckCircle className="w-6 h-6 text-emerald-500" />
+                                                            ) : (
+                                                                <XIcon className="w-6 h-6 text-red-500" />
+                                                            )}
+                                                        </div>
+                                                    )}
+                                                </div>
+
+                                                {showFeedback && !isCorrectAnswer && (
+                                                    <div className="p-3 rounded-lg bg-emerald-50/50 dark:bg-emerald-900/10 border border-emerald-100 dark:border-emerald-800/50">
+                                                        <p className="text-xs font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-widest mb-1">Correct Ending:</p>
+                                                        <p className="text-sm text-emerald-700 dark:text-emerald-300 font-medium">{q.correctEnding}</p>
+                                                    </div>
+                                                )}
+
+                                                {!showFeedback && q.hint && (
+                                                    <p className="text-xs text-slate-400 italic font-medium px-1">
+                                                        💡 Hint: {q.hint}
+                                                    </p>
+                                                )}
+                                            </div>
+                                        </div>
+                                    );
+                                })}
                             </div>
 
-                            <div className="mt-8">
-                                <label className="text-xs font-black text-slate-400 uppercase tracking-widest mb-2 block">
-                                    YOUR ENDING
-                                </label>
-                                <textarea
-                                    value={userInput}
-                                    onChange={(e) => setUserInput(e.target.value)}
-                                    placeholder="Type your ending here..."
-                                    disabled={showFeedback}
-                                    className={cn(
-                                        "w-full p-6 rounded-3xl border-2 text-xl transition-all outline-none resize-none bg-slate-50 dark:bg-slate-950",
-                                        "placeholder:text-slate-300 dark:placeholder:text-slate-700",
-                                        showFeedback
-                                            ? "border-slate-200 dark:border-slate-800"
-                                            : "border-slate-100 dark:border-slate-800 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/5"
-                                    )}
-                                    rows={2}
-                                    autoFocus
-                                />
-                            </div>
-
-                            {currentQuestion?.hint && !showFeedback && (
-                                <div className="flex items-center gap-2 text-sm text-slate-400 italic">
-                                    <span>💡</span>
-                                    <span>Hint: {currentQuestion.hint}</span>
+                            {/* Mobile Only: Floating See Passage Button */}
+                            {!showFeedback && !isPassageOpen && (
+                                <div className="fixed bottom-24 right-6 z-40 lg:hidden">
+                                    <button
+                                        onClick={() => setIsPassageOpen(true)}
+                                        className="flex items-center justify-center gap-2 px-6 py-4 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-2xl shadow-xl shadow-blue-500/30 transition-all active:scale-95 animate-in slide-in-from-bottom duration-500"
+                                    >
+                                        <BookOpen className="w-5 h-5" />
+                                        Afficher le texte
+                                    </button>
                                 </div>
                             )}
                         </div>
@@ -165,13 +237,55 @@ export default function WriteSentenceCompletionPage() {
                 </div>
             </PracticeGameLayout>
 
+            {/* Passage Modal for Mobile */}
+            {isPassageOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm lg:hidden">
+                    <div className="w-full max-w-lg bg-white dark:bg-slate-900 rounded-3xl shadow-2xl flex flex-col max-h-[85vh] overflow-hidden border border-slate-200 dark:border-slate-800 animate-in fade-in zoom-in duration-200">
+                        {/* Modal Header */}
+                        <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-slate-50 dark:bg-slate-900">
+                            <div>
+                                <h3 className="text-lg font-bold text-slate-900 dark:text-white leading-tight">
+                                    {MOCK_DATA.passageTitle}
+                                </h3>
+                                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 font-bold uppercase tracking-tight">
+                                    Lisez attentivement
+                                </p>
+                            </div>
+                            <button
+                                onClick={() => setIsPassageOpen(false)}
+                                className="w-10 h-10 flex items-center justify-center rounded-xl hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400 transition-colors"
+                            >
+                                <XCircle className="w-6 h-6" />
+                            </button>
+                        </div>
+
+                        {/* Modal Content */}
+                        <div className="p-6 md:p-8 overflow-y-auto custom-scrollbar flex-1 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 leading-relaxed space-y-6">
+                            {MOCK_DATA.passageContent.map((paragraph, idx) => (
+                                <p key={idx} className="text-base">{paragraph}</p>
+                            ))}
+                        </div>
+
+                        {/* Modal Footer */}
+                        <div className="p-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900">
+                            <button
+                                onClick={() => setIsPassageOpen(false)}
+                                className="w-full p-4 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-2xl shadow-lg transition-all active:scale-[0.98]"
+                            >
+                                Retour aux questions
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Feedback Banner */}
             {showFeedback && (
                 <FeedbackBanner
                     isCorrect={isCorrect}
-                    correctAnswer={!isCorrect ? currentQuestion.correctEnding : null}
                     onContinue={handleContinue}
                     message={feedbackMessage}
-                    continueLabel={currentIndex + 1 === questions.length ? "FINISH" : "CONTINUE"}
+                    continueLabel="TERMINER"
                 />
             )}
         </>
