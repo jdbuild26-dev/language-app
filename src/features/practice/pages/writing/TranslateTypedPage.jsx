@@ -5,71 +5,13 @@ import { cn } from "@/lib/utils";
 import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
 import FeedbackBanner from "@/components/ui/FeedbackBanner";
 import { getFeedbackMessage } from "@/utils/feedbackMessages";
-
-// Mock data for Translate the Sentence (Typed) exercise
-const MOCK_QUESTIONS = [
-  {
-    id: 1,
-    sourceText: "Hello, how are you?",
-    correctAnswer: "Bonjour, comment allez-vous?",
-    acceptableAnswers: [
-      "Bonjour, comment allez-vous?",
-      "Bonjour comment allez-vous",
-      "Salut, comment ça va?",
-      "Salut comment ca va",
-    ],
-    timeLimitSeconds: 60,
-  },
-  {
-    id: 2,
-    sourceText: "I would like a coffee, please.",
-    correctAnswer: "Je voudrais un café, s'il vous plaît.",
-    acceptableAnswers: [
-      "Je voudrais un café, s'il vous plaît.",
-      "Je voudrais un cafe s'il vous plait",
-      "J'aimerais un café, s'il vous plaît.",
-    ],
-    timeLimitSeconds: 60,
-  },
-  {
-    id: 3,
-    sourceText: "Where is the train station?",
-    correctAnswer: "Où est la gare?",
-    acceptableAnswers: [
-      "Où est la gare?",
-      "Ou est la gare",
-      "Où se trouve la gare?",
-    ],
-    timeLimitSeconds: 60,
-  },
-  {
-    id: 4,
-    sourceText: "I love learning French.",
-    correctAnswer: "J'aime apprendre le français.",
-    acceptableAnswers: [
-      "J'aime apprendre le français.",
-      "J'aime apprendre le francais",
-      "J'adore apprendre le français.",
-    ],
-    timeLimitSeconds: 60,
-  },
-  {
-    id: 5,
-    sourceText: "The weather is nice today.",
-    correctAnswer: "Il fait beau aujourd'hui.",
-    acceptableAnswers: [
-      "Il fait beau aujourd'hui.",
-      "Il fait beau aujourd'hui",
-      "Le temps est beau aujourd'hui.",
-    ],
-    timeLimitSeconds: 60,
-  },
-];
+import { loadMockCSV } from "@/utils/csvLoader";
+import { Button } from "@/components/ui/button";
 
 export default function TranslateTypedPage() {
   const handleExit = usePracticeExit();
 
-  const [questions] = useState(MOCK_QUESTIONS);
+  const [questions, setQuestions] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [userInput, setUserInput] = useState("");
   const [isCompleted, setIsCompleted] = useState(false);
@@ -77,6 +19,17 @@ export default function TranslateTypedPage() {
   const [isCorrect, setIsCorrect] = useState(false);
   const [feedbackMessage, setFeedbackMessage] = useState("");
   const [score, setScore] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      const data = await loadMockCSV("practice/writing/translate_typed.csv");
+      setQuestions(data);
+      setIsLoading(false);
+    };
+    fetchData();
+  }, []);
+
 
   const currentQuestion = questions[currentIndex];
   const timerDuration = currentQuestion?.timeLimitSeconds || 60;
@@ -135,6 +88,23 @@ export default function TranslateTypedPage() {
       setIsCompleted(true);
     }
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-slate-50 dark:bg-slate-900">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+      </div>
+    );
+  }
+
+  if (questions.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen bg-slate-50 dark:bg-slate-900">
+        <p className="text-xl text-slate-600 dark:text-slate-400">No questions available.</p>
+        <Button onClick={() => handleExit()} variant="outline" className="mt-4">Back</Button>
+      </div>
+    );
+  }
 
   const handleKeyDown = (e) => {
     if (e.key === "Enter" && !e.shiftKey && userInput.trim()) {

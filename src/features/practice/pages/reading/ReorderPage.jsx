@@ -7,75 +7,13 @@ import { cn } from "@/lib/utils";
 import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
 import FeedbackBanner from "@/components/ui/FeedbackBanner";
 import { getFeedbackMessage } from "@/utils/feedbackMessages";
-
-// Mock data for Reorder Sentences exercise
-const MOCK_QUESTIONS = [
-  {
-    id: 1,
-    correctOrder: [
-      "Marie se réveille à sept heures.",
-      "Elle prend son petit déjeuner.",
-      "Elle prend le bus pour aller au travail.",
-      "Elle arrive au bureau à huit heures et demie.",
-    ],
-    timeLimitSeconds: 60,
-  },
-  {
-    id: 2,
-    correctOrder: [
-      "D'abord, je vais au supermarché.",
-      "Ensuite, j'achète des légumes et des fruits.",
-      "Après, je paye à la caisse.",
-      "Finalement, je rentre chez moi.",
-    ],
-    timeLimitSeconds: 60,
-  },
-  {
-    id: 3,
-    correctOrder: [
-      "Le matin, le soleil se lève.",
-      "À midi, il fait très chaud.",
-      "Le soir, le soleil se couche.",
-      "La nuit, les étoiles brillent.",
-    ],
-    timeLimitSeconds: 60,
-  },
-  {
-    id: 4,
-    correctOrder: [
-      "Nous arrivons à l'aéroport.",
-      "Nous passons le contrôle de sécurité.",
-      "Nous attendons à la porte d'embarquement.",
-      "Nous montons dans l'avion.",
-    ],
-    timeLimitSeconds: 60,
-  },
-  {
-    id: 5,
-    correctOrder: [
-      "Je choisis un livre dans la bibliothèque.",
-      "Je m'assieds dans un fauteuil confortable.",
-      "Je lis pendant deux heures.",
-      "Je rends le livre avant de partir.",
-    ],
-    timeLimitSeconds: 60,
-  },
-];
-
-// Shuffle array helper
-const shuffleArray = (array) => {
-  const shuffled = [...array];
-  for (let i = shuffled.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-  }
-  return shuffled;
-};
+import { loadMockCSV } from "@/utils/csvLoader";
+import { Button } from "@/components/ui/button";
 
 export default function ReorderPage() {
   const handleExit = usePracticeExit();
 
-  const [questions] = useState(MOCK_QUESTIONS);
+  const [questions, setQuestions] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [currentOrder, setCurrentOrder] = useState([]);
   const [isCompleted, setIsCompleted] = useState(false);
@@ -83,6 +21,28 @@ export default function ReorderPage() {
   const [isCorrect, setIsCorrect] = useState(false);
   const [feedbackMessage, setFeedbackMessage] = useState("");
   const [score, setScore] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      const data = await loadMockCSV("practice/reading/reorder.csv");
+      setQuestions(data);
+      setIsLoading(false);
+    };
+    fetchData();
+  }, []);
+
+  // Shuffle array helper
+  const shuffleArray = (array) => {
+    if (!array) return [];
+    const shuffled = [...array];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    return shuffled;
+  };
+
 
   const currentQuestion = questions[currentIndex];
   const timerDuration = currentQuestion?.timeLimitSeconds || 60;
@@ -132,8 +92,26 @@ export default function ReorderPage() {
     }
   };
 
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-slate-50 dark:bg-slate-900">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+      </div>
+    );
+  }
+
+  if (questions.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen bg-slate-50 dark:bg-slate-900">
+        <p className="text-xl text-slate-600 dark:text-slate-400">No questions available.</p>
+        <Button onClick={() => handleExit()} variant="outline" className="mt-4">Back</Button>
+      </div>
+    );
+  }
+
   const progress =
     questions.length > 0 ? ((currentIndex + 1) / questions.length) * 100 : 0;
+
 
   return (
     <>
@@ -212,7 +190,7 @@ const SortableItem = ({
       className={cn(
         "flex items-center gap-3 p-4 rounded-xl border-2 transition-colors duration-200 select-none bg-white dark:bg-slate-800",
         !showFeedback &&
-          "cursor-grab active:cursor-grabbing hover:border-slate-300 dark:hover:border-slate-600",
+        "cursor-grab active:cursor-grabbing hover:border-slate-300 dark:hover:border-slate-600",
         isCorrectPosition
           ? "bg-emerald-50 dark:bg-emerald-900/20 border-emerald-500"
           : isWrongPosition

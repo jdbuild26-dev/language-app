@@ -6,18 +6,12 @@ import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
 import FeedbackBanner from "@/components/ui/FeedbackBanner";
 import { getFeedbackMessage } from "@/utils/feedbackMessages";
 
-const MOCK_DATA = [
-  {
-    id: 1,
-    title: "Une Promenade à Paris",
-    passage: "Hier, j'ai passé une journée magnifique à Paris. J'ai commencé ma visite par la Tour Eiffel. Le temps était superbe et le ciel était bleu. Ensuite, j'ai marché le long de la Seine pour voir la cathédrale de Notre-Dame. J'ai aussi mangé un délicieux croissant dans une petite boulangerie près du Louvre. C'était vraiment une expérience inoubliable pour un touriste.",
-    // The words we want to partially blank out (C-Test style)
-    targetWords: ["passé", "journée", "magnifique", "commencé", "visite", "temps", "était", "superbe", "ciel", "était", "marché", "long", "voir", "aussi", "mangé", "délicieux", "croissant", "dans", "petite", "vraiment", "expérience"]
-  }
-];
+import { loadMockCSV } from "@/utils/csvLoader";
 
 export default function WriteFillBlanksPage() {
   const handleExit = usePracticeExit();
+  const [questions, setQuestions] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [userInputs, setUserInputs] = useState({}); // { wordIndex_charIndex: char }
   const [isCompleted, setIsCompleted] = useState(false);
@@ -26,10 +20,20 @@ export default function WriteFillBlanksPage() {
   const [score, setScore] = useState(0);
   const inputRefs = useRef({});
 
-  const currentExercise = MOCK_DATA[currentIndex];
+  useEffect(() => {
+    const fetchData = async () => {
+      const data = await loadMockCSV("practice/writing/write_fill_blanks.csv");
+      setQuestions(data);
+      setIsLoading(false);
+    };
+    fetchData();
+  }, []);
+
+  const currentExercise = questions[currentIndex];
 
   // Helper to split passage into words while keeping punctuation
-  const wordsWithPunctuation = currentExercise.passage.split(/(\s+)/);
+  const wordsWithPunctuation = currentExercise?.passage?.split(/(\s+)/) || [];
+
 
   // Identify which indices are words that should be blanked
   // We match targetWords sequentially to handle multiple occurrences
@@ -59,7 +63,7 @@ export default function WriteFillBlanksPage() {
         handleSubmit();
       }
     },
-    isPaused: isCompleted || showFeedback,
+    isPaused: isLoading || isCompleted || showFeedback,
   });
 
   useEffect(() => {
@@ -130,19 +134,36 @@ export default function WriteFillBlanksPage() {
   };
 
   const handleContinue = () => {
-    if (currentIndex < MOCK_DATA.length - 1) {
+    if (currentIndex < questions.length - 1) {
       setCurrentIndex(prev => prev + 1);
     } else {
       setIsCompleted(true);
     }
   };
 
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-slate-50 dark:bg-slate-900">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+      </div>
+    );
+  }
+
+  if (!currentExercise) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-slate-50 dark:bg-slate-900">
+        <p className="text-xl text-slate-600 dark:text-slate-400">No exercise data available.</p>
+      </div>
+    );
+  }
+
   return (
     <>
       <PracticeGameLayout
         questionType="C-Test Passage"
         instructionEn="Complete the text with the correct words"
-        progress={((currentIndex + 1) / MOCK_DATA.length) * 100}
+        progress={((currentIndex + 1) / (questions.length || 1)) * 100}
+        totalQuestions={questions.length}
         isGameOver={isCompleted}
         score={score}
         onExit={handleExit}
@@ -218,7 +239,7 @@ export default function WriteFillBlanksPage() {
           isCorrect={isCorrect}
           onContinue={handleContinue}
           message={isCorrect ? "Perfect! Your grammar and spelling are spot on." : "Some words aren't quite right. Keep practicing!"}
-          continueLabel={currentIndex < MOCK_DATA.length - 1 ? "NEXT PASSAGE" : "FINISH"}
+          continueLabel={currentIndex < questions.length - 1 ? "NEXT PASSAGE" : "FINISH"}
         />
       )}
     </>

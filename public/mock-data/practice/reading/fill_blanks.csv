@@ -1,0 +1,6 @@
+id,sentenceWithBlank,correctAnswer,wordBank,englishTranslation,timeLimitSeconds
+1,"Le chat ______ sur le canapé.","dort","[""mange"", ""dort"", ""court"", ""joue""]","The cat sleeps on the sofa.",30
+2,"Elle ______ le piano tous les jours.","joue","[""chante"", ""danse"", ""joue"", ""écoute""]","She plays the piano every day.",30
+3,"Nous ______ au restaurant ce soir.","allons","[""allons"", ""venons"", ""partons"", ""restons""]","We are going to the restaurant tonight.",30
+4,"Il ______ très bien le français.","parle","[""écrit"", ""lit"", ""parle"", ""comprend""]","He speaks French very well.",30
+5,"Les enfants ______ dans le jardin.","jouent","[""dorment"", ""mangent"", ""jouent"", ""étudient""]","The children play in the garden.",30

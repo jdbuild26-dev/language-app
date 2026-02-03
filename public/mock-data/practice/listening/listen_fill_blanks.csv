@@ -1,0 +1,6 @@
+id,audioText,displayParts,blanks,timeLimitSeconds
+1,"Je vais à la boulangerie pour acheter du pain.","[""Je vais à la "", "" pour acheter du "", "".""]","[""boulangerie"", ""pain""]",60
+2,"Elle habite dans une grande maison avec un jardin.","[""Elle habite dans une grande "", "" avec un "", "".""]","[""maison"", ""jardin""]",60
+3,"Mon frère travaille dans un hôpital comme médecin.","[""Mon frère travaille dans un "", "" comme "", "".""]","[""hôpital"", ""médecin""]",60
+4,"Nous prenons le petit déjeuner à huit heures.","[""Nous prenons le petit "", "" à "", "" heures.""]","[""déjeuner"", ""huit""]",60
+5,"Les enfants jouent au football dans le parc.","[""Les enfants jouent au "", "" dans le "", "".""]","[""football"", ""parc""]",60

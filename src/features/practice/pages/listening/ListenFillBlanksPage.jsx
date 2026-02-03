@@ -7,53 +7,22 @@ import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
 import FeedbackBanner from "@/components/ui/FeedbackBanner";
 import { getFeedbackMessage } from "@/utils/feedbackMessages";
 import { useTextToSpeech } from "@/hooks/useTextToSpeech";
+import { loadMockCSV } from "@/utils/csvLoader";
+import { Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
-// Mock data for Listen and Fill in the Blanks exercise
-const MOCK_QUESTIONS = [
-  {
-    id: 1,
-    audioText: "Je vais à la boulangerie pour acheter du pain.",
-    displayParts: ["Je vais à la ", " pour acheter du ", "."],
-    blanks: ["boulangerie", "pain"],
-    timeLimitSeconds: 60,
-  },
-  {
-    id: 2,
-    audioText: "Elle habite dans une grande maison avec un jardin.",
-    displayParts: ["Elle habite dans une grande ", " avec un ", "."],
-    blanks: ["maison", "jardin"],
-    timeLimitSeconds: 60,
-  },
-  {
-    id: 3,
-    audioText: "Mon frère travaille dans un hôpital comme médecin.",
-    displayParts: ["Mon frère travaille dans un ", " comme ", "."],
-    blanks: ["hôpital", "médecin"],
-    timeLimitSeconds: 60,
-  },
-  {
-    id: 4,
-    audioText: "Nous prenons le petit déjeuner à huit heures.",
-    displayParts: ["Nous prenons le petit ", " à ", " heures."],
-    blanks: ["déjeuner", "huit"],
-    timeLimitSeconds: 60,
-  },
-  {
-    id: 5,
-    audioText: "Les enfants jouent au football dans le parc.",
-    displayParts: ["Les enfants jouent au ", " dans le ", "."],
-    blanks: ["football", "parc"],
-    timeLimitSeconds: 60,
-  },
-];
+
+
 
 export default function ListenFillBlanksPage() {
   const handleExit = usePracticeExit();
   const { speak, isSpeaking } = useTextToSpeech();
   const inputRefs = useRef([]);
 
-  const [questions] = useState(MOCK_QUESTIONS);
+  const [questions, setQuestions] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [currentIndex, setCurrentIndex] = useState(0);
+
   const [userInputs, setUserInputs] = useState([]);
   const [isCompleted, setIsCompleted] = useState(false);
   const [showFeedback, setShowFeedback] = useState(false);
@@ -79,7 +48,22 @@ export default function ListenFillBlanksPage() {
     isPaused: isCompleted || showFeedback || !hasPlayed,
   });
 
+  useEffect(() => {
+    const fetchQuestions = async () => {
+      try {
+        const data = await loadMockCSV("practice/listening/listen_fill_blanks.csv");
+        setQuestions(data);
+      } catch (error) {
+        console.error("Error loading mock data:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchQuestions();
+  }, []);
+
   // Initialize inputs when question changes
+
   useEffect(() => {
     if (currentQuestion && !isCompleted) {
       setUserInputs(new Array(currentQuestion.blanks.length).fill(""));
@@ -157,8 +141,26 @@ export default function ListenFillBlanksPage() {
   };
 
   const allFilled = userInputs.every((input) => input.trim().length > 0);
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-900">
+        <Loader2 className="animate-spin text-teal-500 w-8 h-8" />
+      </div>
+    );
+  }
+
+  if (questions.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen bg-slate-50 dark:bg-slate-900">
+        <p className="text-xl text-slate-600 dark:text-slate-400">No content available.</p>
+        <Button onClick={() => handleExit()} variant="outline" className="mt-4">Back</Button>
+      </div>
+    );
+  }
+
   const progress =
     questions.length > 0 ? ((currentIndex + 1) / questions.length) * 100 : 0;
+
 
   // Build the sentence with blanks
   const renderSentence = () => {

@@ -7,58 +7,21 @@ import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
 import FeedbackBanner from "@/components/ui/FeedbackBanner";
 import { getFeedbackMessage } from "@/utils/feedbackMessages";
 import { useTextToSpeech } from "@/hooks/useTextToSpeech";
+import { loadMockCSV } from "@/utils/csvLoader";
+import { Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
-// Mock data for Passage Questions exercise
-const MOCK_QUESTIONS = [
-  {
-    id: 1,
-    passageText:
-      "Marie habite à Lyon depuis trois ans. Elle travaille comme professeur de français dans un lycée. Chaque matin, elle prend le bus pour aller au travail. Elle aime son métier parce qu'elle adore enseigner aux jeunes.",
-    questions: [
-      {
-        question: "Depuis combien de temps Marie habite-t-elle à Lyon?",
-        options: ["Un an", "Deux ans", "Trois ans", "Quatre ans"],
-        correctIndex: 2,
-      },
-      {
-        question: "Quel est le métier de Marie?",
-        options: ["Docteur", "Professeur", "Avocat", "Ingénieur"],
-        correctIndex: 1,
-      },
-    ],
-    timeLimitSeconds: 120,
-  },
-  {
-    id: 2,
-    passageText:
-      "Le restaurant La Belle Époque est ouvert du mardi au dimanche. Le chef prépare des plats traditionnels français. Les desserts sont faits maison et sont délicieux. Le restaurant est fermé le lundi.",
-    questions: [
-      {
-        question: "Quand le restaurant est-il fermé?",
-        options: ["Le mardi", "Le dimanche", "Le lundi", "Le samedi"],
-        correctIndex: 2,
-      },
-      {
-        question: "Que prépare le chef?",
-        options: [
-          "Des plats italiens",
-          "Des plats traditionnels français",
-          "Des plats chinois",
-          "Des plats mexicains",
-        ],
-        correctIndex: 1,
-      },
-    ],
-    timeLimitSeconds: 120,
-  },
-];
+
+
 
 export default function ListenPassagePage() {
   const handleExit = usePracticeExit();
   const { speak, isSpeaking } = useTextToSpeech();
 
-  const [passages] = useState(MOCK_QUESTIONS);
+  const [passages, setPassages] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [currentPassageIndex, setCurrentPassageIndex] = useState(0);
+
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [selectedOption, setSelectedOption] = useState(null);
   const [isCompleted, setIsCompleted] = useState(false);
@@ -86,8 +49,23 @@ export default function ListenPassagePage() {
         setShowFeedback(true);
       }
     },
-    isPaused: isCompleted || showFeedback || !hasPlayed,
+    isPaused: isCompleted || showFeedback || !hasPlayed || isLoading,
   });
+
+  useEffect(() => {
+    const fetchPassages = async () => {
+      try {
+        const data = await loadMockCSV("practice/listening/listen_passage.csv");
+        setPassages(data);
+      } catch (error) {
+        console.error("Error loading mock data:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchPassages();
+  }, []);
+
 
   useEffect(() => {
     if (currentPassage && !isCompleted) {
@@ -141,7 +119,25 @@ export default function ListenPassagePage() {
     }
   };
 
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-900">
+        <Loader2 className="animate-spin text-rose-500 w-8 h-8" />
+      </div>
+    );
+  }
+
+  if (passages.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen bg-slate-50 dark:bg-slate-900">
+        <p className="text-xl text-slate-600 dark:text-slate-400">No content available.</p>
+        <Button onClick={() => handleExit()} variant="outline" className="mt-4">Back</Button>
+      </div>
+    );
+  }
+
   // Calculate overall progress
+
   let completedQuestions = 0;
   for (let i = 0; i < currentPassageIndex; i++) {
     completedQuestions += passages[i].questions.length;
@@ -264,7 +260,7 @@ export default function ListenPassagePage() {
           message={feedbackMessage}
           continueLabel={
             currentPassageIndex === passages.length - 1 &&
-            currentQuestionIndex === currentPassage.questions.length - 1
+              currentQuestionIndex === currentPassage.questions.length - 1
               ? "FINISH"
               : "CONTINUE"
           }

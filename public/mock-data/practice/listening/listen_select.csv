@@ -1,0 +1,6 @@
+id,audioText,question,options,correctIndex,timeLimitSeconds
+1,"Bonjour, comment allez-vous?","What is being said?","[""Hello, how are you?"", ""Goodbye, see you later"", ""Good night, sleep well"", ""Thank you very much""]",0,30
+2,"Je voudrais un café, s'il vous plaît.","What is the person ordering?","[""A tea"", ""A coffee"", ""A juice"", ""A water""]",1,30
+3,"Il fait beau aujourd'hui.","What is the weather like?","[""It's raining"", ""It's cold"", ""It's nice/beautiful"", ""It's snowing""]",2,30
+4,"Je m'appelle Marie et j'ai vingt ans.","How old is Marie?","[""18 years old"", ""19 years old"", ""20 years old"", ""21 years old""]",2,30
+5,"Le train part à huit heures.","What time does the train leave?","[""7 o'clock"", ""8 o'clock"", ""9 o'clock"", ""10 o'clock""]",1,30

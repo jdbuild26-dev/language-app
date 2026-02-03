@@ -1,0 +1,6 @@
+id,passage,statement,answer,timeLimitSeconds
+1,"Paris est la capitale de la France. La ville compte plus de deux millions d'habitants. La Tour Eiffel est le monument le plus visité de la ville.","Paris a plus de deux millions d'habitants.","true",45
+2,"Marie travaille dans une boulangerie. Elle commence son travail à six heures du matin. Elle aime préparer des croissants et des baguettes.","Marie finit son travail à midi.","not-given",45
+3,"Le TGV est un train très rapide en France. Il peut atteindre une vitesse de 320 km/h. Les billets sont généralement plus chers que les trains normaux.","Le TGV est plus lent que les trains normaux.","false",45
+4,"Les Français aiment le fromage. Il existe plus de 300 variétés de fromage en France. Le camembert et le brie sont parmi les plus populaires.","Le camembert est un fromage français populaire.","true",45
+5,"Lyon est connue pour sa gastronomie. La ville a beaucoup de restaurants étoilés. Les bouchons lyonnais servent des plats traditionnels.","Lyon est la plus grande ville de France.","not-given",45

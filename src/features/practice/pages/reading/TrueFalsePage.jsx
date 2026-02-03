@@ -5,50 +5,8 @@ import { cn } from "@/lib/utils";
 import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
 import FeedbackBanner from "@/components/ui/FeedbackBanner";
 import { getFeedbackMessage } from "@/utils/feedbackMessages";
-
-// Mock data for True/False/Not Given exercise
-const MOCK_QUESTIONS = [
-  {
-    id: 1,
-    passage:
-      "Paris est la capitale de la France. La ville compte plus de deux millions d'habitants. La Tour Eiffel est le monument le plus visité de la ville.",
-    statement: "Paris a plus de deux millions d'habitants.",
-    answer: "true",
-    timeLimitSeconds: 45,
-  },
-  {
-    id: 2,
-    passage:
-      "Marie travaille dans une boulangerie. Elle commence son travail à six heures du matin. Elle aime préparer des croissants et des baguettes.",
-    statement: "Marie finit son travail à midi.",
-    answer: "not-given",
-    timeLimitSeconds: 45,
-  },
-  {
-    id: 3,
-    passage:
-      "Le TGV est un train très rapide en France. Il peut atteindre une vitesse de 320 km/h. Les billets sont généralement plus chers que les trains normaux.",
-    statement: "Le TGV est plus lent que les trains normaux.",
-    answer: "false",
-    timeLimitSeconds: 45,
-  },
-  {
-    id: 4,
-    passage:
-      "Les Français aiment le fromage. Il existe plus de 300 variétés de fromage en France. Le camembert et le brie sont parmi les plus populaires.",
-    statement: "Le camembert est un fromage français populaire.",
-    answer: "true",
-    timeLimitSeconds: 45,
-  },
-  {
-    id: 5,
-    passage:
-      "Lyon est connue pour sa gastronomie. La ville a beaucoup de restaurants étoilés. Les bouchons lyonnais servent des plats traditionnels.",
-    statement: "Lyon est la plus grande ville de France.",
-    answer: "not-given",
-    timeLimitSeconds: 45,
-  },
-];
+import { loadMockCSV } from "@/utils/csvLoader";
+import { Button } from "@/components/ui/button";
 
 const OPTIONS = [
   { value: "true", label: "Vrai" },
@@ -59,7 +17,7 @@ const OPTIONS = [
 export default function TrueFalsePage() {
   const handleExit = usePracticeExit();
 
-  const [questions] = useState(MOCK_QUESTIONS);
+  const [questions, setQuestions] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState(null);
   const [isCompleted, setIsCompleted] = useState(false);
@@ -67,6 +25,17 @@ export default function TrueFalsePage() {
   const [isCorrect, setIsCorrect] = useState(false);
   const [feedbackMessage, setFeedbackMessage] = useState("");
   const [score, setScore] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      const data = await loadMockCSV("practice/reading/true_false.csv");
+      setQuestions(data);
+      setIsLoading(false);
+    };
+    fetchData();
+  }, []);
+
 
   const currentQuestion = questions[currentIndex];
   const timerDuration = currentQuestion?.timeLimitSeconds || 45;
@@ -118,6 +87,23 @@ export default function TrueFalsePage() {
       setIsCompleted(true);
     }
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-slate-50 dark:bg-slate-900">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+      </div>
+    );
+  }
+
+  if (questions.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen bg-slate-50 dark:bg-slate-900">
+        <p className="text-xl text-slate-600 dark:text-slate-400">No questions available.</p>
+        <Button onClick={() => handleExit()} variant="outline" className="mt-4">Back</Button>
+      </div>
+    );
+  }
 
   const getAnswerLabel = (value) =>
     OPTIONS.find((o) => o.value === value)?.label || value;

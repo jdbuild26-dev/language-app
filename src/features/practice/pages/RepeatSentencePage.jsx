@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 import { fuzzyIncludes, matchSpeechToAnswer } from "@/utils/textComparison";
 import { getFeedbackMessage } from "@/utils/feedbackMessages";
 import FeedbackBanner from "@/components/ui/FeedbackBanner";
+import { loadMockCSV } from "@/utils/csvLoader";
 
 // MOCK_DATA removed - now fetching from backend
 
@@ -70,9 +71,19 @@ export default function RepeatSentencePage() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await fetch(`${import.meta.env.VITE_API_URL}/api/practice/repeat-sentence`);
-        if (!response.ok) throw new Error("Failed to fetch");
-        const data = await response.json();
+        let data = [];
+        try {
+          const response = await fetch(`${import.meta.env.VITE_API_URL}/api/practice/repeat-sentence`);
+          if (response.ok) {
+            data = await response.json();
+          }
+        } catch (e) {
+          console.warn("Backend fetch failed, falling back to mock CSV", e);
+        }
+
+        if (!data || data.length === 0) {
+          data = await loadMockCSV("practice/speaking/repeat_sentence.csv");
+        }
 
         // Shuffle or use as is
         const shuffled = [...data].sort(() => 0.5 - Math.random());
@@ -85,6 +96,7 @@ export default function RepeatSentencePage() {
     };
     fetchData();
   }, []);
+
 
   // Timer (Stopwatch mode)
   const { timerString, resetTimer, isPaused } = useExerciseTimer({

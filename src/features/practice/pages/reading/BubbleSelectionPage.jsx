@@ -7,6 +7,8 @@ import { cn } from "@/lib/utils";
 import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
 import FeedbackBanner from "@/components/ui/FeedbackBanner";
 import { getFeedbackMessage } from "@/utils/feedbackMessages";
+import { loadMockCSV } from "@/utils/csvLoader";
+import { Button } from "@/components/ui/button";
 
 // Fisher-Yates shuffle algorithm
 function shuffleArray(array) {
@@ -18,60 +20,16 @@ function shuffleArray(array) {
   return shuffled;
 }
 
-// Mock data for Bubble Selection exercise
-const MOCK_QUESTIONS = [
-  {
-    id: 1,
-    sourceText: "The cat is sleeping.",
-    correctAnswer: "Le chat dort.",
-    wordBubbles: ["Le", "chat", "dort", "mange", "chien", "un"],
-    timeLimitSeconds: 45,
-  },
-  {
-    id: 2,
-    sourceText: "I eat an apple.",
-    correctAnswer: "Je mange une pomme.",
-    wordBubbles: ["Je", "mange", "une", "pomme", "Tu", "poire", "le"],
-    timeLimitSeconds: 45,
-  },
-  {
-    id: 3,
-    sourceText: "She reads a book.",
-    correctAnswer: "Elle lit un livre.",
-    wordBubbles: ["Elle", "lit", "un", "livre", "Il", "écrit", "une"],
-    timeLimitSeconds: 45,
-  },
-  {
-    id: 4,
-    sourceText: "We go to school.",
-    correctAnswer: "Nous allons à l'école.",
-    wordBubbles: ["Nous", "allons", "à", "l'école", "Vous", "la", "maison"],
-    timeLimitSeconds: 45,
-  },
-  {
-    id: 5,
-    sourceText: "They play in the garden.",
-    correctAnswer: "Ils jouent dans le jardin.",
-    wordBubbles: [
-      "Ils",
-      "jouent",
-      "dans",
-      "le",
-      "jardin",
-      "Elle",
-      "parc",
-      "sur",
-    ],
-    timeLimitSeconds: 45,
-  },
-];
+
 
 export default function BubbleSelectionPage() {
   const handleExit = usePracticeExit();
   const { speak } = useTextToSpeech();
 
-  const [questions] = useState(MOCK_QUESTIONS);
+  const [questions, setQuestions] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [currentIndex, setCurrentIndex] = useState(0);
+
   const [selectedWords, setSelectedWords] = useState([]);
   const [availableWords, setAvailableWords] = useState([]);
   const [isCompleted, setIsCompleted] = useState(false);
@@ -93,8 +51,23 @@ export default function BubbleSelectionPage() {
         setShowFeedback(true);
       }
     },
-    isPaused: isCompleted || showFeedback,
+    isPaused: isCompleted || showFeedback || isLoading,
   });
+
+  useEffect(() => {
+    const fetchQuestions = async () => {
+      try {
+        const data = await loadMockCSV("practice/reading/bubble_selection.csv");
+        setQuestions(data);
+      } catch (error) {
+        console.error("Error loading mock data:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchQuestions();
+  }, []);
+
 
   // Initialize available words when question changes (shuffled)
   useEffect(() => {
@@ -166,8 +139,26 @@ export default function BubbleSelectionPage() {
     }
   };
 
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-900">
+        <Loader2 className="animate-spin text-blue-500 w-8 h-8" />
+      </div>
+    );
+  }
+
+  if (questions.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen bg-slate-50 dark:bg-slate-900">
+        <p className="text-xl text-slate-600 dark:text-slate-400">No content available.</p>
+        <Button onClick={() => handleExit()} variant="outline" className="mt-4">Back</Button>
+      </div>
+    );
+  }
+
   const progress =
     questions.length > 0 ? ((currentIndex + 1) / questions.length) * 100 : 0;
+
 
   return (
     <>

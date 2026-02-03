@@ -4,34 +4,18 @@ import { useExerciseTimer } from "@/hooks/useExerciseTimer";
 import { cn } from "@/lib/utils";
 import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
 import FeedbackBanner from "@/components/ui/FeedbackBanner";
-import kitchenImage from "@/assets/kitchen.jpg";
+import { Button } from "@/components/ui/button";
+import { loadMockCSV } from "@/utils/csvLoader";
 import { CheckCircle2 } from "lucide-react";
-
-// Initial Configuration
-const MOCK_DATA = [
-  {
-    id: 1,
-    title: "Kitchen Labelling",
-    instructionFr: "Étiquetez la cuisine",
-    instructionEn: "Label the kitchen",
-    image: kitchenImage,
-    items: [
-      { name: "Refrigerator", x: 0.88, y: 0.55 },
-      { name: "Microwave", x: 0.62, y: 0.28 },
-      { name: "Stove", x: 0.62, y: 0.60 },
-      { name: "Sink", x: 0.40, y: 0.52 },
-      { name: "Toaster", x: 0.12, y: 0.52 },
-      { name: "Cabinets", x: 0.25, y: 0.18 },
-      { name: "Dishwasher", x: 0.50, y: 0.70 },
-      { name: "Counter", x: 0.30, y: 0.52 },
-    ],
-  }
-];
 
 export default function ImageLabellingPage() {
   const handleExit = usePracticeExit();
   const imageRef = useRef(null);
   const [imgSize, setImgSize] = useState({ width: 0, height: 0 });
+
+  // Game Data
+  const [questions, setQuestions] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   // State
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -43,7 +27,16 @@ export default function ImageLabellingPage() {
   const [feedbackMessage, setFeedbackMessage] = useState("");
   const [isCorrect, setIsCorrect] = useState(false);
 
-  const currentExercise = MOCK_DATA[currentIndex];
+  useEffect(() => {
+    const fetchData = async () => {
+      const data = await loadMockCSV("practice/reading/image_labelling.csv");
+      setQuestions(data);
+      setIsLoading(false);
+    };
+    fetchData();
+  }, []);
+
+  const currentExercise = questions[currentIndex];
 
   // New Selection State
   const [selectedLabel, setSelectedLabel] = useState(null); // String (name)
@@ -183,7 +176,7 @@ export default function ImageLabellingPage() {
 
   const handleContinue = () => {
     if (isCorrect) {
-      if (currentIndex < MOCK_DATA.length - 1) {
+      if (currentIndex < questions.length - 1) {
         // Move to next exercise
         setCurrentIndex((prev) => prev + 1);
       } else {
@@ -195,13 +188,30 @@ export default function ImageLabellingPage() {
     setShowFeedback(false);
   };
 
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-slate-50 dark:bg-slate-900">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+      </div>
+    );
+  }
+
+  if (!currentExercise) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen bg-slate-50 dark:bg-slate-900">
+        <p className="text-xl text-slate-600 dark:text-slate-400">No questions available.</p>
+        <Button onClick={() => handleExit()} variant="outline" className="mt-4">Back</Button>
+      </div>
+    );
+  }
+
   return (
     <>
       <PracticeGameLayout
         questionType={currentExercise.title}
         instructionFr={currentExercise.instructionFr}
         instructionEn={currentExercise.instructionEn}
-        progress={((currentIndex + placedItems.length / currentExercise.items.length) / MOCK_DATA.length) * 100}
+        progress={((currentIndex + placedItems.length / (currentExercise.items?.length || 1)) / (questions.length || 1)) * 100}
         isGameOver={isCompleted}
         score={score}
         totalQuestions={currentExercise.items.length}
@@ -344,7 +354,7 @@ export default function ImageLabellingPage() {
           correctAnswer={null}
           onContinue={handleContinue}
           message={feedbackMessage}
-          continueLabel={isCorrect ? (currentIndex < MOCK_DATA.length - 1 ? "NEXT EXERCISE" : "FINISH") : "TRY AGAIN"}
+          continueLabel={isCorrect ? (currentIndex < questions.length - 1 ? "NEXT EXERCISE" : "FINISH") : "TRY AGAIN"}
         />
       )}
     </>

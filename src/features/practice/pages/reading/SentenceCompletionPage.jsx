@@ -5,60 +5,13 @@ import { cn } from "@/lib/utils";
 import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
 import FeedbackBanner from "@/components/ui/FeedbackBanner";
 import { getFeedbackMessage } from "@/utils/feedbackMessages";
-
-// Mock data for Complete the Passage exercise
-const MOCK_QUESTIONS = [
-  {
-    id: 1,
-    passageBefore:
-      "Firefighters are the people who fight fires on a nearly daily basis. They work for fire departments, which are organizations of trained professionals that keep the community safe from fires. When a fire breaks out, firefighters enter buildings to look for people and pets, rescue them, and put out the fire to prevent it from spreading. They also conduct fire drills and inspections to keep businesses and agencies safe.",
-    passageAfter:
-      "They must be physically fit and must be able to work in harsh conditions and difficult situations. In addition to responding to fires, firefighters often help in situations that require medical attention, such as automobile accidents and gas emergencies. In addition to physical skills and knowledge, firefighters have to have strong social skills, because they must often interact with people during stressful situations.",
-    options: [
-      "Fire protection is the chief duty of a fire department.",
-      "A fire detection system monitors for smoke, heat, or movement.",
-      "Life in a fire department is not always exciting.",
-      "Firefighters must have a variety of skills and knowledge.",
-    ],
-    correctIndex: 3,
-    timeLimitSeconds: 120,
-  },
-  {
-    id: 2,
-    passageBefore:
-      "Paris is the capital and largest city of France, located in the north-central part of the country. The city is renowned for its art, fashion, gastronomy, and culture. Iconic landmarks like the Eiffel Tower, the Louvre Museum, and Notre-Dame Cathedral draw millions of tourists each year.",
-    passageAfter:
-      "The city's café culture invites visitors to relax and enjoy French pastries while watching the world go by. Whether exploring historic neighborhoods or enjoying world-class cuisine, visitors find endless ways to experience the magic of this remarkable city.",
-    options: [
-      "Paris was founded by the Romans in ancient times.",
-      "The Seine River flows through the heart of Paris, adding to its romantic charm.",
-      "French is the official language spoken in Paris.",
-      "The Paris Metro is one of the oldest subway systems in the world.",
-    ],
-    correctIndex: 1,
-    timeLimitSeconds: 120,
-  },
-  {
-    id: 3,
-    passageBefore:
-      "Climate change is one of the most pressing challenges of our time. Rising global temperatures are causing ice caps to melt, sea levels to rise, and weather patterns to become more extreme. Scientists around the world are working to understand these changes and develop solutions.",
-    passageAfter:
-      "Governments, businesses, and individuals all have a role to play in protecting our planet. From reducing carbon emissions to investing in renewable energy, there are many ways we can work together to create a more sustainable future for generations to come.",
-    options: [
-      "The Industrial Revolution began in the 18th century.",
-      "Many species are already facing extinction due to habitat loss.",
-      "However, addressing climate change requires collective action on a global scale.",
-      "Weather forecasting has become more accurate in recent years.",
-    ],
-    correctIndex: 2,
-    timeLimitSeconds: 120,
-  },
-];
+import { loadMockCSV } from "@/utils/csvLoader";
+import { Button } from "@/components/ui/button";
 
 export default function SentenceCompletionPage() {
   const handleExit = usePracticeExit();
 
-  const [questions] = useState(MOCK_QUESTIONS);
+  const [questions, setQuestions] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedOption, setSelectedOption] = useState(null);
   const [isCompleted, setIsCompleted] = useState(false);
@@ -66,6 +19,17 @@ export default function SentenceCompletionPage() {
   const [isCorrect, setIsCorrect] = useState(false);
   const [feedbackMessage, setFeedbackMessage] = useState("");
   const [score, setScore] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      const data = await loadMockCSV("practice/reading/sentence_completion.csv");
+      setQuestions(data);
+      setIsLoading(false);
+    };
+    fetchData();
+  }, []);
+
 
   const currentQuestion = questions[currentIndex];
   const timerDuration = currentQuestion?.timeLimitSeconds || 120;
@@ -118,8 +82,26 @@ export default function SentenceCompletionPage() {
     }
   };
 
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-slate-50 dark:bg-slate-900">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+      </div>
+    );
+  }
+
+  if (questions.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen bg-slate-50 dark:bg-slate-900">
+        <p className="text-xl text-slate-600 dark:text-slate-400">No questions available.</p>
+        <Button onClick={() => handleExit()} variant="outline" className="mt-4">Back</Button>
+      </div>
+    );
+  }
+
   const progress =
     questions.length > 0 ? ((currentIndex + 1) / questions.length) * 100 : 0;
+
 
   return (
     <>

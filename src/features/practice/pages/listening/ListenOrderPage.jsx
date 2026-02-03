@@ -8,40 +8,12 @@ import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
 import FeedbackBanner from "@/components/ui/FeedbackBanner";
 import { getFeedbackMessage } from "@/utils/feedbackMessages";
 import { useTextToSpeech } from "@/hooks/useTextToSpeech";
+import { loadMockCSV } from "@/utils/csvLoader";
+import { Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
-// Mock data for Listen and Order exercise
-const MOCK_QUESTIONS = [
-  {
-    id: 1,
-    correctOrder: [
-      "Premier, je me lève.",
-      "Ensuite, je prends une douche.",
-      "Après, je prends le petit déjeuner.",
-      "Finalement, je vais au travail.",
-    ],
-    timeLimitSeconds: 90,
-  },
-  {
-    id: 2,
-    correctOrder: [
-      "D'abord, mélangez la farine et le sucre.",
-      "Puis, ajoutez les œufs.",
-      "Ensuite, versez le lait.",
-      "Enfin, faites cuire au four.",
-    ],
-    timeLimitSeconds: 90,
-  },
-  {
-    id: 3,
-    correctOrder: [
-      "Nous arrivons à l'aéroport.",
-      "Nous enregistrons nos bagages.",
-      "Nous passons la sécurité.",
-      "Nous embarquons dans l'avion.",
-    ],
-    timeLimitSeconds: 90,
-  },
-];
+
+
 
 // Shuffle helper
 const shuffleArray = (array) => {
@@ -57,8 +29,10 @@ export default function ListenOrderPage() {
   const handleExit = usePracticeExit();
   const { speak, isSpeaking } = useTextToSpeech();
 
-  const [questions] = useState(MOCK_QUESTIONS);
+  const [questions, setQuestions] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [currentIndex, setCurrentIndex] = useState(0);
+
   const [currentOrder, setCurrentOrder] = useState([]);
   const [isCompleted, setIsCompleted] = useState(false);
   const [showFeedback, setShowFeedback] = useState(false);
@@ -80,8 +54,23 @@ export default function ListenOrderPage() {
         setShowFeedback(true);
       }
     },
-    isPaused: isCompleted || showFeedback || !playedAudio,
+    isPaused: isCompleted || showFeedback || !playedAudio || isLoading,
   });
+
+  useEffect(() => {
+    const fetchQuestions = async () => {
+      try {
+        const data = await loadMockCSV("practice/listening/listen_order.csv");
+        setQuestions(data);
+      } catch (error) {
+        console.error("Error loading mock data:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchQuestions();
+  }, []);
+
 
   useEffect(() => {
     if (currentQuestion && !isCompleted) {
@@ -128,8 +117,26 @@ export default function ListenOrderPage() {
     }
   };
 
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-900">
+        <Loader2 className="animate-spin text-orange-500 w-8 h-8" />
+      </div>
+    );
+  }
+
+  if (questions.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen bg-slate-50 dark:bg-slate-900">
+        <p className="text-xl text-slate-600 dark:text-slate-400">No content available.</p>
+        <Button onClick={() => handleExit()} variant="outline" className="mt-4">Back</Button>
+      </div>
+    );
+  }
+
   const progress =
     questions.length > 0 ? ((currentIndex + 1) / questions.length) * 100 : 0;
+
 
   return (
     <>
@@ -170,7 +177,7 @@ export default function ListenOrderPage() {
             <Reorder.Group
               axis="y"
               values={currentOrder}
-              onReorder={showFeedback ? () => {} : setCurrentOrder}
+              onReorder={showFeedback ? () => { } : setCurrentOrder}
               className="w-full space-y-3"
             >
               {currentOrder.map((sentence, index) => {
@@ -225,7 +232,7 @@ const SortableItem = ({
       className={cn(
         "flex items-center gap-3 p-4 rounded-xl border-2 transition-colors duration-200 select-none bg-white dark:bg-slate-800",
         !showFeedback &&
-          "cursor-grab active:cursor-grabbing hover:border-slate-300 dark:hover:border-slate-600",
+        "cursor-grab active:cursor-grabbing hover:border-slate-300 dark:hover:border-slate-600",
         isCorrectPosition
           ? "bg-emerald-50 dark:bg-emerald-900/20 border-emerald-500"
           : isWrongPosition

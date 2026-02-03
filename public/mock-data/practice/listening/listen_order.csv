@@ -1,0 +1,4 @@
+id,correctOrder,timeLimitSeconds
+1,"[""Premier, je me lève."", ""Ensuite, je prends une douche."", ""Après, je prends le petit déjeuner."", ""Finalement, je vais au travail.""]",90
+2,"[""D'abord, mélangez la farine et le sucre."", ""Puis, ajoutez les œufs."", ""Ensuite, versez le lait."", ""Enfin, faites cuire au four.""]",90
+3,"[""Nous arrivons à l'aéroport."", ""Nous enregistrons nos bagages."", ""Nous passons la sécurité."", ""Nous embarquons dans l'avion.""]",90

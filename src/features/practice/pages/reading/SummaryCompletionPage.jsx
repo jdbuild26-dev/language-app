@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { usePracticeExit } from "@/hooks/usePracticeExit";
 import { useExerciseTimer } from "@/hooks/useExerciseTimer";
 import { cn } from "@/lib/utils";
@@ -6,57 +6,39 @@ import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
 import FeedbackBanner from "@/components/ui/FeedbackBanner";
 import { Volume2 } from "lucide-react";
 import { useTextToSpeech } from "@/hooks/useTextToSpeech";
+import { loadMockCSV } from "@/utils/csvLoader";
+import { Button } from "@/components/ui/button";
+import { Loader2 } from "lucide-react";
 
-// Content Data
-const FULL_TEXT =
-  "Firefighters are the people who fight fires on a daily basis. They work for fire departments, which are organizations of trained professionals that keep the community safe from fires. When a fire breaks out, firefighters enter buildings to look for people and pets, rescue them, and put out the fire to prevent it from spreading. They also conduct safety drills and inspections to keep businesses and agencies safe. Firefighters must have a variety of skills and knowledge. They must be physically fit and must be able to work in harsh conditions and difficult situations. In addition to responding to fires, firefighters often help in situations that require medical attention, such as automobile accidents and gas emergencies. In addition to physical skills and knowledge, firefighters have to have strong social skills, because they must often interact with people during stressful situations.";
-
-const PASSAGE_SEGMENTS = [
-  "Firefighters are the people who fight fires on a ",
-  { id: 1 },
-  " daily basis. They work for fire departments, which ",
-  { id: 2 },
-  " organizations of trained professionals that keep the community ",
-  { id: 3 },
-  " from fires. When a fire ",
-  { id: 4 },
-  " out, firefighters enter buildings to look ",
-  { id: 5 },
-  " people and pets, rescue them, and ",
-  { id: 6 },
-  " out the fire to prevent ",
-  { id: 7 },
-  " from spreading. They also conduct ",
-  { id: 8 },
-  " drills and inspections to ",
-  { id: 9 },
-  " businesses and agencies safe.",
-];
-
-// Correct answers
-const BLANKS_DATA = {
-  1: "nearly",
-  2: "are",
-  3: "safe",
-  4: "breaks",
-  5: "for",
-  6: "put",
-  7: "it",
-  8: "safety",
-  9: "keep",
-};
 
 export default function SummaryCompletionPage() {
   const handleExit = usePracticeExit();
   const { speak, isSpeaking } = useTextToSpeech();
 
   // State
+  const [questions, setQuestions] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [answers, setAnswers] = useState({});
   const [showFeedback, setShowFeedback] = useState(false);
   const [isCorrect, setIsCorrect] = useState(false);
   const [feedbackMessage, setFeedbackMessage] = useState("");
   const [score, setScore] = useState(0);
   const [isCompleted, setIsCompleted] = useState(false);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      const data = await loadMockCSV("practice/reading/summary_completion.csv");
+      setQuestions(data);
+      setIsLoading(false);
+    };
+    fetchData();
+  }, []);
+
+  const currentQuestion = questions[0]; // Assuming one summary for now
+  const FULL_TEXT = currentQuestion?.fullText || "";
+  const PASSAGE_SEGMENTS = currentQuestion?.segments || [];
+  const BLANKS_DATA = currentQuestion?.blanksData || {};
+
 
   // Timer
   const { timerString, resetTimer, pauseTimer } = useExerciseTimer({
@@ -110,9 +92,26 @@ export default function SummaryCompletionPage() {
   };
 
   const handleSubmit = () => {
-    if (showFeedback) return;
+    if (showFeedback || !currentQuestion) return;
     checkAnswers();
   };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-900">
+        <Loader2 className="animate-spin text-blue-500 w-8 h-8" />
+      </div>
+    );
+  }
+
+  if (questions.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen bg-slate-50 dark:bg-slate-900">
+        <p className="text-xl text-slate-600 dark:text-slate-400">No content available.</p>
+        <Button onClick={() => handleExit()} variant="outline" className="mt-4">Back</Button>
+      </div>
+    );
+  }
 
   const handleContinue = () => {
     if (isCorrect) {
@@ -224,13 +223,13 @@ export default function SummaryCompletionPage() {
                             className={cn(
                               "w-32 bg-transparent border-b-2 outline-none text-center font-bold px-1 transition-colors relative -top-3",
                               !showFeedback &&
-                                "border-slate-300 dark:border-slate-600 focus:border-sky-500 text-sky-600 dark:text-sky-400",
+                              "border-slate-300 dark:border-slate-600 focus:border-sky-500 text-sky-600 dark:text-sky-400",
                               showFeedback &&
-                                isCorrectAnswer &&
-                                "border-green-500 text-green-600",
+                              isCorrectAnswer &&
+                              "border-green-500 text-green-600",
                               showFeedback &&
-                                !isCorrectAnswer &&
-                                "border-red-500 text-red-600",
+                              !isCorrectAnswer &&
+                              "border-red-500 text-red-600",
                             )}
                           />
                           {showFeedback && !isCorrectAnswer && (

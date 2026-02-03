@@ -3,51 +3,41 @@ import { usePracticeExit } from "@/hooks/usePracticeExit";
 import { useExerciseTimer } from "@/hooks/useExerciseTimer";
 import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
 import FeedbackBanner from "@/components/ui/FeedbackBanner";
-import eggDiagram from "@/assets/egg-diagram.png";
-import { CheckCircle2, HelpCircle } from "lucide-react";
+import { CheckCircle2, HelpCircle, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { loadMockCSV } from "@/utils/csvLoader";
+import { Button } from "@/components/ui/button";
 
-// Content Data
-const PASSAGE_TITLE =
-  "Chicken egg consists of six main parts: albumin, yolk, shell, germinal disc, chalaza and air cell. In further paragraphs we will learn all the important information you need to know about these parts.";
-
-const PASSAGE_PARAGRAPHS = [
-  "One of the main parts of the egg is yolk - the yellow, inner part of the egg where the embryo will form. The yolk contains the food that will nourish the embryo as it grows. Yolk is a major source of vitamins, minerals, almost half of the protein, and all of the fat and cholesterol. The yolk contains less water and more protein than the white part of the egg, some fat, and most of the vitamins and minerals of the egg. The yolk is also a source of lecithin, an effective emulsifier. Yolk color ranges from just a hint of yellow to a magnificent deep orange, according to the feed and breed of the hen. Yolk is anchored by chalaza - a spiral, rope-like strand that anchors the yolk in the thick egg white. There are two chalazae anchoring each yolk; one on the top and one on the bottom.",
-  "Another very important part of the egg is the albumin, which is the inner thick white part of the egg. This part of the egg is a excellent source of riboflavin and protein. In high-quality eggs, the inner thick albumen stands higher and spreads less than thin white. In low-quality eggs, it appears thin white.",
-  "Now let's talk about the outer part of the egg - the shell It is a hard, protective coating of the egg. It is semi-permeable; it lets gas exchange occur, but keeps other substances from entering the egg. The shell is made of calcium carbonate and is covered with as many as 17,000 tiny pores.",
-  "Air cell is an air space that forms when the contents of the egg cool and contract after the egg is laid. The air cell usually rests between the outer and inner membranes at the eggs larger end. As the egg ages, moisture and carbon dioxide leave through the pores of the shell, air enters to replace them and the air cell becomes larger.",
-  "And last but not least, let's look at the germinal disc. It's a small, circular, white spot (2-3 mm across) on the surface of the yolk; it is where the sperm enters the egg. The nucleus of the egg is in the blastodisc. The embryo develops from this disk, and gradually sends blood vessels into the yolk to use it for nutrition as the embryo develops.",
-];
-
-// Question Data
-const OPTIONS = [
-  "Shell",
-  "Germinal Disc",
-  "Chalaza",
-  "Albumin",
-  "Yolk",
-  "Air Cell",
-];
-
-const QUESTIONS = [
-  { id: 1, correct: "Shell" },
-  { id: 2, correct: "Germinal Disc" },
-  { id: 3, correct: "Chalaza" },
-  { id: 4, correct: "Albumin" },
-  { id: 5, correct: "Yolk" },
-  { id: 6, correct: "Air Cell" },
-];
 
 export default function DiagramLabellingPage() {
   const handleExit = usePracticeExit();
 
   // State
+  const [questions, setQuestions] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [answers, setAnswers] = useState({});
   const [showFeedback, setShowFeedback] = useState(false);
   const [score, setScore] = useState(0);
   const [isCompleted, setIsCompleted] = useState(false);
   const [feedbackMessage, setFeedbackMessage] = useState("");
   const [isCorrect, setIsCorrect] = useState(false);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      const data = await loadMockCSV("practice/reading/diagram_labelling.csv");
+      setQuestions(data);
+      setIsLoading(false);
+    };
+    fetchData();
+  }, []);
+
+  const currentQuestion = questions[0]; // Assuming one diagram for now
+  const PASSAGE_TITLE = currentQuestion?.title || "";
+  const PASSAGE_PARAGRAPHS = currentQuestion?.paragraphs || [];
+  const OPTIONS = currentQuestion?.options || [];
+  const DIAGRAM_QUESTIONS = currentQuestion?.questions || [];
+  const eggDiagram = currentQuestion?.imagePath || "";
+
 
   // Timer
   const { timerString, stopTimer } = useExerciseTimer({
@@ -63,12 +53,13 @@ export default function DiagramLabellingPage() {
 
   const handleCheck = () => {
     let correctCount = 0;
-    QUESTIONS.forEach((q) => {
+    DIAGRAM_QUESTIONS.forEach((q) => {
       if (answers[q.id] === q.correct) correctCount++;
     });
 
     setScore(correctCount);
-    const total = QUESTIONS.length;
+    const total = DIAGRAM_QUESTIONS.length;
+
     const isPerfect = correctCount === total;
 
     setIsCorrect(isPerfect);
@@ -104,7 +95,25 @@ export default function DiagramLabellingPage() {
     setIsCorrect(false);
   };
 
-  const allAnswered = QUESTIONS.every((q) => answers[q.id]);
+  const allAnswered = DIAGRAM_QUESTIONS.every((q) => answers[q.id]);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-900">
+        <Loader2 className="animate-spin text-blue-500 w-8 h-8" />
+      </div>
+    );
+  }
+
+  if (questions.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen bg-slate-50 dark:bg-slate-900">
+        <p className="text-xl text-slate-600 dark:text-slate-400">No content available.</p>
+        <Button onClick={() => handleExit()} variant="outline" className="mt-4">Back</Button>
+      </div>
+    );
+  }
+
 
   return (
     <>
@@ -115,11 +124,12 @@ export default function DiagramLabellingPage() {
         progress={
           isCompleted
             ? 100
-            : (Object.keys(answers).length / QUESTIONS.length) * 100
+            : (Object.keys(answers).length / DIAGRAM_QUESTIONS.length) * 100
         }
         isGameOver={isCompleted}
         score={score}
-        totalQuestions={QUESTIONS.length}
+        totalQuestions={DIAGRAM_QUESTIONS.length}
+
         onExit={handleExit}
         onNext={handleNext}
         onRestart={handleRestart}
@@ -169,7 +179,8 @@ export default function DiagramLabellingPage() {
               </h3>
 
               <div className="grid grid-cols-1 gap-3">
-                {QUESTIONS.map((q) => {
+                {DIAGRAM_QUESTIONS.map((q) => {
+
                   const isWrong = showFeedback && answers[q.id] !== q.correct;
                   const isRight = showFeedback && answers[q.id] === q.correct;
 

@@ -6,58 +6,16 @@ import { cn } from "@/lib/utils";
 import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
 import FeedbackBanner from "@/components/ui/FeedbackBanner";
 import { getFeedbackMessage } from "@/utils/feedbackMessages";
+import { loadMockCSV } from "@/utils/csvLoader";
+import { Button } from "@/components/ui/button";
 import { useTextToSpeech } from "@/hooks/useTextToSpeech";
-
-// Mock data for Fill in the Blanks exercise
-const MOCK_QUESTIONS = [
-  {
-    id: 1,
-    sentenceWithBlank: "Le chat ______ sur le canapé.",
-    correctAnswer: "dort",
-    wordBank: ["mange", "dort", "court", "joue"],
-    englishTranslation: "The cat sleeps on the sofa.",
-    timeLimitSeconds: 30,
-  },
-  {
-    id: 2,
-    sentenceWithBlank: "Elle ______ le piano tous les jours.",
-    correctAnswer: "joue",
-    wordBank: ["chante", "danse", "joue", "écoute"],
-    englishTranslation: "She plays the piano every day.",
-    timeLimitSeconds: 30,
-  },
-  {
-    id: 3,
-    sentenceWithBlank: "Nous ______ au restaurant ce soir.",
-    correctAnswer: "allons",
-    wordBank: ["allons", "venons", "partons", "restons"],
-    englishTranslation: "We are going to the restaurant tonight.",
-    timeLimitSeconds: 30,
-  },
-  {
-    id: 4,
-    sentenceWithBlank: "Il ______ très bien le français.",
-    correctAnswer: "parle",
-    wordBank: ["écrit", "lit", "parle", "comprend"],
-    englishTranslation: "He speaks French very well.",
-    timeLimitSeconds: 30,
-  },
-  {
-    id: 5,
-    sentenceWithBlank: "Les enfants ______ dans le jardin.",
-    correctAnswer: "jouent",
-    wordBank: ["dorment", "mangent", "jouent", "étudient"],
-    englishTranslation: "The children play in the garden.",
-    timeLimitSeconds: 30,
-  },
-];
 
 export default function FillBlanksPage() {
   const handleExit = usePracticeExit();
   const { speak, isSpeaking } = useTextToSpeech();
 
-  const [questions] = useState(MOCK_QUESTIONS);
-  const [loading, setLoading] = useState(false);
+  const [questions, setQuestions] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedWord, setSelectedWord] = useState(null);
   const [isCompleted, setIsCompleted] = useState(false);
@@ -65,6 +23,16 @@ export default function FillBlanksPage() {
   const [isCorrect, setIsCorrect] = useState(false);
   const [feedbackMessage, setFeedbackMessage] = useState("");
   const [score, setScore] = useState(0);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      const data = await loadMockCSV("practice/reading/fill_blanks.csv");
+      setQuestions(data);
+      setLoading(false);
+    };
+    fetchData();
+  }, []);
+
 
   const currentQuestion = questions[currentIndex];
   const timerDuration = currentQuestion?.timeLimitSeconds || 30;
@@ -140,6 +108,15 @@ export default function FillBlanksPage() {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Loader2 className="animate-spin text-blue-500 w-8 h-8" />
+      </div>
+    );
+  }
+
+  if (questions.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen bg-slate-50 dark:bg-slate-900">
+        <p className="text-xl text-slate-600 dark:text-slate-400">No questions available.</p>
+        <Button onClick={() => handleExit()} variant="outline" className="mt-4">Back</Button>
       </div>
     );
   }

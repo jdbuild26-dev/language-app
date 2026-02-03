@@ -7,65 +7,21 @@ import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
 import FeedbackBanner from "@/components/ui/FeedbackBanner";
 import { getFeedbackMessage } from "@/utils/feedbackMessages";
 import { useTextToSpeech } from "@/hooks/useTextToSpeech";
+import { loadMockCSV } from "@/utils/csvLoader";
+import { Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
-// Mock data for Listen and Type exercise - Longer sentences for advanced practice
-const MOCK_QUESTIONS = [
-  {
-    id: 1,
-    audioText: "Je voudrais réserver une table pour deux personnes ce soir",
-    hint: "Making a restaurant reservation",
-    timeLimitSeconds: 60,
-  },
-  {
-    id: 2,
-    audioText: "Est-ce que vous pourriez m'indiquer le chemin vers la gare",
-    hint: "Asking for directions",
-    timeLimitSeconds: 60,
-  },
-  {
-    id: 3,
-    audioText: "Le train arrive à la gare du nord à dix-huit heures trente",
-    hint: "Train schedule information",
-    timeLimitSeconds: 60,
-  },
-  {
-    id: 4,
-    audioText: "J'ai besoin d'acheter des fruits et des légumes au marché",
-    hint: "Shopping at the market",
-    timeLimitSeconds: 60,
-  },
-  {
-    id: 5,
-    audioText: "Ma sœur travaille dans un hôpital depuis cinq ans",
-    hint: "Talking about someone's job",
-    timeLimitSeconds: 60,
-  },
-  {
-    id: 6,
-    audioText: "Nous allons partir en vacances la semaine prochaine",
-    hint: "Talking about vacation plans",
-    timeLimitSeconds: 60,
-  },
-  {
-    id: 7,
-    audioText: "Il fait très beau aujourd'hui et le soleil brille",
-    hint: "Describing the weather",
-    timeLimitSeconds: 60,
-  },
-  {
-    id: 8,
-    audioText: "Je préfère prendre un café avec du lait le matin",
-    hint: "Morning coffee preferences",
-    timeLimitSeconds: 60,
-  },
-];
+
+
 
 export default function ListenTypePage() {
   const handleExit = usePracticeExit();
   const { speak, isSpeaking } = useTextToSpeech();
 
-  const [questions] = useState(MOCK_QUESTIONS);
+  const [questions, setQuestions] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [currentIndex, setCurrentIndex] = useState(0);
+
   const [userInput, setUserInput] = useState("");
   const [isCompleted, setIsCompleted] = useState(false);
   const [showFeedback, setShowFeedback] = useState(false);
@@ -87,8 +43,23 @@ export default function ListenTypePage() {
         setShowFeedback(true);
       }
     },
-    isPaused: isCompleted || showFeedback || !hasPlayed,
+    isPaused: isCompleted || showFeedback || !hasPlayed || isLoading,
   });
+
+  useEffect(() => {
+    const fetchQuestions = async () => {
+      try {
+        const data = await loadMockCSV("practice/listening/listen_type.csv");
+        setQuestions(data);
+      } catch (error) {
+        console.error("Error loading mock data:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchQuestions();
+  }, []);
+
 
   // Auto-play audio when question changes
   useEffect(() => {
@@ -144,8 +115,26 @@ export default function ListenTypePage() {
     }
   };
 
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-900">
+        <Loader2 className="animate-spin text-emerald-500 w-8 h-8" />
+      </div>
+    );
+  }
+
+  if (questions.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen bg-slate-50 dark:bg-slate-900">
+        <p className="text-xl text-slate-600 dark:text-slate-400">No content available.</p>
+        <Button onClick={() => handleExit()} variant="outline" className="mt-4">Back</Button>
+      </div>
+    );
+  }
+
   const progress =
     questions.length > 0 ? ((currentIndex + 1) / questions.length) * 100 : 0;
+
 
   return (
     <>

@@ -5,6 +5,8 @@ import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
 import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 
+import { loadMockCSV } from "@/utils/csvLoader";
+
 export default function GenericSpeakingPage({
     title,
     taskType,
@@ -12,7 +14,8 @@ export default function GenericSpeakingPage({
     instructionEn,
     instructionFr,
     icon: Icon = Mic,
-    mockData = []
+    mockData = [],
+    csvName = null
 }) {
     const navigate = useNavigate();
 
@@ -66,24 +69,23 @@ export default function GenericSpeakingPage({
 
     // Fetch Data
     useEffect(() => {
-        if (mockData && mockData.length > 0) {
-            const shuffled = [...mockData].sort(() => 0.5 - Math.random());
-            setQuestions(shuffled);
-            setIsLoading(false);
-            return;
-        }
-
         const fetchData = async () => {
             try {
-                const response = await fetch(
-                    `${import.meta.env.VITE_API_URL}/api/practice/${sheetName}`
-                );
-                if (!response.ok) throw new Error("Failed to fetch data");
-                const json = await response.json();
+                let data = [];
+                if (csvName) {
+                    data = await loadMockCSV(csvName);
+                } else if (mockData && mockData.length > 0) {
+                    data = mockData;
+                } else {
+                    const response = await fetch(
+                        `${import.meta.env.VITE_API_URL}/api/practice/${sheetName}`
+                    );
+                    if (!response.ok) throw new Error("Failed to fetch data");
+                    const json = await response.json();
+                    data = json.data || [];
+                }
 
-                // Shuffle or just use as is
-                const data = json.data || [];
-                const shuffled = data.sort(() => 0.5 - Math.random());
+                const shuffled = [...data].sort(() => 0.5 - Math.random());
                 setQuestions(shuffled);
             } catch (error) {
                 console.error("Error fetching speaking data:", error);
@@ -93,7 +95,7 @@ export default function GenericSpeakingPage({
         };
 
         fetchData();
-    }, [sheetName, mockData]);
+    }, [sheetName, mockData, csvName]);
 
     const currentQuestion = questions[currentIndex];
 

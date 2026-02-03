@@ -1,0 +1,6 @@
+id,sourceText,correctAnswer,acceptableAnswers,timeLimitSeconds
+1,"Hello, how are you?","Bonjour, comment allez-vous?","[""Bonjour, comment allez-vous?"", ""Bonjour comment allez-vous"", ""Salut, comment ça va?"", ""Salut comment ca va""]",60
+2,"I would like a coffee, please.","Je voudrais un café, s'il vous plaît.","[""Je voudrais un café, s'il vous plaît."", ""Je voudrais un cafe s'il vous plait"", ""J'aimerais un café, s'il vous plaît.""]",60
+3,"Where is the train station?","Où est la gare?","[""Où est la gare?"", ""Ou est la gare"", ""Où se trouve la gare?""]",60
+4,"I love learning French.","J'aime apprendre le français.","[""J'aime apprendre le français."", ""J'aime apprendre le francais"", ""J'adore apprendre le français.""]",60
+5,"The weather is nice today.","Il fait beau aujourd'hui.","[""Il fait beau aujourd'hui."", ""Il fait beau aujourd'hui"", ""Le temps est beau aujourd'hui.""]",60

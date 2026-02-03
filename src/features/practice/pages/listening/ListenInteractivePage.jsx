@@ -7,155 +7,12 @@ import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
 import FeedbackBanner from "@/components/ui/FeedbackBanner";
 import { getFeedbackMessage } from "@/utils/feedbackMessages";
 import { useTextToSpeech } from "@/hooks/useTextToSpeech";
+import { loadMockCSV } from "@/utils/csvLoader";
+import { Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
-// Single long conversation mock data
-const LONG_CONVERSATION = {
-  id: 1,
-  context: "Arrival in Paris",
-  // 5 minutes timer for a long conversation
-  timeLimitSeconds: 300,
-  exchanges: [
-    // 1. Initial greeting
-    {
-      speaker: "Stranger",
-      text: "Excusez-moi, est-ce que cette place est libre ?",
-      isQuestion: false,
-    },
-    {
-      speaker: "You",
-      text: null,
-      isQuestion: true,
-      question: "The stranger asks if the seat is free. You answer:",
-      options: [
-        "Oui, bien sûr. Allez-y.",
-        "Je ne sais pas.",
-        "Il est midi.",
-        "J'habite à Paris.",
-      ],
-      correctIndex: 0,
-    },
 
-    // 2. Introduction
-    {
-      speaker: "Stranger",
-      text: "Merci beaucoup. Le train est très plein aujourd'hui, n'est-ce pas ?",
-      isQuestion: false,
-    },
-    {
-      speaker: "You",
-      text: null,
-      isQuestion: true,
-      question: "Agree and say you are going to Paris:",
-      options: [
-        "Non, je déteste le train.",
-        "Oui, c'est vrai. Je vais à Paris pour la première fois.",
-        "Le ciel est bleu.",
-        "Je mange une pomme.",
-      ],
-      correctIndex: 1,
-    },
 
-    // 3. Discussion about Paris
-    {
-      speaker: "Stranger",
-      text: "Ah, Paris ! C'est une ville magnifique. Vous y allez pour le travail ou pour les vacances ?",
-      isQuestion: false,
-    },
-    {
-      speaker: "You",
-      text: null,
-      isQuestion: true,
-      question: "Say you are on vacation:",
-      options: [
-        "Je travaille dans une banque.",
-        "Je suis en vacances pour deux semaines.",
-        "J'ai perdu mon billet.",
-        "Mon frère s'appelle Paul.",
-      ],
-      correctIndex: 1,
-    },
-
-    // 4. Recommendation
-    {
-      speaker: "Stranger",
-      text: "Super ! Vous devez absolument visiter le musée du Louvre. C'est incontournable.",
-      isQuestion: false,
-    },
-    {
-      speaker: "You",
-      text: null,
-      isQuestion: true,
-      question: "Say that you plan to go there tomorrow:",
-      options: [
-        "J'aime le chocolat.",
-        "Je ne comprends pas.",
-        "C'est une bonne idée. Je compte y aller demain.",
-        "Le train arrive dans 5 minutes.",
-      ],
-      correctIndex: 2,
-    },
-
-    // 5. Asking for advice
-    {
-      speaker: "Stranger",
-      text: "Excellent choix. Et faites attention aux files d'attente, il y a souvent beaucoup de monde.",
-      isQuestion: false,
-    },
-    {
-      speaker: "You",
-      text: null,
-      isQuestion: true,
-      question: "Ask if he knows a good restaurant nearby:",
-      options: [
-        "Connaissez-vous un bon restaurant dans le quartier ?",
-        "Quelle heure est-il ?",
-        "Je suis fatigué.",
-        "Au revoir monsieur.",
-      ],
-      correctIndex: 0,
-    },
-
-    // 6. Restaurant suggestion
-    {
-      speaker: "Stranger",
-      text: "Oui, il y a un petit bistrot juste derrière le musée, 'Le Petit Parisien'. La cuisine y est délicieuse et pas trop chère.",
-      isQuestion: false,
-    },
-    {
-      speaker: "You",
-      text: null,
-      isQuestion: true,
-      question: "Thank him for the suggestion:",
-      options: [
-        "Je n'ai pas faim.",
-        "Merci beaucoup pour le conseil !",
-        "C'est trop loin.",
-        "J'aime le café.",
-      ],
-      correctIndex: 1,
-    },
-
-    // 7. Arrival
-    {
-      speaker: "Stranger",
-      text: "De rien ! Ah, nous arrivons à la Gare de Lyon. Bon séjour à Paris !",
-      isQuestion: false,
-    },
-    {
-      speaker: "You",
-      text: null,
-      isQuestion: true,
-      question: "Say goodbye and wish him a good day:",
-      options: [
-        "Bonne nuit.",
-        "Merci, bonne journée à vous aussi !",
-        "Je reste dans le train.",
-        "À lundi.",
-      ],
-      correctIndex: 1,
-    },
-  ],
-};
 
 export default function ListenInteractivePage() {
   const handleExit = usePracticeExit();
@@ -163,9 +20,11 @@ export default function ListenInteractivePage() {
   const chatEndRef = useRef(null);
 
   // State
-  const [conversation] = useState(LONG_CONVERSATION);
+  const [conversation, setConversation] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [currentExchangeIndex, setCurrentExchangeIndex] = useState(0);
   const [displayedExchanges, setDisplayedExchanges] = useState([]);
+
 
   const [selectedOption, setSelectedOption] = useState(null);
   const [isCompleted, setIsCompleted] = useState(false);
@@ -174,14 +33,32 @@ export default function ListenInteractivePage() {
   const [feedbackMessage, setFeedbackMessage] = useState("");
   const [score, setScore] = useState(0);
 
+  useEffect(() => {
+    const fetchConversation = async () => {
+      try {
+        const data = await loadMockCSV("practice/listening/listen_interactive.csv");
+        if (data && data.length > 0) {
+          setConversation(data[0]);
+        }
+      } catch (error) {
+        console.error("Error loading mock data:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchConversation();
+  }, []);
+
   // Derived state
-  const currentExchange = conversation.exchanges[currentExchangeIndex];
-  const timerDuration = conversation.timeLimitSeconds;
+  const currentExchange = conversation?.exchanges[currentExchangeIndex];
+  const timerDuration = conversation?.timeLimitSeconds || 300;
+
 
   // Count total questions
-  const totalQuestions = conversation.exchanges.filter(
+  const totalQuestions = conversation?.exchanges.filter(
     (e) => e.isQuestion,
-  ).length;
+  ).length || 0;
+
 
   const { timerString, resetTimer } = useExerciseTimer({
     duration: timerDuration,
@@ -193,8 +70,9 @@ export default function ListenInteractivePage() {
         setShowFeedback(true);
       }
     },
-    isPaused: isCompleted || showFeedback,
+    isPaused: isCompleted || showFeedback || isLoading,
   });
+
 
   // Auto-scroll to bottom of chat
   useEffect(() => {
@@ -319,13 +197,32 @@ export default function ListenInteractivePage() {
 
   // If we just finished one (status feedback), count it?
   // Actually simpler: just use generic progress
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-900">
+        <Loader2 className="animate-spin text-pink-500 w-8 h-8" />
+      </div>
+    );
+  }
+
+  if (!conversation) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen bg-slate-50 dark:bg-slate-900">
+        <p className="text-xl text-slate-600 dark:text-slate-400">No content available.</p>
+        <Button onClick={() => handleExit()} variant="outline" className="mt-4">Back</Button>
+      </div>
+    );
+  }
+
   const progress =
+
     (Math.min(score + (showFeedback && isCorrect ? 0 : 0), totalQuestions) /
       totalQuestions) *
     100;
   // A better progress bar for 'linear' conversation:
   const progressLinear =
     (currentExchangeIndex / conversation.exchanges.length) * 100;
+
 
   return (
     <>
@@ -432,7 +329,7 @@ export default function ListenInteractivePage() {
                           "border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 hover:border-slate-300",
                           // Selected state
                           isSelected &&
-                            "border-pink-500 bg-pink-50 dark:bg-pink-900/20 text-pink-700 dark:text-pink-300 shadow-md ring-1 ring-pink-500",
+                          "border-pink-500 bg-pink-50 dark:bg-pink-900/20 text-pink-700 dark:text-pink-300 shadow-md ring-1 ring-pink-500",
                         )}
                       >
                         {/* Circle Indicator */}

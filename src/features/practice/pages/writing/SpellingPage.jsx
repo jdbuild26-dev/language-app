@@ -7,57 +7,21 @@ import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
 import FeedbackBanner from "@/components/ui/FeedbackBanner";
 import { getFeedbackMessage } from "@/utils/feedbackMessages";
 import { useTextToSpeech } from "@/hooks/useTextToSpeech";
+import { loadMockCSV } from "@/utils/csvLoader";
+import { Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
-// Mock data for Fix the Spelling exercise
-const MOCK_QUESTIONS = [
-  {
-    id: 1,
-    incorrectText: "Banjour, comant alé-vous?",
-    correctText: "Bonjour, comment allez-vous?",
-    errorCount: 3,
-    hint: "Check the greeting and question words",
-    timeLimitSeconds: 60,
-  },
-  {
-    id: 2,
-    incorrectText: "Je voodrai un cafay, sil vous plai.",
-    correctText: "Je voudrais un café, s'il vous plaît.",
-    errorCount: 4,
-    hint: "Check the verb conjugation and accents",
-    timeLimitSeconds: 60,
-  },
-  {
-    id: 3,
-    incorrectText: "Ou es la gar?",
-    correctText: "Où est la gare?",
-    errorCount: 3,
-    hint: "Check accents and full words",
-    timeLimitSeconds: 60,
-  },
-  {
-    id: 4,
-    incorrectText: "Jaime aprandre le francais.",
-    correctText: "J'aime apprendre le français.",
-    errorCount: 3,
-    hint: "Check the apostrophe, verb, and accent",
-    timeLimitSeconds: 60,
-  },
-  {
-    id: 5,
-    incorrectText: "Il fai bo ojourdhui.",
-    correctText: "Il fait beau aujourd'hui.",
-    errorCount: 3,
-    hint: "Check adjective and compound word",
-    timeLimitSeconds: 60,
-  },
-];
+
+
 
 export default function SpellingPage() {
   const handleExit = usePracticeExit();
   const { speak, isSpeaking } = useTextToSpeech();
 
-  const [questions] = useState(MOCK_QUESTIONS);
+  const [questions, setQuestions] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [currentIndex, setCurrentIndex] = useState(0);
+
   const [userInput, setUserInput] = useState("");
   const [isCompleted, setIsCompleted] = useState(false);
   const [showFeedback, setShowFeedback] = useState(false);
@@ -78,8 +42,23 @@ export default function SpellingPage() {
         setShowFeedback(true);
       }
     },
-    isPaused: isCompleted || showFeedback,
+    isPaused: isCompleted || showFeedback || isLoading,
   });
+
+  useEffect(() => {
+    const fetchQuestions = async () => {
+      try {
+        const data = await loadMockCSV("practice/writing/spelling.csv");
+        setQuestions(data);
+      } catch (error) {
+        console.error("Error loading mock data:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchQuestions();
+  }, []);
+
 
   useEffect(() => {
     if (currentQuestion && !isCompleted) {
@@ -123,8 +102,26 @@ export default function SpellingPage() {
     }
   };
 
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-900">
+        <Loader2 className="animate-spin text-sky-500 w-8 h-8" />
+      </div>
+    );
+  }
+
+  if (questions.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen bg-slate-50 dark:bg-slate-900">
+        <p className="text-xl text-slate-600 dark:text-slate-400">No content available.</p>
+        <Button onClick={() => handleExit()} variant="outline" className="mt-4">Back</Button>
+      </div>
+    );
+  }
+
   const progress =
     questions.length > 0 ? ((currentIndex + 1) / questions.length) * 100 : 0;
+
 
   return (
     <>

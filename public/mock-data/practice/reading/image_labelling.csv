@@ -1,0 +1,2 @@
+id,title,instructionFr,instructionEn,image,items
+1,"Kitchen Labelling","Étiquetez la cuisine","Label the kitchen","/images/kitchen.jpg","[{""name"": ""Refrigerator"", ""x"": 0.88, ""y"": 0.55}, {""name"": ""Microwave"", ""x"": 0.62, ""y"": 0.28}, {""name"": ""Stove"", ""x"": 0.62, ""y"": 0.60}, {""name"": ""Sink"", ""x"": 0.40, ""y"": 0.52}, {""name"": ""Toaster"", ""x"": 0.12, ""y"": 0.52}, {""name"": ""Cabinets"", ""x"": 0.25, ""y"": 0.18}, {""name"": ""Dishwasher"", ""x"": 0.50, ""y"": 0.70}, {""name"": ""Counter"", ""x"": 0.30, ""y"": 0.52}]"

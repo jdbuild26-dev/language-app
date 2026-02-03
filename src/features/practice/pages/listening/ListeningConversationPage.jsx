@@ -7,82 +7,22 @@ import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
 import FeedbackBanner from "@/components/ui/FeedbackBanner";
 import { getFeedbackMessage } from "@/utils/feedbackMessages";
 import { useTextToSpeech } from "@/hooks/useTextToSpeech";
+import { loadMockCSV } from "@/utils/csvLoader";
+import { Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
-// Mock conversation data - structured as progressive exchanges
-const MOCK_CONVERSATION = {
-  id: "conversation-1",
-  title: "Running conversation - E5 - A1",
-  scenario: "Participate in a conversation about this scenario",
-  exchanges: [
-    {
-      turnId: 1,
-      speakerText: "Combien de chapatis veux-tu?",
-      speakerAudio: "Combien de chapatis veux-tu?", // TTS will speak this
-      options: [
-        { id: "a", text: "Je veux 2 chapatis." },
-        { id: "b", text: "Je veux 3 chapatis." },
-        { id: "c", text: "Je veux 4 chapatis." },
-        { id: "d", text: "Je n'en veux pas." },
-      ],
-      correctOptionId: "a",
-    },
-    {
-      turnId: 2,
-      speakerText: "Non, je ne te donne pas 2 chapatis. Je t'en donne 4.",
-      speakerAudio: "Non, je ne te donne pas 2 chapatis. Je t'en donne 4.",
-      options: [
-        { id: "a", text: "Merci beaucoup!" },
-        { id: "b", text: "C'est trop!" },
-        { id: "c", text: "J'en veux plus." },
-        { id: "d", text: "Non merci." },
-      ],
-      correctOptionId: "a",
-    },
-    {
-      turnId: 3,
-      speakerText: "Tu veux du beurre aussi?",
-      speakerAudio: "Tu veux du beurre aussi?",
-      options: [
-        { id: "a", text: "Oui, s'il te plaît." },
-        { id: "b", text: "Non, ça va." },
-        { id: "c", text: "J'aime pas le beurre." },
-        { id: "d", text: "Peut-être plus tard." },
-      ],
-      correctOptionId: "a",
-    },
-    {
-      turnId: 4,
-      speakerText: "Voilà, bon appétit!",
-      speakerAudio: "Voilà, bon appétit!",
-      options: [
-        { id: "a", text: "Merci, toi aussi!" },
-        { id: "b", text: "D'accord." },
-        { id: "c", text: "Je n'ai pas faim." },
-        { id: "d", text: "À plus tard." },
-      ],
-      correctOptionId: "a",
-    },
-    {
-      turnId: 5,
-      speakerText: "Tu veux boire quelque chose?",
-      speakerAudio: "Tu veux boire quelque chose?",
-      options: [
-        { id: "a", text: "Oui, de l'eau s'il te plaît." },
-        { id: "b", text: "Non merci." },
-        { id: "c", text: "Je ne sais pas." },
-        { id: "d", text: "Plus tard peut-être." },
-      ],
-      correctOptionId: "a",
-    },
-  ],
-};
+
+
 
 export default function ListeningConversationPage() {
   const handleExit = usePracticeExit();
   const { speak } = useTextToSpeech();
 
   // Current turn/exchange index (0-based)
+  const [conversation, setConversation] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [currentTurnIndex, setCurrentTurnIndex] = useState(0);
+
 
   // User's selected option for current turn
   const [selectedOption, setSelectedOption] = useState(null);
@@ -107,9 +47,9 @@ export default function ListeningConversationPage() {
   // Audio playback state
   const [hasPlayedAudio, setHasPlayedAudio] = useState(false);
 
-  const conversation = MOCK_CONVERSATION;
-  const currentExchange = conversation.exchanges[currentTurnIndex];
-  const totalExchanges = conversation.exchanges.length;
+  const currentExchange = conversation?.exchanges[currentTurnIndex];
+  const totalExchanges = conversation?.exchanges.length || 0;
+
 
   const timerDuration = 45; // Increased for conversation context
 
@@ -123,8 +63,26 @@ export default function ListeningConversationPage() {
         setShowFeedback(true);
       }
     },
-    isPaused: isCompleted || showFeedback,
+    isPaused: isCompleted || showFeedback || isLoading,
   });
+
+  useEffect(() => {
+    const fetchConversation = async () => {
+      try {
+        const data = await loadMockCSV("practice/listening/listening_conversation.csv");
+        if (data && data.length > 0) {
+          setConversation(data[0]);
+        }
+      } catch (error) {
+        console.error("Error loading mock data:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchConversation();
+  }, []);
+
+
 
   // Play audio when new turn starts
   useEffect(() => {
@@ -197,8 +155,26 @@ export default function ListeningConversationPage() {
     }
   };
 
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-900">
+        <Loader2 className="animate-spin text-indigo-500 w-8 h-8" />
+      </div>
+    );
+  }
+
+  if (!conversation) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen bg-slate-50 dark:bg-slate-900">
+        <p className="text-xl text-slate-600 dark:text-slate-400">No content available.</p>
+        <Button onClick={() => handleExit()} variant="outline" className="mt-4">Back</Button>
+      </div>
+    );
+  }
+
   const progress =
     totalExchanges > 0 ? ((currentTurnIndex + 1) / totalExchanges) * 100 : 0;
+
 
   return (
     <>
@@ -225,8 +201,9 @@ export default function ListeningConversationPage() {
           <div className="flex items-center gap-2 mb-6">
             <MessageSquare className="w-5 h-5 text-indigo-500" />
             <h2 className="text-lg font-semibold text-slate-700 dark:text-slate-200">
-              {conversation.title}
+              {conversation?.title}
             </h2>
+
           </div>
 
           {/* Two-column layout */}
@@ -575,8 +552,8 @@ export default function ListeningConversationPage() {
           correctAnswer={
             !isCorrect
               ? currentExchange.options.find(
-                  (opt) => opt.id === currentExchange.correctOptionId,
-                )?.text
+                (opt) => opt.id === currentExchange.correctOptionId,
+              )?.text
               : null
           }
           onContinue={handleContinue}

@@ -1,0 +1,9 @@
+id,audioText,hint,timeLimitSeconds
+1,"Je voudrais réserver une table pour deux personnes ce soir","Making a restaurant reservation",60
+2,"Est-ce que vous pourriez m'indiquer le chemin vers la gare","Asking for directions",60
+3,"Le train arrive à la gare du nord à dix-huit heures trente","Train schedule information",60
+4,"J'ai besoin d'acheter des fruits et des légumes au marché","Shopping at the market",60
+5,"Ma sœur travaille dans un hôpital depuis cinq ans","Talking about someone's job",60
+6,"Nous allons partir en vacances la semaine prochaine","Talking about vacation plans",60
+7,"Il fait très beau aujourd'hui et le soleil brille","Describing the weather",60
+8,"Je préfère prendre un café avec du lait le matin","Morning coffee preferences",60

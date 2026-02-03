@@ -6,61 +6,19 @@ import { cn } from "@/lib/utils";
 import FullScreenLayout from "@/components/layout/FullScreenLayout";
 import FeedbackBanner from "@/components/ui/FeedbackBanner";
 import { Button } from "@/components/ui/button";
+import { loadMockCSV } from "@/utils/csvLoader";
+import { Loader2 } from "lucide-react";
 
-// Mock Scenario Data
-const SCENARIO_DATA = {
-  title: "First Day at University",
-  audioText:
-    "Bonjour. Je m'appelle Thomas et je suis nouveau ici. Je voudrais m'inscrire au cours d'histoire de l'art. J'ai toujours aimé la peinture, surtout les impressionnistes. Est-ce que vous savez où se trouve le secrétariat ? On m'a dit que c'était au deuxième étage, mais je ne trouve pas l'ascenseur. Après mon inscription, je dois aller à la bibliothèque pour rendre un livre. J'espère que je ne serai pas en retard pour mon premier cours à 14 heures.",
-  questions: [
-    {
-      id: 1,
-      question: "What is the speaker's name?",
-      answer: "Thomas",
-      placeholder: "Enter the name...",
-    },
-    {
-      id: 2,
-      question: "Which course does he want to register for?",
-      answer: "Art History",
-      accept: ["art history", "history of art"],
-      placeholder: "e.g., Mathematics",
-    },
-    {
-      id: 3,
-      question: "What art style does he like?",
-      answer: "Impressionist",
-      accept: ["impressionists", "impressionism"],
-      placeholder: "e.g., Modern Art",
-    },
-    {
-      id: 4,
-      question: "Where is the secretary's office supposed to be?",
-      answer: "Second floor",
-      accept: ["2nd floor", "floor 2"],
-      placeholder: "e.g., First floor",
-    },
-    {
-      id: 5,
-      question: "Where does he need to go after registering?",
-      answer: "Library",
-      placeholder: "e.g., Cafeteria",
-    },
-    {
-      id: 6,
-      question: "What time is his first class?",
-      answer: "2 PM",
-      accept: ["14:00", "2 pm", "14h", "14 hours"],
-      placeholder: "e.g., 10 AM",
-    },
-  ],
-};
+
+
 
 export default function ListeningComprehensionPage() {
   const handleExit = usePracticeExit();
   const { speak, isSpeaking, stop } = useTextToSpeech();
 
   // State
+  const [scenarioData, setScenarioData] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [isPlaying, setIsPlaying] = useState(false);
   const [showQuestions, setShowQuestions] = useState(false);
   const [userAnswers, setUserAnswers] = useState({});
@@ -68,16 +26,19 @@ export default function ListeningComprehensionPage() {
   const [showFeedback, setShowFeedback] = useState(false);
   const [score, setScore] = useState(0);
 
+
   // Audio Control State
   const [progress, setProgress] = useState(0);
   const [charOffset, setCharOffset] = useState(0);
 
   // Use ref for isDragging to avoid stale closures in callbacks
   const isDraggingRef = useRef(false);
-  const textLength = SCENARIO_DATA.audioText.length;
+  const textLength = scenarioData?.audioText.length || 0;
+
 
   const speakChunk = (offset) => {
-    const textToSpeak = SCENARIO_DATA.audioText.slice(offset);
+    const textToSpeak = scenarioData?.audioText.slice(offset);
+
     speak(textToSpeak, "fr-FR", 0.9, {
       onBoundary: (e) => {
         if (!isDraggingRef.current) {
@@ -118,6 +79,22 @@ export default function ListeningComprehensionPage() {
     }
   }, [isSpeaking]);
 
+  useEffect(() => {
+    const fetchScenario = async () => {
+      try {
+        const data = await loadMockCSV("practice/listening/listening_comprehension.csv");
+        if (data && data.length > 0) {
+          setScenarioData(data[0]);
+        }
+      } catch (error) {
+        console.error("Error loading mock data:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchScenario();
+  }, []);
+
   // Cleanup on unmount
   useEffect(() => {
     return () => {
@@ -143,7 +120,8 @@ export default function ListeningComprehensionPage() {
 
     // Word boundary heuristic: find previous space
     if (newIndex > 0) {
-      const lastSpace = SCENARIO_DATA.audioText.lastIndexOf(" ", newIndex);
+      const lastSpace = scenarioData?.audioText.lastIndexOf(" ", newIndex);
+
       if (lastSpace !== -1) {
         newIndex = lastSpace + 1; // Start after the space
       }
@@ -186,20 +164,39 @@ export default function ListeningComprehensionPage() {
 
   const handleSubmit = () => {
     let correctCount = 0;
-    SCENARIO_DATA.questions.forEach((q) => {
+    scenarioData?.questions.forEach((q) => {
       if (checkAnswer(userAnswers[q.id], q)) {
         correctCount++;
       }
     });
     setScore(correctCount);
+
     setIsSubmitted(true);
     setShowFeedback(true);
     stop(); // Stop audio if playing
     setIsPlaying(false);
   };
 
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-900">
+        <Loader2 className="animate-spin text-blue-500 w-8 h-8" />
+      </div>
+    );
+  }
+
+  if (!scenarioData) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen bg-slate-50 dark:bg-slate-900">
+        <p className="text-xl text-slate-600 dark:text-slate-400">No content available.</p>
+        <Button onClick={() => handleExit()} variant="outline" className="mt-4">Back</Button>
+      </div>
+    );
+  }
+
   return (
     <FullScreenLayout>
+
       <div className="min-h-screen bg-slate-50 dark:bg-slate-900 flex flex-col">
         {/* Sticky Header with Audio Player */}
         <div className="sticky top-0 z-10 bg-white dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800 shadow-sm px-4 py-4">
@@ -272,8 +269,9 @@ export default function ListeningComprehensionPage() {
         <div className="flex-1 max-w-3xl mx-auto w-full px-4 py-8 pb-32">
           <div className="text-center mb-10 space-y-4">
             <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
-              {SCENARIO_DATA.title}
+              {scenarioData?.title}
             </h1>
+
             <p className="text-slate-600 dark:text-slate-400 max-w-lg mx-auto">
               Listen to the scenario carefully. The questions are hidden so you
               can focus on listening. When you are ready, reveal the questions.
@@ -296,7 +294,8 @@ export default function ListeningComprehensionPage() {
             </div>
           ) : (
             <div className="space-y-6 animate-in slide-in-from-bottom-8 duration-500">
-              {SCENARIO_DATA.questions.map((q, index) => {
+              {scenarioData?.questions.map((q, index) => {
+
                 const isCorrectItem =
                   isSubmitted && checkAnswer(userAnswers[q.id], q);
                 const isWrongItem = isSubmitted && !isCorrectItem;
@@ -354,8 +353,9 @@ export default function ListeningComprehensionPage() {
       {/* Feedback Banner */}
       {showFeedback && (
         <FeedbackBanner
-          isCorrect={score === SCENARIO_DATA.questions.length} // Only "Success" style if 100%, otherwise just info
-          message={`You got ${score} out of ${SCENARIO_DATA.questions.length} correct.`}
+          isCorrect={score === scenarioData?.questions.length} // Only "Success" style if 100%, otherwise just info
+          message={`You got ${score} out of ${scenarioData?.questions.length} correct.`}
+
           onContinue={handleExit} // Or maybe retry?
           continueLabel="Finish"
         >

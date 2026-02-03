@@ -5,75 +5,13 @@ import { cn } from "@/lib/utils";
 import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
 import FeedbackBanner from "@/components/ui/FeedbackBanner";
 import { getFeedbackMessage } from "@/utils/feedbackMessages";
-
-// Mock data for Reading Comprehension exercise
-const MOCK_QUESTIONS = [
-  {
-    id: 1,
-    passage:
-      "Marie habite à Paris depuis cinq ans. Elle travaille dans une librairie au centre-ville. Chaque matin, elle prend le métro pour aller au travail. Elle aime son travail parce qu'elle adore les livres.",
-    question: "Où travaille Marie?",
-    options: [
-      "Dans un café",
-      "Dans une librairie",
-      "Dans un hôpital",
-      "Dans une école",
-    ],
-    correctIndex: 1,
-    timeLimitSeconds: 60,
-  },
-  {
-    id: 2,
-    passage:
-      "Pierre est un jeune chef cuisinier. Il prépare des plats traditionnels français. Son restaurant est ouvert du mardi au samedi. Le dimanche et le lundi, le restaurant est fermé.",
-    question: "Quand le restaurant est-il fermé?",
-    options: [
-      "Le samedi et le dimanche",
-      "Le lundi et le mardi",
-      "Le dimanche et le lundi",
-      "Le vendredi et le samedi",
-    ],
-    correctIndex: 2,
-    timeLimitSeconds: 60,
-  },
-  {
-    id: 3,
-    passage:
-      "La famille Dupont a trois enfants: Sophie, Thomas et Emma. Sophie a douze ans, Thomas a neuf ans et Emma a six ans. Ils habitent dans une grande maison avec un jardin.",
-    question: "Quel âge a Thomas?",
-    options: ["Six ans", "Neuf ans", "Douze ans", "Quinze ans"],
-    correctIndex: 1,
-    timeLimitSeconds: 60,
-  },
-  {
-    id: 4,
-    passage:
-      "En été, nous allons souvent à la plage. Nous nageons dans la mer et nous jouons au volleyball. Le soir, nous mangeons des glaces et nous regardons le coucher du soleil.",
-    question: "Que font-ils le soir?",
-    options: [
-      "Ils nagent dans la mer",
-      "Ils jouent au football",
-      "Ils mangent des glaces",
-      "Ils font de la randonnée",
-    ],
-    correctIndex: 2,
-    timeLimitSeconds: 60,
-  },
-  {
-    id: 5,
-    passage:
-      "Le train pour Lyon part à huit heures du matin. Il arrive à Lyon à onze heures. Le voyage dure trois heures. Les billets coûtent cinquante euros.",
-    question: "Combien de temps dure le voyage?",
-    options: ["Deux heures", "Trois heures", "Quatre heures", "Cinq heures"],
-    correctIndex: 1,
-    timeLimitSeconds: 60,
-  },
-];
+import { loadMockCSV } from "@/utils/csvLoader";
+import { Button } from "@/components/ui/button";
 
 export default function ComprehensionPage() {
   const handleExit = usePracticeExit();
 
-  const [questions] = useState(MOCK_QUESTIONS);
+  const [questions, setQuestions] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedOption, setSelectedOption] = useState(null);
   const [isCompleted, setIsCompleted] = useState(false);
@@ -81,6 +19,17 @@ export default function ComprehensionPage() {
   const [isCorrect, setIsCorrect] = useState(false);
   const [feedbackMessage, setFeedbackMessage] = useState("");
   const [score, setScore] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      const data = await loadMockCSV("practice/reading/comprehension.csv");
+      setQuestions(data);
+      setIsLoading(false);
+    };
+    fetchData();
+  }, []);
+
 
   const currentQuestion = questions[currentIndex];
   const timerDuration = currentQuestion?.timeLimitSeconds || 60;
@@ -133,8 +82,26 @@ export default function ComprehensionPage() {
     }
   };
 
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-slate-50 dark:bg-slate-900">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+      </div>
+    );
+  }
+
+  if (questions.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen bg-slate-50 dark:bg-slate-900">
+        <p className="text-xl text-slate-600 dark:text-slate-400">No questions available.</p>
+        <Button onClick={() => handleExit()} variant="outline" className="mt-4">Back</Button>
+      </div>
+    );
+  }
+
   const progress =
     questions.length > 0 ? ((currentIndex + 1) / questions.length) * 100 : 0;
+
 
   return (
     <>
@@ -221,7 +188,7 @@ export default function ComprehensionPage() {
                           showFeedback && index === currentQuestion.correctIndex
                             ? "bg-emerald-500 dark:bg-emerald-400"
                             : showFeedback &&
-                                index !== currentQuestion.correctIndex
+                              index !== currentQuestion.correctIndex
                               ? "bg-red-500 dark:bg-red-400"
                               : "bg-cyan-500 dark:bg-cyan-400",
                         )}

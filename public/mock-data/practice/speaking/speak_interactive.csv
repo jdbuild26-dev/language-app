@@ -1,0 +1,4 @@
+id,Scenario,Prompt,Description
+1,"Au restaurant","Serveur: Bonjour, vous désirez commander ?","Répondez au serveur que vous voulez une table pour deux."
+2,"À la boulangerie","Boulanger: Et avec ceci, ce sera tout ?","Demandez deux baguettes s'il vous plaît."
+3,"Dans la rue","Passant: Pardon, vous savez où se trouve le métro ?","Dites-lui de continuer tout droit."

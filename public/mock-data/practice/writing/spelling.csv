@@ -1,0 +1,6 @@
+id,incorrectText,correctText,errorCount,hint,timeLimitSeconds
+1,"Banjour, comant alé-vous?","Bonjour, comment allez-vous?",3,"Check the greeting and question words",60
+2,"Je voodrai un cafay, sil vous plai.","Je voudrais un café, s'il vous plaît.",4,"Check the verb conjugation and accents",60
+3,"Ou es la gar?","Où est la gare?",3,"Check accents and full words",60
+4,"Jaime aprandre le francais.","J'aime apprendre le français.",3,"Check the apostrophe, verb, and accent",60
+5,"Il fai bo ojourdhui.","Il fait beau aujourd'hui.",3,"Check adjective and compound word",60

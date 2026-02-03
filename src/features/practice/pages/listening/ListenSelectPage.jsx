@@ -7,67 +7,20 @@ import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
 import FeedbackBanner from "@/components/ui/FeedbackBanner";
 import { getFeedbackMessage } from "@/utils/feedbackMessages";
 import { useTextToSpeech } from "@/hooks/useTextToSpeech";
+import { loadMockCSV } from "@/utils/csvLoader";
+import { Button } from "@/components/ui/button";
 
-// Mock data for Listen and Select exercise
-const MOCK_QUESTIONS = [
-  {
-    id: 1,
-    audioText: "Bonjour, comment allez-vous?",
-    question: "What is being said?",
-    options: [
-      "Hello, how are you?",
-      "Goodbye, see you later",
-      "Good night, sleep well",
-      "Thank you very much",
-    ],
-    correctIndex: 0,
-    timeLimitSeconds: 30,
-  },
-  {
-    id: 2,
-    audioText: "Je voudrais un café, s'il vous plaît.",
-    question: "What is the person ordering?",
-    options: ["A tea", "A coffee", "A juice", "A water"],
-    correctIndex: 1,
-    timeLimitSeconds: 30,
-  },
-  {
-    id: 3,
-    audioText: "Il fait beau aujourd'hui.",
-    question: "What is the weather like?",
-    options: [
-      "It's raining",
-      "It's cold",
-      "It's nice/beautiful",
-      "It's snowing",
-    ],
-    correctIndex: 2,
-    timeLimitSeconds: 30,
-  },
-  {
-    id: 4,
-    audioText: "Je m'appelle Marie et j'ai vingt ans.",
-    question: "How old is Marie?",
-    options: ["18 years old", "19 years old", "20 years old", "21 years old"],
-    correctIndex: 2,
-    timeLimitSeconds: 30,
-  },
-  {
-    id: 5,
-    audioText: "Le train part à huit heures.",
-    question: "What time does the train leave?",
-    options: ["7 o'clock", "8 o'clock", "9 o'clock", "10 o'clock"],
-    correctIndex: 1,
-    timeLimitSeconds: 30,
-  },
-];
+
+
 
 export default function ListenSelectPage() {
   const handleExit = usePracticeExit();
   const { speak, isSpeaking } = useTextToSpeech();
 
-  const [questions] = useState(MOCK_QUESTIONS);
+  const [questions, setQuestions] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [currentIndex, setCurrentIndex] = useState(0);
+
   const [selectedOption, setSelectedOption] = useState(null);
   const [isCompleted, setIsCompleted] = useState(false);
   const [showFeedback, setShowFeedback] = useState(false);
@@ -89,8 +42,23 @@ export default function ListenSelectPage() {
         setShowFeedback(true);
       }
     },
-    isPaused: isCompleted || showFeedback || !hasPlayed,
+    isPaused: isCompleted || showFeedback || !hasPlayed || isLoading,
   });
+
+  useEffect(() => {
+    const fetchQuestions = async () => {
+      try {
+        const data = await loadMockCSV("practice/listening/listen_select.csv");
+        setQuestions(data);
+      } catch (error) {
+        console.error("Error loading mock data:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchQuestions();
+  }, []);
+
 
   // Auto-play audio when question changes
   useEffect(() => {
@@ -143,8 +111,26 @@ export default function ListenSelectPage() {
     }
   };
 
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-900">
+        <Loader2 className="animate-spin text-indigo-500 w-8 h-8" />
+      </div>
+    );
+  }
+
+  if (questions.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen bg-slate-50 dark:bg-slate-900">
+        <p className="text-xl text-slate-600 dark:text-slate-400">No content available.</p>
+        <Button onClick={() => handleExit()} variant="outline" className="mt-4">Back</Button>
+      </div>
+    );
+  }
+
   const progress =
     questions.length > 0 ? ((currentIndex + 1) / questions.length) * 100 : 0;
+
 
   return (
     <>
@@ -222,14 +208,14 @@ export default function ListenSelectPage() {
                     "border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700",
                     // Selected (pre-submission)
                     isSelected &&
-                      !showFeedback &&
-                      "border-indigo-400 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-300",
+                    !showFeedback &&
+                    "border-indigo-400 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-300",
                     // Feedback: Correct
                     isCorrectHighlight &&
-                      "border-green-500 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300",
+                    "border-green-500 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300",
                     // Feedback: Wrong
                     isWrongSelection &&
-                      "border-red-500 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300",
+                    "border-red-500 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300",
                   )}
                 >
                   {/* Circle Indicator */}
