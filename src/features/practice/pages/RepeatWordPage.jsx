@@ -6,7 +6,7 @@ import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
 import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 
-import { fuzzyIncludes, matchSpeechToAnswer } from "@/utils/textComparison";
+import { calculateSimilarity, normalizeText } from "@/utils/textComparison";
 
 export default function RepeatWordPage() {
   const navigate = useNavigate();
@@ -115,20 +115,26 @@ export default function RepeatWordPage() {
   const handleSubmit = () => {
     if (!currentQuestion) return;
 
-    // Check logic: Correct answer should be IN the spoken text OR match exactly
-    // OR if the user speaks the full sentence, we check for that too?
-    // Let's check if the *correctAnswer* is present in the spoken text.
-    // This allows natural speaking ("Le chien et le chat...") or just the word ("chat").
-
-    const isCorrect = matchSpeechToAnswer(
+    // Strict matching: User must speak ONLY the word, not the full sentence
+    // We compare the normalized spoken text directly against the correct answer
+    const similarity = calculateSimilarity(
       spokenText,
       currentQuestion.correctAnswer,
     );
+    const isCorrect = similarity >= 0.7;
+
+    console.groupCollapsed(
+      `🎤 Repeat Word: "${spokenText}" vs "${currentQuestion.correctAnswer}"`,
+    );
+    console.log(`Spoken: "${spokenText}"`);
+    console.log(`Target: "${currentQuestion.correctAnswer}"`);
+    console.log(`Similarity Score: ${similarity.toFixed(2)}`);
+    console.log(`Match Result: ${isCorrect ? "✅ MATCH" : "❌ NO MATCH"}`);
+    console.groupEnd();
 
     if (isCorrect) {
       setScore((prev) => prev + 1);
       setFeedback("correct");
-      // Play success sound?
     } else {
       setFeedback("incorrect");
     }

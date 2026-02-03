@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { usePracticeExit } from "@/hooks/usePracticeExit";
 import { useExerciseTimer } from "@/hooks/useExerciseTimer";
-import { Volume2, ArrowUp, ArrowDown, GripVertical } from "lucide-react";
+import { Volume2, GripVertical } from "lucide-react";
+import { Reorder } from "framer-motion";
 import { cn } from "@/lib/utils";
 import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
 import FeedbackBanner from "@/components/ui/FeedbackBanner";
@@ -97,23 +98,9 @@ export default function ListenOrderPage() {
     setPlayedAudio(true);
   };
 
-  const handlePlayItem = (text) => {
+  const handlePlayItem = (text, e) => {
+    e.stopPropagation(); // Prevent drag when clicking play button
     speak(text, "fr-FR");
-  };
-
-  const moveItem = (index, direction) => {
-    if (showFeedback) return;
-
-    const newOrder = [...currentOrder];
-    const newIndex = direction === "up" ? index - 1 : index + 1;
-
-    if (newIndex < 0 || newIndex >= newOrder.length) return;
-
-    [newOrder[index], newOrder[newIndex]] = [
-      newOrder[newIndex],
-      newOrder[index],
-    ];
-    setCurrentOrder(newOrder);
   };
 
   const handleSubmit = () => {
@@ -178,87 +165,33 @@ export default function ListenOrderPage() {
             {playedAudio ? "Replay All" : "Play Audio"}
           </button>
 
-          {/* Sentence list */}
+          {/* Sentence list with drag-and-drop */}
           <div className="w-full space-y-3">
-            {currentOrder.map((sentence, index) => {
-              const isCorrectPosition =
-                showFeedback &&
-                sentence === currentQuestion.correctOrder[index];
-              const isWrongPosition = showFeedback && !isCorrectPosition;
+            <Reorder.Group
+              axis="y"
+              values={currentOrder}
+              onReorder={showFeedback ? () => {} : setCurrentOrder}
+              className="w-full space-y-3"
+            >
+              {currentOrder.map((sentence, index) => {
+                const isCorrectPosition =
+                  showFeedback &&
+                  sentence === currentQuestion.correctOrder[index];
+                const isWrongPosition = showFeedback && !isCorrectPosition;
 
-              return (
-                <div
-                  key={sentence}
-                  className={cn(
-                    "flex items-center gap-3 p-4 rounded-xl border-2 transition-all duration-200",
-                    isCorrectPosition
-                      ? "bg-emerald-50 dark:bg-emerald-900/20 border-emerald-500"
-                      : isWrongPosition
-                        ? "bg-red-50 dark:bg-red-900/20 border-red-500"
-                        : "bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700",
-                  )}
-                >
-                  {/* Position number */}
-                  <span
-                    className={cn(
-                      "w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0",
-                      isCorrectPosition
-                        ? "bg-emerald-500 text-white"
-                        : isWrongPosition
-                          ? "bg-red-500 text-white"
-                          : "bg-orange-100 dark:bg-orange-900/30 text-orange-600",
-                    )}
-                  >
-                    {index + 1}
-                  </span>
-
-                  <GripVertical className="w-5 h-5 text-slate-400 flex-shrink-0" />
-
-                  {/* Play button */}
-                  <button
-                    onClick={() => handlePlayItem(sentence)}
-                    className="text-slate-400 hover:text-orange-500 flex-shrink-0"
-                  >
-                    <Volume2 className="w-4 h-4" />
-                  </button>
-
-                  {/* Sentence text */}
-                  <span className="flex-1 text-slate-700 dark:text-slate-200 font-medium text-sm">
-                    {sentence}
-                  </span>
-
-                  {/* Movement buttons */}
-                  {!showFeedback && (
-                    <div className="flex flex-col gap-1 flex-shrink-0">
-                      <button
-                        onClick={() => moveItem(index, "up")}
-                        disabled={index === 0}
-                        className={cn(
-                          "p-1 rounded transition-colors",
-                          index === 0
-                            ? "text-slate-300 cursor-not-allowed"
-                            : "text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700",
-                        )}
-                      >
-                        <ArrowUp className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => moveItem(index, "down")}
-                        disabled={index === currentOrder.length - 1}
-                        className={cn(
-                          "p-1 rounded transition-colors",
-                          index === currentOrder.length - 1
-                            ? "text-slate-300 cursor-not-allowed"
-                            : "text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700",
-                        )}
-                      >
-                        <ArrowDown className="w-4 h-4" />
-                      </button>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
+                return (
+                  <SortableItem
+                    key={sentence}
+                    sentence={sentence}
+                    index={index}
+                    isCorrectPosition={isCorrectPosition}
+                    isWrongPosition={isWrongPosition}
+                    showFeedback={showFeedback}
+                    onPlayItem={handlePlayItem}
+                  />
+                );
+              })}
+            </Reorder.Group>
           </div>
         </div>
       </PracticeGameLayout>
@@ -277,3 +210,162 @@ export default function ListenOrderPage() {
     </>
   );
 }
+
+const SortableItem = ({
+  sentence,
+  index,
+  isCorrectPosition,
+  isWrongPosition,
+  showFeedback,
+  onPlayItem,
+}) => {
+  return (
+    <Reorder.Item
+      value={sentence}
+      className={cn(
+        "flex items-center gap-3 p-4 rounded-xl border-2 transition-colors duration-200 select-none bg-white dark:bg-slate-800",
+        !showFeedback &&
+          "cursor-grab active:cursor-grabbing hover:border-slate-300 dark:hover:border-slate-600",
+        isCorrectPosition
+          ? "bg-emerald-50 dark:bg-emerald-900/20 border-emerald-500"
+          : isWrongPosition
+            ? "bg-red-50 dark:bg-red-900/20 border-red-500"
+            : "border-slate-200 dark:border-slate-700",
+      )}
+      whileDrag={{
+        scale: 1.02,
+        boxShadow: "0 10px 30px -10px rgba(0,0,0,0.15)",
+        zIndex: 50,
+      }}
+      transition={{ type: "spring", stiffness: 400, damping: 25 }}
+    >
+      {/* Position number */}
+      <span
+        className={cn(
+          "w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold shrink-0",
+          isCorrectPosition
+            ? "bg-emerald-500 text-white"
+            : isWrongPosition
+              ? "bg-red-500 text-white"
+              : "bg-orange-100 dark:bg-orange-900/30 text-orange-600",
+        )}
+      >
+        {index + 1}
+      </span>
+
+      {/* Grip icon - Visual cue only, entire card is draggable */}
+      {!showFeedback && (
+        <div className="text-slate-400">
+          <GripVertical className="w-5 h-5" />
+        </div>
+      )}
+
+      {/* Play button */}
+      <button
+        onClick={(e) => onPlayItem(sentence, e)}
+        className="text-slate-400 hover:text-orange-500 shrink-0"
+      >
+        <Volume2 className="w-4 h-4" />
+      </button>
+
+      {/* Waveform or Sentence text */}
+      <div className="flex-1">
+        {!showFeedback ? (
+          /* Waveform SVG (Visible before submit) */
+          <svg
+            width="120"
+            height="30"
+            viewBox="0 0 120 40"
+            className="text-orange-400 dark:text-orange-500"
+          >
+            <rect
+              x="10"
+              y="15"
+              width="3"
+              height="10"
+              fill="currentColor"
+              rx="1.5"
+            />
+            <rect
+              x="16"
+              y="10"
+              width="3"
+              height="20"
+              fill="currentColor"
+              rx="1.5"
+            />
+            <rect
+              x="22"
+              y="5"
+              width="3"
+              height="30"
+              fill="currentColor"
+              rx="1.5"
+            />
+            <rect
+              x="28"
+              y="12"
+              width="3"
+              height="16"
+              fill="currentColor"
+              rx="1.5"
+            />
+            <rect
+              x="34"
+              y="18"
+              width="3"
+              height="4"
+              fill="currentColor"
+              rx="1.5"
+            />
+            <rect
+              x="40"
+              y="8"
+              width="3"
+              height="24"
+              fill="currentColor"
+              rx="1.5"
+            />
+            <rect
+              x="46"
+              y="14"
+              width="3"
+              height="12"
+              fill="currentColor"
+              rx="1.5"
+            />
+            <rect
+              x="52"
+              y="11"
+              width="3"
+              height="18"
+              fill="currentColor"
+              rx="1.5"
+            />
+            <rect
+              x="58"
+              y="16"
+              width="3"
+              height="8"
+              fill="currentColor"
+              rx="1.5"
+            />
+            <rect
+              x="64"
+              y="13"
+              width="3"
+              height="14"
+              fill="currentColor"
+              rx="1.5"
+            />
+          </svg>
+        ) : (
+          /* Text Reveal (Visible after submit) */
+          <span className="text-slate-700 dark:text-slate-200 font-medium select-none">
+            {sentence}
+          </span>
+        )}
+      </div>
+    </Reorder.Item>
+  );
+};

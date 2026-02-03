@@ -83,10 +83,11 @@ import DiagramLabellingPage from "@/features/practice/pages/reading/DiagramLabel
 import ListenSelectPage from "@/features/practice/pages/listening/ListenSelectPage";
 import ListenTypePage from "@/features/practice/pages/listening/ListenTypePage";
 import ListenFillBlanksPage from "@/features/practice/pages/listening/ListenFillBlanksPage";
-import ListenMatchPage from "@/features/practice/pages/listening/ListenMatchPage";
+
 import ListenOrderPage from "@/features/practice/pages/listening/ListenOrderPage";
 import ListenPassagePage from "@/features/practice/pages/listening/ListenPassagePage";
 import ListenInteractivePage from "@/features/practice/pages/listening/ListenInteractivePage";
+import ListeningComprehensionPage from "@/features/practice/pages/listening/ListeningComprehensionPage";
 
 // Practice Module Writing Exercises
 import TranslateTypedPage from "@/features/practice/pages/writing/TranslateTypedPage";
@@ -598,16 +599,7 @@ function App() {
             </ProtectedRoute>
           }
         />
-        <Route
-          path="/practice/listening/match"
-          element={
-            <ProtectedRoute>
-              <FullScreenLayout>
-                <ListenMatchPage />
-              </FullScreenLayout>
-            </ProtectedRoute>
-          }
-        />
+
         <Route
           path="/practice/listening/order"
           element={
@@ -634,6 +626,17 @@ function App() {
             <ProtectedRoute>
               <FullScreenLayout>
                 <ListenInteractivePage />
+              </FullScreenLayout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/practice/listening/comprehension"
+          element={
+            <ProtectedRoute>
+              <FullScreenLayout>
+                <ListeningComprehensionPage />
               </FullScreenLayout>
             </ProtectedRoute>
           }

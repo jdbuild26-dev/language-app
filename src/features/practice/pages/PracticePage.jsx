@@ -159,7 +159,7 @@ const practiceActivities = [
   },
   {
     id: "G9",
-    name: "True/False/Not Given",
+    name: "Identify Information",
     icon: HelpCircle,
     desc: "Evaluate statements from passages",
     path: "/practice/reading/true-false",
@@ -216,17 +216,7 @@ const practiceActivities = [
     shadow: "shadow-cyan-200 dark:shadow-cyan-900/20",
     isLive: true,
   },
-  {
-    id: "E4",
-    name: "Listen and Match",
-    icon: Music,
-    desc: "Match audio clips to descriptions",
-    path: "/practice/listening/match",
-    category: "listening",
-    color: "from-emerald-400 to-teal-500",
-    shadow: "shadow-emerald-200 dark:shadow-emerald-900/20",
-    isLive: true,
-  },
+
   {
     id: "E5",
     name: "Listen and Order",
@@ -258,6 +248,17 @@ const practiceActivities = [
     category: "listening",
     color: "from-pink-400 to-rose-500",
     shadow: "shadow-pink-200 dark:shadow-pink-900/20",
+    isLive: true,
+  },
+  {
+    id: "E8",
+    name: "Listening Comprehension",
+    icon: Volume2,
+    desc: "Listen to scenarios and answer",
+    path: "/practice/listening/comprehension",
+    category: "listening",
+    color: "from-blue-400 to-indigo-500",
+    shadow: "shadow-blue-200 dark:shadow-blue-900/20",
     isLive: true,
   },
 

@@ -23,7 +23,7 @@ export const useTextToSpeech = () => {
   }, []);
 
   const speak = useCallback(
-    (text, lang = "fr-FR", rate = 0.9) => {
+    (text, lang = "fr-FR", rate = 0.9, options = {}) => {
       cancel();
 
       if (!text) return;
@@ -46,22 +46,29 @@ export const useTextToSpeech = () => {
       utterance.onstart = () => {
         setIsSpeaking(true);
         setIsPaused(false);
+        if (options.onStart) options.onStart();
       };
 
       utterance.onend = () => {
         setIsSpeaking(false);
         setIsPaused(false);
+        if (options.onEnd) options.onEnd();
       };
 
       utterance.onerror = (event) => {
         console.error("TTS Error:", event);
         setIsSpeaking(false);
         setIsPaused(false);
+        if (options.onError) options.onError(event);
       };
+
+      if (options.onBoundary) {
+        utterance.onboundary = options.onBoundary;
+      }
 
       syntaxRef.current.speak(utterance);
     },
-    [voices]
+    [voices],
   );
 
   const cancel = useCallback(() => {
@@ -89,6 +96,7 @@ export const useTextToSpeech = () => {
   return {
     speak,
     cancel,
+    stop: cancel, // Alias for backward compatibility
     pause,
     resume,
     isSpeaking,
