@@ -11,19 +11,6 @@ import { CheckCircle2 } from "lucide-react";
 const MOCK_DATA = [
   {
     id: 1,
-    title: "Body Parts & Clothing",
-    instructionFr: "Étiquetez les parties du corps et les vêtements",
-    instructionEn: "Label body parts and clothing",
-    image: "https://res.cloudinary.com/danch6kwx/image/upload/v1770134279/m2p6rbunlfbvrhn13hox.jpg",
-    items: [
-      { name: "nose", x: 0.3727, y: 0.3567 },
-      { name: "glasses", x: 0.3455, y: 0.2956 },
-      { name: "tshirt", x: 0.3511, y: 0.7578 },
-      { name: "jacket", x: 0.1739, y: 0.9614 },
-    ],
-  },
-  {
-    id: 2,
     title: "Kitchen Labelling",
     instructionFr: "Étiquetez la cuisine",
     instructionEn: "Label the kitchen",
