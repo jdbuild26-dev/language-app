@@ -7,6 +7,8 @@ import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 
 import { fuzzyIncludes, matchSpeechToAnswer } from "@/utils/textComparison";
+import { getFeedbackMessage } from "@/utils/feedbackMessages";
+import FeedbackBanner from "@/components/ui/FeedbackBanner";
 
 // MOCK_DATA removed - now fetching from backend
 
@@ -23,7 +25,9 @@ export default function RepeatSentencePage() {
   // Interaction State
   const [isListening, setIsListening] = useState(false);
   const [spokenText, setSpokenText] = useState("");
-  const [evaluation, setEvaluation] = useState(null);
+  const [showFeedback, setShowFeedback] = useState(false);
+  const [isCorrect, setIsCorrect] = useState(false);
+  const [feedbackMessage, setFeedbackMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const recognitionRef = useRef(null);
@@ -120,51 +124,31 @@ export default function RepeatSentencePage() {
       recognitionRef.current.stop();
     } else {
       setSpokenText(""); // Clear previous
-      setEvaluation(null);
+      setShowFeedback(false);
       recognitionRef.current.start();
       setIsListening(true);
     }
   };
 
-  const handleSubmit = async () => {
-    if (!spokenText || !currentQuestion || isSubmitting) return;
+  const handleSubmit = () => {
+    if (!spokenText || !currentQuestion) return;
 
-    setIsSubmitting(true);
-    try {
-      const fullSentence =
-        currentQuestion.completeSentence ||
-        currentQuestion.sentenceWithBlank?.replace(
-          /_+/g,
-          currentQuestion.correctAnswer,
-        );
+    // Compare spoken text to the full correct sentence or missing word
+    // Usually for repeat sentence, we want to match against the target word or full sentence
+    const correct = matchSpeechToAnswer(spokenText, currentQuestion.correctAnswer);
 
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/practice/evaluate-speaking`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          task_type: "translate", // Repeat sentence is similar to translation evaluation
-          transcript: spokenText,
-          reference: fullSentence,
-          context: "Repeat the sentence exactly as shown."
-        }),
-      });
+    setIsCorrect(correct);
+    setFeedbackMessage(getFeedbackMessage(correct));
+    setShowFeedback(true);
 
-      if (!response.ok) throw new Error("Failed to evaluate");
-      const result = await response.json();
-      setEvaluation(result);
-      if (result.score >= 70) {
-        setScore((prev) => prev + 1);
-      }
-    } catch (error) {
-      console.error("Evaluation error:", error);
-    } finally {
-      setIsSubmitting(false);
+    if (correct) {
+      setScore((prev) => prev + 1);
     }
   };
 
   const handleNext = () => {
     setSpokenText("");
-    setEvaluation(null);
+    setShowFeedback(false);
     setIsListening(false);
 
     if (currentIndex < questions.length - 1) {
@@ -220,31 +204,19 @@ export default function RepeatSentencePage() {
       isGameOver={isGameOver}
       timerValue={timerString}
       onExit={() => navigate("/vocabulary/practice")}
-      onNext={evaluation ? handleNext : handleSubmit}
+      onNext={handleSubmit}
       onRestart={handleRestart}
       isSubmitEnabled={Boolean(spokenText) && !isSubmitting}
-      showSubmitButton={true}
-      submitLabel={
-        isSubmitting
-          ? "Evaluating..."
-          : evaluation
-            ? "Continue"
-            : "Submit"
-      }
-      showFeedback={!!evaluation}
-      isCorrect={evaluation?.score >= 70}
-      feedbackMessage={evaluation?.feedback || ""}
-      correctAnswer={
-        currentQuestion?.completeSentence || currentQuestion?.sentenceWithBlank
-      }
+      showSubmitButton={!showFeedback}
+      submitLabel={isSubmitting ? "Evaluating..." : "Submit"}
     >
       <div className="flex flex-col items-center justify-center max-w-3xl w-full gap-8">
         {/* Full Sentence Display */}
         <div className="w-full bg-white dark:bg-slate-800 rounded-3xl p-6 md:p-8 shadow-xl border border-slate-100 dark:border-slate-700 text-center relative overflow-hidden">
-          {evaluation && evaluation.score >= 70 && (
+          {showFeedback && isCorrect && (
             <div className="absolute inset-0 bg-green-500/10 z-0" />
           )}
-          {evaluation && evaluation.score < 70 && (
+          {showFeedback && !isCorrect && (
             <div className="absolute inset-0 bg-red-500/10 z-0" />
           )}
 
@@ -264,35 +236,6 @@ export default function RepeatSentencePage() {
           </div>
         </div>
 
-        {/* AI Evaluation Result */}
-        {evaluation && (
-          <div className={cn(
-            "w-full rounded-2xl p-4 md:p-6 border animate-in slide-in-from-bottom-4 duration-500",
-            evaluation.score >= 70
-              ? "bg-emerald-50 border-emerald-200 dark:bg-emerald-950/20 dark:border-emerald-800"
-              : "bg-amber-50 border-amber-200 dark:bg-amber-950/20 dark:border-amber-800"
-          )}>
-            <div className="flex items-center gap-3 md:gap-4">
-              <div className={cn(
-                "w-10 h-10 md:w-12 md:h-12 rounded-full flex items-center justify-center text-base md:text-xl font-bold border-2 shrink-0",
-                evaluation.score >= 70 ? "bg-emerald-500 text-white border-emerald-400" : "bg-amber-500 text-white border-amber-400"
-              )}>
-                {evaluation.score}
-              </div>
-              <div>
-                <h4 className="font-bold text-slate-900 dark:text-white text-sm md:text-base">AI Analysis</h4>
-                <p className="text-xs md:text-sm text-slate-600 dark:text-slate-400">{evaluation.feedback}</p>
-              </div>
-            </div>
-
-            {evaluation.correction && evaluation.score < 90 && (
-              <div className="mt-4 p-4 bg-white/50 dark:bg-slate-900/50 rounded-xl border border-white dark:border-slate-800">
-                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Recommended</p>
-                <p className="text-slate-800 dark:text-slate-200 font-medium">{evaluation.correction}</p>
-              </div>
-            )}
-          </div>
-        )}
 
         {/* DEBUG: Show Answer for Testing */}
         <div className="w-full bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-200 dark:border-yellow-800 p-4 text-center">
@@ -333,6 +276,15 @@ export default function RepeatSentencePage() {
           )}
         </div>
       </div>
+
+      {showFeedback && (
+        <FeedbackBanner
+          isCorrect={isCorrect}
+          correctAnswer={currentQuestion.correctAnswer}
+          message={feedbackMessage}
+          onContinue={handleNext}
+        />
+      )}
     </PracticeGameLayout>
   );
 }
