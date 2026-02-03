@@ -179,6 +179,28 @@ const practiceActivities = [
     shadow: "shadow-indigo-200 dark:shadow-indigo-900/20",
     isLive: true,
   },
+  {
+    id: "G16",
+    name: "Match Sentence Ending",
+    icon: ListTodo,
+    desc: "Match the correct endings to sentences",
+    path: "/practice/reading/match-sentence-ending",
+    category: "reading",
+    color: "from-blue-400 to-indigo-500",
+    shadow: "shadow-blue-200 dark:shadow-blue-900/20",
+    isLive: true,
+  },
+  {
+    id: "G17",
+    name: "Summary Completion",
+    icon: FileText,
+    desc: "Complete the summary of a passage",
+    path: "/practice/reading/summary-completion",
+    category: "reading",
+    color: "from-emerald-400 to-teal-500",
+    shadow: "shadow-emerald-200 dark:shadow-emerald-900/20",
+    isLive: true,
+  },
 
   // ========================================
   // LISTENING Activities (E1-E7)
@@ -435,8 +457,8 @@ export default function PracticePage() {
     activeTab === "all"
       ? practiceActivities
       : practiceActivities.filter(
-          (activity) => activity.category === activeTab,
-        );
+        (activity) => activity.category === activeTab,
+      );
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-6">
