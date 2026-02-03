@@ -181,21 +181,71 @@ export default function CompletePassagePage() {
                     return (
                       <span
                         key={index}
-                        className="mx-1 inline-flex items-center"
+                        className="mx-1 inline-flex items-center relative"
                       >
                         <span
                           className={cn(
                             "inline-flex items-center justify-center px-1.5 py-0.5 rounded border border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 text-sm font-bold text-slate-500 mr-1 min-w-[24px]",
                             showFeedback &&
-                              isCorrectAnswer &&
-                              "bg-green-100 border-green-400 text-green-700",
+                            isCorrectAnswer &&
+                            "bg-green-100 border-green-400 text-green-700",
                             showFeedback &&
-                              !isCorrectAnswer &&
-                              "bg-red-100 border-red-400 text-red-700",
+                            !isCorrectAnswer &&
+                            "bg-red-100 border-red-400 text-red-700",
                           )}
                         >
                           {id}
                         </span>
+
+                        {/* Mobile: Inline Dropdowns */}
+                        {!showFeedback && (
+                          <div className="relative inline-block lg:hidden mx-1">
+                            <select
+                              value={userAnswer || ""}
+                              onChange={(e) =>
+                                handleOptionSelect(id, e.target.value)
+                              }
+                              className={cn(
+                                "appearance-none bg-slate-50 dark:bg-slate-900 border-2 rounded-lg px-2 py-0.5 pr-7 text-sm font-bold outline-none transition-all cursor-pointer shadow-sm translate-y-[2px]",
+                                userAnswer
+                                  ? "border-sky-500 text-sky-600 dark:text-sky-400 bg-white"
+                                  : "border-slate-200 dark:border-slate-700 text-slate-400",
+                              )}
+                            >
+                              <option value="" disabled>
+                                Select
+                              </option>
+                              {BLANKS_DATA[id].options.map((opt, i) => (
+                                <option key={i} value={opt}>
+                                  {opt}
+                                </option>
+                              ))}
+                            </select>
+                            <div className="pointer-events-none absolute right-1.5 top-1/2 -translate-y-1/2 mt-[2px]">
+                              <svg
+                                className="w-3.5 h-3.5 text-slate-400"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M19 9l-7 7-7-7"
+                                />
+                              </svg>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Desktop: Show selection as text even before feedback */}
+                        {!showFeedback && userAnswer && (
+                          <span className="hidden lg:inline-flex font-bold text-sky-600 dark:text-sky-400 underline decoration-2 decoration-sky-300 underline-offset-4 ml-1">
+                            {userAnswer}
+                          </span>
+                        )}
+
                         {showFeedback && (
                           <span
                             className={cn(
@@ -234,8 +284,8 @@ export default function CompletePassagePage() {
             </div>
           </div>
 
-          {/* Right Column: Questions */}
-          <div className="flex-1 flex flex-col justify-start lg:max-w-md overflow-hidden">
+          {/* Right Column: Questions (Hidden on mobile) */}
+          <div className="hidden lg:flex flex-1 flex flex-col justify-start lg:max-w-md overflow-hidden">
             <div className="bg-white dark:bg-slate-800/50 rounded-xl p-6 h-full overflow-y-auto custom-scrollbar border border-slate-200 dark:border-slate-700 shadow-sm">
               <h2 className="text-xl font-bold text-slate-800 dark:text-white mb-6">
                 Select the best option for each missing word
@@ -264,11 +314,11 @@ export default function CompletePassagePage() {
                             "w-full p-3 rounded-lg border bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 outline-none transition-all appearance-none cursor-pointer",
                             "focus:ring-2 focus:ring-sky-500 border-slate-200 dark:border-slate-700",
                             showFeedback &&
-                              isCorrectAnswer &&
-                              "border-green-500 bg-green-50 dark:bg-green-900/20 text-green-900 dark:text-green-100",
+                            isCorrectAnswer &&
+                            "border-green-500 bg-green-50 dark:bg-green-900/20 text-green-900 dark:text-green-100",
                             showFeedback &&
-                              !isCorrectAnswer &&
-                              "border-red-500 bg-red-50 dark:bg-red-900/20 text-red-900 dark:text-red-100",
+                            !isCorrectAnswer &&
+                            "border-red-500 bg-red-50 dark:bg-red-900/20 text-red-900 dark:text-red-100",
                           )}
                         >
                           <option value="" disabled>

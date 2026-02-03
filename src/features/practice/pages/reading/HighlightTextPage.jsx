@@ -17,8 +17,10 @@ const MOCK_QUESTIONS = [
     questionTitle: "Highlight text in the passage to answer the question below",
     question:
       "In addition to knowledge and physical fitness, what other skills are important for firefighters?",
-    correctAnswer:
-      "In addition to physical skills and knowledge, firefighters have to have strong social skills, because they must often interact with people during stressful situations.",
+    correctAnswer: "firefighters have to have strong social skills",
+    requiredCore: "strong social skills",
+    acceptableBoundary:
+      "automobile accidents and gas emergencies. In addition to physical skills and knowledge, firefighters have to have strong social skills, because they must often interact with people during stressful situations.",
     timeLimitSeconds: 120,
   },
   {
@@ -28,7 +30,10 @@ const MOCK_QUESTIONS = [
     questionTitle: "Highlight text in the passage to answer the question below",
     question: "What is the origin of the word 'photosynthesis'?",
     correctAnswer:
-      'hence the name photosynthesis, from the Greek phōs, "light", and sunthesis, "putting together"',
+      'Greek phōs, "light", and sunthesis, "putting together"',
+    requiredCore: 'phōs, "light", and sunthesis',
+    acceptableBoundary:
+      'This chemical energy is stored in carbohydrate molecules, such as sugars and starches, which are synthesized from carbon dioxide and water – hence the name photosynthesis, from the Greek phōs, "light", and sunthesis, "putting together".',
     timeLimitSeconds: 120,
   },
 ];
@@ -107,22 +112,26 @@ export default function HighlightTextPage() {
   const handleSubmit = () => {
     if (showFeedback || !selectedText) return;
 
-    // Check if the selected text basically matches the correct answer
-    // We'll trust exact match after normalization for "sentence" tasks mostly,
-    // but maybe allow if it's a substring of the answer or vice versa?
-    // The requirement often is "Highlight the text".
     const userNorm = normalize(selectedText);
-    const correctNorm = normalize(currentQuestion.correctAnswer);
+    const coreNorm = normalize(currentQuestion.requiredCore);
+    const boundaryNorm = normalize(currentQuestion.acceptableBoundary);
+    const passageNorm = normalize(currentQuestion.passage);
 
-    // We can allow some leniency: if user missed a period or capitalization, normalize handles it.
-    // If they selected a bit too much or too little, we might need fuzzy match.
-    // For now, let's assume they need to match closely.
+    // Algorithm implementation:
+    // 1. Must contain the required core part of the answer
+    const containsCore = userNorm.includes(coreNorm);
+
+    // 2. Must be within the larger acceptable boundary (context)
+    const withinBoundary = boundaryNorm.includes(userNorm);
+
+    // 3. Must not be the entire passage/paragraph
+    const isNotFullPassage = userNorm.length < passageNorm.length * 0.9;
+
+    // 4. Must have a reasonable length (avoid tiny fragments that just happen to match)
+    const isReasonableLength = userNorm.length >= coreNorm.length * 0.8;
+
     const correct =
-      userNorm === correctNorm ||
-      (correctNorm.includes(userNorm) &&
-        userNorm.length > correctNorm.length * 0.8) ||
-      (userNorm.includes(correctNorm) &&
-        correctNorm.length > userNorm.length * 0.8);
+      containsCore && withinBoundary && isNotFullPassage && isReasonableLength;
 
     setIsCorrect(correct);
     setFeedbackMessage(getFeedbackMessage(correct));

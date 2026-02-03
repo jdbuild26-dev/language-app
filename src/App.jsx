@@ -109,6 +109,8 @@ import SpeakInteractivePage from "@/features/practice/pages/speaking/SpeakIntera
 import MatchDescToImagePage from "@/features/practice/pages/reading/MatchDescToImagePage";
 import ImageLabellingPage from "@/features/practice/pages/reading/ImageLabellingPage";
 import SentenceCompletionPage from "@/features/practice/pages/reading/SentenceCompletionPage";
+import MatchSentenceEndingPage from "@/features/practice/pages/reading/MatchSentenceEndingPage";
+import SummaryCompletionPage from "@/features/practice/pages/reading/SummaryCompletionPage";
 
 function App() {
   return (
@@ -564,6 +566,26 @@ function App() {
             <ProtectedRoute>
               <FullScreenLayout>
                 <SentenceCompletionPage />
+              </FullScreenLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/practice/reading/match-sentence-ending"
+          element={
+            <ProtectedRoute>
+              <FullScreenLayout>
+                <MatchSentenceEndingPage />
+              </FullScreenLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/practice/reading/summary-completion"
+          element={
+            <ProtectedRoute>
+              <FullScreenLayout>
+                <SummaryCompletionPage />
               </FullScreenLayout>
             </ProtectedRoute>
           }

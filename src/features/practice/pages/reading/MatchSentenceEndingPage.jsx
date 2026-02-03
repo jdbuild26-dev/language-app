@@ -4,7 +4,7 @@ import { useExerciseTimer } from "@/hooks/useExerciseTimer";
 import { cn } from "@/lib/utils";
 import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
 import FeedbackBanner from "@/components/ui/FeedbackBanner";
-import { CheckCircle, XCircle } from "lucide-react";
+import { CheckCircle, XCircle, BookOpen } from "lucide-react";
 
 // Mock data based on the user's screenshot and description
 const MOCK_DATA = {
@@ -60,6 +60,7 @@ export default function MatchSentenceEndingPage() {
   const [feedbackMessage, setFeedbackMessage] = useState("");
   const [score, setScore] = useState(0);
   const [isCompleted, setIsCompleted] = useState(false);
+  const [isPassageOpen, setIsPassageOpen] = useState(false);
 
   // Timer configuration
   const { timerString, resetTimer } = useExerciseTimer({
@@ -145,8 +146,8 @@ export default function MatchSentenceEndingPage() {
         timerValue={timerString}
       >
         <div className="flex flex-col lg:flex-row w-full max-w-7xl mx-auto gap-6 p-4 h-full md:items-stretch overflow-hidden">
-          {/* Left Column: Passage */}
-          <div className="flex-1 flex flex-col bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden min-h-[400px]">
+          {/* Left Column: Passage (Hidden on mobile, shown on lg) */}
+          <div className="hidden lg:flex flex-1 flex flex-col bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden min-h-[400px]">
             {/* Header */}
             <div className="p-6 border-b border-slate-100 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50">
               <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100">
@@ -204,11 +205,11 @@ export default function MatchSentenceEndingPage() {
                             "w-full p-3 rounded-lg border bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 outline-none transition-all appearance-none cursor-pointer text-sm shadow-sm",
                             "focus:ring-2 focus:ring-sky-500 border-slate-200 dark:border-slate-700 hover:border-sky-400 dark:hover:border-sky-500",
                             showFeedback &&
-                              isCorrectAnswer &&
-                              "border-green-500 bg-green-50 dark:bg-green-900/20 text-green-900 dark:text-green-100",
+                            isCorrectAnswer &&
+                            "border-green-500 bg-green-50 dark:bg-green-900/20 text-green-900 dark:text-green-100",
                             showFeedback &&
-                              !isCorrectAnswer &&
-                              "border-red-500 bg-red-50 dark:bg-red-900/20 text-red-900 dark:text-red-100",
+                            !isCorrectAnswer &&
+                            "border-red-500 bg-red-50 dark:bg-red-900/20 text-red-900 dark:text-red-100",
                           )}
                         >
                           <option value="" disabled>
@@ -245,10 +246,66 @@ export default function MatchSentenceEndingPage() {
                   );
                 })}
               </div>
+
+              {/* Mobile Only: Floating See Passage Button */}
+              {!showFeedback && (
+                <div className="fixed bottom-24 right-6 z-40 lg:hidden">
+                  <button
+                    onClick={() => setIsPassageOpen(true)}
+                    className="flex items-center justify-center gap-2 px-6 py-3 bg-sky-500 hover:bg-sky-600 text-white font-bold rounded-full shadow-lg shadow-sky-500/30 transition-all active:scale-95 animate-in slide-in-from-bottom duration-500"
+                  >
+                    <BookOpen className="w-5 h-5" />
+                    See Passage
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </div>
       </PracticeGameLayout>
+
+      {/* Passage Modal for Mobile */}
+      {isPassageOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm lg:hidden">
+          <div className="w-full max-w-lg bg-white dark:bg-slate-900 rounded-2xl shadow-2xl flex flex-col max-h-[85vh] overflow-hidden border border-slate-200 dark:border-slate-800 animate-in fade-in zoom-in duration-200">
+            {/* Modal Header */}
+            <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-slate-50 dark:bg-slate-900">
+              <div>
+                <h3 className="text-lg font-bold text-slate-900 dark:text-white leading-tight">
+                  {MOCK_DATA.passageTitle}
+                </h3>
+                <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+                  Read carefully to find the answers
+                </p>
+              </div>
+              <button
+                onClick={() => setIsPassageOpen(false)}
+                className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400 transition-colors"
+                aria-label="Close passage"
+              >
+                <XCircle className="w-6 h-6" />
+              </button>
+            </div>
+
+            {/* Modal Content */}
+            <div className="p-6 md:p-8 overflow-y-auto custom-scrollbar flex-1 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 leading-relaxed space-y-4">
+              {MOCK_DATA.passageContent.map((paragraph, idx) => (
+                <p key={idx} className="text-[15px] md:text-base">{paragraph}</p>
+              ))}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="p-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900">
+              <button
+                onClick={() => setIsPassageOpen(false)}
+                className="w-full p-4 bg-sky-500 hover:bg-sky-600 text-white font-bold rounded-xl shadow-lg shadow-sky-200 dark:shadow-none transition-all active:scale-[0.98]"
+              >
+                Back to Questions
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Feedback Banner */}
       {showFeedback && (
