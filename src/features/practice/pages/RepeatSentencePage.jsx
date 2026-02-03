@@ -8,38 +8,7 @@ import { cn } from "@/lib/utils";
 
 import { fuzzyIncludes, matchSpeechToAnswer } from "@/utils/textComparison";
 
-const MOCK_DATA = [
-  {
-    id: 1,
-    completeSentence: "Je voudrais un café s'il vous plaît.",
-    sentenceWithBlank: "Je voudrais un _____ s'il vous plaît.",
-    correctAnswer: "café",
-  },
-  {
-    id: 2,
-    completeSentence: "Où se trouve la gare la plus proche ?",
-    sentenceWithBlank: "Où se trouve la _____ la plus proche ?",
-    correctAnswer: "gare",
-  },
-  {
-    id: 3,
-    completeSentence: "Le chat noir dort sur le canapé.",
-    sentenceWithBlank: "Le chat noir dort sur le _____.",
-    correctAnswer: "canapé",
-  },
-  {
-    id: 4,
-    completeSentence: "Il fait très beau aujourd'hui à Paris.",
-    sentenceWithBlank: "Il fait très _____ aujourd'hui à Paris.",
-    correctAnswer: "beau",
-  },
-  {
-    id: 5,
-    completeSentence: "Pouvez-vous m'aider avec mes bagages ?",
-    sentenceWithBlank: "Pouvez-vous m'aider avec mes _____ ?",
-    correctAnswer: "bagages",
-  },
-];
+// MOCK_DATA removed - now fetching from backend
 
 export default function RepeatSentencePage() {
   const navigate = useNavigate();
@@ -93,11 +62,24 @@ export default function RepeatSentencePage() {
     };
   }, []);
 
-  // Fetch Data (Now using Mock Data)
+  // Fetch Data
   useEffect(() => {
-    const shuffled = [...MOCK_DATA].sort(() => 0.5 - Math.random());
-    setQuestions(shuffled);
-    setIsLoading(false);
+    const fetchData = async () => {
+      try {
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/api/practice/repeat-sentence`);
+        if (!response.ok) throw new Error("Failed to fetch");
+        const data = await response.json();
+
+        // Shuffle or use as is
+        const shuffled = [...data].sort(() => 0.5 - Math.random());
+        setQuestions(shuffled);
+      } catch (error) {
+        console.error("Error fetching repeat sentence data:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchData();
   }, []);
 
   // Timer (Stopwatch mode)
@@ -107,6 +89,12 @@ export default function RepeatSentencePage() {
   });
 
   const currentQuestion = questions[currentIndex];
+
+  // Construct full sentence for display
+  const fullSentence = currentQuestion
+    ? (currentQuestion.completeSentence ||
+      currentQuestion.sentenceWithBlank.replace(/_+/g, currentQuestion.correctAnswer))
+    : "";
 
   const handlePlayAudio = () => {
     if ("speechSynthesis" in window) {
@@ -219,13 +207,6 @@ export default function RepeatSentencePage() {
     );
   }
 
-  // Construct full sentence for display
-  const fullSentence =
-    currentQuestion.completeSentence ||
-    currentQuestion.sentenceWithBlank.replace(
-      /_+/g,
-      currentQuestion.correctAnswer,
-    );
 
   return (
     <PracticeGameLayout
