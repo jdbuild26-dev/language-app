@@ -7,6 +7,10 @@ import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 
 import { fuzzyIncludes, matchSpeechToAnswer } from "@/utils/textComparison";
+import { getFeedbackMessage } from "@/utils/feedbackMessages";
+import FeedbackBanner from "@/components/ui/FeedbackBanner";
+
+// MOCK_DATA removed - now fetching from backend
 
 export default function RepeatSentencePage() {
   const navigate = useNavigate();
@@ -21,7 +25,10 @@ export default function RepeatSentencePage() {
   // Interaction State
   const [isListening, setIsListening] = useState(false);
   const [spokenText, setSpokenText] = useState("");
-  const [feedback, setFeedback] = useState(null); // 'correct', 'incorrect'
+  const [showFeedback, setShowFeedback] = useState(false);
+  const [isCorrect, setIsCorrect] = useState(false);
+  const [feedbackMessage, setFeedbackMessage] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const recognitionRef = useRef(null);
 
@@ -60,21 +67,15 @@ export default function RepeatSentencePage() {
   }, []);
 
   // Fetch Data
-  const hasFetched = useRef(false);
   useEffect(() => {
-    if (hasFetched.current) return;
-    hasFetched.current = true;
-
     const fetchData = async () => {
       try {
-        const response = await fetch(
-          `${import.meta.env.VITE_API_URL}/api/practice/repeat-sentence`,
-        );
-        if (!response.ok) throw new Error("Failed to fetch data");
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/api/practice/repeat-sentence`);
+        if (!response.ok) throw new Error("Failed to fetch");
         const data = await response.json();
 
-        // Shuffle or just use as is
-        const shuffled = data.sort(() => 0.5 - Math.random());
+        // Shuffle or use as is
+        const shuffled = [...data].sort(() => 0.5 - Math.random());
         setQuestions(shuffled);
       } catch (error) {
         console.error("Error fetching repeat sentence data:", error);
@@ -82,7 +83,6 @@ export default function RepeatSentencePage() {
         setIsLoading(false);
       }
     };
-
     fetchData();
   }, []);
 
@@ -94,6 +94,26 @@ export default function RepeatSentencePage() {
 
   const currentQuestion = questions[currentIndex];
 
+  // Construct full sentence for display
+  const fullSentence = currentQuestion
+    ? (currentQuestion.completeSentence ||
+      currentQuestion.sentenceWithBlank.replace(/_+/g, currentQuestion.correctAnswer))
+    : "";
+
+  const handlePlayAudio = () => {
+    if ("speechSynthesis" in window) {
+      // Stop any current speech
+      window.speechSynthesis.cancel();
+
+      const utterance = new SpeechSynthesisUtterance(fullSentence);
+      utterance.lang = "fr-FR";
+      utterance.rate = 0.8; // Slightly slower for learning
+      window.speechSynthesis.speak(utterance);
+    } else {
+      alert("TTS is not supported in this browser.");
+    }
+  };
+
   const handleToggleListening = () => {
     if (!recognitionRef.current) {
       alert("Speech recognition is not supported in this browser.");
@@ -104,36 +124,39 @@ export default function RepeatSentencePage() {
       recognitionRef.current.stop();
     } else {
       setSpokenText(""); // Clear previous
-      setFeedback(null);
+      setShowFeedback(false);
       recognitionRef.current.start();
       setIsListening(true);
     }
   };
 
   const handleSubmit = () => {
-    if (!currentQuestion) return;
+    if (!spokenText || !currentQuestion) return;
 
-    // Construct full sentence for comparison
-    const fullSentence =
-      currentQuestion.completeSentence ||
-      currentQuestion.sentenceWithBlank.replace(
-        /_+/g,
-        currentQuestion.correctAnswer,
-      );
+    // 1. First check if they said the full correct sentence (standard similarity)
+    let correct = matchSpeechToAnswer(spokenText, fullSentence);
 
-    const isCorrect = matchSpeechToAnswer(spokenText, fullSentence, 0.7);
+    // 2. If full sentence didn't match perfectly, check if they at least said the specific 'correctAnswer' word
+    // This makes the 'blank' part of the exercise more forgiving if they struggle with the whole sentence
+    if (!correct && currentQuestion.correctAnswer) {
+      correct = fuzzyIncludes(spokenText, currentQuestion.correctAnswer, 0.75); // Slightly higher threshold for single word
+      if (correct) {
+        console.log(`✨ Full sentence check failed, but fuzzy matched target word: "${currentQuestion.correctAnswer}"`);
+      }
+    }
 
-    if (isCorrect) {
+    setIsCorrect(correct);
+    setFeedbackMessage(getFeedbackMessage(correct));
+    setShowFeedback(true);
+
+    if (correct) {
       setScore((prev) => prev + 1);
-      setFeedback("correct");
-    } else {
-      setFeedback("incorrect");
     }
   };
 
   const handleNext = () => {
     setSpokenText("");
-    setFeedback(null);
+    setShowFeedback(false);
     setIsListening(false);
 
     if (currentIndex < questions.length - 1) {
@@ -176,13 +199,6 @@ export default function RepeatSentencePage() {
     );
   }
 
-  // Construct full sentence for display
-  const fullSentence =
-    currentQuestion.completeSentence ||
-    currentQuestion.sentenceWithBlank.replace(
-      /_+/g,
-      currentQuestion.correctAnswer,
-    );
 
   return (
     <PracticeGameLayout
@@ -196,31 +212,19 @@ export default function RepeatSentencePage() {
       isGameOver={isGameOver}
       timerValue={timerString}
       onExit={() => navigate("/vocabulary/practice")}
-      onNext={feedback ? handleNext : handleSubmit}
+      onNext={handleSubmit}
       onRestart={handleRestart}
-      isSubmitEnabled={Boolean(spokenText)}
-      showSubmitButton={true}
-      submitLabel={
-        feedback === "correct"
-          ? "Continue"
-          : feedback === "incorrect"
-            ? "Continue"
-            : "Submit"
-      }
-      showFeedback={!!feedback}
-      isCorrect={feedback === "correct"}
-      feedbackMessage={feedback === "correct" ? "Excellent!" : "Try again"}
-      correctAnswer={
-        currentQuestion?.completeSentence || currentQuestion?.sentenceWithBlank
-      }
+      isSubmitEnabled={Boolean(spokenText) && !isSubmitting}
+      showSubmitButton={!showFeedback}
+      submitLabel={isSubmitting ? "Evaluating..." : "Submit"}
     >
-      <div className="flex flex-col items-center justify-center max-w-3xl w-full gap-12">
+      <div className="flex flex-col items-center justify-center max-w-3xl w-full gap-8">
         {/* Full Sentence Display */}
-        <div className="w-full bg-white dark:bg-slate-800 rounded-2xl p-8 shadow-sm border border-slate-100 dark:border-slate-700 text-center relative overflow-hidden">
-          {feedback === "correct" && (
+        <div className="w-full bg-white dark:bg-slate-800 rounded-3xl p-6 md:p-8 shadow-xl border border-slate-100 dark:border-slate-700 text-center relative overflow-hidden">
+          {showFeedback && isCorrect && (
             <div className="absolute inset-0 bg-green-500/10 z-0" />
           )}
-          {feedback === "incorrect" && (
+          {showFeedback && !isCorrect && (
             <div className="absolute inset-0 bg-red-500/10 z-0" />
           )}
 
@@ -228,17 +232,18 @@ export default function RepeatSentencePage() {
             {fullSentence}
           </div>
 
-          {/* Audio Player Icon (Simulated for now, can add actual TTS here) */}
-          <div className="mt-4 flex justify-center">
+          <div className="mt-4 flex justify-center relative z-10">
             <Button
               variant="ghost"
               size="icon"
-              className="rounded-full w-12 h-12 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600"
+              onClick={handlePlayAudio}
+              className="rounded-full w-12 h-12 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 shadow-sm transition-all hover:scale-110 active:scale-95"
             >
               <Volume2 className="w-6 h-6 text-slate-700 dark:text-slate-200" />
             </Button>
           </div>
         </div>
+
 
         {/* DEBUG: Show Answer for Testing */}
         <div className="w-full bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-200 dark:border-yellow-800 p-4 text-center">
@@ -279,6 +284,15 @@ export default function RepeatSentencePage() {
           )}
         </div>
       </div>
+
+      {showFeedback && (
+        <FeedbackBanner
+          isCorrect={isCorrect}
+          correctAnswer={currentQuestion.correctAnswer}
+          message={feedbackMessage}
+          onContinue={handleNext}
+        />
+      )}
     </PracticeGameLayout>
   );
 }

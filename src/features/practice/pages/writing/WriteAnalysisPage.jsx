@@ -7,6 +7,8 @@ import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
 import FeedbackBanner from "@/components/ui/FeedbackBanner";
 import { getFeedbackMessage } from "@/utils/feedbackMessages";
 import { useTextToSpeech } from "@/hooks/useTextToSpeech";
+import { useWritingEvaluation } from "../../hooks/useWritingEvaluation";
+import WritingFeedbackResult from "../../components/WritingFeedbackResult";
 
 // Mock data for Graph / Table / Process / Map analysis
 const MOCK_QUESTIONS = [
@@ -46,6 +48,8 @@ export default function WriteAnalysisPage() {
     const [feedbackMessage, setFeedbackMessage] = useState("");
     const [score, setScore] = useState(0);
 
+    const { evaluation, isSubmitting, evaluate, resetEvaluation } = useWritingEvaluation();
+
     const currentQuestion = questions[currentIndex];
     const timerDuration = currentQuestion?.timeLimitSeconds || 600;
 
@@ -65,6 +69,7 @@ export default function WriteAnalysisPage() {
             setUserAnswer("");
             setShowSample(false);
             resetTimer();
+            resetEvaluation();
         }
     }, [currentIndex, currentQuestion, isCompleted, resetTimer]);
 
@@ -81,23 +86,25 @@ export default function WriteAnalysisPage() {
             .filter((word) => word.length > 0).length;
     };
 
-    const handleSubmit = () => {
-        if (showFeedback) return;
+    const handleSubmit = async () => {
+        if (showFeedback || isSubmitting) return;
 
-        const wordCount = getWordCount(userAnswer);
-        const meetsMinWords = wordCount >= currentQuestion.minWords;
+        const result = await evaluate({
+            task_type: "graph_data",
+            user_text: userAnswer,
+            topic: currentQuestion.title,
+            reference: currentQuestion.sampleAnswer,
+            context: `Instruction: ${currentQuestion.instruction}. Data: ${JSON.stringify(currentQuestion.content)}`
+        });
 
-        setIsCorrect(meetsMinWords);
-        setFeedbackMessage(
-            meetsMinWords
-                ? getFeedbackMessage(true)
-                : `Veuillez écrire au moins ${currentQuestion.minWords} mots.`
-        );
-        setShowFeedback(true);
-        setShowSample(true);
-
-        if (meetsMinWords) {
-            setScore((prev) => prev + 1);
+        if (result) {
+            setIsCorrect(result.score >= 70);
+            setFeedbackMessage(result.feedback);
+            setShowFeedback(true);
+            setShowSample(true);
+            if (result.score >= 70) {
+                setScore((prev) => prev + 1);
+            }
         }
     };
 
@@ -123,11 +130,10 @@ export default function WriteAnalysisPage() {
                 isGameOver={isCompleted}
                 score={score}
                 totalQuestions={questions.length}
-                onExit={handleExit}
-                onNext={handleSubmit}
-                isSubmitEnabled={wordCount >= 5 && !showFeedback}
+                onRestart={() => window.location.reload()}
+                isSubmitEnabled={wordCount >= 5 && !showFeedback && !isSubmitting}
                 showSubmitButton={!showFeedback}
-                submitLabel="Submit"
+                submitLabel={isSubmitting ? "Evaluating..." : "Submit"}
                 timerValue={timerString}
             >
                 <div className="flex flex-col lg:flex-row w-full max-w-[90rem] mx-auto h-full min-h-0 overflow-hidden bg-slate-50 dark:bg-slate-950">
@@ -216,8 +222,15 @@ export default function WriteAnalysisPage() {
                             autoFocus
                         />
 
+                        {/* AI Evaluation Result */}
+                        {evaluation && (
+                            <div className="mt-6 w-full">
+                                <WritingFeedbackResult evaluation={evaluation} />
+                            </div>
+                        )}
+
                         {/* Sample Answer Section */}
-                        {showSample && (
+                        {showSample && !evaluation && (
                             <div className="mt-6 animate-in slide-in-from-bottom-4 fade-in duration-500">
                                 <div className="bg-emerald-50 dark:bg-emerald-900/20 rounded-3xl p-6 border-2 border-emerald-100 dark:border-emerald-800/50">
                                     <div className="flex items-center justify-between mb-3">
