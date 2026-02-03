@@ -164,41 +164,62 @@ export default function TranslateTypedPage() {
         submitLabel="Check"
         timerValue={timerString}
       >
-        <div className="flex flex-col items-center w-full max-w-2xl mx-auto px-4 py-6">
-          {/* Source Sentence */}
-          <div className="w-full bg-gradient-to-r from-blue-500 to-indigo-600 rounded-2xl p-6 mb-6 shadow-lg">
-            <p className="text-xl md:text-2xl text-white font-semibold text-center">
-              {currentQuestion?.sourceText}
-            </p>
+        <div className="flex flex-col items-center w-full max-w-4xl mx-auto px-4 py-4 lg:py-8 gap-6 lg:gap-8">
+          {/* Main Grid Interaction Area */}
+          <div className="w-full grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8 items-stretch">
+            {/* Source Sentence Card */}
+            <div className="flex flex-col h-full">
+              <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2 ml-2">
+                SOURCE SENTENCE
+              </label>
+              <div className="flex-1 bg-gradient-to-br from-indigo-600 to-blue-700 rounded-3xl p-8 lg:p-10 shadow-xl shadow-blue-500/10 flex items-center justify-center min-h-[140px] text-center">
+                <p className="text-xl md:text-2xl lg:text-3xl text-white font-bold leading-tight">
+                  {currentQuestion?.sourceText}
+                </p>
+              </div>
+            </div>
+
+            {/* User Input Column */}
+            <div className="flex flex-col h-full">
+              <div className="flex justify-between items-end mb-2 ml-2">
+                <label className="text-[10px] font-bold text-blue-500 uppercase tracking-widest">
+                  YOUR TRANSLATION
+                </label>
+                <span className="text-[10px] font-mono text-slate-400">
+                  {userInput.length} chars
+                </span>
+              </div>
+              <textarea
+                value={userInput}
+                onChange={(e) => setUserInput(e.target.value)}
+                onKeyDown={handleKeyDown}
+                disabled={showFeedback}
+                placeholder="Type your translation here..."
+                rows={4}
+                autoFocus
+                className={cn(
+                  "w-full h-full min-h-[160px] lg:min-h-0 py-6 px-6 rounded-3xl text-lg lg:text-xl font-medium transition-all duration-300 border-2 outline-none resize-none shadow-sm",
+                  "bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100",
+                  "border-slate-200 dark:border-slate-800",
+                  "focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10",
+                  "placeholder:text-slate-300 dark:placeholder:text-slate-600",
+                  showFeedback && isCorrect && "border-emerald-500 bg-emerald-50 dark:bg-emerald-900/10",
+                  showFeedback && !isCorrect && "border-red-500 bg-red-50 dark:bg-red-900/10",
+                )}
+              />
+            </div>
           </div>
 
-          {/* Text Input */}
-          <div className="w-full mb-4">
-            <textarea
-              value={userInput}
-              onChange={(e) => setUserInput(e.target.value)}
-              onKeyDown={handleKeyDown}
-              disabled={showFeedback}
-              placeholder="Type your French translation here..."
-              rows={3}
-              className={cn(
-                "w-full py-4 px-6 rounded-xl text-lg font-medium transition-all duration-200 border-2 outline-none resize-none",
-                "bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100",
-                "border-slate-200 dark:border-slate-700",
-                "focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20",
-                "placeholder:text-slate-400 dark:placeholder:text-slate-500",
-                showFeedback && isCorrect && "border-emerald-500 bg-emerald-50",
-                showFeedback && !isCorrect && "border-red-500 bg-red-50",
-              )}
-              autoFocus
-            />
-          </div>
-
-          {/* Character count */}
-          <div className="w-full flex justify-end items-center">
-            <span className="text-sm text-slate-400">
-              {userInput.length} characters
-            </span>
+          {/* Quick Shortcuts / Instructions */}
+          <div className="w-full flex flex-col md:flex-row items-center justify-center gap-4 text-slate-400 dark:text-slate-600">
+            <div className="flex items-center gap-2 text-xs">
+              <span className="px-1.5 py-0.5 rounded border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 font-bold">Enter</span>
+              to check answer
+            </div>
+            <div className="hidden md:block w-1.5 h-1.5 rounded-full bg-slate-200 dark:bg-slate-800" />
+            <div className="text-xs italic">
+              Try to be as accurate as possible!
+            </div>
           </div>
         </div>
       </PracticeGameLayout>
