@@ -1,47 +1,33 @@
 import React, { useState, useEffect } from "react";
 import { usePracticeExit } from "@/hooks/usePracticeExit";
 import { useExerciseTimer } from "@/hooks/useExerciseTimer";
-import { Volume2, RefreshCw } from "lucide-react";
+import { Volume2, RefreshCw, Loader2 } from "lucide-react";
+import { loadMockCSV } from "@/utils/csvLoader";
 import { cn } from "@/lib/utils";
 import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
-import FeedbackBanner from "@/components/ui/FeedbackBanner";
-import { getFeedbackMessage } from "@/utils/feedbackMessages";
 import { Button } from "@/components/ui/button";
 
-// Mock data based on the provided image
-const MOCK_QUESTIONS = [
-  {
-    id: 1,
-    title: "PASSAGE",
-    passage: `Firefighters are the people who fight fires on a nearly daily basis. They work for fire departments, which are organizations of trained professionals that keep the community safe from fires. When a fire breaks out, firefighters enter buildings to look for people and pets, rescue them, and put out the fire to prevent it from spreading. They also conduct fire drills and inspections to keep businesses and agencies safe. Firefighters must have a variety of skills and knowledge. They must be physically fit and must be able to work in harsh conditions and difficult situations. In addition to responding to fires, firefighters often help in situations that require medical attention, such as automobile accidents and gas emergencies. In addition to physical skills and knowledge, firefighters have to have strong social skills, because they must often interact with people during stressful situations.`,
-    questionTitle: "Highlight text in the passage to answer the question below",
-    question:
-      "In addition to knowledge and physical fitness, what other skills are important for firefighters?",
-    correctAnswer: "firefighters have to have strong social skills",
-    requiredCore: "strong social skills",
-    acceptableBoundary:
-      "automobile accidents and gas emergencies. In addition to physical skills and knowledge, firefighters have to have strong social skills, because they must often interact with people during stressful situations.",
-    timeLimitSeconds: 120,
-  },
-  {
-    id: 2,
-    title: "PASSAGE",
-    passage: `Photosynthesis is a process used by plants and other organisms to convert light energy into chemical energy that, through cellular respiration, can later be released to fuel the organism's activities. This chemical energy is stored in carbohydrate molecules, such as sugars and starches, which are synthesized from carbon dioxide and water – hence the name photosynthesis, from the Greek phōs, "light", and sunthesis, "putting together". In most cases, oxygen is also released as a waste product. Most plants, most algae, and cyanobacteria perform photosynthesis; such organisms are called photoautotrophs. Photosynthesis is largely responsible for producing and maintaining the oxygen content of the Earth's atmosphere, and supplies all of the organic compounds and most of the energy necessary for life on Earth.`,
-    questionTitle: "Highlight text in the passage to answer the question below",
-    question: "What is the origin of the word 'photosynthesis'?",
-    correctAnswer:
-      'Greek phōs, "light", and sunthesis, "putting together"',
-    requiredCore: 'phōs, "light", and sunthesis',
-    acceptableBoundary:
-      'This chemical energy is stored in carbohydrate molecules, such as sugars and starches, which are synthesized from carbon dioxide and water – hence the name photosynthesis, from the Greek phōs, "light", and sunthesis, "putting together".',
-    timeLimitSeconds: 120,
-  },
-];
+// MOCK_QUESTIONS removed - migrated to CSV
 
 export default function HighlightTextPage() {
   const handleExit = usePracticeExit();
 
-  const [questions] = useState(MOCK_QUESTIONS);
+  const [questions, setQuestions] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchQuestions = async () => {
+      try {
+        const data = await loadMockCSV("practice/reading/highlight_text.csv");
+        setQuestions(data);
+      } catch (error) {
+        console.error("Error loading mock data:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchQuestions();
+  }, []);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedText, setSelectedText] = useState("");
   const [isCompleted, setIsCompleted] = useState(false);
@@ -64,7 +50,7 @@ export default function HighlightTextPage() {
         setShowFeedback(true);
       }
     },
-    isPaused: isCompleted || showFeedback,
+    isPaused: isCompleted || showFeedback || loading,
   });
 
   useEffect(() => {
@@ -151,6 +137,14 @@ export default function HighlightTextPage() {
       setIsCompleted(true);
     }
   };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-slate-50 dark:bg-slate-900">
+        <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+      </div>
+    );
+  }
 
   return (
     <>

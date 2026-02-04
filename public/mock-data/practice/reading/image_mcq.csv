@@ -1,0 +1,6 @@
+id,imageEmoji,imageAlt,question,options,correctIndex,timeLimitSeconds
+1,🐱,A cat,Which describes this image?,"[""Un chien marche dans le parc"",""Un chat dort sur le canapé"",""Un oiseau vole dans le ciel"",""Un poisson nage dans l'eau""]",1,30
+2,🍎,An apple,Which describes this image?,"[""Une orange sur la table"",""Une banane jaune"",""Une pomme rouge"",""Un raisin violet""]",2,30
+3,☀️,The sun,Which describes this image?,"[""Il pleut aujourd'hui"",""Il neige en hiver"",""Il fait beau et ensoleillé"",""Il y a du vent""]",2,30
+4,🏠,A house,Which describes this image?,"[""Un immeuble en ville"",""Une maison avec un jardin"",""Un appartement moderne"",""Un château ancien""]",1,30
+5,📚,Books,Which describes this image?,"[""Des journaux sur la table"",""Des magazines colorés"",""Des livres empilés"",""Des lettres dans une boîte""]",2,30

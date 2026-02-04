@@ -1,0 +1,6 @@
+id,passage,question,correctWord,timeLimitSeconds
+1,"Le chat noir dort sur le canapé confortable. Il rêve de souris.","Find the word that means 'black'",noir,30
+2,"Marie va à la boulangerie pour acheter du pain frais chaque matin.","Find the word that means 'bakery'",boulangerie,30
+3,"Les enfants jouent dans le jardin ensoleillé pendant l'après-midi.","Find the word that means 'sunny'",ensoleillé,30
+4,"Mon frère travaille dans un grand hôpital au centre de la ville.","Find the word that means 'hospital'",hôpital,30
+5,"Elle prépare un délicieux gâteau au chocolat pour l'anniversaire.","Find the word that means 'delicious'",délicieux,30

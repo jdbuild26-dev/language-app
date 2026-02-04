@@ -3,14 +3,19 @@ import { useExerciseTimer } from "@/hooks/useExerciseTimer";
 import { Loader2, Volume2 } from "lucide-react";
 import { usePracticeExit } from "@/hooks/usePracticeExit";
 import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
+import { loadMockCSV } from "@/utils/csvLoader";
 import { useTextToSpeech } from "@/hooks/useTextToSpeech";
-import { MATCH_PAIRS_DATA } from "../../data/mockData";
+
+// MATCH_PAIRS_DATA import removed - migrated to CSV
+
+import { Button } from "@/components/ui/button";
 
 export default function MatchPairsPage() {
   const handleExit = usePracticeExit();
   const { speak } = useTextToSpeech();
 
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [exercises, setExercises] = useState([]);
   const [topCards, setTopCards] = useState([]); // English
   const [bottomCards, setBottomCards] = useState([]); // French
 
@@ -28,8 +33,24 @@ export default function MatchPairsPage() {
   const PAIRS_PER_ROUND = 6;
 
   useEffect(() => {
-    initializeGame();
+    const fetchData = async () => {
+      try {
+        const data = await loadMockCSV("practice/reading/match_pairs.csv");
+        setExercises(data);
+      } catch (error) {
+        console.error("Error loading match pairs data:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
   }, []);
+
+  useEffect(() => {
+    if (exercises.length > 0) {
+      initializeGame();
+    }
+  }, [exercises]);
 
   // Timer Hook
   const { timerString, resetTimer, isPaused } = useExerciseTimer({
@@ -40,11 +61,11 @@ export default function MatchPairsPage() {
   });
 
   const initializeGame = () => {
-    setLoading(true);
+    if (exercises.length === 0) return;
 
-    // Pick a random exercise from mock data
-    const randomIndex = Math.floor(Math.random() * MATCH_PAIRS_DATA.length);
-    const exercise = MATCH_PAIRS_DATA[randomIndex];
+    // Pick a random exercise from loaded data
+    const randomIndex = Math.floor(Math.random() * exercises.length);
+    const exercise = exercises[randomIndex];
     setCurrentExercise(exercise);
 
     // Get pairs from the exercise
@@ -73,7 +94,6 @@ export default function MatchPairsPage() {
     setMatchedIds([]);
     setScore(0);
     setIsGameOver(false);
-    setLoading(false);
   };
 
   const handleTopClick = (card) => {
@@ -172,10 +192,19 @@ export default function MatchPairsPage() {
 
   if (loading)
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-900">
         <Loader2 className="animate-spin text-blue-500 w-8 h-8" />
       </div>
     );
+
+  if (!currentExercise && !loading) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen bg-slate-50 dark:bg-slate-900">
+        <p className="text-xl text-slate-600 dark:text-slate-400">No content available.</p>
+        <Button onClick={() => handleExit()} variant="outline" className="mt-4">Back</Button>
+      </div>
+    );
+  }
 
   const instructionFr = currentExercise?.instructionFr || "Associez les paires";
   const instructionEn = currentExercise?.instructionEn || "Match the pairs";

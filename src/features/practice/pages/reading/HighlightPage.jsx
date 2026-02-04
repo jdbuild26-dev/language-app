@@ -1,63 +1,34 @@
 import React, { useState, useEffect } from "react";
 import { usePracticeExit } from "@/hooks/usePracticeExit";
 import { useExerciseTimer } from "@/hooks/useExerciseTimer";
-import { Volume2 } from "lucide-react";
-import { cn } from "@/lib/utils";
-import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
-import FeedbackBanner from "@/components/ui/FeedbackBanner";
-import { getFeedbackMessage } from "@/utils/feedbackMessages";
-import { useTextToSpeech } from "@/hooks/useTextToSpeech";
+import { Loader2, Volume2 } from "lucide-react";
+import { loadMockCSV } from "@/utils/csvLoader";
 
-// Mock data for Highlight the Word exercise
-const MOCK_QUESTIONS = [
-  {
-    id: 1,
-    passage: "Le chat noir dort sur le canapé confortable. Il rêve de souris.",
-    question: "Find the word that means 'black'",
-    correctWord: "noir",
-    timeLimitSeconds: 30,
-  },
-  {
-    id: 2,
-    passage:
-      "Marie va à la boulangerie pour acheter du pain frais chaque matin.",
-    question: "Find the word that means 'bakery'",
-    correctWord: "boulangerie",
-    timeLimitSeconds: 30,
-  },
-  {
-    id: 3,
-    passage:
-      "Les enfants jouent dans le jardin ensoleillé pendant l'après-midi.",
-    question: "Find the word that means 'sunny'",
-    correctWord: "ensoleillé",
-    timeLimitSeconds: 30,
-  },
-  {
-    id: 4,
-    passage: "Mon frère travaille dans un grand hôpital au centre de la ville.",
-    question: "Find the word that means 'hospital'",
-    correctWord: "hôpital",
-    timeLimitSeconds: 30,
-  },
-  {
-    id: 5,
-    passage:
-      "Elle prépare un délicieux gâteau au chocolat pour l'anniversaire.",
-    question: "Find the word that means 'delicious'",
-    correctWord: "délicieux",
-    timeLimitSeconds: 30,
-  },
-];
+// MOCK_QUESTIONS removed - migrated to CSV
 
 export default function HighlightPage() {
   const handleExit = usePracticeExit();
   const { speak, isSpeaking } = useTextToSpeech();
 
-  const [questions] = useState(MOCK_QUESTIONS);
+  const [questions, setQuestions] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedWord, setSelectedWord] = useState(null);
   const [isCompleted, setIsCompleted] = useState(false);
+
+  useEffect(() => {
+    const fetchQuestions = async () => {
+      try {
+        const data = await loadMockCSV("practice/reading/highlight_word.csv");
+        setQuestions(data);
+      } catch (error) {
+        console.error("Error loading mock data:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchQuestions();
+  }, []);
   const [showFeedback, setShowFeedback] = useState(false);
   const [isCorrect, setIsCorrect] = useState(false);
   const [feedbackMessage, setFeedbackMessage] = useState("");
@@ -76,7 +47,7 @@ export default function HighlightPage() {
         setShowFeedback(true);
       }
     },
-    isPaused: isCompleted || showFeedback,
+    isPaused: isCompleted || showFeedback || loading,
   });
 
   useEffect(() => {
@@ -134,6 +105,14 @@ export default function HighlightPage() {
   // Split passage into clickable words
   const words = currentQuestion?.passage.split(/\s+/) || [];
 
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-slate-50 dark:bg-slate-900">
+        <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+      </div>
+    );
+  }
+
   return (
     <>
       <PracticeGameLayout
@@ -169,7 +148,7 @@ export default function HighlightPage() {
                 const isCorrectWord =
                   showFeedback &&
                   normalize(cleanWord) ===
-                    normalize(currentQuestion.correctWord);
+                  normalize(currentQuestion.correctWord);
 
                 return (
                   <button

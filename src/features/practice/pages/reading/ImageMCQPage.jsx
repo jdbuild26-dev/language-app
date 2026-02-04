@@ -6,84 +6,30 @@ import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
 import FeedbackBanner from "@/components/ui/FeedbackBanner";
 import { getFeedbackMessage } from "@/utils/feedbackMessages";
 
-// Mock data for Match Image to Description (MCQ) exercise
-const MOCK_QUESTIONS = [
-  {
-    id: 1,
-    imageEmoji: "🐱",
-    imageAlt: "A cat",
-    question: "Which describes this image?",
-    options: [
-      "Un chien marche dans le parc",
-      "Un chat dort sur le canapé",
-      "Un oiseau vole dans le ciel",
-      "Un poisson nage dans l'eau",
-    ],
-    correctIndex: 1,
-    timeLimitSeconds: 30,
-  },
-  {
-    id: 2,
-    imageEmoji: "🍎",
-    imageAlt: "An apple",
-    question: "Which describes this image?",
-    options: [
-      "Une orange sur la table",
-      "Une banane jaune",
-      "Une pomme rouge",
-      "Un raisin violet",
-    ],
-    correctIndex: 2,
-    timeLimitSeconds: 30,
-  },
-  {
-    id: 3,
-    imageEmoji: "☀️",
-    imageAlt: "The sun",
-    question: "Which describes this image?",
-    options: [
-      "Il pleut aujourd'hui",
-      "Il neige en hiver",
-      "Il fait beau et ensoleillé",
-      "Il y a du vent",
-    ],
-    correctIndex: 2,
-    timeLimitSeconds: 30,
-  },
-  {
-    id: 4,
-    imageEmoji: "🏠",
-    imageAlt: "A house",
-    question: "Which describes this image?",
-    options: [
-      "Un immeuble en ville",
-      "Une maison avec un jardin",
-      "Un appartement moderne",
-      "Un château ancien",
-    ],
-    correctIndex: 1,
-    timeLimitSeconds: 30,
-  },
-  {
-    id: 5,
-    imageEmoji: "📚",
-    imageAlt: "Books",
-    question: "Which describes this image?",
-    options: [
-      "Des journaux sur la table",
-      "Des magazines colorés",
-      "Des livres empilés",
-      "Des lettres dans une boîte",
-    ],
-    correctIndex: 2,
-    timeLimitSeconds: 30,
-  },
-];
+import { loadMockCSV } from "@/utils/csvLoader";
+import { Loader2 } from "lucide-react";
+
+// MOCK_QUESTIONS removed - migrated to CSV
 
 export default function ImageMCQPage() {
   const handleExit = usePracticeExit();
 
-  const [questions] = useState(MOCK_QUESTIONS);
+  const [questions, setQuestions] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchQuestions = async () => {
+      try {
+        const data = await loadMockCSV("practice/reading/image_mcq.csv");
+        setQuestions(data);
+      } catch (error) {
+        console.error("Error loading mock data:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchQuestions();
+  }, []);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedOption, setSelectedOption] = useState(null);
   const [isCompleted, setIsCompleted] = useState(false);
@@ -105,7 +51,7 @@ export default function ImageMCQPage() {
         setShowFeedback(true);
       }
     },
-    isPaused: isCompleted || showFeedback,
+    isPaused: isCompleted || showFeedback || loading,
   });
 
   useEffect(() => {
@@ -142,6 +88,14 @@ export default function ImageMCQPage() {
       setIsCompleted(true);
     }
   };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-slate-50 dark:bg-slate-900">
+        <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+      </div>
+    );
+  }
 
   const progress =
     questions.length > 0 ? ((currentIndex + 1) / questions.length) * 100 : 0;

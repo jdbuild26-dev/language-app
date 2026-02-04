@@ -4,56 +4,16 @@ import { useExerciseTimer } from "@/hooks/useExerciseTimer";
 import { cn } from "@/lib/utils";
 import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
 import FeedbackBanner from "@/components/ui/FeedbackBanner";
-import { CheckCircle, XCircle, BookOpen } from "lucide-react";
+import { CheckCircle, XCircle, BookOpen, Loader2 } from "lucide-react";
+import { loadMockCSV } from "@/utils/csvLoader";
 
-// Mock data based on the user's screenshot and description
-const MOCK_DATA = {
-  passageTitle: "What's so funny?",
-  passageSubtitle: "John McCrone reviews recent research on humour",
-  passageContent: [
-    "The joke comes over the headphones: 'Which side of a dog has the most hair? The left.' No, not funny. Try again. 'Which side of a dog has the most hair? The outside.' Hah! The punchline is silly yet fitting, tempting a smile, even a laugh. Laughter has always struck people as deeply mysterious, perhaps pointless. The writer Arthur Koestler dubbed it the luxury reflex: 'unique in that it serves no apparent biological purpose'.",
-    "Theories about humour have an ancient pedigree. Plato expressed the idea that humour is simply a delighted feeling of superiority over others. Kant and Freud felt that joke-telling relies on building up a psychic tension that is safely punctured by the ludicrousness of the punchline. But most modern humour theorists have settled on some version of Aristotle's belief that jokes are based on a reaction to or resolution of incongruity when the punchline is either nonsense or, though appearing silly, has a clever second meaning.",
-    "Graeme Ritchie, a computational linguist in Edinburgh, studies the linguistic structure of jokes in order to understand not only humour but language understanding and reasoning in machines. He says that while there is no single format for jokes, many revolve around a sudden and surprising conceptual shift. A comedian will present a situation followed by an unexpected interpretation that is also apt.",
-    "So even if a punchline sounds silly, the listener can see there is a clever semantic fit and that sudden mental 'Aha!' is the buzz that makes us laugh. Viewed from this angle, humour is just a form of creative insight, a sudden leap to a new perspective.",
-    "However, there is another type of laughter, the laughter of social appeasement and it is important to understand this too. Play is a crucial part of development in most young mammals. Rats produce ultrasonic squeaks to prevent their scuffles from turning nasty. Chimpanzees have a 'play-face' - a gaping expression accompanied by a panting 'ah, ah' noise. In humans, these signals have mutated into smiles and laughs. Researchers believe social situations, rather than cognitive events such as jokes, trigger these instinctual markers of play or appeasement. People laugh on fairground rides or when tickled to flag a play situation, whether they feel amused or not.",
-    "Both social and cognitive types of laughter tap into the same expressive machinery in our brains, the emotion and motor circuits that produce smiles and excited vocalisations. However, if cognitive laughter is the product of more general thought processes, it should result from more expansive brain activity.",
-    "Psychologist Vinod Goel investigated humour using the new technique of 'single event' functional magnetic resonance imaging (fMRI). An MRI scanner uses magnetic fields and radio waves to track the changes in oxygenated blood that accompany mental activity. Until recently, MRI scanners needed several minutes of activity and so could not be used to track rapid thought processes such as comprehending a joke. New developments now allow half-second 'snapshots' of all sorts of reasoning and problem-solving activities. Although Goel felt being inside a brain scanner was hardly the ideal place for appreciating a joke, he found evidence that understanding a joke involves a widespread mental shift. His scans showed that at the beginning of a joke the listener's prefrontal cortex lit up, particularly the right prefrontal cortex.",
-  ],
-  questions: [
-    {
-      id: 1,
-      text: "One of the brain's most difficult tasks is to",
-      correctAnswer: "react to their own thoughts", // Placeholder
-    },
-    {
-      id: 2,
-      text: "Because of the language they have developed, humans",
-      correctAnswer: "create a mental shift", // Placeholder
-    },
-    {
-      id: 3,
-      text: "Individual responses to humour",
-      correctAnswer: "are personal and unpredictable", // Placeholder
-    },
-    {
-      id: 4,
-      text: "Peter Derks believes that humour",
-      correctAnswer: "is a form of creative insight", // Placeholder
-    },
-  ],
-  options: [
-    "react to their own thoughts",
-    "create a mental shift",
-    "are personal and unpredictable",
-    "is a form of creative insight",
-    "depends on the situation",
-    "relies on linguistic structure",
-  ],
-};
+// MOCK_DATA removed - migrated to CSV
+
 
 export default function MatchSentenceEndingPage() {
   const handleExit = usePracticeExit();
 
+  const [data, setData] = useState(null);
   const [answers, setAnswers] = useState({}); // { 1: "option", 2: "option" }
   const [showFeedback, setShowFeedback] = useState(false);
   const [isCorrect, setIsCorrect] = useState(false);
@@ -61,6 +21,23 @@ export default function MatchSentenceEndingPage() {
   const [score, setScore] = useState(0);
   const [isCompleted, setIsCompleted] = useState(false);
   const [isPassageOpen, setIsPassageOpen] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const loadedData = await loadMockCSV("practice/reading/match_sentence_ending.csv");
+        if (loadedData && loadedData.length > 0) {
+          setData(loadedData[0]); // We expect one row with JSON columns
+        }
+      } catch (error) {
+        console.error("Failed to load match sentence data", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
 
   // Timer configuration
   const { timerString, resetTimer } = useExerciseTimer({
@@ -80,10 +57,11 @@ export default function MatchSentenceEndingPage() {
   };
 
   const checkAnswers = () => {
+    if (!data) return;
     let correctCount = 0;
-    const totalQuestions = MOCK_DATA.questions.length;
+    const totalQuestions = data.questions.length;
 
-    MOCK_DATA.questions.forEach((q) => {
+    data.questions.forEach((q) => {
       if (answers[q.id] === q.correctAnswer) {
         correctCount++;
       }
@@ -123,9 +101,25 @@ export default function MatchSentenceEndingPage() {
     }
   };
 
-  const allAnswered = MOCK_DATA.questions.every((q) => answers[q.id]);
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-slate-50 dark:bg-slate-900">
+        <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+      </div>
+    );
+  }
+
+  if (!data) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-slate-50 dark:bg-slate-900">
+        <p className="text-xl text-slate-600 dark:text-slate-400">Failed to load data.</p>
+      </div>
+    );
+  }
+
+  const allAnswered = data.questions.every((q) => answers[q.id]);
   const progress =
-    (Object.keys(answers).length / MOCK_DATA.questions.length) * 100;
+    (Object.keys(answers).length / data.questions.length) * 100;
 
   return (
     <>
@@ -136,7 +130,7 @@ export default function MatchSentenceEndingPage() {
         progress={progress}
         isGameOver={isCompleted}
         score={score}
-        totalQuestions={MOCK_DATA.questions.length}
+        totalQuestions={data.questions.length}
         onExit={handleExit}
         onNext={handleSubmit}
         onRestart={() => window.location.reload()}
@@ -151,16 +145,16 @@ export default function MatchSentenceEndingPage() {
             {/* Header */}
             <div className="p-6 border-b border-slate-100 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50">
               <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100">
-                {MOCK_DATA.passageTitle}
+                {data.passageTitle}
               </h3>
               <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-                {MOCK_DATA.passageSubtitle}
+                {data.passageSubtitle}
               </p>
             </div>
 
             <div className="p-6 md:p-8 overflow-y-auto custom-scrollbar flex-1">
               <div className="text-sm md:text-base leading-relaxed text-slate-700 dark:text-slate-300 space-y-4">
-                {MOCK_DATA.passageContent.map((paragraph, idx) => (
+                {data.passageContent.map((paragraph, idx) => (
                   <p key={idx}>{paragraph}</p>
                 ))}
               </div>
@@ -178,7 +172,7 @@ export default function MatchSentenceEndingPage() {
               </h2>
 
               <div className="space-y-8">
-                {MOCK_DATA.questions.map((q) => {
+                {data.questions.map((q) => {
                   const userAnswer = answers[q.id];
                   const isCorrectAnswer = userAnswer === q.correctAnswer;
 
@@ -215,7 +209,7 @@ export default function MatchSentenceEndingPage() {
                           <option value="" disabled>
                             Select a word
                           </option>
-                          {MOCK_DATA.options.map((opt, i) => (
+                          {data.options.map((opt, i) => (
                             <option key={i} value={opt}>
                               {opt}
                             </option>
@@ -272,7 +266,7 @@ export default function MatchSentenceEndingPage() {
             <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-slate-50 dark:bg-slate-900">
               <div>
                 <h3 className="text-lg font-bold text-slate-900 dark:text-white leading-tight">
-                  {MOCK_DATA.passageTitle}
+                  {data.passageTitle}
                 </h3>
                 <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
                   Read carefully to find the answers
@@ -289,7 +283,7 @@ export default function MatchSentenceEndingPage() {
 
             {/* Modal Content */}
             <div className="p-6 md:p-8 overflow-y-auto custom-scrollbar flex-1 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 leading-relaxed space-y-4">
-              {MOCK_DATA.passageContent.map((paragraph, idx) => (
+              {data.passageContent.map((paragraph, idx) => (
                 <p key={idx} className="text-[15px] md:text-base">{paragraph}</p>
               ))}
             </div>

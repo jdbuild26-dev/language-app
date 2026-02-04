@@ -8,131 +8,31 @@ import FeedbackBanner from "@/components/ui/FeedbackBanner";
 import { getFeedbackMessage } from "@/utils/feedbackMessages";
 import { useTextToSpeech } from "@/hooks/useTextToSpeech";
 
-// Mock data for Running Conversation exercise
-const MOCK_CONVERSATIONS = [
-  {
-    id: 1,
-    context: "At a café",
-    messages: [
-      {
-        speaker: "A",
-        text: "Bonjour! Qu'est-ce que vous désirez?",
-        isBot: true,
-      },
-    ],
-    currentPrompt: "You want to order a coffee with milk.",
-    options: [
-      "Un café au lait, s'il vous plaît.",
-      "Je voudrais une pizza.",
-      "L'addition, s'il vous plaît.",
-      "Où sont les toilettes?",
-    ],
-    correctIndex: 0,
-    nextMessage: { speaker: "A", text: "Très bien! Autre chose?", isBot: true },
-    timeLimitSeconds: 30,
-  },
-  {
-    id: 2,
-    context: "Asking for directions",
-    messages: [
-      { speaker: "You", text: "Excusez-moi, où est la gare?", isBot: false },
-      {
-        speaker: "A",
-        text: "La gare? C'est tout droit, puis à gauche.",
-        isBot: true,
-      },
-    ],
-    currentPrompt: "Thank the person for their help.",
-    options: [
-      "Je ne comprends pas.",
-      "Merci beaucoup!",
-      "C'est combien?",
-      "Je suis perdu.",
-    ],
-    correctIndex: 1,
-    nextMessage: { speaker: "A", text: "De rien! Bonne journée!", isBot: true },
-    timeLimitSeconds: 30,
-  },
-  {
-    id: 3,
-    context: "Shopping for clothes",
-    messages: [
-      { speaker: "A", text: "Bonjour, je peux vous aider?", isBot: true },
-      { speaker: "You", text: "Oui, je cherche une chemise.", isBot: false },
-      { speaker: "A", text: "Quelle taille faites-vous?", isBot: true },
-    ],
-    currentPrompt: "Tell them you wear size medium.",
-    options: [
-      "Je fais du petit.",
-      "Je fais du moyen.",
-      "Combien ça coûte?",
-      "Je n'aime pas cette couleur.",
-    ],
-    correctIndex: 1,
-    nextMessage: {
-      speaker: "A",
-      text: "Voici les chemises en taille moyen.",
-      isBot: true,
-    },
-    timeLimitSeconds: 30,
-  },
-  {
-    id: 4,
-    context: "At a restaurant",
-    messages: [
-      { speaker: "A", text: "Vous avez choisi?", isBot: true },
-      {
-        speaker: "You",
-        text: "Oui, je voudrais le steak-frites.",
-        isBot: false,
-      },
-      { speaker: "A", text: "Et comme boisson?", isBot: true },
-    ],
-    currentPrompt: "Order a glass of red wine.",
-    options: [
-      "Un verre de vin rouge, s'il vous plaît.",
-      "Non merci, c'est tout.",
-      "Je voudrais le menu.",
-      "Où est la sortie?",
-    ],
-    correctIndex: 0,
-    nextMessage: {
-      speaker: "A",
-      text: "Parfait, je vous apporte ça tout de suite.",
-      isBot: true,
-    },
-    timeLimitSeconds: 30,
-  },
-  {
-    id: 5,
-    context: "At the hotel",
-    messages: [
-      { speaker: "A", text: "Bonsoir, bienvenue à l'hôtel.", isBot: true },
-      { speaker: "You", text: "Bonsoir, j'ai une réservation.", isBot: false },
-      { speaker: "A", text: "Votre nom, s'il vous plaît?", isBot: true },
-    ],
-    currentPrompt: "Give your name (Marie Dupont).",
-    options: [
-      "Je m'appelle Marie Dupont.",
-      "Une chambre pour deux personnes.",
-      "C'est combien la nuit?",
-      "J'ai perdu ma clé.",
-    ],
-    correctIndex: 0,
-    nextMessage: {
-      speaker: "A",
-      text: "Ah oui, vous avez la chambre 205.",
-      isBot: true,
-    },
-    timeLimitSeconds: 30,
-  },
-];
+import { loadMockCSV } from "@/utils/csvLoader";
+import { Loader2 } from "lucide-react";
+
+// MOCK_CONVERSATIONS removed - migrated to CSV
 
 export default function ConversationPage() {
   const handleExit = usePracticeExit();
   const { speak, isSpeaking } = useTextToSpeech();
 
-  const [conversations] = useState(MOCK_CONVERSATIONS);
+  const [conversations, setConversations] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchConversations = async () => {
+      try {
+        const data = await loadMockCSV("practice/reading/conversation.csv");
+        setConversations(data);
+      } catch (error) {
+        console.error("Error loading mock data:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchConversations();
+  }, []);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedOption, setSelectedOption] = useState(null);
   const [isCompleted, setIsCompleted] = useState(false);
@@ -155,7 +55,7 @@ export default function ConversationPage() {
         setShowFeedback(true);
       }
     },
-    isPaused: isCompleted || showFeedback,
+    isPaused: isCompleted || showFeedback || loading,
   });
 
   useEffect(() => {
@@ -208,6 +108,14 @@ export default function ConversationPage() {
       setIsCompleted(true);
     }
   };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-slate-50 dark:bg-slate-900">
+        <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+      </div>
+    );
+  }
 
   const progress =
     conversations.length > 0

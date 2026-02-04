@@ -14,7 +14,7 @@ export default function GenericSpeakingPage({
     instructionEn,
     instructionFr,
     icon: Icon = Mic,
-    mockData = [],
+    mockData,
     csvName = null
 }) {
     const navigate = useNavigate();

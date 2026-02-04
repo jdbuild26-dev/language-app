@@ -1,65 +1,51 @@
 import React, { useState, useEffect } from "react";
 import { usePracticeExit } from "@/hooks/usePracticeExit";
 import { useExerciseTimer } from "@/hooks/useExerciseTimer";
-import { Volume2, CheckCircle, XCircle } from "lucide-react";
-import { cn } from "@/lib/utils";
-import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
-import FeedbackBanner from "@/components/ui/FeedbackBanner";
-import { getFeedbackMessage } from "@/utils/feedbackMessages";
-import { useTextToSpeech } from "@/hooks/useTextToSpeech";
+import { Volume2, CheckCircle, XCircle, Loader2 } from "lucide-react";
+import { loadMockCSV } from "@/utils/csvLoader";
 
 /* 
   Data for the exercise: 
   A longer passage with multiple blanks.
 */
-const PASSAGE_SEGMENTS = [
-  "Firefighters are the people who fight fires on a ",
-  { id: 1, type: "blank" },
-  " basis. They work for fire departments, which ",
-  { id: 2, type: "blank" },
-  " organizations of trained professionals that keep the community ",
-  { id: 3, type: "blank" },
-  " from fires. When a fire ",
-  { id: 4, type: "blank" },
-  " out, firefighters enter buildings to look ",
-  { id: 5, type: "blank" },
-  " people and pets, rescue them, and ",
-  { id: 6, type: "blank" },
-  " out the fire to prevent ",
-  { id: 7, type: "blank" },
-  " from spreading. They also conduct ",
-  { id: 8, type: "blank" },
-  " drills and inspections to ",
-  { id: 9, type: "blank" },
-  " businesses and agencies safe.",
-];
+// Consants removed - migrated to CSV
 
-const BLANKS_DATA = {
-  1: { options: ["regular", "routine", "daily", "common"], correct: "daily" },
-  2: { options: ["is", "are", "was", "were"], correct: "are" },
-  3: { options: ["safe", "danger", "risk", "harm"], correct: "safe" },
-  4: { options: ["breaks", "goes", "runs", "comes"], correct: "breaks" },
-  5: { options: ["at", "for", "to", "in"], correct: "for" },
-  6: { options: ["put", "take", "get", "let"], correct: "put" },
-  7: { options: ["it", "them", "fire", "water"], correct: "it" },
-  8: { options: ["safety", "fire", "emergency", "routine"], correct: "safety" },
-  9: { options: ["make", "keep", "stay", "hold"], correct: "keep" },
-};
-
-const FULL_TEXT =
-  "Firefighters are the people who fight fires on a daily basis. They work for fire departments, which are organizations of trained professionals that keep the community safe from fires. When a fire breaks out, firefighters enter buildings to look for people and pets, rescue them, and put out the fire to prevent it from spreading. They also conduct safety drills and inspections to keep businesses and agencies safe.";
 
 export default function CompletePassagePage() {
   const handleExit = usePracticeExit();
   const { speak, isSpeaking } = useTextToSpeech();
 
   // State
+  const [passageSegments, setPassageSegments] = useState([]);
+  const [blanksData, setBlanksData] = useState({});
+  const [fullText, setFullText] = useState("");
+  const [loading, setLoading] = useState(true);
+
   const [answers, setAnswers] = useState({}); // { 1: "option", 2: "option" }
   const [showFeedback, setShowFeedback] = useState(false);
   const [isCorrect, setIsCorrect] = useState(false);
   const [feedbackMessage, setFeedbackMessage] = useState("");
   const [score, setScore] = useState(0);
   const [isCompleted, setIsCompleted] = useState(false);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const data = await loadMockCSV("practice/reading/complete_passage.csv");
+        if (data && data.length > 0) {
+          const row = data[0];
+          setPassageSegments(row.passageSegments || []);
+          setBlanksData(row.blanksData || {});
+          setFullText(row.fullText || "");
+        }
+      } catch (error) {
+        console.error("Error loading complete passage data", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
 
   // Timer: 8 minutes (480s) to match screenshot mostly
   const { timerString, resetTimer, pauseTimer } = useExerciseTimer({
@@ -70,11 +56,11 @@ export default function CompletePassagePage() {
         checkAnswers(true);
       }
     },
-    isPaused: showFeedback || isCompleted,
+    isPaused: showFeedback || isCompleted || loading,
   });
 
   const handlePlayAudio = () => {
-    speak(FULL_TEXT, "en-US"); // English text
+    speak(fullText, "en-US"); // English text
   };
 
   const handleOptionSelect = (blankId, value) => {
@@ -85,11 +71,11 @@ export default function CompletePassagePage() {
   const checkAnswers = (timeExpired = false) => {
     // Count correct answers
     let correctCount = 0;
-    const totalBlanks = Object.keys(BLANKS_DATA).length;
+    const totalBlanks = Object.keys(blanksData).length;
 
-    Object.keys(BLANKS_DATA).forEach((key) => {
+    Object.keys(blanksData).forEach((key) => {
       const id = parseInt(key);
-      if (answers[id] === BLANKS_DATA[id].correct) {
+      if (answers[id] === blanksData[id].correct) {
         correctCount++;
       }
     });
@@ -139,9 +125,17 @@ export default function CompletePassagePage() {
     }
   };
 
-  const allAnswered = Object.keys(BLANKS_DATA).every((key) => answers[key]);
+  const allAnswered = Object.keys(blanksData).every((key) => answers[key]);
   const progress =
-    (Object.keys(answers).length / Object.keys(BLANKS_DATA).length) * 100;
+    (Object.keys(answers).length / Object.keys(blanksData).length) * 100;
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-slate-50 dark:bg-slate-900">
+        <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+      </div>
+    );
+  }
 
   return (
     <>
@@ -152,7 +146,7 @@ export default function CompletePassagePage() {
         progress={progress}
         isGameOver={isCompleted}
         score={score}
-        totalQuestions={Object.keys(BLANKS_DATA).length}
+        totalQuestions={Object.keys(blanksData).length}
         onExit={handleExit}
         onNext={handleSubmit} // Using onNext as Submit trigger from layout if needed
         onRestart={() => window.location.reload()}
@@ -169,14 +163,14 @@ export default function CompletePassagePage() {
                 PASSAGE
               </h3>
               <div className="text-lg md:text-xl leading-loose text-slate-800 dark:text-slate-100 font-serif">
-                {PASSAGE_SEGMENTS.map((segment, index) => {
+                {passageSegments.map((segment, index) => {
                   if (typeof segment === "string") {
                     return <span key={index}>{segment}</span>;
                   } else if (segment.type === "blank") {
                     const id = segment.id;
                     const userAnswer = answers[id];
                     const isCorrectAnswer =
-                      userAnswer === BLANKS_DATA[id].correct;
+                      userAnswer === blanksData[id].correct;
 
                     return (
                       <span
@@ -215,7 +209,7 @@ export default function CompletePassagePage() {
                               <option value="" disabled>
                                 Select
                               </option>
-                              {BLANKS_DATA[id].options.map((opt, i) => (
+                              {blanksData[id].options.map((opt, i) => (
                                 <option key={i} value={opt}>
                                   {opt}
                                 </option>
@@ -292,9 +286,9 @@ export default function CompletePassagePage() {
               </h2>
 
               <div className="space-y-4">
-                {Object.keys(BLANKS_DATA).map((key) => {
+                {Object.keys(blanksData).map((key) => {
                   const id = parseInt(key);
-                  const blank = BLANKS_DATA[id];
+                  const blank = blanksData[id];
                   const userAnswer = answers[id];
                   const isCorrectAnswer = userAnswer === blank.correct;
 
