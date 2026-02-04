@@ -181,25 +181,14 @@ const practiceActivities = [
     isLive: true,
   },
   {
-    id: "G16",
-    name: "Match Sentence Ending",
-    icon: ListTodo,
-    desc: "Match the correct endings to sentences",
-    path: "/practice/reading/match-sentence-ending",
-    category: "reading",
-    color: "from-blue-400 to-indigo-500",
-    shadow: "shadow-blue-200 dark:shadow-blue-900/20",
-    isLive: true,
-  },
-  {
     id: "G17",
     name: "Summary Completion",
-    icon: FileText,
+    icon: ListTodo,
     desc: "Complete the summary of a passage",
     path: "/practice/reading/summary-completion",
     category: "reading",
-    color: "from-emerald-400 to-teal-500",
-    shadow: "shadow-emerald-200 dark:shadow-emerald-900/20",
+    color: "from-blue-400 to-indigo-500",
+    shadow: "shadow-blue-200 dark:shadow-blue-900/20",
     isLive: true,
   },
 
@@ -229,11 +218,11 @@ const practiceActivities = [
     isLive: true,
   },
   {
-    id: "E3",
-    name: "Listen and Fill Blanks",
+    id: "E3-NEW",
+    name: "Audio Fill in the Blanks",
     icon: Edit3,
-    desc: "Fill in missing words from audio",
-    path: "/practice/listening/fill-blanks",
+    desc: "Listen deeply and fill blanks",
+    path: "/practice/listening/audio-fill-blanks-pro",
     category: "listening",
     color: "from-cyan-400 to-blue-500",
     shadow: "shadow-cyan-200 dark:shadow-cyan-900/20",
@@ -480,8 +469,8 @@ export default function PracticePage() {
     activeTab === "all"
       ? practiceActivities
       : practiceActivities.filter(
-        (activity) => activity.category === activeTab,
-      );
+          (activity) => activity.category === activeTab,
+        );
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-6">

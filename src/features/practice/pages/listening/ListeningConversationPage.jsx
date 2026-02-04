@@ -11,9 +11,6 @@ import { loadMockCSV } from "@/utils/csvLoader";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-
-
-
 export default function ListeningConversationPage() {
   const handleExit = usePracticeExit();
   const { speak } = useTextToSpeech();
@@ -22,7 +19,6 @@ export default function ListeningConversationPage() {
   const [conversation, setConversation] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [currentTurnIndex, setCurrentTurnIndex] = useState(0);
-
 
   // User's selected option for current turn
   const [selectedOption, setSelectedOption] = useState(null);
@@ -50,7 +46,6 @@ export default function ListeningConversationPage() {
   const currentExchange = conversation?.exchanges[currentTurnIndex];
   const totalExchanges = conversation?.exchanges.length || 0;
 
-
   const timerDuration = 45; // Increased for conversation context
 
   const { timerString, resetTimer } = useExerciseTimer({
@@ -69,7 +64,9 @@ export default function ListeningConversationPage() {
   useEffect(() => {
     const fetchConversation = async () => {
       try {
-        const data = await loadMockCSV("practice/listening/listening_conversation.csv");
+        const data = await loadMockCSV(
+          "practice/listening/listening_conversation.csv",
+        );
         if (data && data.length > 0) {
           setConversation(data[0]);
         }
@@ -81,8 +78,6 @@ export default function ListeningConversationPage() {
     };
     fetchConversation();
   }, []);
-
-
 
   // Play audio when new turn starts
   useEffect(() => {
@@ -166,15 +161,18 @@ export default function ListeningConversationPage() {
   if (!conversation) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-slate-50 dark:bg-slate-900">
-        <p className="text-xl text-slate-600 dark:text-slate-400">No content available.</p>
-        <Button onClick={() => handleExit()} variant="outline" className="mt-4">Back</Button>
+        <p className="text-xl text-slate-600 dark:text-slate-400">
+          No content available.
+        </p>
+        <Button onClick={() => handleExit()} variant="outline" className="mt-4">
+          Back
+        </Button>
       </div>
     );
   }
 
   const progress =
     totalExchanges > 0 ? ((currentTurnIndex + 1) / totalExchanges) * 100 : 0;
-
 
   return (
     <>
@@ -197,19 +195,28 @@ export default function ListeningConversationPage() {
         timerValue={timerString}
       >
         <div className="flex flex-col items-center w-full max-w-6xl mx-auto px-4 py-4">
-          {/* Title */}
-          <div className="flex items-center gap-2 mb-6">
-            <MessageSquare className="w-5 h-5 text-indigo-500" />
-            <h2 className="text-lg font-semibold text-slate-700 dark:text-slate-200">
-              {conversation?.title}
-            </h2>
-
-          </div>
-
           {/* Two-column layout */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
             {/* LEFT COLUMN: Conversation History */}
             <div className="flex flex-col space-y-4">
+              {/* Context / Title */}
+              <div className="bg-white dark:bg-slate-800 p-4 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700 mb-2">
+                <div className="flex items-center gap-2 mb-2">
+                  <MessageSquare className="w-4 h-4 text-indigo-500" />
+                  <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-200">
+                    Context
+                  </h3>
+                </div>
+                <p className="text-sm text-slate-600 dark:text-slate-400">
+                  {conversation?.title}
+                </p>
+                {conversation?.scenario && (
+                  <p className="text-xs text-slate-500 dark:text-slate-500 mt-2 border-t pt-2 border-slate-100 dark:border-slate-700">
+                    {conversation.scenario}
+                  </p>
+                )}
+              </div>
+
               <h3 className="text-sm font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wide">
                 Conversation
               </h3>
@@ -531,15 +538,6 @@ export default function ListeningConversationPage() {
                   ))}
                 </div>
               )}
-
-              {/* After answer submitted, show placeholder */}
-              {hasAnswered && (
-                <div className="bg-slate-100 dark:bg-slate-800 rounded-xl p-6 text-center">
-                  <p className="text-sm text-slate-500 dark:text-slate-400">
-                    Waiting for feedback...
-                  </p>
-                </div>
-              )}
             </div>
           </div>
         </div>
@@ -552,8 +550,8 @@ export default function ListeningConversationPage() {
           correctAnswer={
             !isCorrect
               ? currentExchange.options.find(
-                (opt) => opt.id === currentExchange.correctOptionId,
-              )?.text
+                  (opt) => opt.id === currentExchange.correctOptionId,
+                )?.text
               : null
           }
           onContinue={handleContinue}

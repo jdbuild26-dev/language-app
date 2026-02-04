@@ -11,9 +11,6 @@ import { loadMockCSV } from "@/utils/csvLoader";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-
-
-
 export default function SpellingPage() {
   const handleExit = usePracticeExit();
   const { speak, isSpeaking } = useTextToSpeech();
@@ -58,7 +55,6 @@ export default function SpellingPage() {
     };
     fetchQuestions();
   }, []);
-
 
   useEffect(() => {
     if (currentQuestion && !isCompleted) {
@@ -113,15 +109,18 @@ export default function SpellingPage() {
   if (questions.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-slate-50 dark:bg-slate-900">
-        <p className="text-xl text-slate-600 dark:text-slate-400">No content available.</p>
-        <Button onClick={() => handleExit()} variant="outline" className="mt-4">Back</Button>
+        <p className="text-xl text-slate-600 dark:text-slate-400">
+          No content available.
+        </p>
+        <Button onClick={() => handleExit()} variant="outline" className="mt-4">
+          Back
+        </Button>
       </div>
     );
   }
 
   const progress =
     questions.length > 0 ? ((currentIndex + 1) / questions.length) * 100 : 0;
-
 
   return (
     <>
@@ -144,13 +143,6 @@ export default function SpellingPage() {
         <div className="flex flex-col items-center w-full max-w-3xl mx-auto px-4 py-4 lg:py-8 gap-6 lg:gap-8">
           {/* Header Info */}
           <div className="w-full flex flex-col md:flex-row items-center justify-between gap-4">
-            <div className="flex items-center gap-3 bg-amber-50 dark:bg-amber-900/20 px-4 py-2 rounded-2xl border border-amber-200 dark:border-amber-800">
-              <AlertCircle className="w-5 h-5 text-amber-500" />
-              <span className="text-sm font-semibold text-amber-700 dark:text-amber-400">
-                {currentQuestion?.errorCount} Errors to fix
-              </span>
-            </div>
-
             <button
               onClick={handlePlayAudio}
               disabled={isSpeaking}
@@ -158,10 +150,12 @@ export default function SpellingPage() {
                 "flex items-center gap-2 px-5 py-2.5 rounded-2xl text-sm font-bold transition-all shadow-sm active:scale-95",
                 isSpeaking
                   ? "bg-amber-100 text-amber-600 ring-2 ring-amber-200"
-                  : "bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-2 border-slate-200 dark:border-slate-700 hover:border-amber-300 hover:text-amber-600"
+                  : "bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-2 border-slate-200 dark:border-slate-700 hover:border-amber-300 hover:text-amber-600",
               )}
             >
-              <Volume2 className={cn("w-4 h-4", isSpeaking && "animate-pulse")} />
+              <Volume2
+                className={cn("w-4 h-4", isSpeaking && "animate-pulse")}
+              />
               Listen to correct version
             </button>
           </div>
@@ -170,9 +164,6 @@ export default function SpellingPage() {
           <div className="w-full grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch">
             {/* Wrong Passage Side */}
             <div className="flex flex-col h-full">
-              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2 ml-2">
-                WRONG VERSION
-              </label>
               <div className="flex-1 bg-slate-50 dark:bg-slate-900/50 rounded-2xl border-2 border-dashed border-slate-200 dark:border-slate-700 p-6 flex items-center justify-center min-h-[120px]">
                 <p className="text-xl lg:text-2xl font-serif italic text-slate-700 dark:text-slate-300 text-center leading-relaxed">
                   "{currentQuestion?.incorrectText}"
@@ -182,14 +173,6 @@ export default function SpellingPage() {
 
             {/* Answer Box Side */}
             <div className="flex flex-col h-full">
-              <div className="flex justify-between items-end mb-2 ml-2">
-                <label className="text-[10px] font-bold text-sky-500 uppercase tracking-widest">
-                  YOUR CORRECTION
-                </label>
-                <span className="text-[10px] font-mono text-slate-400">
-                  {userInput.length} chars
-                </span>
-              </div>
               <textarea
                 value={userInput}
                 onChange={(e) => setUserInput(e.target.value)}
@@ -202,23 +185,16 @@ export default function SpellingPage() {
                   "bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100",
                   "border-sky-200 dark:border-slate-700",
                   "focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10",
-                  showFeedback && isCorrect && "border-emerald-500 bg-emerald-50 dark:bg-emerald-900/10",
-                  showFeedback && !isCorrect && "border-red-500 bg-red-50 dark:bg-red-900/10",
+                  showFeedback &&
+                    isCorrect &&
+                    "border-emerald-500 bg-emerald-50 dark:bg-emerald-900/10",
+                  showFeedback &&
+                    !isCorrect &&
+                    "border-red-500 bg-red-50 dark:bg-red-900/10",
                 )}
               />
             </div>
           </div>
-
-          {/* Hint Footer */}
-          {currentQuestion?.hint && (
-            <div className="w-full bg-indigo-50/50 dark:bg-indigo-900/10 p-4 rounded-2xl border border-indigo-100/50 dark:border-indigo-900/30 flex items-start gap-3">
-              <span className="text-lg">💡</span>
-              <p className="text-sm text-indigo-700/80 dark:text-indigo-400 leading-snug">
-                <span className="font-bold uppercase text-[10px] tracking-wide mr-2">Hint:</span>
-                {currentQuestion.hint}
-              </p>
-            </div>
-          )}
         </div>
       </PracticeGameLayout>
 

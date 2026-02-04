@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { usePracticeExit } from "@/hooks/usePracticeExit";
 import { useExerciseTimer } from "@/hooks/useExerciseTimer";
-import { Volume2, GripVertical } from "lucide-react";
+import { Volume2, GripVertical, Turtle } from "lucide-react";
 import { Reorder } from "framer-motion";
 import { cn } from "@/lib/utils";
 import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
@@ -11,9 +11,6 @@ import { useTextToSpeech } from "@/hooks/useTextToSpeech";
 import { loadMockCSV } from "@/utils/csvLoader";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-
-
-
 
 // Shuffle helper
 const shuffleArray = (array) => {
@@ -71,7 +68,6 @@ export default function ListenOrderPage() {
     fetchQuestions();
   }, []);
 
-
   useEffect(() => {
     if (currentQuestion && !isCompleted) {
       setCurrentOrder(shuffleArray(currentQuestion.correctOrder));
@@ -80,10 +76,10 @@ export default function ListenOrderPage() {
     }
   }, [currentIndex, currentQuestion, isCompleted, resetTimer]);
 
-  const handlePlayAll = () => {
-    // Play all sentences in correct order
+  const handlePlaySlow = () => {
+    // Play all sentences in correct order slowly
     const text = currentQuestion.correctOrder.join(". ");
-    speak(text, "fr-FR");
+    speak(text, "fr-FR", 0.6);
     setPlayedAudio(true);
   };
 
@@ -128,15 +124,18 @@ export default function ListenOrderPage() {
   if (questions.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-slate-50 dark:bg-slate-900">
-        <p className="text-xl text-slate-600 dark:text-slate-400">No content available.</p>
-        <Button onClick={() => handleExit()} variant="outline" className="mt-4">Back</Button>
+        <p className="text-xl text-slate-600 dark:text-slate-400">
+          No content available.
+        </p>
+        <Button onClick={() => handleExit()} variant="outline" className="mt-4">
+          Back
+        </Button>
       </div>
     );
   }
 
   const progress =
     questions.length > 0 ? ((currentIndex + 1) / questions.length) * 100 : 0;
-
 
   return (
     <>
@@ -158,8 +157,9 @@ export default function ListenOrderPage() {
       >
         <div className="flex flex-col items-center w-full max-w-2xl mx-auto px-4 py-6">
           {/* Play all button */}
+          {/* Slow button */}
           <button
-            onClick={handlePlayAll}
+            onClick={handlePlaySlow}
             disabled={isSpeaking}
             className={cn(
               "flex items-center gap-3 px-6 py-3 rounded-full text-base font-semibold transition-all mb-6",
@@ -168,8 +168,8 @@ export default function ListenOrderPage() {
                 : "bg-gradient-to-r from-orange-500 to-amber-500 text-white hover:shadow-lg",
             )}
           >
-            <Volume2 className="w-5 h-5" />
-            {playedAudio ? "Replay All" : "Play Audio"}
+            <Turtle className="w-5 h-5" />
+            {playedAudio ? "Replay Slow" : "Slow"}
           </button>
 
           {/* Sentence list with drag-and-drop */}
@@ -177,7 +177,7 @@ export default function ListenOrderPage() {
             <Reorder.Group
               axis="y"
               values={currentOrder}
-              onReorder={showFeedback ? () => { } : setCurrentOrder}
+              onReorder={showFeedback ? () => {} : setCurrentOrder}
               className="w-full space-y-3"
             >
               {currentOrder.map((sentence, index) => {
@@ -232,7 +232,7 @@ const SortableItem = ({
       className={cn(
         "flex items-center gap-3 p-4 rounded-xl border-2 transition-colors duration-200 select-none bg-white dark:bg-slate-800",
         !showFeedback &&
-        "cursor-grab active:cursor-grabbing hover:border-slate-300 dark:hover:border-slate-600",
+          "cursor-grab active:cursor-grabbing hover:border-slate-300 dark:hover:border-slate-600",
         isCorrectPosition
           ? "bg-emerald-50 dark:bg-emerald-900/20 border-emerald-500"
           : isWrongPosition

@@ -13,6 +13,7 @@ import {
   Volume2,
   GitMerge,
   Sparkles,
+  Edit3,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -132,6 +133,16 @@ const practiceActivities = [
     category: "listening",
     color: "from-rose-400 to-red-500",
     shadow: "shadow-rose-200 dark:shadow-rose-900/20",
+  },
+  {
+    id: "listen-fill-blanks-legacy",
+    name: "Listen and Fill Blanks (Legacy)",
+    icon: Edit3,
+    desc: "Fill in missing words from audio",
+    path: "/vocabulary/practice/listening/fill-blanks",
+    category: "listening",
+    color: "from-cyan-400 to-blue-500",
+    shadow: "shadow-cyan-200 dark:shadow-cyan-900/20",
   },
 
   // Writing Activities
