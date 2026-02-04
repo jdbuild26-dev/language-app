@@ -1,0 +1,6 @@
+id,sentence,blanks,hints,translation,timeLimitSeconds
+1,"J'ai ___ un chat.","acheté","bought","I bought a cat.",60
+2,"Il ___ français.","parle","speaks","He speaks French.",60
+3,"Nous ___ au cinéma.","allons","go","We go to the cinema.",60
+4,"Elle est ___ belle.","très","very","She is very beautiful.",60
+5,"Tu ___ raison.","as","have","You are right.",60

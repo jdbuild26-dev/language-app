@@ -1,0 +1,6 @@
+id,sentence,question,options,correctIndex,translation,timeLimitSeconds
+1,"Le chat ___ sur la table.","Complete the sentence","[""est"", ""sont"", ""sommes""]",0,"The cat is on the table",40
+2,"Mes amis ___ au restaurant.","Complete the sentence","[""mange"", ""manges"", ""mangent""]",2,"My friends eat at the restaurant",40
+3,"Je ___ un café, s'il vous plaît.","Complete the sentence","[""veux"", ""veut"", ""voulons""]",0,"I want a coffee, please",40
+4,"Tu ___ très bien le français.","Complete the sentence","[""comprend"", ""comprends"", ""comprenons""]",1,"You understand French very well",40
+5,"Elle ___ de la musique classique.","Complete the sentence","[""écoute"", ""écoutes"", ""écoutent""]",0,"She listens to classical music",40

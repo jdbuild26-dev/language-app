@@ -1,0 +1,6 @@
+id,sentence,blank,options,correctIndex,translation,timeLimitSeconds
+1,"Je ___ français tous les jours","parle","[""parle"", ""parles"", ""parlons"", ""parlent""]",0,"I speak French every day",45
+2,"Ils ___ au cinéma ce soir","vont","[""allez"", ""va"", ""vont"", ""allons""]",2,"They are going to the cinema tonight",45
+3,"Nous ___ très contents","sommes","[""est"", ""es"", ""sont"", ""sommes""]",3,"We are very happy",45
+4,"Elle ___ un livre intéressant","lit","[""lire"", ""lis"", ""lit"", ""lisent""]",2,"She reads an interesting book",45
+5,"Tu ___ ta chambre","ranges","[""range"", ""ranges"", ""rangeons"", ""rangent""]",1,"You tidy your room",45

@@ -1,0 +1,6 @@
+id,question,sentence,blanks,hints,translation,timeLimitSeconds
+1,"Qu'est-ce que tu as fait ?","J'ai ___ une pomme.","mangé","eaten","I ate an apple.",60
+2,"Où vas-tu ?","Je ___ à l'école.","vais","go","I go to school.",60
+3,"Est-ce qu'il aime le football ?","Oui, il ___ le football.","aime","likes","Yes, he likes football.",60
+4,"Comment s'appelle-t-elle ?","Elle ___ Marie.","s'appelle","is called","She is called Marie.",60
+5,"Quelle heure est-il ?","Il ___ 8 heures.","est","is","It is 8 o'clock.",60
