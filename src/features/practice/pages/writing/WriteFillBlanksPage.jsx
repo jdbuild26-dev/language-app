@@ -34,21 +34,22 @@ export default function WriteFillBlanksPage() {
   // Helper to split passage into words while keeping punctuation
   const wordsWithPunctuation = currentExercise?.passage?.split(/(\s+)/) || [];
 
-
   // Identify which indices are words that should be blanked
   // We match targetWords sequentially to handle multiple occurrences
   let targetPointer = 0;
   const processedWords = wordsWithPunctuation.map((word, idx) => {
     const cleanWord = word.replace(/[.,!?;:]/g, "").trim();
-    const shouldBlank = cleanWord.length > 1 &&
+    const shouldBlank =
+      cleanWord.length > 1 &&
       targetPointer < currentExercise.targetWords.length &&
-      cleanWord.toLowerCase() === currentExercise.targetWords[targetPointer].toLowerCase();
+      cleanWord.toLowerCase() ===
+        currentExercise.targetWords[targetPointer].toLowerCase();
 
     const result = {
       text: word,
       clean: cleanWord,
       isTarget: shouldBlank,
-      targetIndex: shouldBlank ? targetPointer : -1
+      targetIndex: shouldBlank ? targetPointer : -1,
     };
 
     if (shouldBlank) targetPointer++;
@@ -77,7 +78,7 @@ export default function WriteFillBlanksPage() {
     if (!rawChar && value !== "") return; // Protect against weirdness
 
     const key = `${wordIdx}_${charIdx}`;
-    setUserInputs(prev => ({ ...prev, [key]: rawChar }));
+    setUserInputs((prev) => ({ ...prev, [key]: rawChar }));
 
     // Auto-focus next box
     if (rawChar !== "") {
@@ -85,7 +86,9 @@ export default function WriteFillBlanksPage() {
         inputRefs.current[`${wordIdx}_${charIdx + 1}`]?.focus();
       } else {
         // Find next word's first blank
-        const nextTarget = processedWords.findIndex((w, i) => i > wordIdx && w.isTarget);
+        const nextTarget = processedWords.findIndex(
+          (w, i) => i > wordIdx && w.isTarget,
+        );
         if (nextTarget !== -1) {
           inputRefs.current[`${nextTarget}_0`]?.focus();
         }
@@ -99,11 +102,15 @@ export default function WriteFillBlanksPage() {
       if (charIdx > 0) {
         inputRefs.current[`${wordIdx}_${charIdx - 1}`]?.focus();
       } else {
-        const prevTarget = [...processedWords].slice(0, wordIdx).reverse().find(w => w.isTarget);
+        const prevTarget = [...processedWords]
+          .slice(0, wordIdx)
+          .reverse()
+          .find((w) => w.isTarget);
         if (prevTarget) {
           const pIdx = processedWords.indexOf(prevTarget);
           const pWord = processedWords[pIdx];
-          const lastCharIdx = pWord.clean.length - Math.floor(pWord.clean.length / 2) - 1;
+          const lastCharIdx =
+            pWord.clean.length - Math.floor(pWord.clean.length / 2) - 1;
           inputRefs.current[`${pIdx}_${lastCharIdx}`]?.focus();
         }
       }
@@ -130,12 +137,12 @@ export default function WriteFillBlanksPage() {
 
     setIsCorrect(allCorrect);
     setShowFeedback(true);
-    if (allCorrect) setScore(s => s + 1);
+    if (allCorrect) setScore((s) => s + 1);
   };
 
   const handleContinue = () => {
     if (currentIndex < questions.length - 1) {
-      setCurrentIndex(prev => prev + 1);
+      setCurrentIndex((prev) => prev + 1);
     } else {
       setIsCompleted(true);
     }
@@ -152,7 +159,9 @@ export default function WriteFillBlanksPage() {
   if (!currentExercise) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-slate-50 dark:bg-slate-900">
-        <p className="text-xl text-slate-600 dark:text-slate-400">No exercise data available.</p>
+        <p className="text-xl text-slate-600 dark:text-slate-400">
+          No exercise data available.
+        </p>
       </div>
     );
   }
@@ -194,23 +203,42 @@ export default function WriteFillBlanksPage() {
                 const head = word.clean.slice(0, keepCount);
                 const tail = word.clean.slice(keepCount);
                 const hasPunctuation = word.text !== word.clean;
-                const punc = hasPunctuation ? word.text.slice(word.clean.length) : "";
+                const punc = hasPunctuation
+                  ? word.text.slice(word.clean.length)
+                  : "";
 
                 return (
-                  <span key={wIdx} className="inline-flex items-center mx-0.5 align-middle group">
-                    <span className="text-blue-600 dark:text-blue-400 font-medium">{head}</span>
+                  <span
+                    key={wIdx}
+                    className="inline-flex items-center mx-0.5 align-middle group"
+                  >
+                    <span className="text-blue-600 dark:text-blue-400 font-medium">
+                      {head}
+                    </span>
                     <div className="flex gap-1 mx-1">
                       {Array.from({ length: blankCount }).map((_, cIdx) => {
                         const key = `${wIdx}_${cIdx}`;
-                        const isIncorrect = showFeedback && (userInputs[key] || "").toLowerCase() !== tail[cIdx].toLowerCase();
+                        const isIncorrect =
+                          showFeedback &&
+                          (userInputs[key] || "").toLowerCase() !==
+                            tail[cIdx].toLowerCase();
                         return (
                           <input
                             key={cIdx}
-                            ref={el => inputRefs.current[key] = el}
+                            ref={(el) => (inputRefs.current[key] = el)}
                             type="text"
-                            value={userInputs[key] || ""}
-                            onChange={e => handleCharInput(wIdx, cIdx, e.target.value, blankCount)}
-                            onKeyDown={e => handleKeyDown(e, wIdx, cIdx)}
+                            value={
+                              showFeedback ? tail[cIdx] : userInputs[key] || ""
+                            }
+                            onChange={(e) =>
+                              handleCharInput(
+                                wIdx,
+                                cIdx,
+                                e.target.value,
+                                blankCount,
+                              )
+                            }
+                            onKeyDown={(e) => handleKeyDown(e, wIdx, cIdx)}
                             disabled={showFeedback}
                             className={cn(
                               "w-7 h-9 lg:w-9 lg:h-11 rounded-lg border-2 text-center text-lg lg:text-xl transition-all focus:scale-110 focus:z-10",
@@ -219,7 +247,7 @@ export default function WriteFillBlanksPage() {
                                 ? isIncorrect
                                   ? "border-red-500 text-red-600 bg-red-50 dark:bg-red-900/20"
                                   : "border-emerald-500 text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20"
-                                : "border-slate-200 dark:border-slate-700 focus:border-blue-500 dark:focus:border-blue-400 focus:ring-4 focus:ring-blue-500/10"
+                                : "border-slate-200 dark:border-slate-700 focus:border-blue-500 dark:focus:border-blue-400 focus:ring-4 focus:ring-blue-500/10",
                             )}
                           />
                         );
@@ -238,8 +266,14 @@ export default function WriteFillBlanksPage() {
         <FeedbackBanner
           isCorrect={isCorrect}
           onContinue={handleContinue}
-          message={isCorrect ? "Perfect! Your grammar and spelling are spot on." : "Some words aren't quite right. Keep practicing!"}
-          continueLabel={currentIndex < questions.length - 1 ? "NEXT PASSAGE" : "FINISH"}
+          message={
+            isCorrect
+              ? "Perfect! Your grammar and spelling are spot on."
+              : "Some words aren't quite right. Keep practicing!"
+          }
+          continueLabel={
+            currentIndex < questions.length - 1 ? "NEXT PASSAGE" : "FINISH"
+          }
         />
       )}
     </>

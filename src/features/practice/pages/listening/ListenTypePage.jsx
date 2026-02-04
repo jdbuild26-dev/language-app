@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { usePracticeExit } from "@/hooks/usePracticeExit";
 import { useExerciseTimer } from "@/hooks/useExerciseTimer";
-import { Volume2, RotateCcw } from "lucide-react";
+import { Volume2, RotateCcw, Turtle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
 import FeedbackBanner from "@/components/ui/FeedbackBanner";
@@ -11,9 +11,6 @@ import { loadMockCSV } from "@/utils/csvLoader";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-
-
-
 export default function ListenTypePage() {
   const handleExit = usePracticeExit();
   const { speak, isSpeaking } = useTextToSpeech();
@@ -21,6 +18,7 @@ export default function ListenTypePage() {
   const [questions, setQuestions] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [playbackSpeed, setPlaybackSpeed] = useState(0.9);
 
   const [userInput, setUserInput] = useState("");
   const [isCompleted, setIsCompleted] = useState(false);
@@ -60,7 +58,6 @@ export default function ListenTypePage() {
     fetchQuestions();
   }, []);
 
-
   // Auto-play audio when question changes
   useEffect(() => {
     if (currentQuestion && !isCompleted) {
@@ -75,10 +72,14 @@ export default function ListenTypePage() {
 
   const handlePlayAudio = () => {
     if (currentQuestion) {
-      speak(currentQuestion.audioText, "fr-FR");
+      speak(currentQuestion.audioText, "fr-FR", playbackSpeed);
       setHasPlayed(true);
       resetTimer();
     }
+  };
+
+  const toggleSpeed = () => {
+    setPlaybackSpeed((prev) => (prev === 0.9 ? 0.5 : 0.9));
   };
 
   // Normalize for comparison
@@ -126,15 +127,18 @@ export default function ListenTypePage() {
   if (questions.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-slate-50 dark:bg-slate-900">
-        <p className="text-xl text-slate-600 dark:text-slate-400">No content available.</p>
-        <Button onClick={() => handleExit()} variant="outline" className="mt-4">Back</Button>
+        <p className="text-xl text-slate-600 dark:text-slate-400">
+          No content available.
+        </p>
+        <Button onClick={() => handleExit()} variant="outline" className="mt-4">
+          Back
+        </Button>
       </div>
     );
   }
 
   const progress =
     questions.length > 0 ? ((currentIndex + 1) / questions.length) * 100 : 0;
-
 
   return (
     <>
@@ -159,23 +163,47 @@ export default function ListenTypePage() {
           <div className="w-full bg-gradient-to-r from-emerald-500 to-teal-600 rounded-2xl p-8 mb-8 shadow-lg">
             <div className="flex flex-col items-center gap-4">
               {/* Play Button */}
-              <button
-                onClick={handlePlayAudio}
-                disabled={isSpeaking}
-                className={cn(
-                  "w-20 h-20 rounded-full flex items-center justify-center transition-all duration-300",
-                  isSpeaking
-                    ? "bg-white/30 animate-pulse"
-                    : "bg-white/20 hover:bg-white/30 hover:scale-105 active:scale-95",
-                )}
-              >
-                <Volume2
+              <div className="flex items-center gap-8">
+                {/* Slow Speed Button */}
+                <button
+                  onClick={toggleSpeed}
                   className={cn(
-                    "w-10 h-10 text-white",
-                    isSpeaking && "animate-pulse",
+                    "w-12 h-12 rounded-full flex items-center justify-center transition-all duration-200",
+                    playbackSpeed === 0.5
+                      ? "bg-white text-emerald-600 shadow-md scale-110"
+                      : "bg-white/20 text-white hover:bg-white/30",
                   )}
-                />
-              </button>
+                  title={
+                    playbackSpeed === 0.5
+                      ? "Switch to normal speed"
+                      : "Switch to slow speed"
+                  }
+                >
+                  <Turtle className="w-6 h-6" />
+                </button>
+
+                {/* Main Play Button */}
+                <button
+                  onClick={handlePlayAudio}
+                  disabled={isSpeaking}
+                  className={cn(
+                    "w-24 h-24 rounded-full flex items-center justify-center transition-all duration-300 shadow-xl",
+                    isSpeaking
+                      ? "bg-white/30 animate-pulse"
+                      : "bg-white text-emerald-600 hover:scale-105 active:scale-95",
+                  )}
+                >
+                  <Volume2
+                    className={cn(
+                      "w-12 h-12",
+                      isSpeaking ? "text-white" : "text-emerald-600",
+                    )}
+                  />
+                </button>
+
+                {/* Phantom element to balance layout if needed, or just leave as is since we are centering flex-col */}
+                <div className="w-12" />
+              </div>
 
               {/* Replay hint */}
               <div className="flex items-center gap-2 text-white/70 text-sm">

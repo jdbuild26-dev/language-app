@@ -1,8 +1,11 @@
 import React, { useState, useEffect } from "react";
 import { usePracticeExit } from "@/hooks/usePracticeExit";
 import { useExerciseTimer } from "@/hooks/useExerciseTimer";
-import { Volume2, CheckCircle, XCircle, Loader2 } from "lucide-react";
+import { CheckCircle, XCircle, Loader2 } from "lucide-react";
 import { loadMockCSV } from "@/utils/csvLoader";
+import { cn } from "@/lib/utils";
+import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
+import FeedbackBanner from "@/components/ui/FeedbackBanner";
 
 /* 
   Data for the exercise: 
@@ -10,10 +13,8 @@ import { loadMockCSV } from "@/utils/csvLoader";
 */
 // Consants removed - migrated to CSV
 
-
 export default function CompletePassagePage() {
   const handleExit = usePracticeExit();
-  const { speak, isSpeaking } = useTextToSpeech();
 
   // State
   const [passageSegments, setPassageSegments] = useState([]);
@@ -58,10 +59,6 @@ export default function CompletePassagePage() {
     },
     isPaused: showFeedback || isCompleted || loading,
   });
-
-  const handlePlayAudio = () => {
-    speak(fullText, "en-US"); // English text
-  };
 
   const handleOptionSelect = (blankId, value) => {
     if (showFeedback) return;
@@ -181,11 +178,11 @@ export default function CompletePassagePage() {
                           className={cn(
                             "inline-flex items-center justify-center px-1.5 py-0.5 rounded border border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 text-sm font-bold text-slate-500 mr-1 min-w-[24px]",
                             showFeedback &&
-                            isCorrectAnswer &&
-                            "bg-green-100 border-green-400 text-green-700",
+                              isCorrectAnswer &&
+                              "bg-green-100 border-green-400 text-green-700",
                             showFeedback &&
-                            !isCorrectAnswer &&
-                            "bg-red-100 border-red-400 text-red-700",
+                              !isCorrectAnswer &&
+                              "bg-red-100 border-red-400 text-red-700",
                           )}
                         >
                           {id}
@@ -259,23 +256,6 @@ export default function CompletePassagePage() {
                 })}
               </div>
             </div>
-
-            {/* Audio Control */}
-            <div className="p-4 border-t border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 mt-auto">
-              <button
-                onClick={handlePlayAudio}
-                disabled={isSpeaking}
-                className={cn(
-                  "flex items-center gap-2 text-sm font-medium transition-colors",
-                  isSpeaking
-                    ? "text-sky-500"
-                    : "text-slate-500 hover:text-sky-600",
-                )}
-              >
-                <Volume2 className="w-4 h-4" />
-                {isSpeaking ? "Playing..." : "Listen to full text"}
-              </button>
-            </div>
           </div>
 
           {/* Right Column: Questions (Hidden on mobile) */}
@@ -308,11 +288,11 @@ export default function CompletePassagePage() {
                             "w-full p-3 rounded-lg border bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 outline-none transition-all appearance-none cursor-pointer",
                             "focus:ring-2 focus:ring-sky-500 border-slate-200 dark:border-slate-700",
                             showFeedback &&
-                            isCorrectAnswer &&
-                            "border-green-500 bg-green-50 dark:bg-green-900/20 text-green-900 dark:text-green-100",
+                              isCorrectAnswer &&
+                              "border-green-500 bg-green-50 dark:bg-green-900/20 text-green-900 dark:text-green-100",
                             showFeedback &&
-                            !isCorrectAnswer &&
-                            "border-red-500 bg-red-50 dark:bg-red-900/20 text-red-900 dark:text-red-100",
+                              !isCorrectAnswer &&
+                              "border-red-500 bg-red-50 dark:bg-red-900/20 text-red-900 dark:text-red-100",
                           )}
                         >
                           <option value="" disabled>

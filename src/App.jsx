@@ -89,6 +89,7 @@ import ListenPassagePage from "@/features/practice/pages/listening/ListenPassage
 import ListenInteractivePage from "@/features/practice/pages/listening/ListenInteractivePage";
 import ListeningComprehensionPage from "@/features/practice/pages/listening/ListeningComprehensionPage";
 import ListeningConversationPage from "@/features/practice/pages/listening/ListeningConversationPage";
+import AudioFillInTheBlanksProPage from "@/features/vocabulary/pages/listening/AudioFillInTheBlanksProPage";
 
 // Practice Module Writing Exercises
 import TranslateTypedPage from "@/features/practice/pages/writing/TranslateTypedPage";
@@ -111,7 +112,6 @@ import SpeakInteractivePage from "@/features/practice/pages/speaking/SpeakIntera
 import MatchDescToImagePage from "@/features/practice/pages/reading/MatchDescToImagePage";
 import ImageLabellingPage from "@/features/practice/pages/reading/ImageLabellingPage";
 import SentenceCompletionPage from "@/features/practice/pages/reading/SentenceCompletionPage";
-import MatchSentenceEndingPage from "@/features/practice/pages/reading/MatchSentenceEndingPage";
 import SummaryCompletionPage from "@/features/practice/pages/reading/SummaryCompletionPage";
 
 function App() {
@@ -441,6 +441,16 @@ function App() {
           }
         />
         <Route
+          path="/vocabulary/practice/listening/fill-blanks"
+          element={
+            <ProtectedRoute>
+              <FullScreenLayout>
+                <ListenFillBlanksPage />
+              </FullScreenLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
           path="/vocabulary/practice/listening/dictation"
           element={
             <ProtectedRoute>
@@ -573,16 +583,6 @@ function App() {
           }
         />
         <Route
-          path="/practice/reading/match-sentence-ending"
-          element={
-            <ProtectedRoute>
-              <FullScreenLayout>
-                <MatchSentenceEndingPage />
-              </FullScreenLayout>
-            </ProtectedRoute>
-          }
-        />
-        <Route
           path="/practice/reading/summary-completion"
           element={
             <ProtectedRoute>
@@ -620,6 +620,16 @@ function App() {
             <ProtectedRoute>
               <FullScreenLayout>
                 <ListenFillBlanksPage />
+              </FullScreenLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/practice/listening/audio-fill-blanks-pro"
+          element={
+            <ProtectedRoute>
+              <FullScreenLayout>
+                <AudioFillInTheBlanksProPage />
               </FullScreenLayout>
             </ProtectedRoute>
           }

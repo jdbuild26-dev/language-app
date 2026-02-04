@@ -43,7 +43,6 @@ export default function ReorderPage() {
     return shuffled;
   };
 
-
   const currentQuestion = questions[currentIndex];
   const timerDuration = currentQuestion?.timeLimitSeconds || 60;
 
@@ -103,15 +102,18 @@ export default function ReorderPage() {
   if (questions.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-slate-50 dark:bg-slate-900">
-        <p className="text-xl text-slate-600 dark:text-slate-400">No questions available.</p>
-        <Button onClick={() => handleExit()} variant="outline" className="mt-4">Back</Button>
+        <p className="text-xl text-slate-600 dark:text-slate-400">
+          No questions available.
+        </p>
+        <Button onClick={() => handleExit()} variant="outline" className="mt-4">
+          Back
+        </Button>
       </div>
     );
   }
 
   const progress =
     questions.length > 0 ? ((currentIndex + 1) / questions.length) * 100 : 0;
-
 
   return (
     <>
@@ -132,32 +134,52 @@ export default function ReorderPage() {
         timerValue={timerString}
       >
         <div className="flex flex-col items-center w-full max-w-2xl mx-auto px-4 py-6">
-          {/* Sentence list */}
-          <div className="w-full space-y-3">
-            <Reorder.Group
-              axis="y"
-              values={currentOrder}
-              onReorder={setCurrentOrder}
-              className="w-full space-y-3"
-            >
-              {currentOrder.map((sentence, index) => {
-                const isCorrectPosition =
-                  showFeedback &&
-                  sentence === currentQuestion.correctOrder[index];
-                const isWrongPosition = showFeedback && !isCorrectPosition;
+          <div className="w-full flex gap-4">
+            {/* Left Column: Static Numbers */}
+            <div className="flex flex-col gap-3 pt-3">
+              {currentOrder.map((_, i) => (
+                <div
+                  key={i}
+                  className="w-8 h-8 flex items-center justify-center font-bold text-slate-400 dark:text-slate-500"
+                  style={{ height: "60px" }} // Approximate height matching the card
+                >
+                  {i + 1}
+                </div>
+              ))}
+            </div>
 
-                return (
-                  <SortableItem
-                    key={sentence}
-                    sentence={sentence}
-                    index={index}
-                    isCorrectPosition={isCorrectPosition}
-                    isWrongPosition={isWrongPosition}
-                    showFeedback={showFeedback}
-                  />
-                );
-              })}
-            </Reorder.Group>
+            {/* Right Column: Draggable List */}
+            <div className="flex-1 w-full space-y-3">
+              <Reorder.Group
+                axis="y"
+                values={currentOrder}
+                onReorder={setCurrentOrder}
+                className="w-full space-y-3"
+              >
+                {currentOrder.map((sentence) => {
+                  const index = currentOrder.indexOf(sentence);
+                  const isCorrectPosition =
+                    showFeedback &&
+                    sentence === currentQuestion.correctOrder[index];
+                  const isWrongPosition = showFeedback && !isCorrectPosition;
+
+                  // Find the true original index of this sentence
+                  const correctIndex =
+                    currentQuestion.correctOrder.indexOf(sentence);
+
+                  return (
+                    <SortableItem
+                      key={sentence}
+                      sentence={sentence}
+                      correctIndex={correctIndex}
+                      isCorrectPosition={isCorrectPosition}
+                      isWrongPosition={isWrongPosition}
+                      showFeedback={showFeedback}
+                    />
+                  );
+                })}
+              </Reorder.Group>
+            </div>
           </div>
         </div>
       </PracticeGameLayout>
@@ -179,7 +201,7 @@ export default function ReorderPage() {
 
 const SortableItem = ({
   sentence,
-  index,
+  correctIndex,
   isCorrectPosition,
   isWrongPosition,
   showFeedback,
@@ -190,13 +212,14 @@ const SortableItem = ({
       className={cn(
         "flex items-center gap-3 p-4 rounded-xl border-2 transition-colors duration-200 select-none bg-white dark:bg-slate-800",
         !showFeedback &&
-        "cursor-grab active:cursor-grabbing hover:border-slate-300 dark:hover:border-slate-600",
+          "cursor-grab active:cursor-grabbing hover:border-slate-300 dark:hover:border-slate-600",
         isCorrectPosition
           ? "bg-emerald-50 dark:bg-emerald-900/20 border-emerald-500"
           : isWrongPosition
             ? "bg-red-50 dark:bg-red-900/20 border-red-500"
             : "border-slate-200 dark:border-slate-700",
       )}
+      style={{ height: "60px" }} // Enforce height for alignment with numbers
       whileDrag={{
         scale: 1.02,
         boxShadow: "0 10px 30px -10px rgba(0,0,0,0.15)",
@@ -204,29 +227,26 @@ const SortableItem = ({
       }}
       transition={{ type: "spring", stiffness: 400, damping: 25 }}
     >
-      {/* Position number */}
-      <span
-        className={cn(
-          "w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold shrink-0",
-          isCorrectPosition
-            ? "bg-emerald-500 text-white"
-            : isWrongPosition
-              ? "bg-red-500 text-white"
-              : "bg-teal-100 dark:bg-teal-900/30 text-teal-600",
+      {/* Position number / Grip - Only show number on feedback */}
+      <div className="w-8 h-8 flex items-center justify-center shrink-0">
+        {showFeedback ? (
+          <span
+            className={cn(
+              "w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold",
+              isCorrectPosition
+                ? "bg-emerald-500 text-white"
+                : "bg-teal-500 text-white", // Show the true index in teal/blue if wrong position
+            )}
+          >
+            {correctIndex + 1}
+          </span>
+        ) : (
+          <GripVertical className="w-5 h-5 text-slate-400" />
         )}
-      >
-        {index + 1}
-      </span>
-
-      {/* Grip icon - Visual cue only, entire card is draggable */}
-      {!showFeedback && (
-        <div className="text-slate-400">
-          <GripVertical className="w-5 h-5" />
-        </div>
-      )}
+      </div>
 
       {/* Sentence text */}
-      <span className="flex-1 text-slate-700 dark:text-slate-200 font-medium select-none">
+      <span className="flex-1 text-slate-700 dark:text-slate-200 font-medium select-none truncate">
         {sentence}
       </span>
     </Reorder.Item>
