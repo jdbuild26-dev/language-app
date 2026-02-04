@@ -1,0 +1,6 @@
+id,sentence,question,options,correctIndex,translation,timeLimitSeconds
+1,"Je ___  content de te voir.","Complete the sentence","[""suis"", ""es""]",0,"I am happy to see you",30
+2,"Elle ___ à l'école tous les jours.","Complete the sentence","[""va"", ""vais""]",0,"She goes to school every day",30
+3,"Nous ___ français et anglais.","Complete the sentence","[""parle"", ""parlons""]",1,"We speak French and English",30
+4,"Tu ___ fatigué aujourd'hui.","Complete the sentence","[""es"", ""est""]",0,"You are tired today",30
+5,"Ils ___ dans le parc.","Complete the sentence","[""joue"", ""jouent""]",1,"They play in the park",30

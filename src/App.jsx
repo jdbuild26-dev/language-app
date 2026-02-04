@@ -29,6 +29,13 @@ import FlashcardsPage from "@/features/vocabulary/pages/FlashcardsPage";
 import SrsLearnPage from "@/features/vocabulary/pages/SrsLearnPage";
 import GrammarPage from "@/features/grammar/pages/GrammarPage";
 import GrammarNotePage from "@/features/grammar/pages/GrammarNotePage";
+import GrammarPracticePage from "@/features/grammar/pages/GrammarPracticePage";
+import FillBlanksOptionsPage from "@/features/grammar/pages/practice/FillBlanksOptionsPage";
+import FourOptionsPage from "@/features/grammar/pages/practice/FourOptionsPage";
+import ReorderWordsPage from "@/features/grammar/pages/practice/ReorderWordsPage";
+import FillBlanksGroupPage from "@/features/grammar/pages/practice/FillBlanksGroupPage"; // Handles simple & question inputs
+import TwoOptionsPage from "@/features/grammar/pages/practice/TwoOptionsPage";
+import ThreeOptionsPage from "@/features/grammar/pages/practice/ThreeOptionsPage";
 import StoriesPage from "@/features/stories/pages/StoriesPage";
 import StoryPlayerPage from "@/features/stories/pages/StoryPlayerPage";
 import PracticePage from "@/features/practice/pages/PracticePage";
@@ -166,10 +173,7 @@ function App() {
             path="grammar/*"
             element={
               <ProtectedRoute>
-                <Routes>
-                  <Route index element={<GrammarPage />} />
-                  <Route path=":noteId" element={<GrammarNotePage />} />
-                </Routes>
+                <GrammarPage />
               </ProtectedRoute>
             }
           />
@@ -593,6 +597,31 @@ function App() {
           }
         />
 
+        <Route
+          path="grammar/practice/fill-blanks"
+          element={
+            <FullScreenLayout>
+              <FillBlanksGroupPage type="simple" />
+            </FullScreenLayout>
+          }
+        />
+        <Route
+          path="grammar/practice/fill-blanks-question"
+          element={
+            <FullScreenLayout>
+              <FillBlanksGroupPage type="question" />
+            </FullScreenLayout>
+          }
+        />
+        <Route
+          path="grammar/practice/reorder-words"
+          element={
+            <FullScreenLayout>
+              <ReorderWordsPage />
+            </FullScreenLayout>
+          }
+        />
+
         {/* Practice Module Routes - LISTENING */}
         <Route
           path="/practice/listening/select"
@@ -826,6 +855,48 @@ function App() {
             <ProtectedRoute>
               <FullScreenLayout>
                 <SpeakInteractivePage />
+              </FullScreenLayout>
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Grammar Practice Routes */}
+        <Route
+          path="/grammar/practice/fill-blanks-options"
+          element={
+            <ProtectedRoute>
+              <FullScreenLayout>
+                <FillBlanksOptionsPage />
+              </FullScreenLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/grammar/practice/four-options"
+          element={
+            <ProtectedRoute>
+              <FullScreenLayout>
+                <FourOptionsPage />
+              </FullScreenLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/grammar/practice/two-options"
+          element={
+            <ProtectedRoute>
+              <FullScreenLayout>
+                <TwoOptionsPage />
+              </FullScreenLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/grammar/practice/three-options"
+          element={
+            <ProtectedRoute>
+              <FullScreenLayout>
+                <ThreeOptionsPage />
               </FullScreenLayout>
             </ProtectedRoute>
           }

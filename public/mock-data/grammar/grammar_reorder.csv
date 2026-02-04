@@ -1,0 +1,6 @@
+id,sentence,words,translation,timeLimitSeconds
+1,"Le chat dort.","Le,chat,dort,un,chien,mange","The cat sleeps.",60
+2,"J'aime les pommes.","J',aime,les,pommes,tu,aimes","I like apples.",60
+3,"Il fait beau.","Il,fait,beau,est,soleil,pluie","The weather is nice.",60
+4,"Je suis content.","Je,suis,content,es,triste,malade","I am happy.",60
+5,"Nous allons partir.","Nous,allons,partir,vont,rester,manger","We are going to leave.",60

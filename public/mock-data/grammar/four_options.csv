@@ -1,0 +1,6 @@
+id,sentence,question,options,correctIndex,translation,timeLimitSeconds
+1,"Marie habite à Paris depuis cinq ans. Elle travaille dans une librairie.","Où travaille Marie?","[""Dans un café"", ""Dans une librairie"", ""Dans un hôpital"", ""Dans une école""]",1,"Where does Marie work?",45
+2,"Le train part à huit heures du matin.","À quelle heure part le train?","[""À sept heures"", ""À huit heures"", ""À neuf heures"", ""À dix heures""]",1,"What time does the train leave?",45
+3,"J'aime beaucoup le chocolat, mais je préfère la vanille.","Qu'est-ce qu'il préfère?","[""Le chocolat"", ""La vanille"", ""La fraise"", ""Le caramel""]",1,"What does he/she prefer?",45
+4,"Nous allons à la plage demain si il fait beau.","Quand vont-ils à la plage?","[""Aujourd'hui"", ""Demain"", ""Hier"", ""La semaine prochaine""]",1,"When are they going to the beach?",45
+5,"Mon frère a vingt-cinq ans et ma sœur a trente ans.","Quel âge a la sœur?","[""Vingt ans"", ""Vingt-cinq ans"", ""Trente ans"", ""Trente-cinq ans""]",2,"How old is the sister?",45
