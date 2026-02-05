@@ -1,0 +1,6 @@
+id,sentence_parts,error_index,correct_text,explanation,timeLimitSeconds
+1,"He|go|to|school","1","He goes to school","Subject 'He' requires 3rd person singular 'goes'.",60
+2,"She|don't|like|apples","1","She doesn't like apples","3rd person singular negative uses 'doesn't', not 'don't'.",60
+3,"I|have|see|him","2","I have seen him","Present perfect requires the past participle 'seen'.",60
+4,"They|is|happy|today","1","They are happy today","Plural subject 'They' requires 'are'.",60
+5,"Yesterday|I|will|go","2","Yesterday I went","'Yesterday' indicates past tense, so 'will go' is incorrect.",60

@@ -126,7 +126,7 @@ export default function LearningCard({ word, sessionId }) {
               <span className="px-3 py-1 bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-gray-300 rounded-lg text-sm font-semibold">
                 {word.category} • {word.level || "A1"}
               </span>
-              <span className="px-3 py-1 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 rounded-lg text-sm font-bold shadow-sm border border-indigo-100 dark:border-indigo-800/50">
+              <span className="px-3 py-1 bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-gray-300 rounded-lg text-sm font-semibold">
                 Noun
               </span>
             </div>

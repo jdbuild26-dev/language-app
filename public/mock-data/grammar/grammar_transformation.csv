@@ -1,0 +1,6 @@
+id,instruction,sentence,answer,translation,timeLimitSeconds
+1,"Change to negative","She likes coffee.","She does not like coffee.|She doesn't like coffee.","Elle n'aime pas le café.",60
+2,"Change to past tense","I eat an apple.","I ate an apple.","J'ai mangé une pomme.",60
+3,"Change to passive voice","The cat chased the mouse.","The mouse was chased by the cat.","La souris a été poursuivie par le chat.",60
+4,"Ask a question (Where)","He lives in Paris.","Where does he live?","Où habite-t-il ?",60
+5,"Change to plural","The child plays.","The children play.","Les enfants jouent.",60

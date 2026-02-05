@@ -1,4 +1,5 @@
 import { Routes, Route, Navigate } from "react-router-dom";
+// Force refresh
 import {
   BookOpen,
   Dumbbell,
@@ -23,6 +24,8 @@ import ActivitiesPage from "./ActivitiesPage";
 import FlashcardsSetupPage from "./FlashcardsSetupPage";
 import FlashcardsActivityGamePage from "./FlashcardsActivityGamePage";
 import TypingFillInBlankPage from "./TypingFillInBlankPage";
+import MatchWordsActivityPage from "./MatchWordsActivityPage";
+import CorrectSpellingPage from "./CorrectSpellingPage";
 // Tab configuration
 const vocabularyTabs = [
   {
@@ -101,8 +104,23 @@ export default function VocabularyPage() {
           path="lessons/activities/typing-fill-blanks"
           element={<TypingFillInBlankPage />}
         />
+        <Route
+          path="lessons/activities/match-words"
+          element={<MatchWordsActivityPage mode="text" />}
+        />
+        <Route
+          path="lessons/activities/match-images"
+          element={<MatchWordsActivityPage mode="image" />}
+        />
+        <Route
+          path="lessons/activities/correct-spelling"
+          element={<CorrectSpellingPage />}
+        />
 
-        <Route path="*" element={<Navigate to="lessons/learn" replace />} />
+        <Route
+          path="*"
+          element={<Navigate to="/vocabulary/lessons/learn" replace />}
+        />
       </Routes>
     </div>
   );
