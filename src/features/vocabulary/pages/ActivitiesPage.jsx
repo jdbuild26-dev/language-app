@@ -47,7 +47,7 @@ const activities = [
     icon: Keyboard,
     color: "from-emerald-400 to-teal-500",
     shadow: "shadow-emerald-200 dark:shadow-emerald-900/20",
-    path: "#",
+    path: "/vocabulary/lessons/activities/correct-spelling",
   },
   {
     id: "gender",
