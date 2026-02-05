@@ -23,6 +23,7 @@ import ActivitiesPage from "./ActivitiesPage";
 import FlashcardsSetupPage from "./FlashcardsSetupPage";
 import FlashcardsActivityGamePage from "./FlashcardsActivityGamePage";
 import TypingFillInBlankPage from "./TypingFillInBlankPage";
+import MatchWordsActivityPage from "./MatchWordsActivityPage";
 // Tab configuration
 const vocabularyTabs = [
   {
@@ -100,6 +101,14 @@ export default function VocabularyPage() {
         <Route
           path="lessons/activities/typing-fill-blanks"
           element={<TypingFillInBlankPage />}
+        />
+        <Route
+          path="lessons/activities/match-words"
+          element={<MatchWordsActivityPage mode="text" />}
+        />
+        <Route
+          path="lessons/activities/match-images"
+          element={<MatchWordsActivityPage mode="image" />}
         />
 
         <Route path="*" element={<Navigate to="lessons/learn" replace />} />

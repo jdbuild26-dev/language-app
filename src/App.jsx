@@ -33,7 +33,9 @@ import GrammarPracticePage from "@/features/grammar/pages/GrammarPracticePage";
 import FillBlanksOptionsPage from "@/features/grammar/pages/practice/FillBlanksOptionsPage";
 import FourOptionsPage from "@/features/grammar/pages/practice/FourOptionsPage";
 import ReorderWordsPage from "@/features/grammar/pages/practice/ReorderWordsPage";
-import FillBlanksGroupPage from "@/features/grammar/pages/practice/FillBlanksGroupPage"; // Handles simple & question inputs
+import FillBlanksGroupPage from "@/features/grammar/pages/practice/FillBlanksGroupPage";
+import RewriteSentencePage from "@/features/grammar/pages/practice/RewriteSentencePage";
+import FindErrorPage from "@/features/grammar/pages/practice/FindErrorPage";
 import TwoOptionsPage from "@/features/grammar/pages/practice/TwoOptionsPage";
 import ThreeOptionsPage from "@/features/grammar/pages/practice/ThreeOptionsPage";
 import StoriesPage from "@/features/stories/pages/StoriesPage";
@@ -51,8 +53,6 @@ import MyStudentsPage from "@/features/teacher-dashboard/pages/MyStudentsPage";
 import ClassesPage from "@/features/teacher-dashboard/pages/ClassesPage";
 
 // Practice Games
-import MatchPairsGamePage from "@/features/vocabulary/pages/MatchPairsGamePage";
-import MatchPairsB1GamePage from "@/features/vocabulary/pages/MatchPairsB1GamePage";
 import ChooseOptionGamePage from "@/features/vocabulary/pages/ChooseOptionGamePage";
 import HighlightWordGamePage from "@/features/vocabulary/pages/HighlightWordGamePage";
 import OddOneOutGamePage from "@/features/vocabulary/pages/OddOneOutGamePage";
@@ -260,26 +260,7 @@ function App() {
         </Route>
 
         {/* Full Screen Practice Routes (Outside Main Layout) */}
-        <Route
-          path="/vocabulary/practice/match-pairs"
-          element={
-            <ProtectedRoute>
-              <FullScreenLayout>
-                <MatchPairsGamePage />
-              </FullScreenLayout>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/vocabulary/practice/match-pairs-b1"
-          element={
-            <ProtectedRoute>
-              <FullScreenLayout>
-                <MatchPairsB1GamePage />
-              </FullScreenLayout>
-            </ProtectedRoute>
-          }
-        />
+
         <Route
           path="/vocabulary/practice/choose-options"
           element={
@@ -394,16 +375,7 @@ function App() {
         />
 
         {/* Listening Practice Routes */}
-        <Route
-          path="/vocabulary/practice/listening/match-pairs"
-          element={
-            <ProtectedRoute>
-              <FullScreenLayout>
-                <MatchPairsB1GamePage />
-              </FullScreenLayout>
-            </ProtectedRoute>
-          }
-        />
+
         <Route
           path="/vocabulary/practice/listening/phonetics"
           element={
@@ -618,6 +590,30 @@ function App() {
           element={
             <FullScreenLayout>
               <ReorderWordsPage />
+            </FullScreenLayout>
+          }
+        />
+        <Route
+          path="grammar/practice/transformation"
+          element={
+            <FullScreenLayout>
+              <RewriteSentencePage mode="transformation" />
+            </FullScreenLayout>
+          }
+        />
+        <Route
+          path="grammar/practice/combination"
+          element={
+            <FullScreenLayout>
+              <RewriteSentencePage mode="combination" />
+            </FullScreenLayout>
+          }
+        />
+        <Route
+          path="grammar/practice/find-error"
+          element={
+            <FullScreenLayout>
+              <FindErrorPage />
             </FullScreenLayout>
           }
         />

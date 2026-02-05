@@ -7,6 +7,7 @@ import {
   Hash,
   Clock,
   Sparkles,
+  Image as ImageIcon,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { cn } from "@/lib/utils";
@@ -22,13 +23,22 @@ const activities = [
     path: "/vocabulary/lessons/activities/flashcards",
   },
   {
-    id: "match-pairs",
-    title: "Match the Pairs",
-    description: "Connect words with their meanings",
+    id: "match-words",
+    title: "Match Words",
+    description: "Match English words to French",
     icon: Puzzle,
     color: "from-orange-400 to-amber-500",
     shadow: "shadow-orange-200 dark:shadow-orange-900/20",
-    path: "#",
+    path: "/vocabulary/lessons/activities/match-words",
+  },
+  {
+    id: "match-images",
+    title: "Match Images",
+    description: "Match images to French words",
+    icon: ImageIcon,
+    color: "from-pink-400 to-rose-500",
+    shadow: "shadow-pink-200 dark:shadow-pink-900/20",
+    path: "/vocabulary/lessons/activities/match-images",
   },
   {
     id: "spelling",

@@ -1,0 +1,6 @@
+id,instruction,sentence,answer,translation,timeLimitSeconds
+1,"Combine using 'although'","He was tired. He continued working.","Although he was tired, he continued working.|He continued working although he was tired.","Bien qu'il fût fatigué, il a continué à travailler.",60
+2,"Combine using 'because'","She stayed home. She was sick.","She stayed home because she was sick.|Because she was sick, she stayed home.","Elle est restée à la maison parce qu'elle était malade.",60
+3,"Combine using 'if'","You study hard. You will pass.","If you study hard, you will pass.|You will pass if you study hard.","Si tu étudies dur, tu réussiras.",60
+4,"Combine using 'but'","I like tea. I don't like coffee.","I like tea but I don't like coffee.|I like tea, but I don't like coffee.","J'aime le thé mais je n'aime pas le café.",60
+5,"Combine using 'so'","It was raining. We took an umbrella.","It was raining so we took an umbrella.|It was raining, so we took an umbrella.","Il pleuvait donc nous avons pris un parapluie.",60

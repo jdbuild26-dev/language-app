@@ -9,6 +9,9 @@ import {
   Type,
   HelpCircle,
   LayoutGrid,
+  RefreshCw,
+  Link as LinkIcon,
+  AlertTriangle,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { cn } from "@/lib/utils";
@@ -82,6 +85,36 @@ const practiceExercises = [
     color: "from-amber-400 to-orange-500",
     shadow: "shadow-amber-200 dark:shadow-amber-900/20",
     path: "/grammar/practice/reorder-words",
+    isLive: true,
+  },
+  {
+    id: "transformation",
+    title: "Sentence Transformation",
+    description: "Rewrite sentences based on instructions",
+    icon: RefreshCw,
+    color: "from-teal-400 to-emerald-500",
+    shadow: "shadow-teal-200 dark:shadow-teal-900/20",
+    path: "/grammar/practice/transformation",
+    isLive: true,
+  },
+  {
+    id: "combination",
+    title: "Combine Sentences",
+    description: "Join sentences using connectors",
+    icon: LinkIcon,
+    color: "from-cyan-400 to-sky-500",
+    shadow: "shadow-cyan-200 dark:shadow-cyan-900/20",
+    path: "/grammar/practice/combination",
+    isLive: true,
+  },
+  {
+    id: "find-error",
+    title: "Find the Error",
+    description: "Identify and correct grammar mistakes",
+    icon: AlertTriangle,
+    color: "from-rose-400 to-red-500",
+    shadow: "shadow-rose-200 dark:shadow-rose-900/20",
+    path: "/grammar/practice/find-error",
     isLive: true,
   },
 ];

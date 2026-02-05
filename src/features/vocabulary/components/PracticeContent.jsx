@@ -74,16 +74,16 @@ const practiceActivities = [
   // Listening Activities
 
   // Listening Activities
-  {
-    id: "audio-match",
-    name: "Match Pairs (Audio)",
-    icon: Music,
-    desc: "Match sounds to text",
-    path: "listening/match-pairs",
-    category: "listening",
-    color: "from-purple-400 to-violet-500",
-    shadow: "shadow-purple-200 dark:shadow-purple-900/20",
-  },
+  // {
+  //   id: "audio-match",
+  //   name: "Match Pairs (Audio)",
+  //   icon: Music,
+  //   desc: "Match sounds to text",
+  //   path: "listening/match-pairs",
+  //   category: "listening",
+  //   color: "from-purple-400 to-violet-500",
+  //   shadow: "shadow-purple-200 dark:shadow-purple-900/20",
+  // },
   {
     id: "phonetics",
     name: "Phonetics",
