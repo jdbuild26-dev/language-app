@@ -34,6 +34,13 @@ export default function HighlightPage() {
   const [feedbackMessage, setFeedbackMessage] = useState("");
   const [score, setScore] = useState(0);
 
+  const getFeedbackMessage = (correct) => {
+    if (correct) {
+      return "Excellent! Good job finding the word.";
+    }
+    return "Try again. Look for the word that matches the meaning.";
+  };
+
   const currentQuestion = questions[currentIndex];
   const timerDuration = currentQuestion?.timeLimitSeconds || 30;
 
@@ -148,7 +155,7 @@ export default function HighlightPage() {
                 const isCorrectWord =
                   showFeedback &&
                   normalize(cleanWord) ===
-                  normalize(currentQuestion.correctWord);
+                    normalize(currentQuestion.correctWord);
 
                 return (
                   <button

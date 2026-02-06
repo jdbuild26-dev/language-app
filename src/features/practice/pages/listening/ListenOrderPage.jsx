@@ -79,13 +79,13 @@ export default function ListenOrderPage() {
   const handlePlaySlow = () => {
     // Play all sentences in correct order slowly
     const text = currentQuestion.correctOrder.join(". ");
-    speak(text, "fr-FR", 0.6);
+    speak(text, "fr-FR", 0.75);
     setPlayedAudio(true);
   };
 
   const handlePlayItem = (text, e) => {
     e.stopPropagation(); // Prevent drag when clicking play button
-    speak(text, "fr-FR");
+    speak(text, "fr-FR", 1.0);
   };
 
   const handleSubmit = () => {

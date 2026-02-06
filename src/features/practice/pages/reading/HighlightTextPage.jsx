@@ -36,6 +36,13 @@ export default function HighlightTextPage() {
   const [feedbackMessage, setFeedbackMessage] = useState("");
   const [score, setScore] = useState(0);
 
+  const getFeedbackMessage = (correct) => {
+    if (correct) {
+      return "Correct! You highlighted the key information.";
+    }
+    return "Not quite. Try to find the specific text that answers the question.";
+  };
+
   const currentQuestion = questions[currentIndex];
   // More time for reading
   const timerDuration = currentQuestion?.timeLimitSeconds || 120;
@@ -60,16 +67,27 @@ export default function HighlightTextPage() {
     }
   }, [currentIndex, currentQuestion, isCompleted, resetTimer]);
 
-  const handleMouseUp = () => {
-    if (showFeedback) return;
+  // Improved selection logic using document selectionchange
+  useEffect(() => {
+    const handleSelectionChange = () => {
+      if (showFeedback) return;
 
-    const selection = window.getSelection();
-    const text = selection.toString().trim();
+      const selection = window.getSelection();
+      const text = selection.toString().trim();
 
-    if (text.length > 0) {
-      setSelectedText(text);
-    }
-  };
+      // Only update if we have a valid selection
+      // We could also check if the selection is within our passage container if we had a ref
+      // causing issues with focus? simple check for now.
+      if (text.length > 0) {
+        setSelectedText(text);
+      }
+    };
+
+    document.addEventListener("selectionchange", handleSelectionChange);
+    return () => {
+      document.removeEventListener("selectionchange", handleSelectionChange);
+    };
+  }, [showFeedback]);
 
   // Helper to normalize strings for comparison (ignores case and simple punctuation differences)
   const normalize = (str) => {
@@ -182,7 +200,7 @@ export default function HighlightTextPage() {
             </h3>
             <div
               className="prose dark:prose-invert max-w-none text-lg leading-relaxed text-slate-800 dark:text-slate-200 select-text"
-              onMouseUp={handleMouseUp}
+              /* onMouseUp handler removed in favor of global selection listener */
             >
               {currentQuestion.passage}
             </div>
@@ -216,7 +234,7 @@ export default function HighlightTextPage() {
                     : "border-dashed border-slate-300 dark:border-slate-600 text-slate-400",
                 )}
               >
-                {selectedText || "Click and drag to highlight text"}
+                {selectedText || "Drag to select text in the passage"}
               </div>
 
               {selectedText && (

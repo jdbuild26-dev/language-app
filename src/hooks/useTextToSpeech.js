@@ -56,6 +56,11 @@ export const useTextToSpeech = () => {
       };
 
       utterance.onerror = (event) => {
+        // Ignore interrupted errors caused by canceling previous speech
+        if (event.error === "interrupted" || event.error === "canceled") {
+          return;
+        }
+
         console.error("TTS Error:", event);
         setIsSpeaking(false);
         setIsPaused(false);

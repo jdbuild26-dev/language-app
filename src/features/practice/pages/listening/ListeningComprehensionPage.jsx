@@ -9,9 +9,6 @@ import { Button } from "@/components/ui/button";
 import { loadMockCSV } from "@/utils/csvLoader";
 import { Loader2 } from "lucide-react";
 
-
-
-
 export default function ListeningComprehensionPage() {
   const handleExit = usePracticeExit();
   const { speak, isSpeaking, stop } = useTextToSpeech();
@@ -26,7 +23,6 @@ export default function ListeningComprehensionPage() {
   const [showFeedback, setShowFeedback] = useState(false);
   const [score, setScore] = useState(0);
 
-
   // Audio Control State
   const [progress, setProgress] = useState(0);
   const [charOffset, setCharOffset] = useState(0);
@@ -34,7 +30,6 @@ export default function ListeningComprehensionPage() {
   // Use ref for isDragging to avoid stale closures in callbacks
   const isDraggingRef = useRef(false);
   const textLength = scenarioData?.audioText.length || 0;
-
 
   const speakChunk = (offset) => {
     const textToSpeak = scenarioData?.audioText.slice(offset);
@@ -82,7 +77,9 @@ export default function ListeningComprehensionPage() {
   useEffect(() => {
     const fetchScenario = async () => {
       try {
-        const data = await loadMockCSV("practice/listening/listening_comprehension.csv");
+        const data = await loadMockCSV(
+          "practice/listening/listening_comprehension.csv",
+        );
         if (data && data.length > 0) {
           setScenarioData(data[0]);
         }
@@ -188,15 +185,18 @@ export default function ListeningComprehensionPage() {
   if (!scenarioData) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-slate-50 dark:bg-slate-900">
-        <p className="text-xl text-slate-600 dark:text-slate-400">No content available.</p>
-        <Button onClick={() => handleExit()} variant="outline" className="mt-4">Back</Button>
+        <p className="text-xl text-slate-600 dark:text-slate-400">
+          No content available.
+        </p>
+        <Button onClick={() => handleExit()} variant="outline" className="mt-4">
+          Back
+        </Button>
       </div>
     );
   }
 
   return (
     <FullScreenLayout>
-
       <div className="min-h-screen bg-slate-50 dark:bg-slate-900 flex flex-col">
         {/* Sticky Header with Audio Player */}
         <div className="sticky top-0 z-10 bg-white dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800 shadow-sm px-4 py-4">
@@ -294,46 +294,53 @@ export default function ListeningComprehensionPage() {
             </div>
           ) : (
             <div className="space-y-6 animate-in slide-in-from-bottom-8 duration-500">
-              {scenarioData?.questions.map((q, index) => {
+              {Array.isArray(scenarioData?.questions) ? (
+                scenarioData?.questions.map((q, index) => {
+                  const isCorrectItem =
+                    isSubmitted && checkAnswer(userAnswers[q.id], q);
+                  const isWrongItem = isSubmitted && !isCorrectItem;
 
-                const isCorrectItem =
-                  isSubmitted && checkAnswer(userAnswers[q.id], q);
-                const isWrongItem = isSubmitted && !isCorrectItem;
-
-                return (
-                  <div
-                    key={q.id}
-                    className={cn(
-                      "bg-white dark:bg-slate-800 rounded-xl p-6 border-2 transition-all",
-                      isSubmitted
-                        ? isCorrectItem
-                          ? "border-green-500 bg-green-50/10"
-                          : "border-red-300 bg-red-50/10"
-                        : "border-slate-100 dark:border-slate-700 shadow-sm",
-                    )}
-                  >
-                    <label className="block text-base font-medium text-slate-800 dark:text-slate-200 mb-3">
-                      {index + 1}. {q.question}
-                    </label>
-                    <input
-                      type="text"
-                      disabled={isSubmitted}
-                      value={userAnswers[q.id] || ""}
-                      onChange={(e) => handleInputChange(q.id, e.target.value)}
-                      placeholder={q.placeholder}
-                      className="w-full px-4 py-3 rounded-lg border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 focus:ring-2 focus:ring-blue-500 outline-none transition-all disabled:opacity-70"
-                    />
-                    {isSubmitted && !isCorrectItem && (
-                      <div className="mt-2 text-sm text-red-500 dark:text-red-400 font-medium animate-in fade-in">
-                        Correct answer:{" "}
-                        <span className="text-slate-600 dark:text-slate-300 ml-1">
-                          {q.answer}
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
+                  return (
+                    <div
+                      key={q.id}
+                      className={cn(
+                        "bg-white dark:bg-slate-800 rounded-xl p-6 border-2 transition-all",
+                        isSubmitted
+                          ? isCorrectItem
+                            ? "border-green-500 bg-green-50/10"
+                            : "border-red-300 bg-red-50/10"
+                          : "border-slate-100 dark:border-slate-700 shadow-sm",
+                      )}
+                    >
+                      <label className="block text-base font-medium text-slate-800 dark:text-slate-200 mb-3">
+                        {index + 1}. {q.question}
+                      </label>
+                      <input
+                        type="text"
+                        disabled={isSubmitted}
+                        value={userAnswers[q.id] || ""}
+                        onChange={(e) =>
+                          handleInputChange(q.id, e.target.value)
+                        }
+                        placeholder={q.placeholder}
+                        className="w-full px-4 py-3 rounded-lg border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 focus:ring-2 focus:ring-blue-500 outline-none transition-all disabled:opacity-70"
+                      />
+                      {isSubmitted && !isCorrectItem && (
+                        <div className="mt-2 text-sm text-red-500 dark:text-red-400 font-medium animate-in fade-in">
+                          Correct answer:{" "}
+                          <span className="text-slate-600 dark:text-slate-300 ml-1">
+                            {q.answer}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })
+              ) : (
+                <div className="p-4 text-red-500 text-center">
+                  Error loading questions. Please try again later.
+                </div>
+              )}
 
               {!isSubmitted && (
                 <div className="pt-8 flex justify-center">
@@ -355,7 +362,6 @@ export default function ListeningComprehensionPage() {
         <FeedbackBanner
           isCorrect={score === scenarioData?.questions.length} // Only "Success" style if 100%, otherwise just info
           message={`You got ${score} out of ${scenarioData?.questions.length} correct.`}
-
           onContinue={handleExit} // Or maybe retry?
           continueLabel="Finish"
         >
