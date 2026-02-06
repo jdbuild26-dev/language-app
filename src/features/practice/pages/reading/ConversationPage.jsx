@@ -9,25 +9,27 @@ import { getFeedbackMessage } from "@/utils/feedbackMessages";
 import { useTextToSpeech } from "@/hooks/useTextToSpeech";
 import { loadMockCSV } from "@/utils/csvLoader";
 import { Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 export default function ConversationPage() {
   const handleExit = usePracticeExit();
   const { speak, isSpeaking } = useTextToSpeech();
 
-  const [conversations, setConversations] = useState([]);
+  // Current conversation data
+  const [conversation, setConversation] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Current scenario index
-  const [currentIndex, setCurrentIndex] = useState(0);
+  // Current turn/exchange index (0-based)
+  const [currentTurnIndex, setCurrentTurnIndex] = useState(0);
 
-  // User's selected option index for current scenario
+  // User's selected option for current turn
   const [selectedOption, setSelectedOption] = useState(null);
 
-  // Whether user has submitted their answer
+  // Whether user has submitted their answer for current turn
   const [hasAnswered, setHasAnswered] = useState(false);
 
-  // Displayed messages for the current scenario
-  const [displayedMessages, setDisplayedMessages] = useState([]);
+  // Conversation history: array of {speakerText, userText, isRevealed}
+  const [conversationHistory, setConversationHistory] = useState([]);
 
   // Feedback states
   const [showFeedback, setShowFeedback] = useState(false);
@@ -36,60 +38,63 @@ export default function ConversationPage() {
   const [score, setScore] = useState(0);
   const [isCompleted, setIsCompleted] = useState(false);
 
-  const currentConversation = conversations[currentIndex];
-  const totalScenarios = conversations.length;
-  // Use a default duration if not specified
-  const timerDuration = currentConversation?.timeLimitSeconds || 30;
+  const currentExchange = conversation?.exchanges?.[currentTurnIndex];
+  const totalExchanges = conversation?.exchanges?.length || 0;
+
+  // Timer logic
+  const timerDuration = 45;
 
   const { timerString, resetTimer } = useExerciseTimer({
     duration: timerDuration,
     mode: "timer",
     onExpire: () => {
-      // Logic when timer expires
       if (!isCompleted && !showFeedback && !hasAnswered) {
         setIsCorrect(false);
         setFeedbackMessage("Time's up!");
         setShowFeedback(true);
-        setHasAnswered(true);
       }
     },
     isPaused: isCompleted || showFeedback || loading || hasAnswered,
   });
 
   useEffect(() => {
-    const fetchConversations = async () => {
+    const fetchConversation = async () => {
       try {
-        const data = await loadMockCSV("practice/reading/conversation.csv");
-        setConversations(data || []);
+        const data = await loadMockCSV(
+          "practice/reading/reading_conversation.csv",
+        );
+        if (data && data.length > 0) {
+          setConversation(data[0]);
+        }
       } catch (error) {
         console.error("Error loading mock data:", error);
       } finally {
         setLoading(false);
       }
     };
-    fetchConversations();
+    fetchConversation();
   }, []);
 
-  // Initialize displayed messages when scenario changes
+  // Reset states when turn changes
   useEffect(() => {
-    if (currentConversation) {
-      setDisplayedMessages(currentConversation.messages || []);
-      setSelectedOption(null);
-      setHasAnswered(false);
-      setShowFeedback(false);
-      resetTimer();
-    }
-  }, [currentConversation, resetTimer]);
+    setSelectedOption(null);
+    setHasAnswered(false);
+    setShowFeedback(false);
+    resetTimer();
+  }, [currentTurnIndex, resetTimer]);
 
-  const handleOptionSelect = (index) => {
+  const handleOptionSelect = (optionId) => {
     if (hasAnswered || showFeedback) return;
-    setSelectedOption(index);
+    setSelectedOption(optionId);
   };
 
   const handleSubmit = () => {
     if (hasAnswered || selectedOption === null || showFeedback) return;
 
-    const correct = selectedOption === currentConversation.correctIndex;
+    const selectedOptionObj = currentExchange.options.find(
+      (opt) => opt.id === selectedOption,
+    );
+    const correct = selectedOption === currentExchange.correctOptionId;
 
     setIsCorrect(correct);
     setFeedbackMessage(getFeedbackMessage(correct));
@@ -100,30 +105,23 @@ export default function ConversationPage() {
       setScore((prev) => prev + 1);
     }
 
-    // Update conversation history with user's choice
-    const userMessage = {
-      speaker: "You",
-      text: currentConversation.options[selectedOption],
-      isBot: false,
-    };
-
-    const newMessages = [...displayedMessages, userMessage];
-
-    // If correct, add the next bot message if it exists
-    if (correct && currentConversation.nextMessage) {
-      newMessages.push(currentConversation.nextMessage);
-      // Optional: Speak the response
-      // speak(currentConversation.nextMessage.text, "fr-FR");
-    }
-
-    setDisplayedMessages(newMessages);
+    // Add to conversation history
+    setConversationHistory((prev) => [
+      ...prev,
+      {
+        speakerText: currentExchange.speakerText,
+        userText: selectedOptionObj.text,
+        userOptionId: selectedOption,
+        wasCorrect: correct,
+      },
+    ]);
   };
 
   const handleContinue = () => {
     setShowFeedback(false);
 
-    if (currentIndex < totalScenarios - 1) {
-      setCurrentIndex((prev) => prev + 1);
+    if (currentTurnIndex < totalExchanges - 1) {
+      setCurrentTurnIndex((prev) => prev + 1);
     } else {
       setIsCompleted(true);
     }
@@ -137,40 +135,37 @@ export default function ConversationPage() {
     );
   }
 
-  if (!currentConversation) {
+  if (!conversation) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-slate-50 dark:bg-slate-900">
         <p className="text-xl text-slate-600 dark:text-slate-400">
           No content available.
         </p>
-        <button
-          onClick={() => handleExit()}
-          className="mt-4 text-indigo-500 hover:underline"
-        >
+        <Button onClick={() => handleExit()} variant="outline" className="mt-4">
           Back
-        </button>
+        </Button>
       </div>
     );
   }
 
   const progress =
-    totalScenarios > 0 ? ((currentIndex + 1) / totalScenarios) * 100 : 0;
+    totalExchanges > 0 ? ((currentTurnIndex + 1) / totalExchanges) * 100 : 0;
 
   return (
     <PracticeGameLayout
-      questionType="Conversation Practice"
-      instructionFr={currentConversation.currentPrompt}
+      questionType="Running Conversation"
+      instructionFr="Participez à la conversation"
       instructionEn="Choose the best response to continue the conversation"
       progress={progress}
       isGameOver={isCompleted}
       score={score}
-      totalQuestions={totalScenarios}
+      totalQuestions={totalExchanges}
       onExit={handleExit}
       onNext={handleSubmit}
       onRestart={() => window.location.reload()}
       isSubmitEnabled={selectedOption !== null && !showFeedback && !hasAnswered}
       showSubmitButton={!showFeedback && !hasAnswered}
-      submitLabel="Check Answer"
+      submitLabel="Send"
       timerValue={timerString}
     >
       <div className="flex flex-col items-center w-full max-w-6xl mx-auto px-4 py-4">
@@ -187,11 +182,11 @@ export default function ConversationPage() {
                 </h3>
               </div>
               <p className="text-sm text-slate-600 dark:text-slate-400">
-                {currentConversation.context}
+                {conversation?.title}
               </p>
-              {currentConversation.currentPrompt && (
+              {conversation?.scenario && (
                 <p className="text-xs text-slate-500 dark:text-slate-500 mt-2 border-t pt-2 border-slate-100 dark:border-slate-700">
-                  {currentConversation.currentPrompt}
+                  {conversation.scenario}
                 </p>
               )}
             </div>
@@ -201,101 +196,95 @@ export default function ConversationPage() {
             </h3>
 
             <div className="bg-slate-50 dark:bg-slate-900 rounded-2xl p-4 min-h-[400px] max-h-[500px] overflow-y-auto space-y-4">
-              {displayedMessages.map((msg, idx) => (
-                <div key={idx} className="space-y-3">
-                  <div
-                    className={cn(
-                      "flex justify-start",
-                      msg.isBot ? "" : "justify-end",
-                    )}
-                  >
-                    <div
-                      className={cn(
-                        "flex items-start gap-2 max-w-[85%]",
-                        msg.isBot ? "" : "flex-row-reverse",
-                      )}
-                    >
-                      {/* Avatar */}
-                      <div
-                        className={cn(
-                          "w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 mt-1",
-                          msg.isBot
-                            ? "bg-indigo-100 dark:bg-indigo-900"
-                            : "bg-emerald-100 dark:bg-emerald-900",
-                        )}
-                      >
-                        {msg.isBot ? (
-                          <User className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
-                        ) : (
-                          <User className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                        )}
+              {/* Show conversation history */}
+              {conversationHistory.map((turn, index) => (
+                <div key={index} className="space-y-3">
+                  {/* Speaker's message */}
+                  <div className="flex justify-start">
+                    <div className="flex items-start gap-2 max-w-[85%]">
+                      <div className="w-8 h-8 rounded-full bg-indigo-100 dark:bg-indigo-900 flex items-center justify-center flex-shrink-0 mt-1">
+                        <User className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
                       </div>
-
-                      {/* Bubble */}
-                      <div
-                        className={cn(
-                          "px-4 py-2 rounded-2xl shadow-sm",
-                          msg.isBot
-                            ? "bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 rounded-tl-md"
-                            : "bg-indigo-500 text-white rounded-tr-md",
-                        )}
-                      >
+                      <div className="bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 px-4 py-2 rounded-2xl rounded-tl-md shadow-sm">
                         <div className="flex items-start gap-2">
-                          <p className="text-sm">{msg.text}</p>
-                          {msg.isBot && (
-                            <button
-                              onClick={() => speak(msg.text, "fr-FR")}
-                              className="ml-2 inline-flex align-middle opacity-50 hover:opacity-100 transition-opacity"
-                              disabled={isSpeaking}
-                            >
-                              <Volume2 className="w-3 h-3" />
-                            </button>
-                          )}
+                          <p className="text-sm">{turn.speakerText}</p>
+                          <button
+                            onClick={() => speak(turn.speakerText, "fr-FR")}
+                            className="ml-2 inline-flex align-middle opacity-50 hover:opacity-100 transition-opacity"
+                            disabled={isSpeaking}
+                          >
+                            <Volume2 className="w-3 h-3" />
+                          </button>
                         </div>
                       </div>
+                    </div>
+                  </div>
+
+                  {/* User's response */}
+                  <div className="flex justify-end">
+                    <div className="bg-indigo-500 text-white px-4 py-2 rounded-2xl rounded-br-md shadow-sm max-w-[85%]">
+                      <p className="text-sm">{turn.userText}</p>
                     </div>
                   </div>
                 </div>
               ))}
 
-              {/* Placeholdera / empty state if needed */}
-              {displayedMessages.length === 0 && (
-                <div className="flex items-center justify-center h-full text-slate-400 dark:text-slate-600">
-                  <p className="text-sm">Conversation will appear here...</p>
+              {/* Current turn: Show Speaker Text if NOT answered yet (or always?) */}
+              {/* In Reading, we show the question (Speaker text) immediately to let user choose answer */}
+              {!hasAnswered && currentExchange && (
+                <div className="flex justify-start">
+                  <div className="flex items-start gap-2 max-w-[85%]">
+                    <div className="w-8 h-8 rounded-full bg-indigo-100 dark:bg-indigo-900 flex items-center justify-center flex-shrink-0 mt-1">
+                      <User className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                    </div>
+                    <div className="bg-white dark:bg-slate-800 px-4 py-3 rounded-2xl rounded-tl-md shadow-sm">
+                      <div className="flex items-start gap-2">
+                        <p className="text-sm text-slate-700 dark:text-slate-200">
+                          {currentExchange.speakerText}
+                        </p>
+                        <button
+                          onClick={() =>
+                            speak(currentExchange.speakerText, "fr-FR")
+                          }
+                          className="ml-2 inline-flex align-middle opacity-50 hover:opacity-100 transition-opacity"
+                          disabled={isSpeaking}
+                        >
+                          <Volume2 className="w-3 h-3" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               )}
+
+              {/* Empty state */}
+              {conversationHistory.length === 0 &&
+                hasAnswered === false &&
+                !currentExchange && (
+                  <div className="flex items-center justify-center h-full text-slate-400 dark:text-slate-600">
+                    <p className="text-sm">Conversation will appear here...</p>
+                  </div>
+                )}
             </div>
           </div>
 
           {/* RIGHT COLUMN: Response Options */}
           <div className="flex flex-col space-y-4">
-            <div className="flex items-center justify-between">
-              <h3 className="text-sm font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wide">
-                Select your response
-              </h3>
-              {/* Show prompt here too if useful, or keep it in instruction header */}
-            </div>
+            <h3 className="text-sm font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wide">
+              Select the best response
+            </h3>
 
-            {!hasAnswered && (
-              <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg border border-blue-100 dark:border-blue-800 mb-2">
-                <p className="text-sm text-blue-700 dark:text-blue-300">
-                  <span className="font-semibold">Goal:</span>{" "}
-                  {currentConversation.currentPrompt}
-                </p>
-              </div>
-            )}
-
-            {!hasAnswered && currentConversation.options && (
+            {!hasAnswered && currentExchange && (
               <div className="space-y-3">
-                {currentConversation.options.map((option, idx) => (
+                {currentExchange.options.map((option) => (
                   <button
-                    key={idx}
-                    onClick={() => handleOptionSelect(idx)}
+                    key={option.id}
+                    onClick={() => handleOptionSelect(option.id)}
                     disabled={hasAnswered || showFeedback}
                     className={cn(
                       "w-full p-4 rounded-xl border-2 text-left font-medium transition-all",
                       "bg-white dark:bg-slate-800 shadow-sm hover:shadow-md",
-                      selectedOption === idx
+                      selectedOption === option.id
                         ? "border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20"
                         : "border-slate-200 dark:border-slate-700 hover:border-indigo-300",
                       hasAnswered && "cursor-not-allowed opacity-60",
@@ -306,19 +295,19 @@ export default function ConversationPage() {
                       <div
                         className={cn(
                           "w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0",
-                          selectedOption === idx
+                          selectedOption === option.id
                             ? "border-indigo-500 bg-indigo-500"
                             : "border-slate-300 dark:border-slate-500",
                         )}
                       >
-                        {selectedOption === idx && (
+                        {selectedOption === option.id && (
                           <div className="w-2 h-2 bg-white rounded-full" />
                         )}
                       </div>
 
                       {/* Option text */}
                       <span className="text-sm text-slate-700 dark:text-slate-200">
-                        {option}
+                        {option.text}
                       </span>
                     </div>
                   </button>
@@ -329,18 +318,21 @@ export default function ConversationPage() {
         </div>
       </div>
 
+      {/* Feedback Banner */}
       {showFeedback && (
         <FeedbackBanner
           isCorrect={isCorrect}
           correctAnswer={
             !isCorrect
-              ? currentConversation.options[currentConversation.correctIndex]
-              : undefined
+              ? currentExchange.options.find(
+                  (opt) => opt.id === currentExchange.correctOptionId,
+                )?.text
+              : null
           }
-          message={feedbackMessage}
           onContinue={handleContinue}
+          message={feedbackMessage}
           continueLabel={
-            currentIndex === conversations.length - 1 ? "Finish" : "Next"
+            currentTurnIndex + 1 === totalExchanges ? "FINISH" : "CONTINUE"
           }
         />
       )}

@@ -181,6 +181,22 @@ export default function ReorderPage() {
               </Reorder.Group>
             </div>
           </div>
+
+          {/* Full Sentence Display - Shown after submit */}
+          {showFeedback && (
+            <div className="mt-8 w-full animate-in fade-in slide-in-from-bottom-4 duration-500">
+              <div className="p-6 bg-indigo-50 dark:bg-indigo-950/30 rounded-xl border-2 border-indigo-100 dark:border-indigo-900/50 text-center">
+                <h3 className="text-xs uppercase tracking-wider text-indigo-500 font-bold mb-3 flex items-center justify-center gap-2">
+                  <span className="w-1.5 h-1.5 rounded-full bg-indigo-500"></span>
+                  Correct Sentence
+                  <span className="w-1.5 h-1.5 rounded-full bg-indigo-500"></span>
+                </h3>
+                <p className="text-xl md:text-2xl font-medium text-slate-700 dark:text-slate-200 leading-relaxed">
+                  {currentQuestion.correctOrder.join(" ")}
+                </p>
+              </div>
+            </div>
+          )}
         </div>
       </PracticeGameLayout>
 

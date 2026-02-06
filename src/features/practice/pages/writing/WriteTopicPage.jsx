@@ -74,7 +74,8 @@ export default function WriteTopicPage() {
   const [feedbackMessage, setFeedbackMessage] = useState("");
   const [score, setScore] = useState(0);
 
-  const { evaluation, isSubmitting, evaluate, resetEvaluation } = useWritingEvaluation();
+  const { evaluation, isSubmitting, evaluate, resetEvaluation } =
+    useWritingEvaluation();
 
   const currentQuestion = questions[currentIndex];
   const timerDuration = currentQuestion?.timeLimitSeconds || 180;
@@ -121,7 +122,7 @@ export default function WriteTopicPage() {
       user_text: userAnswer,
       topic: currentQuestion.topic,
       reference: currentQuestion.sampleAnswer,
-      context: currentQuestion.prompt
+      context: currentQuestion.prompt,
     });
 
     if (result) {

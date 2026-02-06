@@ -1,0 +1,6 @@
+id,sentence,audioText,translation,timeLimitSeconds
+1,"Le chat mange la souris","Le chat mange la souris","The cat eats the mouse",60
+2,"Je vais au marché","Je vais au marché","I am going to the market",60
+3,"Il fait beau aujourd'hui","Il fait beau aujourd'hui","It is nice weather today",60
+4,"Elle lit un livre","Elle lit un livre","She is reading a book",60
+5,"Nous apprenons le français","Nous apprenons le français","We are learning French",60

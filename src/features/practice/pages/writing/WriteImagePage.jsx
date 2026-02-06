@@ -68,7 +68,8 @@ export default function WriteImagePage() {
   const [feedbackMessage, setFeedbackMessage] = useState("");
   const [score, setScore] = useState(0);
 
-  const { evaluation, isSubmitting, evaluate, resetEvaluation } = useWritingEvaluation();
+  const { evaluation, isSubmitting, evaluate, resetEvaluation } =
+    useWritingEvaluation();
 
   const currentQuestion = questions[currentIndex];
   const timerDuration = currentQuestion?.timeLimitSeconds || 120;
@@ -114,7 +115,7 @@ export default function WriteImagePage() {
       user_text: userAnswer,
       topic: currentQuestion.englishDescription,
       reference: currentQuestion.sampleAnswer,
-      context: `The user is describing this image/emoji: ${currentQuestion.image}. Hint words: ${currentQuestion.hint}`
+      context: `The user is describing this image/emoji: ${currentQuestion.image}. Hint words: ${currentQuestion.hint}`,
     });
 
     if (result) {

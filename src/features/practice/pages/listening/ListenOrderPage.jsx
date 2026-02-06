@@ -229,6 +229,7 @@ const SortableItem = ({
   return (
     <Reorder.Item
       value={sentence}
+      onClick={(e) => onPlayItem(sentence, e)}
       className={cn(
         "flex items-center gap-3 p-4 rounded-xl border-2 transition-colors duration-200 select-none bg-white dark:bg-slate-800",
         !showFeedback &&
