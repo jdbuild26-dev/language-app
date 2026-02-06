@@ -11,188 +11,212 @@ import { useNavigate } from "react-router-dom";
 
 // Standard Fill in the Blanks with typed inputs
 const MOCK_QUESTIONS = [
-    {
-        id: 1,
-        fullText: "Je vais à la boulangerie pour acheter du pain.",
-        displayParts: ["Je vais à la ", " pour acheter du ", "."],
-        blanks: ["boulangerie", "pain"],
-        hints: ["bakery", "bread"],
-        timeLimitSeconds: 60,
-    },
-    {
-        id: 2,
-        fullText: "Ma sœur travaille dans un hôpital comme médecin.",
-        displayParts: ["Ma sœur travaille dans un ", " comme ", "."],
-        blanks: ["hôpital", "médecin"],
-        hints: ["hospital", "doctor"],
-        timeLimitSeconds: 60,
-    }
+  {
+    id: 1,
+    fullText: "Je vais à la boulangerie pour acheter du pain.",
+    displayParts: ["Je vais à la ", " pour acheter du ", "."],
+    blanks: ["boulangerie", "pain"],
+    hints: ["bakery", "bread"],
+    timeLimitSeconds: 60,
+  },
+  {
+    id: 2,
+    fullText: "Ma sœur travaille dans un hôpital comme médecin.",
+    displayParts: ["Ma sœur travaille dans un ", " comme ", "."],
+    blanks: ["hôpital", "médecin"],
+    hints: ["hospital", "doctor"],
+    timeLimitSeconds: 60,
+  },
 ];
 
 export default function TypingFillInBlankPage() {
-    const navigate = useNavigate();
-    const handleExit = () => navigate("/vocabulary/practice");
-    const { speak, isSpeaking } = useTextToSpeech();
-    const inputRefs = useRef([]);
+  const navigate = useNavigate();
+  const handleExit = () => navigate("/vocabulary/practice");
+  const { speak, isSpeaking } = useTextToSpeech();
+  const inputRefs = useRef([]);
 
-    const [questions] = useState(MOCK_QUESTIONS);
-    const [currentIndex, setCurrentIndex] = useState(0);
-    const [userInputs, setUserInputs] = useState([]);
-    const [isCompleted, setIsCompleted] = useState(false);
-    const [showFeedback, setShowFeedback] = useState(false);
-    const [isCorrect, setIsCorrect] = useState(false);
-    const [feedbackMessage, setFeedbackMessage] = useState("");
-    const [score, setScore] = useState(0);
-    const [blankResults, setBlankResults] = useState([]);
+  const [questions] = useState(MOCK_QUESTIONS);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [userInputs, setUserInputs] = useState([]);
+  const [isCompleted, setIsCompleted] = useState(false);
+  const [showFeedback, setShowFeedback] = useState(false);
+  const [isCorrect, setIsCorrect] = useState(false);
+  const [feedbackMessage, setFeedbackMessage] = useState("");
+  const [score, setScore] = useState(0);
+  const [blankResults, setBlankResults] = useState([]);
 
-    const currentQuestion = questions[currentIndex];
-    const timerDuration = currentQuestion?.timeLimitSeconds || 60;
+  const currentQuestion = questions[currentIndex];
+  const timerDuration = currentQuestion?.timeLimitSeconds || 60;
 
-    const { timerString, resetTimer } = useExerciseTimer({
-        duration: timerDuration,
-        mode: "timer",
-        onExpire: () => {
-            if (!isCompleted && !showFeedback) {
-                setIsCorrect(false);
-                setFeedbackMessage("Time's up!");
-                setShowFeedback(true);
-            }
-        },
-        isPaused: isCompleted || showFeedback,
-    });
-
-    useEffect(() => {
-        if (currentQuestion && !isCompleted) {
-            setUserInputs(new Array(currentQuestion.blanks.length).fill(""));
-            setBlankResults([]);
-            resetTimer();
-            setTimeout(() => inputRefs.current[0]?.focus(), 100);
-        }
-    }, [currentIndex, currentQuestion, isCompleted, resetTimer]);
-
-    const handlePlayAudio = () => {
-        if (currentQuestion) {
-            speak(currentQuestion.fullText, "fr-FR");
-        }
-    };
-
-    const handleInputChange = (index, value) => {
-        const newInputs = [...userInputs];
-        newInputs[index] = value;
-        setUserInputs(newInputs);
-    };
-
-    const handleKeyDown = (e, index) => {
-        if (e.key === "Enter") {
-            if (index < currentQuestion.blanks.length - 1) {
-                inputRefs.current[index + 1]?.focus();
-            } else if (userInputs.every((input) => input.trim())) {
-                handleSubmit();
-            }
-        }
-    };
-
-    const normalize = (str) =>
-        str.toLowerCase().replace(/[.,!?;:'"]/g, "").replace(/\s+/g, " ").trim();
-
-    const handleSubmit = () => {
-        if (showFeedback) return;
-        const results = currentQuestion.blanks.map((blank, index) => {
-            const userAnswer = normalize(userInputs[index] || "");
-            const correctAnswer = normalize(blank);
-            return userAnswer === correctAnswer;
-        });
-        setBlankResults(results);
-        const allCorrect = results.every((r) => r);
-        setIsCorrect(allCorrect);
-        setFeedbackMessage(getFeedbackMessage(allCorrect));
+  const { timerString, resetTimer } = useExerciseTimer({
+    duration: timerDuration,
+    mode: "timer",
+    onExpire: () => {
+      if (!isCompleted && !showFeedback) {
+        setIsCorrect(false);
+        setFeedbackMessage("Time's up!");
         setShowFeedback(true);
-        if (allCorrect) setScore((prev) => prev + 1);
-    };
+      }
+    },
+    isPaused: isCompleted || showFeedback,
+  });
 
-    const handleContinue = () => {
-        setShowFeedback(false);
-        if (currentIndex < questions.length - 1) {
-            setCurrentIndex((prev) => prev + 1);
-        } else {
-            setIsCompleted(true);
-        }
-    };
+  useEffect(() => {
+    if (currentQuestion && !isCompleted) {
+      setUserInputs(new Array(currentQuestion.blanks.length).fill(""));
+      setBlankResults([]);
+      resetTimer();
+      setTimeout(() => inputRefs.current[0]?.focus(), 100);
+    }
+  }, [currentIndex, currentQuestion, isCompleted, resetTimer]);
 
-    const allFilled = userInputs.every((input) => input.trim().length > 0);
-    const progress = questions.length > 0 ? ((currentIndex + 1) / questions.length) * 100 : 0;
+  const handlePlayAudio = () => {
+    if (currentQuestion) {
+      speak(currentQuestion.fullText, "fr-FR");
+    }
+  };
 
-    const renderSentence = () => {
-        if (!currentQuestion) return null;
-        const parts = currentQuestion.displayParts;
-        const elements = [];
-        for (let i = 0; i < parts.length; i++) {
-            elements.push(<span key={`part-${i}`}>{parts[i]}</span>);
-            if (i < currentQuestion.blanks.length) {
-                elements.push(
-                    <span key={`blank-${i}`} className="inline-block mx-1">
-                        <input
-                            ref={(el) => (inputRefs.current[i] = el)}
-                            type="text"
-                            value={userInputs[i] || ""}
-                            onChange={(e) => handleInputChange(i, e.target.value)}
-                            onKeyDown={(e) => handleKeyDown(e, i)}
-                            disabled={showFeedback}
-                            className={cn(
-                                "w-32 px-3 py-1 rounded-lg text-center font-semibold border-2 outline-none transition-all",
-                                "bg-white dark:bg-slate-700",
-                                showFeedback && blankResults[i] ? "border-emerald-500" : showFeedback && !blankResults[i] ? "border-red-500" : "border-slate-300 focus:border-blue-500"
-                            )}
-                            placeholder="..."
-                        />
-                    </span>
-                );
-            }
-        }
-        return elements;
-    };
+  const handleInputChange = (index, value) => {
+    const newInputs = [...userInputs];
+    newInputs[index] = value;
+    setUserInputs(newInputs);
+  };
 
-    return (
-        <>
-            <PracticeGameLayout
-                questionType="Vocabulary Fill In"
-                instructionEn="Type the missing words"
-                progress={progress}
-                isGameOver={isCompleted}
-                score={score}
-                totalQuestions={questions.length}
-                onExit={handleExit}
-                onNext={handleSubmit}
-                isSubmitEnabled={allFilled && !showFeedback}
-                showSubmitButton={!showFeedback}
-                timerValue={timerString}
-            >
-                <div className="flex flex-col items-center w-full max-w-3xl mx-auto px-4 py-12">
-                    <div className="w-full bg-white dark:bg-slate-800 rounded-3xl p-10 mb-8 shadow-2xl border-2 border-slate-100 dark:border-slate-700">
-                        <p className="text-2xl leading-relaxed text-center font-medium text-slate-700 dark:text-slate-200">
-                            {renderSentence()}
-                        </p>
-                    </div>
-                    <button
-                        onClick={handlePlayAudio}
-                        disabled={isSpeaking}
-                        className="flex items-center gap-3 px-6 py-3 rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all border-2 border-transparent hover:border-blue-200"
-                    >
-                        <Volume2 className={cn("w-5 h-5", isSpeaking && "animate-pulse")} />
-                        Listen to full sentence
-                    </button>
-                </div>
-            </PracticeGameLayout>
+  const handleKeyDown = (e, index) => {
+    if (e.key === "Enter") {
+      if (index < currentQuestion.blanks.length - 1) {
+        inputRefs.current[index + 1]?.focus();
+      } else if (userInputs.every((input) => input.trim())) {
+        handleSubmit();
+      }
+    }
+  };
 
-            {showFeedback && (
-                <FeedbackBanner
-                    isCorrect={isCorrect}
-                    onContinue={handleContinue}
-                    message={feedbackMessage}
-                    correctAnswer={!isCorrect ? currentQuestion.blanks.join(", ") : null}
-                    continueLabel={currentIndex + 1 === questions.length ? "FINISH" : "CONTINUE"}
-                />
-            )}
-        </>
-    );
+  const normalize = (str) =>
+    str
+      .toLowerCase()
+      .replace(/[.,!?;:'"]/g, "")
+      .replace(/\s+/g, " ")
+      .trim();
+
+  const handleSubmit = () => {
+    if (showFeedback) return;
+    const results = currentQuestion.blanks.map((blank, index) => {
+      const userAnswer = normalize(userInputs[index] || "");
+      const correctAnswer = normalize(blank);
+      return userAnswer === correctAnswer;
+    });
+    setBlankResults(results);
+    const allCorrect = results.every((r) => r);
+    setIsCorrect(allCorrect);
+    setFeedbackMessage(getFeedbackMessage(allCorrect));
+    setShowFeedback(true);
+    if (allCorrect) setScore((prev) => prev + 1);
+  };
+
+  const handleContinue = () => {
+    setShowFeedback(false);
+    if (currentIndex < questions.length - 1) {
+      setCurrentIndex((prev) => prev + 1);
+    } else {
+      setIsCompleted(true);
+    }
+  };
+
+  const allFilled = userInputs.every((input) => input.trim().length > 0);
+  const progress =
+    questions.length > 0 ? ((currentIndex + 1) / questions.length) * 100 : 0;
+
+  const renderSentence = () => {
+    if (!currentQuestion) return null;
+    const parts = currentQuestion.displayParts;
+    const elements = [];
+    for (let i = 0; i < parts.length; i++) {
+      elements.push(<span key={`part-${i}`}>{parts[i]}</span>);
+      if (i < currentQuestion.blanks.length) {
+        elements.push(
+          <span key={`blank-${i}`} className="inline-block mx-1">
+            <input
+              ref={(el) => (inputRefs.current[i] = el)}
+              type="text"
+              value={userInputs[i] || ""}
+              onChange={(e) => handleInputChange(i, e.target.value)}
+              onKeyDown={(e) => handleKeyDown(e, i)}
+              disabled={showFeedback}
+              className={cn(
+                "w-32 px-3 py-1 rounded-lg text-center font-semibold border-2 outline-none transition-all",
+                "bg-white dark:bg-slate-700",
+                showFeedback && blankResults[i]
+                  ? "border-emerald-500"
+                  : showFeedback && !blankResults[i]
+                    ? "border-red-500"
+                    : "border-slate-300 focus:border-blue-500",
+              )}
+              placeholder={
+                currentQuestion.hints && currentQuestion.hints[i]
+                  ? currentQuestion.hints[i]
+                  : "..."
+              }
+              onFocus={(e) => {
+                e.target.placeholder = "";
+              }}
+              onBlur={(e) => {
+                e.target.placeholder =
+                  currentQuestion.hints && currentQuestion.hints[i]
+                    ? currentQuestion.hints[i]
+                    : "...";
+              }}
+            />
+          </span>,
+        );
+      }
+    }
+    return elements;
+  };
+
+  return (
+    <>
+      <PracticeGameLayout
+        questionType="Fill in the blanks - Vocabulary"
+        instructionEn="Type the missing words"
+        progress={progress}
+        isGameOver={isCompleted}
+        score={score}
+        totalQuestions={questions.length}
+        onExit={handleExit}
+        onNext={handleSubmit}
+        isSubmitEnabled={allFilled && !showFeedback}
+        showSubmitButton={!showFeedback}
+        timerValue={timerString}
+      >
+        <div className="flex flex-col items-center w-full max-w-3xl mx-auto px-4 py-12">
+          <div className="w-full bg-white dark:bg-slate-800 rounded-3xl p-10 mb-8 shadow-2xl border-2 border-slate-100 dark:border-slate-700">
+            <p className="text-2xl leading-relaxed text-center font-medium text-slate-700 dark:text-slate-200">
+              {renderSentence()}
+            </p>
+          </div>
+          <button
+            onClick={handlePlayAudio}
+            disabled={isSpeaking}
+            className="flex items-center gap-3 px-6 py-3 rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all border-2 border-transparent hover:border-blue-200"
+          >
+            <Volume2 className={cn("w-5 h-5", isSpeaking && "animate-pulse")} />
+            Listen to full sentence
+          </button>
+        </div>
+      </PracticeGameLayout>
+
+      {showFeedback && (
+        <FeedbackBanner
+          isCorrect={isCorrect}
+          onContinue={handleContinue}
+          message={feedbackMessage}
+          correctAnswer={!isCorrect ? currentQuestion.blanks.join(", ") : null}
+          continueLabel={
+            currentIndex + 1 === questions.length ? "FINISH" : "CONTINUE"
+          }
+        />
+      )}
+    </>
+  );
 }

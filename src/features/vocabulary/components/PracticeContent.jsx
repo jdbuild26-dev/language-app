@@ -135,8 +135,8 @@ const practiceActivities = [
     shadow: "shadow-rose-200 dark:shadow-rose-900/20",
   },
   {
-    id: "listen-fill-blanks-legacy",
-    name: "Listen and Fill Blanks (Legacy)",
+    id: "listen-fill-blanks",
+    name: "Listen and Fill Blanks",
     icon: Edit3,
     desc: "Fill in missing words from audio",
     path: "/vocabulary/practice/listening/fill-blanks",

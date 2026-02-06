@@ -271,6 +271,25 @@ export default function WriteFillBlanksPage() {
               ? "Perfect! Your grammar and spelling are spot on."
               : "Some words aren't quite right. Keep practicing!"
           }
+          correctAnswer={
+            !isCorrect && (
+              <span>
+                {processedWords.map((word, wIdx) => {
+                  if (word.isTarget) {
+                    return (
+                      <span
+                        key={wIdx}
+                        className="font-bold underline decoration-2 underline-offset-2"
+                      >
+                        {word.text}
+                      </span>
+                    );
+                  }
+                  return <span key={wIdx}>{word.text}</span>;
+                })}
+              </span>
+            )
+          }
           continueLabel={
             currentIndex < questions.length - 1 ? "NEXT PASSAGE" : "FINISH"
           }

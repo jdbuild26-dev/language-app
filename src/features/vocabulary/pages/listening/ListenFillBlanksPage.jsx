@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { usePracticeExit } from "@/hooks/usePracticeExit";
 import { useExerciseTimer } from "@/hooks/useExerciseTimer";
-import { Volume2, RotateCcw } from "lucide-react";
+import { Volume2, RotateCcw, Turtle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
 import FeedbackBanner from "@/components/ui/FeedbackBanner";
@@ -11,9 +11,6 @@ import { loadMockCSV } from "@/utils/csvLoader";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-
-
-
 export default function ListenFillBlanksPage() {
   const handleExit = usePracticeExit();
   const { speak, isSpeaking } = useTextToSpeech();
@@ -22,6 +19,7 @@ export default function ListenFillBlanksPage() {
   const [questions, setQuestions] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [isSlowMode, setIsSlowMode] = useState(false);
 
   const [userInputs, setUserInputs] = useState([]);
   const [isCompleted, setIsCompleted] = useState(false);
@@ -51,7 +49,9 @@ export default function ListenFillBlanksPage() {
   useEffect(() => {
     const fetchQuestions = async () => {
       try {
-        const data = await loadMockCSV("practice/listening/listen_fill_blanks.csv");
+        const data = await loadMockCSV(
+          "practice/listening/listen_fill_blanks.csv",
+        );
         setQuestions(data);
       } catch (error) {
         console.error("Error loading mock data:", error);
@@ -63,7 +63,6 @@ export default function ListenFillBlanksPage() {
   }, []);
 
   // Initialize inputs when question changes
-
   useEffect(() => {
     if (currentQuestion && !isCompleted) {
       setUserInputs(new Array(currentQuestion.blanks.length).fill(""));
@@ -78,7 +77,7 @@ export default function ListenFillBlanksPage() {
 
   const handlePlayAudio = () => {
     if (currentQuestion) {
-      speak(currentQuestion.audioText, "fr-FR");
+      speak(currentQuestion.audioText, "fr-FR", isSlowMode ? 0.6 : 0.9);
       setHasPlayed(true);
       resetTimer();
     }
@@ -152,15 +151,18 @@ export default function ListenFillBlanksPage() {
   if (questions.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-slate-50 dark:bg-slate-900">
-        <p className="text-xl text-slate-600 dark:text-slate-400">No content available.</p>
-        <Button onClick={() => handleExit()} variant="outline" className="mt-4">Back</Button>
+        <p className="text-xl text-slate-600 dark:text-slate-400">
+          No content available.
+        </p>
+        <Button onClick={() => handleExit()} variant="outline" className="mt-4">
+          Back
+        </Button>
       </div>
     );
   }
 
   const progress =
     questions.length > 0 ? ((currentIndex + 1) / questions.length) * 100 : 0;
-
 
   // Build the sentence with blanks
   const renderSentence = () => {
@@ -224,7 +226,7 @@ export default function ListenFillBlanksPage() {
       >
         <div className="flex flex-col items-center w-full max-w-3xl mx-auto px-4 py-6">
           {/* Audio Player Section */}
-          <div className="w-full bg-gradient-to-r from-teal-500 to-cyan-600 rounded-2xl p-8 mb-8 shadow-lg">
+          <div className="w-full bg-gradient-to-r from-teal-500 to-cyan-600 rounded-2xl p-8 mb-8 shadow-lg relative">
             <div className="flex flex-col items-center gap-4">
               {/* Play Button */}
               <button
@@ -243,6 +245,21 @@ export default function ListenFillBlanksPage() {
                     isSpeaking && "animate-pulse",
                   )}
                 />
+              </button>
+
+              {/* Slow Mode Toggle */}
+              <button
+                onClick={() => setIsSlowMode(!isSlowMode)}
+                className={cn(
+                  "absolute right-4 bottom-4 p-2 rounded-full transition-all flex items-center gap-2",
+                  isSlowMode
+                    ? "bg-white/30 text-white"
+                    : "bg-white/10 text-white/70 hover:bg-white/20",
+                )}
+                title={isSlowMode ? "Disable Slow Mode" : "Enable Slow Mode"}
+              >
+                <Turtle className="w-5 h-5" />
+                <span className="text-xs font-medium">Slow</span>
               </button>
 
               {/* Replay hint */}

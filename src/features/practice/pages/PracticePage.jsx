@@ -191,6 +191,17 @@ const practiceActivities = [
     shadow: "shadow-blue-200 dark:shadow-blue-900/20",
     isLive: true,
   },
+  {
+    id: "G18",
+    name: "Fill in the Blanks (Vocab)",
+    icon: Edit3,
+    desc: "Type the missing word",
+    path: "/practice/reading/fill-in-blanks-vocab",
+    category: "reading",
+    color: "from-cyan-400 to-blue-500",
+    shadow: "shadow-cyan-200 dark:shadow-cyan-900/20",
+    isLive: true,
+  },
 
   // ========================================
   // LISTENING Activities (E1-E7)
@@ -228,7 +239,29 @@ const practiceActivities = [
     shadow: "shadow-cyan-200 dark:shadow-cyan-900/20",
     isLive: true,
   },
+  {
+    id: "E3-NEW-DROPDOWN",
+    name: "Audio Fill in the Blanks 2",
+    icon: Edit3,
+    desc: "Listen deeply and fill blanks (Dropdown)",
+    path: "/practice/listening/audio-fill-blanks-dropdown",
+    category: "listening",
+    color: "from-cyan-400 to-blue-500",
+    shadow: "shadow-cyan-200 dark:shadow-cyan-900/20",
+    isLive: true,
+  },
 
+  {
+    id: "E4-BUBBLE",
+    name: "What do you hear?",
+    icon: Volume2,
+    desc: "Listen and build the sentence",
+    path: "/practice/listening/bubble",
+    category: "listening",
+    color: "from-teal-400 to-emerald-500",
+    shadow: "shadow-teal-200 dark:shadow-teal-900/20",
+    isLive: true,
+  },
   {
     id: "E5",
     name: "Listen and Order",
