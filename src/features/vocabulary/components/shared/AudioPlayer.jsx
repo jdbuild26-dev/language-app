@@ -18,11 +18,11 @@ export default function AudioPlayer({
   const { speak, isSpeaking } = useTextToSpeech();
 
   const handlePlayNormal = () => {
-    speak(text, lang, 0.9);
+    speak(text, lang, 1.0);
   };
 
   const handlePlaySlow = () => {
-    speak(text, lang, 0.5); // Slower rate for "turtle" mode
+    speak(text, lang, 0.75); // Slower rate for "turtle" mode
   };
 
   return (

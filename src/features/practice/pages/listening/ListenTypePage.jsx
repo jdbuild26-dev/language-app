@@ -18,7 +18,7 @@ export default function ListenTypePage() {
   const [questions, setQuestions] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [playbackSpeed, setPlaybackSpeed] = useState(0.9);
+  // playbackSpeed state removed - using direct handlers
 
   const [userInput, setUserInput] = useState("");
   const [isCompleted, setIsCompleted] = useState(false);
@@ -58,28 +58,32 @@ export default function ListenTypePage() {
     fetchQuestions();
   }, []);
 
-  // Auto-play audio when question changes
+  // Auto-play audio when question changes (Normal Speed)
   useEffect(() => {
     if (currentQuestion && !isCompleted) {
       setUserInput("");
       setHasPlayed(false);
       const timer = setTimeout(() => {
-        handlePlayAudio();
+        handlePlayNormal();
       }, 500);
       return () => clearTimeout(timer);
     }
   }, [currentIndex, currentQuestion, isCompleted]);
 
-  const handlePlayAudio = () => {
+  const handlePlayNormal = () => {
     if (currentQuestion) {
-      speak(currentQuestion.audioText, "fr-FR", playbackSpeed);
+      speak(currentQuestion.audioText, "fr-FR", 1.0);
       setHasPlayed(true);
       resetTimer();
     }
   };
 
-  const toggleSpeed = () => {
-    setPlaybackSpeed((prev) => (prev === 0.9 ? 0.5 : 0.9));
+  const handlePlaySlow = () => {
+    if (currentQuestion) {
+      speak(currentQuestion.audioText, "fr-FR", 0.75);
+      setHasPlayed(true);
+      resetTimer();
+    }
   };
 
   // Normalize for comparison
@@ -166,25 +170,19 @@ export default function ListenTypePage() {
               <div className="flex items-center gap-8">
                 {/* Slow Speed Button */}
                 <button
-                  onClick={toggleSpeed}
+                  onClick={handlePlaySlow}
                   className={cn(
                     "w-12 h-12 rounded-full flex items-center justify-center transition-all duration-200",
-                    playbackSpeed === 0.5
-                      ? "bg-white text-emerald-600 shadow-md scale-110"
-                      : "bg-white/20 text-white hover:bg-white/30",
+                    "bg-white/20 text-white hover:bg-white/30 active:scale-95",
                   )}
-                  title={
-                    playbackSpeed === 0.5
-                      ? "Switch to normal speed"
-                      : "Switch to slow speed"
-                  }
+                  title="Play Slower (0.75x)"
                 >
                   <Turtle className="w-6 h-6" />
                 </button>
 
                 {/* Main Play Button */}
                 <button
-                  onClick={handlePlayAudio}
+                  onClick={handlePlayNormal}
                   disabled={isSpeaking}
                   className={cn(
                     "w-24 h-24 rounded-full flex items-center justify-center transition-all duration-300 shadow-xl",
