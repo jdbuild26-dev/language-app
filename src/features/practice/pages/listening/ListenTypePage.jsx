@@ -70,7 +70,6 @@ export default function ListenTypePage() {
     }
   }, [currentIndex, currentQuestion, isCompleted]);
 
-  if (currentQuestion) {
   const handlePlayNormal = () => {
     if (currentQuestion) {
       speak(currentQuestion.audioText, "fr-FR", 0.9);
