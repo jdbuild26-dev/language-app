@@ -38,6 +38,8 @@ import RewriteSentencePage from "@/features/grammar/pages/practice/RewriteSenten
 import FindErrorPage from "@/features/grammar/pages/practice/FindErrorPage";
 import TwoOptionsPage from "@/features/grammar/pages/practice/TwoOptionsPage";
 import ThreeOptionsPage from "@/features/grammar/pages/practice/ThreeOptionsPage";
+
+import GrammarAICheckPage from "@/features/grammar/pages/GrammarAICheckPage";
 import StoriesPage from "@/features/stories/pages/StoriesPage";
 import StoryPlayerPage from "@/features/stories/pages/StoryPlayerPage";
 import PracticePage from "@/features/practice/pages/PracticePage";
@@ -58,7 +60,6 @@ import HighlightWordGamePage from "@/features/vocabulary/pages/HighlightWordGame
 import OddOneOutGamePage from "@/features/vocabulary/pages/OddOneOutGamePage";
 import GroupWordsGamePage from "@/features/vocabulary/pages/GroupWordsGamePage";
 import IsThisFrenchWordPage from "@/features/vocabulary/pages/IsThisFrenchWordPage";
-import TypingFillInBlankPage from "@/features/vocabulary/pages/TypingFillInBlankPage";
 
 // Listening Practice Pages
 import PhoneticsPage from "@/features/vocabulary/pages/listening/PhoneticsPage";
@@ -66,7 +67,6 @@ import MultiSelectPage from "@/features/vocabulary/pages/listening/MultiSelectPa
 import AudioToAudioPage from "@/features/vocabulary/pages/listening/AudioToAudioPage";
 import AudioFillBlankPage from "@/features/vocabulary/pages/listening/AudioFillBlankPage";
 import DictationPage from "@/features/vocabulary/pages/listening/DictationPage";
-import ListenBubblePage from "@/features/practice/pages/listening/ListenBubblePage";
 
 // Full Screen Layout
 import FullScreenLayout from "@/components/layout/FullScreenLayout";
@@ -99,7 +99,6 @@ import ListenInteractivePage from "@/features/practice/pages/listening/ListenInt
 import ListeningComprehensionPage from "@/features/practice/pages/listening/ListeningComprehensionPage";
 import ListeningConversationPage from "@/features/practice/pages/listening/ListeningConversationPage";
 import AudioFillInTheBlanksProPage from "@/features/vocabulary/pages/listening/AudioFillInTheBlanksProPage";
-import AudioFillInTheBlanksDropdownPage from "@/features/vocabulary/pages/listening/AudioFillInTheBlanksDropdownPage";
 
 // Practice Module Writing Exercises
 import TranslateTypedPage from "@/features/practice/pages/writing/TranslateTypedPage";
@@ -439,16 +438,6 @@ function App() {
             </ProtectedRoute>
           }
         />
-        <Route
-          path="/practice/listening/bubble"
-          element={
-            <ProtectedRoute>
-              <FullScreenLayout>
-                <ListenBubblePage />
-              </FullScreenLayout>
-            </ProtectedRoute>
-          }
-        />
 
         {/* Practice Module Routes - READING */}
         <Route
@@ -581,16 +570,6 @@ function App() {
             </ProtectedRoute>
           }
         />
-        <Route
-          path="/practice/reading/fill-in-blanks-vocab"
-          element={
-            <ProtectedRoute>
-              <FullScreenLayout>
-                <TypingFillInBlankPage />
-              </FullScreenLayout>
-            </ProtectedRoute>
-          }
-        />
 
         <Route
           path="grammar/practice/fill-blanks"
@@ -625,6 +604,14 @@ function App() {
           }
         />
         <Route
+          path="grammar/practice/rewrite"
+          element={
+            <FullScreenLayout>
+              <RewriteSentencePage mode="rewrite" />
+            </FullScreenLayout>
+          }
+        />
+        <Route
           path="grammar/practice/combination"
           element={
             <FullScreenLayout>
@@ -637,6 +624,15 @@ function App() {
           element={
             <FullScreenLayout>
               <FindErrorPage />
+            </FullScreenLayout>
+          }
+        />
+
+        <Route
+          path="grammar/practice/ai-check"
+          element={
+            <FullScreenLayout>
+              <GrammarAICheckPage />
             </FullScreenLayout>
           }
         />
@@ -662,23 +658,22 @@ function App() {
             </ProtectedRoute>
           }
         />
-
+        <Route
+          path="/practice/listening/fill-blanks"
+          element={
+            <ProtectedRoute>
+              <FullScreenLayout>
+                <ListenFillBlanksPage />
+              </FullScreenLayout>
+            </ProtectedRoute>
+          }
+        />
         <Route
           path="/practice/listening/audio-fill-blanks-pro"
           element={
             <ProtectedRoute>
               <FullScreenLayout>
                 <AudioFillInTheBlanksProPage />
-              </FullScreenLayout>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/practice/listening/audio-fill-blanks-dropdown"
-          element={
-            <ProtectedRoute>
-              <FullScreenLayout>
-                <AudioFillInTheBlanksDropdownPage />
               </FullScreenLayout>
             </ProtectedRoute>
           }

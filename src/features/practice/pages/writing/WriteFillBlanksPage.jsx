@@ -227,9 +227,7 @@ export default function WriteFillBlanksPage() {
                             key={cIdx}
                             ref={(el) => (inputRefs.current[key] = el)}
                             type="text"
-                            value={
-                              showFeedback ? tail[cIdx] : userInputs[key] || ""
-                            }
+                            value={userInputs[key] || ""}
                             onChange={(e) =>
                               handleCharInput(
                                 wIdx,

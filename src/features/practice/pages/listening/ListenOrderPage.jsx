@@ -86,6 +86,12 @@ export default function ListenOrderPage() {
   const handlePlayItem = (text, e) => {
     e.stopPropagation(); // Prevent drag when clicking play button
     speak(text, "fr-FR", 1.0);
+    setPlayedAudio(true);
+  };
+
+  const handleReorder = (newOrder) => {
+    setCurrentOrder(newOrder);
+    setPlayedAudio(true);
   };
 
   const handleSubmit = () => {
@@ -177,7 +183,7 @@ export default function ListenOrderPage() {
             <Reorder.Group
               axis="y"
               values={currentOrder}
-              onReorder={showFeedback ? () => {} : setCurrentOrder}
+              onReorder={showFeedback ? () => {} : handleReorder}
               className="w-full space-y-3"
             >
               {currentOrder.map((sentence, index) => {
