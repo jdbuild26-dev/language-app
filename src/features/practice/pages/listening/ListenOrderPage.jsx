@@ -85,7 +85,7 @@ export default function ListenOrderPage() {
 
   const handlePlayItem = (text, e) => {
     e.stopPropagation(); // Prevent drag when clicking play button
-    speak(text, "fr-FR", 1.0);
+    speak(text, "fr-FR", 0.9);
     setPlayedAudio(true);
   };
 

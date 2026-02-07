@@ -191,18 +191,6 @@ const practiceActivities = [
     shadow: "shadow-blue-200 dark:shadow-blue-900/20",
     isLive: true,
   },
-  {
-    id: "G18",
-    name: "Fill in the Blanks (Vocab)",
-    icon: Edit3,
-    desc: "Type the missing word",
-    path: "/practice/reading/fill-in-blanks-vocab",
-    category: "reading",
-    color: "from-cyan-400 to-blue-500",
-    shadow: "shadow-cyan-200 dark:shadow-cyan-900/20",
-    isLive: true,
-  },
-
   // ========================================
   // LISTENING Activities (E1-E7)
   // ========================================
