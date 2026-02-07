@@ -12,6 +12,7 @@ import {
   RefreshCw,
   Link as LinkIcon,
   AlertTriangle,
+  Bot,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { cn } from "@/lib/utils";
@@ -98,6 +99,16 @@ const practiceExercises = [
     isLive: true,
   },
   {
+    id: "rewrite",
+    title: "Rewrite – Type in",
+    description: "Rewrite sentences based on instructions",
+    icon: RefreshCw,
+    color: "from-blue-500 to-indigo-600",
+    shadow: "shadow-blue-200 dark:shadow-blue-900/20",
+    path: "/grammar/practice/rewrite",
+    isLive: true,
+  },
+  {
     id: "combination",
     title: "Combine Sentences",
     description: "Join sentences using connectors",
@@ -115,6 +126,16 @@ const practiceExercises = [
     color: "from-rose-400 to-red-500",
     shadow: "shadow-rose-200 dark:shadow-rose-900/20",
     path: "/grammar/practice/find-error",
+    isLive: true,
+  },
+  {
+    id: "ai-check",
+    title: "AI Grammar Check",
+    description: "Get AI feedback on your writing",
+    icon: Bot,
+    color: "from-indigo-500 to-purple-600",
+    shadow: "shadow-indigo-200 dark:shadow-indigo-900/20",
+    path: "/grammar/practice/ai-check",
     isLive: true,
   },
 ];

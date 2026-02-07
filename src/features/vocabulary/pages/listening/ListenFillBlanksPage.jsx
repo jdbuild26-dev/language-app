@@ -19,7 +19,6 @@ export default function ListenFillBlanksPage() {
   const [questions, setQuestions] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [isSlowMode, setIsSlowMode] = useState(false);
 
   const [userInputs, setUserInputs] = useState([]);
   const [isCompleted, setIsCompleted] = useState(false);
@@ -77,7 +76,15 @@ export default function ListenFillBlanksPage() {
 
   const handlePlayAudio = () => {
     if (currentQuestion) {
-      speak(currentQuestion.audioText, "fr-FR", isSlowMode ? 0.6 : 0.9);
+      speak(currentQuestion.audioText, "fr-FR", 0.9);
+      setHasPlayed(true);
+      resetTimer();
+    }
+  };
+
+  const handlePlaySlowAudio = () => {
+    if (currentQuestion) {
+      speak(currentQuestion.audioText, "fr-FR", 0.75);
       setHasPlayed(true);
       resetTimer();
     }
@@ -247,16 +254,14 @@ export default function ListenFillBlanksPage() {
                 />
               </button>
 
-              {/* Slow Mode Toggle */}
+              {/* Slow Play Button */}
               <button
-                onClick={() => setIsSlowMode(!isSlowMode)}
+                onClick={handlePlaySlowAudio}
                 className={cn(
                   "absolute right-4 bottom-4 p-2 rounded-full transition-all flex items-center gap-2",
-                  isSlowMode
-                    ? "bg-white/30 text-white"
-                    : "bg-white/10 text-white/70 hover:bg-white/20",
+                  "bg-white/10 text-white/70 hover:bg-white/20 active:bg-white/30",
                 )}
-                title={isSlowMode ? "Disable Slow Mode" : "Enable Slow Mode"}
+                title="Play Slow (0.75x)"
               >
                 <Turtle className="w-5 h-5" />
                 <span className="text-xs font-medium">Slow</span>

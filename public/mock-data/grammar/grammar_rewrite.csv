@@ -1,0 +1,5 @@
+id,instruction,sentence,answer,timeLimitSeconds
+1,Mettez à la forme négative,Elle aime le café.,Elle n'aime pas le café.,60
+2,Transformez en question,Il court vite.,Est-ce qu'il court vite?|Court-il vite?,60
+3,Mettez au passé composé,Ils jouent au football.,Ils ont joué au football.,60
+4,Mettez au futur simple,Je mange une pomme.,Je mangerai une pomme.,60

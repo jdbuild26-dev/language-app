@@ -1,8 +1,7 @@
 import { Link, useParams } from "react-router-dom";
-// Force refresh
 import { XMarkIcon, CheckIcon } from "@heroicons/react/24/outline";
 import { Loader2 } from "lucide-react";
-import { SegmentedProgressBar } from "@/components/ui/SegmentedProgressBar";
+import { ProgressBar } from "@/components/ui/ProgressBar";
 
 export default function LessonHeader({
   currentIndex,
@@ -42,8 +41,12 @@ export default function LessonHeader({
           </div>
 
           {/* Progress Bar */}
-          <div className="flex-1 flex justify-center mx-4">
-            <SegmentedProgressBar current={currentIndex + 1} total={total} />
+          <div className="flex-1 max-w-xl mx-4">
+            <ProgressBar
+              current={currentIndex + 1}
+              total={total}
+              label="Learning Progress"
+            />
           </div>
 
           {/* Controls */}

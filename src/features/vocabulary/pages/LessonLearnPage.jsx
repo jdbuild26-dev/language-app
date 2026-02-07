@@ -114,7 +114,7 @@ export default function LessonLearnPage() {
         level || "A1",
         categoryToUse,
         cardsToSave,
-        token,
+        token
       );
 
       // Navigate back after save
@@ -139,7 +139,7 @@ export default function LessonLearnPage() {
           </p>
         </div>
       </div>,
-      document.body,
+      document.body
     );
   }
 
@@ -157,7 +157,7 @@ export default function LessonLearnPage() {
           </button>
         </div>
       </div>,
-      document.body,
+      document.body
     );
   }
 
@@ -177,7 +177,7 @@ export default function LessonLearnPage() {
           </button>
         </div>
       </div>,
-      document.body,
+      document.body
     );
   }
 
@@ -196,7 +196,7 @@ export default function LessonLearnPage() {
           <CompletionScreen wordCount={words.length} categoryName={category} />
         </main>
       </div>,
-      document.body,
+      document.body
     );
   }
 
@@ -236,6 +236,6 @@ export default function LessonLearnPage() {
         </div>
       </main>
     </div>,
-    document.body,
+    document.body
   );
 }

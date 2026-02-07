@@ -40,10 +40,13 @@ export default function RewriteSentencePage({ mode = "transformation" }) {
   useEffect(() => {
     const fetchQuestions = async () => {
       try {
-        const file =
-          mode === "combination"
-            ? "grammar/grammar_combination.csv"
-            : "grammar/grammar_transformation.csv";
+        let file = "grammar/grammar_transformation.csv";
+        if (mode === "combination") {
+          file = "grammar/grammar_combination.csv";
+        } else if (mode === "rewrite") {
+          file = "grammar/grammar_rewrite.csv";
+        }
+
         const data = await loadMockCSV(file);
         setQuestions(data || []);
       } catch (error) {
@@ -132,13 +135,17 @@ export default function RewriteSentencePage({ mode = "transformation" }) {
         questionType={
           mode === "combination"
             ? "Combine Sentences"
-            : "Sentence Transformation"
+            : mode === "rewrite"
+              ? "Rewrite – Type in"
+              : "Sentence Transformation"
         }
         instructionFr={currentQuestion.instruction}
         instructionEn={
           mode === "combination"
             ? "Combine the sentences using the target structure"
-            : "Rewrite the sentence as instructed"
+            : mode === "rewrite"
+              ? "Rewrite the sentence as instructed"
+              : "Rewrite the sentence as instructed"
         }
         progress={progress}
         isGameOver={isCompleted}
