@@ -185,15 +185,25 @@ export default function ReorderPage() {
           {/* Full Sentence Display - Shown after submit */}
           {showFeedback && (
             <div className="mt-8 w-full animate-in fade-in slide-in-from-bottom-4 duration-500">
-              <div className="p-6 bg-indigo-50 dark:bg-indigo-950/30 rounded-xl border-2 border-indigo-100 dark:border-indigo-900/50 text-center">
-                <h3 className="text-xs uppercase tracking-wider text-indigo-500 font-bold mb-3 flex items-center justify-center gap-2">
+              <div className="p-6 bg-indigo-50 dark:bg-indigo-950/30 rounded-xl border-2 border-indigo-100 dark:border-indigo-900/50">
+                <h3 className="text-xs uppercase tracking-wider text-indigo-500 font-bold mb-4 flex items-center justify-center gap-2">
                   <span className="w-1.5 h-1.5 rounded-full bg-indigo-500"></span>
-                  Correct Sentence
+                  Correct Order
                   <span className="w-1.5 h-1.5 rounded-full bg-indigo-500"></span>
                 </h3>
-                <p className="text-xl md:text-2xl font-medium text-slate-700 dark:text-slate-200 leading-relaxed">
-                  {currentQuestion.correctOrder.join(" ")}
-                </p>
+                <div className="flex flex-col gap-3 text-left max-w-lg mx-auto">
+                  {currentQuestion.correctOrder.map((sentence, index) => (
+                    <div
+                      key={index}
+                      className="flex gap-3 text-lg md:text-xl font-medium text-slate-700 dark:text-slate-200"
+                    >
+                      <span className="font-bold text-indigo-500 shrink-0 select-none">
+                        {index + 1}.
+                      </span>
+                      <span>{sentence}</span>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
           )}

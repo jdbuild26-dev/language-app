@@ -72,7 +72,7 @@ export default function ListenTypePage() {
 
   const handlePlayNormal = () => {
     if (currentQuestion) {
-      speak(currentQuestion.audioText, "fr-FR", 1.0);
+      speak(currentQuestion.audioText, "fr-FR", 0.9);
       setHasPlayed(true);
       resetTimer();
     }

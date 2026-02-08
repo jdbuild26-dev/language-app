@@ -82,10 +82,10 @@ export default function DictationPage() {
     if (normalizedInput === normalizedAnswer) {
       setStatus("success");
       setScore((s) => s + 1);
-      speak("Correct!", "en-US");
+      // speak("Correct!", "en-US"); // Removed spoken feedback
     } else {
       setStatus("error");
-      speak(`Incorrect. The answer was ${currentQ.answer}`, "en-US");
+      // speak(`Incorrect. The answer was ${currentQ.answer}`, "en-US"); // Removed spoken feedback
     }
   };
 
