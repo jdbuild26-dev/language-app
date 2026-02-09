@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { usePracticeExit } from "@/hooks/usePracticeExit";
 import { useExerciseTimer } from "@/hooks/useExerciseTimer";
-import { Volume2, RotateCcw } from "lucide-react";
+import { Volume2, RotateCcw, Pause, Play } from "lucide-react";
 import { cn } from "@/lib/utils";
 import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
 import FeedbackBanner from "@/components/ui/FeedbackBanner";
@@ -11,12 +11,10 @@ import { loadMockCSV } from "@/utils/csvLoader";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-
-
-
 export default function ListenPassagePage() {
   const handleExit = usePracticeExit();
-  const { speak, isSpeaking } = useTextToSpeech();
+  const { speak, isSpeaking, pause, resume, isPaused, cancel } =
+    useTextToSpeech();
 
   const [passages, setPassages] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -66,7 +64,6 @@ export default function ListenPassagePage() {
     fetchPassages();
   }, []);
 
-
   useEffect(() => {
     if (currentPassage && !isCompleted) {
       setSelectedOption(null);
@@ -79,6 +76,20 @@ export default function ListenPassagePage() {
   }, [currentPassageIndex, currentQuestionIndex, currentPassage, isCompleted]);
 
   const handlePlayAudio = () => {
+    if (isSpeaking) {
+      pause();
+    } else if (isPaused) {
+      resume();
+    } else if (currentPassage) {
+      speak(currentPassage.passageText, "fr-FR");
+      setHasPlayed(true);
+      resetTimer();
+    }
+  };
+
+  const handleRewind = (e) => {
+    e.stopPropagation();
+    cancel();
     if (currentPassage) {
       speak(currentPassage.passageText, "fr-FR");
       setHasPlayed(true);
@@ -130,8 +141,12 @@ export default function ListenPassagePage() {
   if (passages.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-slate-50 dark:bg-slate-900">
-        <p className="text-xl text-slate-600 dark:text-slate-400">No content available.</p>
-        <Button onClick={() => handleExit()} variant="outline" className="mt-4">Back</Button>
+        <p className="text-xl text-slate-600 dark:text-slate-400">
+          No content available.
+        </p>
+        <Button onClick={() => handleExit()} variant="outline" className="mt-4">
+          Back
+        </Button>
       </div>
     );
   }
@@ -169,28 +184,39 @@ export default function ListenPassagePage() {
             <div className="w-full max-w-md">
               <div className="bg-gradient-to-r from-rose-500 to-red-600 rounded-2xl p-8 shadow-lg">
                 <div className="flex flex-col items-center gap-4">
-                  <button
-                    onClick={handlePlayAudio}
-                    disabled={isSpeaking}
-                    className={cn(
-                      "w-20 h-20 rounded-full flex items-center justify-center transition-all duration-300",
-                      isSpeaking
-                        ? "bg-white/30 animate-pulse"
-                        : "bg-white/20 hover:bg-white/30 hover:scale-105",
-                    )}
-                  >
-                    <Volume2
+                  <div className="flex items-center gap-6">
+                    <button
+                      onClick={handleRewind}
+                      className="w-12 h-12 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center transition-all duration-300 hover:scale-105"
+                      title="Restart from beginning"
+                    >
+                      <RotateCcw className="w-6 h-6 text-white" />
+                    </button>
+
+                    <button
+                      onClick={handlePlayAudio}
                       className={cn(
-                        "w-10 h-10 text-white",
-                        isSpeaking && "animate-pulse",
+                        "w-20 h-20 rounded-full flex items-center justify-center transition-all duration-300 shadow-lg",
+                        isSpeaking
+                          ? "bg-white text-rose-500 scale-105"
+                          : "bg-white/20 hover:bg-white/30 hover:scale-105",
                       )}
-                    />
-                  </button>
-                  <div className="flex items-center gap-2 text-white/90 text-base font-medium">
-                    <RotateCcw className="w-5 h-5" />
-                    <span>
-                      Click to {hasPlayed ? "replay" : "play"} passage
-                    </span>
+                    >
+                      {isSpeaking ? (
+                        <Pause className="w-10 h-10 text-rose-500" />
+                      ) : isPaused ? (
+                        <Play className="w-10 h-10 text-white ml-1" />
+                      ) : (
+                        <Volume2 className="w-10 h-10 text-white" />
+                      )}
+                    </button>
+                  </div>
+                  <div className="text-white/90 text-sm font-medium mt-2">
+                    {isSpeaking
+                      ? "Listening..."
+                      : isPaused
+                        ? "Paused"
+                        : "Click to play passage"}
                   </div>
                 </div>
               </div>
@@ -260,7 +286,7 @@ export default function ListenPassagePage() {
           message={feedbackMessage}
           continueLabel={
             currentPassageIndex === passages.length - 1 &&
-              currentQuestionIndex === currentPassage.questions.length - 1
+            currentQuestionIndex === currentPassage.questions.length - 1
               ? "FINISH"
               : "CONTINUE"
           }

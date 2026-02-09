@@ -37,7 +37,8 @@ const LONG_CONVERSATION = {
       speaker: "You",
       isQuestion: true,
       prompt: "Agree and suggest meeting in front of the museum",
-      sampleAnswer: "C'est une excellente idée. On se retrouve devant le musée ?",
+      sampleAnswer:
+        "C'est une excellente idée. On se retrouve devant le musée ?",
       minWords: 5,
     },
     {
@@ -63,7 +64,7 @@ const LONG_CONVERSATION = {
       prompt: "Say goodbye and see you soon",
       sampleAnswer: "À samedi Marc, bonne journée !",
       minWords: 3,
-    }
+    },
   ],
 };
 
@@ -82,12 +83,15 @@ export default function WriteInteractivePage() {
   const [feedbackMessage, setFeedbackMessage] = useState("");
   const [score, setScore] = useState(0);
 
-  const { evaluation, isSubmitting, evaluate, resetEvaluation } = useWritingEvaluation();
+  const { evaluation, isSubmitting, evaluate, resetEvaluation } =
+    useWritingEvaluation();
 
   const currentExchange = conversation.exchanges[currentExchangeIndex];
   const timerDuration = conversation.timeLimitSeconds;
 
-  const totalQuestions = conversation.exchanges.filter((e) => e.isQuestion).length;
+  const totalQuestions = conversation.exchanges.filter(
+    (e) => e.isQuestion,
+  ).length;
 
   const { timerString, resetTimer } = useExerciseTimer({
     duration: timerDuration,
@@ -140,35 +144,59 @@ export default function WriteInteractivePage() {
   };
 
   const getWordCount = (text) => {
-    return text.trim().split(/\s+/).filter((word) => word.length > 0).length;
+    return text
+      .trim()
+      .split(/\s+/)
+      .filter((word) => word.length > 0).length;
   };
 
   const handleSubmit = async (e) => {
     if (e) e.preventDefault();
-    if (showFeedback || !currentExchange?.isQuestion || !userInput.trim() || isSubmitting) return;
+    if (
+      showFeedback ||
+      !currentExchange?.isQuestion ||
+      !userInput.trim() ||
+      isSubmitting
+    )
+      return;
 
-    const result = await evaluate({
-      task_type: "interactive",
-      user_text: userInput,
-      topic: conversation.context,
-      reference: currentExchange.sampleAnswer,
-      context: `Participant: ${currentExchange.speaker}. Instruction for user: ${currentExchange.prompt}`
-    });
+    try {
+      const result = await evaluate({
+        task_type: "interactive",
+        user_text: userInput,
+        topic: conversation.context,
+        reference: currentExchange.sampleAnswer,
+        context: `Participant: ${currentExchange.speaker}. Instruction for user: ${currentExchange.prompt}`,
+      });
 
-    if (result) {
-      setIsCorrect(result.score >= 70);
-      setFeedbackMessage(result.feedback);
-      setShowFeedback(true);
+      if (result) {
+        setIsCorrect(result.score >= 70);
+        setFeedbackMessage(result.feedback);
+        setShowFeedback(true);
 
-      // Add user's response to display
-      setDisplayedExchanges((prev) => [
-        ...prev,
-        { speaker: "You", text: userInput, isQuestion: false },
-      ]);
+        // Add user's response to display
+        setDisplayedExchanges((prev) => [
+          ...prev,
+          { speaker: "You", text: userInput, isQuestion: false },
+        ]);
 
-      if (result.score >= 70) {
-        setScore((prev) => prev + 1);
+        if (result.score >= 70) {
+          setScore((prev) => prev + 1);
+        }
+      } else {
+        // Handle case where result is null (error in hook)
+        setFeedbackMessage(
+          "Error connecting to evaluation service. Please check your connection and try again.",
+        );
+        // Optional: show a toast or alert instead of feedback banner if you want to keep them on the screen
+        // But valid use case to show feedback as "Error" to let them retry?
+        // Actually, if we show feedback banner, they might have to click continue/retry.
+        // Let's just alert for now or set a temporary error state.
+        alert("Failed to get evaluation. Please try again.");
       }
+    } catch (err) {
+      console.error("Submission error:", err);
+      alert("An unexpected error occurred. Please try again.");
     }
   };
 
@@ -199,7 +227,11 @@ export default function WriteInteractivePage() {
         onExit={handleExit}
         onNext={handleSubmit}
         onRestart={() => window.location.reload()}
-        isSubmitEnabled={userInput.trim().length >= 2 && !showFeedback && currentExchange?.isQuestion}
+        isSubmitEnabled={
+          userInput.trim().length >= 2 &&
+          !showFeedback &&
+          currentExchange?.isQuestion
+        }
         showSubmitButton={currentExchange?.isQuestion && !showFeedback}
         submitLabel="Send"
         timerValue={timerString}
@@ -221,7 +253,9 @@ export default function WriteInteractivePage() {
                   key={index}
                   className={cn(
                     "flex animate-in fade-in slide-in-from-bottom-2 duration-300",
-                    exchange.speaker === "You" ? "justify-end" : "justify-start"
+                    exchange.speaker === "You"
+                      ? "justify-end"
+                      : "justify-start",
                   )}
                 >
                   <div
@@ -229,14 +263,16 @@ export default function WriteInteractivePage() {
                       "max-w-[85%] px-5 py-3 rounded-2xl shadow-sm relative group",
                       exchange.speaker === "You"
                         ? "bg-emerald-600 text-white rounded-br-sm"
-                        : "bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 rounded-bl-sm"
+                        : "bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 rounded-bl-sm",
                     )}
                   >
                     <p className="text-[10px] opacity-70 mb-1 font-bold uppercase tracking-wider">
                       {exchange.speaker}
                     </p>
                     <div className="flex items-start gap-3">
-                      <p className="text-base leading-relaxed">{exchange.text}</p>
+                      <p className="text-base leading-relaxed">
+                        {exchange.text}
+                      </p>
                       {exchange.speaker !== "You" && (
                         <button
                           onClick={() => handlePlayMessage(exchange.text)}
@@ -273,7 +309,7 @@ export default function WriteInteractivePage() {
                     className={cn(
                       "flex-1 px-6 py-4 rounded-2xl border-2 text-base transition-all outline-none shadow-sm",
                       "bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200",
-                      "border-slate-200 dark:border-slate-700 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10"
+                      "border-slate-200 dark:border-slate-700 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10",
                     )}
                     autoFocus
                   />
@@ -284,10 +320,12 @@ export default function WriteInteractivePage() {
                       "w-14 h-14 rounded-2xl flex items-center justify-center transition-all shadow-md active:scale-95",
                       userInput.trim().length >= 2 && !isSubmitting
                         ? "bg-emerald-600 text-white hover:bg-emerald-700"
-                        : "bg-slate-200 dark:bg-slate-700 text-slate-400 cursor-not-allowed"
+                        : "bg-slate-200 dark:bg-slate-700 text-slate-400 cursor-not-allowed",
                     )}
                   >
-                    <Send className={cn("w-6 h-6", isSubmitting && "animate-pulse")} />
+                    <Send
+                      className={cn("w-6 h-6", isSubmitting && "animate-pulse")}
+                    />
                   </button>
                 </form>
 

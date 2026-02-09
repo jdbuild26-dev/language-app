@@ -7,7 +7,7 @@ import FeedbackBanner from "@/components/ui/FeedbackBanner";
 import { getFeedbackMessage } from "@/utils/feedbackMessages";
 
 import { loadMockCSV } from "@/utils/csvLoader";
-import { Loader2 } from "lucide-react";
+import { Loader2, Volume2 } from "lucide-react";
 
 // MOCK_QUESTIONS removed - migrated to CSV
 
@@ -60,6 +60,27 @@ export default function ImageMCQPage() {
       resetTimer();
     }
   }, [currentIndex, currentQuestion, isCompleted, resetTimer]);
+
+  const utteranceRef = React.useRef(null);
+
+  useEffect(() => {
+    return () => {
+      window.speechSynthesis.cancel();
+    };
+  }, []);
+
+  const handlePlayAudio = (e, text) => {
+    e.stopPropagation();
+    window.speechSynthesis.cancel();
+
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = "fr-FR";
+
+    // Store reference to prevent garbage collection
+    utteranceRef.current = utterance;
+
+    window.speechSynthesis.speak(utterance);
+  };
 
   const handleOptionSelect = (index) => {
     if (showFeedback) return;
@@ -177,10 +198,32 @@ export default function ImageMCQPage() {
                       {String.fromCharCode(65 + index)}
                     </span>
                     <span className="flex-1">{option}</span>
+                    <div
+                      onClick={(e) => handlePlayAudio(e, option)}
+                      className="p-2 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors ml-auto cursor-pointer z-10"
+                      title="Listen"
+                    >
+                      <Volume2 className="w-5 h-5 text-slate-500 hover:text-blue-500" />
+                    </div>
                   </div>
                 </button>
               ))}
             </div>
+
+            {/* English Answer Display */}
+            {showFeedback && currentQuestion.englishOptions && (
+              <div className="w-full mt-4 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-100 dark:border-blue-800 animate-in fade-in slide-in-from-bottom-2">
+                <p className="text-sm text-slate-500 dark:text-slate-400 font-medium mb-1 flex items-center gap-2">
+                  <span className="bg-blue-100 dark:bg-blue-800 text-blue-700 dark:text-blue-300 text-xs px-2 py-0.5 rounded-full">
+                    Translation
+                  </span>
+                  Correct Answer
+                </p>
+                <p className="text-lg font-medium text-slate-800 dark:text-slate-200 ml-1">
+                  {currentQuestion.englishOptions[currentQuestion.correctIndex]}
+                </p>
+              </div>
+            )}
           </div>
         </div>
       </PracticeGameLayout>

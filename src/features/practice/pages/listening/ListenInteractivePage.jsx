@@ -37,9 +37,13 @@ export default function ListenInteractivePage() {
         );
         if (data && data.length > 0) {
           setConversation(data[0]);
+        } else {
+          console.error("No data found in CSV");
+          setConversation(null);
         }
       } catch (error) {
         console.error("Error loading mock data:", error);
+        setConversation(null);
       } finally {
         setIsLoading(false);
       }
@@ -103,22 +107,18 @@ export default function ListenInteractivePage() {
     if (!currentExchange.isQuestion && !showFeedback) {
       // It's a statement by the other speaker
 
-      // Prevent duplicate adding - check if this exchange is already displayed
-      setDisplayedExchanges((prev) => {
-        // Check if already exists by comparing text and speaker
-        const alreadyExists = prev.some(
-          (ex) =>
-            ex.text === currentExchange.text &&
-            ex.speaker === currentExchange.speaker,
-        );
+      // 1. Speak the text (side effect outside of state updater)
+      // Check if we've already spoken/added this to avoid double speaking
+      const isAlreadyDisplayed = displayedExchanges.some(
+        (ex) =>
+          ex.text === currentExchange.text &&
+          ex.speaker === currentExchange.speaker,
+      );
 
-        if (!alreadyExists) {
-          // Play audio when adding
-          speak(currentExchange.text, "fr-FR");
-          return [...prev, currentExchange];
-        }
-        return prev;
-      });
+      if (!isAlreadyDisplayed) {
+        speak(currentExchange.text, "fr-FR");
+        setDisplayedExchanges((prev) => [...prev, currentExchange]);
+      }
 
       // Advance after delay (simulating listening time + small pause)
       // Base delay 2s + approx duration based on length
@@ -140,7 +140,8 @@ export default function ListenInteractivePage() {
     showFeedback,
     conversation?.exchanges.length,
     isCompleted,
-    speak,
+    // speak, // INTENTIONAL: Removed to prevent timer resets on voice load
+    // displayedExchanges, // Added to check for duplication locally
   ]);
 
   const handlePlayExchange = (text) => {

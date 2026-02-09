@@ -249,6 +249,12 @@ export default function CompletePassagePage() {
                             {userAnswer || "(empty)"}
                           </span>
                         )}
+
+                        {showFeedback && !isCorrectAnswer && (
+                          <span className="text-sm font-bold text-green-600 ml-1">
+                            (Correct: {blanksData[id].correct})
+                          </span>
+                        )}
                       </span>
                     );
                   }
@@ -312,6 +318,11 @@ export default function CompletePassagePage() {
                           ) : (
                             <XCircle className="w-6 h-6 text-red-500" />
                           )}
+                        </div>
+                      )}
+                      {showFeedback && !isCorrectAnswer && (
+                        <div className="text-sm font-medium text-green-600">
+                          Correct: {blank.correct}
                         </div>
                       )}
                     </div>

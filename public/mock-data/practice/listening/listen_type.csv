@@ -1,9 +1,9 @@
-id,audioText,hint,timeLimitSeconds
-1,"Je voudrais réserver une table pour deux personnes ce soir","Making a restaurant reservation",60
-2,"Est-ce que vous pourriez m'indiquer le chemin vers la gare","Asking for directions",60
-3,"Le train arrive à la gare du nord à dix-huit heures trente","Train schedule information",60
-4,"J'ai besoin d'acheter des fruits et des légumes au marché","Shopping at the market",60
-5,"Ma sœur travaille dans un hôpital depuis cinq ans","Talking about someone's job",60
-6,"Nous allons partir en vacances la semaine prochaine","Talking about vacation plans",60
-7,"Il fait très beau aujourd'hui et le soleil brille","Describing the weather",60
-8,"Je préfère prendre un café avec du lait le matin","Morning coffee preferences",60
+id,audioText,hint,timeLimitSeconds,englishText
+1,"Je voudrais réserver une table pour deux personnes ce soir","Making a restaurant reservation",60,"I would like to reserve a table for two people this evening"
+2,"Est-ce que vous pourriez m'indiquer le chemin vers la gare","Asking for directions",60,"Could you tell me the way to the train station?"
+3,"Le train arrive à la gare du nord à dix-huit heures trente","Train schedule information",60,"The train arrives at the North Station at six thirty PM"
+4,"J'ai besoin d'acheter des fruits et des légumes au marché","Shopping at the market",60,"I need to buy fruits and vegetables at the market"
+5,"Ma sœur travaille dans un hôpital depuis cinq ans","Talking about someone's job",60,"My sister has been working in a hospital for five years"
+6,"Nous allons partir en vacances la semaine prochaine","Talking about vacation plans",60,"We are going on vacation next week"
+7,"Il fait très beau aujourd'hui et le soleil brille","Describing the weather",60,"It is very beautiful today and the sun is shining"
+8,"Je préfère prendre un café avec du lait le matin","Morning coffee preferences",60,"I prefer to have coffee with milk in the morning"

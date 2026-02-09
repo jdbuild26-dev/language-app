@@ -48,17 +48,7 @@ const practiceActivities = [
     shadow: "shadow-cyan-200 dark:shadow-cyan-900/20",
     isLive: true,
   },
-  {
-    id: "G3",
-    name: "Highlight the Word",
-    icon: Highlighter,
-    desc: "Find and highlight specific text",
-    path: "/practice/reading/highlight",
-    category: "reading",
-    color: "from-emerald-400 to-teal-500",
-    shadow: "shadow-emerald-200 dark:shadow-emerald-900/20",
-    isLive: true,
-  },
+
   {
     id: "G11",
     name: "Highlight the Sentence",
