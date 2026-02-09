@@ -47,7 +47,6 @@ export function useGrammarNotes() {
   }, []);
 
   return { notes, loading, error, getNotes };
-  return { notes, loading, error, getNotes };
 }
 
 /**

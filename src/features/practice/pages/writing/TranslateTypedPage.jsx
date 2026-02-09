@@ -176,6 +176,27 @@ export default function TranslateTypedPage() {
             </div>
           </div>
 
+          {/* Correct Answer Display */}
+          {showFeedback && currentQuestion?.correctAnswer && (
+            <div className="w-full max-w-4xl mx-auto px-4 -mt-2">
+              <div
+                className={cn(
+                  "rounded-2xl p-4 border-2 transition-all duration-300",
+                  isCorrect
+                    ? "bg-emerald-50 dark:bg-emerald-900/10 border-emerald-500"
+                    : "bg-red-50 dark:bg-red-900/10 border-red-500",
+                )}
+              >
+                <p className="text-sm font-semibold text-slate-600 dark:text-slate-400 mb-1">
+                  Correct Answer:
+                </p>
+                <p className="text-lg font-medium text-slate-800 dark:text-slate-100">
+                  {currentQuestion.correctAnswer}
+                </p>
+              </div>
+            </div>
+          )}
+
           {/* Quick Shortcuts / Instructions */}
         </div>
       </PracticeGameLayout>
