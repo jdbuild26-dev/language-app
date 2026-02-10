@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useExerciseTimer } from "@/hooks/useExerciseTimer";
+import { useTextToSpeech } from "@/hooks/useTextToSpeech";
 import { CheckCircle, XCircle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -10,7 +11,12 @@ import { getFeedbackMessage } from "@/utils/feedbackMessages";
 const MOCK_QUESTIONS = [
   {
     id: 1,
-    words: ["Chien", "Chat", "Lapin", "Pomme"],
+    words: [
+      { text: "Chien", translation: "Dog" },
+      { text: "Chat", translation: "Cat" },
+      { text: "Lapin", translation: "Rabbit" },
+      { text: "Pomme", translation: "Apple" },
+    ],
     correctAnswer: "Pomme",
     reason: "'Pomme' is a fruit, the others are animals.",
     type: "Odd One Out",
@@ -19,25 +25,45 @@ const MOCK_QUESTIONS = [
   },
   {
     id: 2,
-    words: ["Rouge", "Bleu", "Voiture", "Vert"],
+    words: [
+      { text: "Rouge", translation: "Red" },
+      { text: "Bleu", translation: "Blue" },
+      { text: "Voiture", translation: "Car" },
+      { text: "Vert", translation: "Green" },
+    ],
     correctAnswer: "Voiture",
     reason: "'Voiture' is a vehicle, the others are colors.",
   },
   {
     id: 3,
-    words: ["Manger", "Boire", "Dormir", "Heureux"],
+    words: [
+      { text: "Manger", translation: "To eat" },
+      { text: "Boire", translation: "To drink" },
+      { text: "Dormir", translation: "To sleep" },
+      { text: "Heureux", translation: "Happy" },
+    ],
     correctAnswer: "Heureux",
     reason: "'Heureux' is an adjective, the others are verbs.",
   },
   {
     id: 4,
-    words: ["Lundi", "Mardi", "Janvier", "Mercredi"],
+    words: [
+      { text: "Lundi", translation: "Monday" },
+      { text: "Mardi", translation: "Tuesday" },
+      { text: "Janvier", translation: "January" },
+      { text: "Mercredi", translation: "Wednesday" },
+    ],
     correctAnswer: "Janvier",
     reason: "'Janvier' is a month, the others are days.",
   },
   {
     id: 5,
-    words: ["Un", "Deux", "Trois", "Livre"],
+    words: [
+      { text: "Un", translation: "One" },
+      { text: "Deux", translation: "Two" },
+      { text: "Trois", translation: "Three" },
+      { text: "Livre", translation: "Book" },
+    ],
     correctAnswer: "Livre",
     reason: "'Livre' is an object, the others are numbers.",
   },
@@ -53,6 +79,7 @@ export default function OddOneOutGamePage() {
   const [showFeedback, setShowFeedback] = useState(false);
   const [isCorrect, setIsCorrect] = useState(false);
   const [feedbackMessage, setFeedbackMessage] = useState("");
+  const { speak } = useTextToSpeech();
 
   // Timer Hook
   const { timerString, resetTimer, isPaused } = useExerciseTimer({
@@ -77,9 +104,10 @@ export default function OddOneOutGamePage() {
   const totalQuestions = MOCK_QUESTIONS.length;
   const progress = ((currentIndex + 1) / totalQuestions) * 100;
 
-  const handleWordClick = (word) => {
+  const handleWordClick = (wordObj) => {
+    speak(wordObj.text, "fr-FR");
     if (isSubmitted) return;
-    setSelectedWord(word);
+    setSelectedWord(wordObj.text);
   };
 
   const handleSubmit = () => {
@@ -110,9 +138,10 @@ export default function OddOneOutGamePage() {
     }
   };
 
-  const getWordStyle = (word) => {
+  const getWordStyle = (wordObj) => {
+    const word = wordObj.text;
     const baseStyle =
-      "h-32 md:h-40 rounded-2xl border-2 text-lg md:text-xl font-medium transition-all duration-200 flex items-center justify-center relative overflow-hidden min-w-[180px] md:min-w-[240px]";
+      "h-32 md:h-40 rounded-2xl border-2 text-lg md:text-xl font-medium transition-all duration-200 flex flex-col items-center justify-center relative overflow-hidden min-w-[180px] md:min-w-[240px] p-4";
 
     if (!isSubmitted) {
       // Normal Selection
@@ -179,22 +208,29 @@ export default function OddOneOutGamePage() {
         <div className="flex-1 flex flex-col items-center justify-center -mt-10">
           {/* Grid */}
           <div className="grid grid-cols-2 gap-6 md:gap-10 w-full max-w-5xl">
-            {currentQuestion.words.map((word, idx) => (
+            {currentQuestion.words.map((wordObj, idx) => (
               <button
                 key={idx}
-                onClick={() => handleWordClick(word)}
-                disabled={isSubmitted}
-                className={getWordStyle(word)}
+                onClick={() => handleWordClick(wordObj)}
+                // Remove disabled so audio can play after submit
+                // But handle logic inside click handler
+                className={getWordStyle(wordObj)}
               >
-                <span>{word}</span>
-                {isSubmitted && word === currentQuestion.correctAnswer && (
-                  <div className="absolute top-2 right-2">
-                    <CheckCircle className="w-5 h-5 text-green-600" />
-                  </div>
+                <span className="mb-1">{wordObj.text}</span>
+                {isSubmitted && (
+                  <span className="text-sm opacity-90 font-normal">
+                    {wordObj.translation}
+                  </span>
                 )}
                 {isSubmitted &&
-                  word === selectedWord &&
-                  word !== currentQuestion.correctAnswer && (
+                  wordObj.text === currentQuestion.correctAnswer && (
+                    <div className="absolute top-2 right-2">
+                      <CheckCircle className="w-5 h-5 text-green-600" />
+                    </div>
+                  )}
+                {isSubmitted &&
+                  wordObj.text === selectedWord &&
+                  wordObj.text !== currentQuestion.correctAnswer && (
                     <div className="absolute top-2 right-2">
                       <XCircle className="w-5 h-5 text-red-600" />
                     </div>

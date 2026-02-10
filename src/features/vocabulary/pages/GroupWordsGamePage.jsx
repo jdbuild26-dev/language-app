@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from "react";
 import { useExerciseTimer } from "@/hooks/useExerciseTimer";
 import { CheckCircle, AlertCircle } from "lucide-react";
+import { useTextToSpeech } from "@/hooks/useTextToSpeech";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
 import { cn } from "@/lib/utils";
 
+// MOCK DATA for "Pick 4" (Group Words)
 // MOCK DATA for "Pick 4" (Group Words)
 const MOCK_QUESTIONS = [
   {
@@ -15,23 +17,20 @@ const MOCK_QUESTIONS = [
     instructionEn: "Select 4 words that are related",
     theme: "Fruits",
     allWords: [
-      "Pomme",
-      "Chien",
-      "Banane",
-      "Voiture",
-      "Orange",
-      "Livre",
-      "Raisin",
-      "Stylo",
-      "Fraise",
-      "Lampe",
-      "Chat",
-      "Vélo",
+      { text: "Pomme", translation: "Apple" },
+      { text: "Chien", translation: "Dog" },
+      { text: "Banane", translation: "Banana" },
+      { text: "Voiture", translation: "Car" },
+      { text: "Orange", translation: "Orange" },
+      { text: "Livre", translation: "Book" },
+      { text: "Raisin", translation: "Grape" },
+      { text: "Stylo", translation: "Pen" },
+      { text: "Fraise", translation: "Strawberry" },
+      { text: "Lampe", translation: "Lamp" },
+      { text: "Chat", translation: "Cat" },
+      { text: "Vélo", translation: "Bicycle" },
     ],
-    correctWords: ["Pomme", "Banane", "Orange", "Raisin", "Fraise"], // Wait, usually 4. Let's stick to 4.
-    // Let's refine mock data to have exactly 4 correct words from the prompt "Pick 4"
-    // Modified list to ensure 4 distinct fruits: Pomme, Banane, Orange, Raisin. (Fraise removed from logic if we want strict 4)
-    // Actually let's use 4 correct.
+    correctWords: ["Pomme", "Banane", "Orange", "Raisin", "Fraise"],
     correctGroup: ["Pomme", "Banane", "Orange", "Raisin"],
     reason: "These are all fruits.",
   },
@@ -42,20 +41,19 @@ const MOCK_QUESTIONS = [
     instructionEn: "Select 4 words related to Time",
     theme: "Time",
     correctGroup: ["Lundi", "Janvier", "Heure", "Minute"],
-    // Need to ensure these are in allWords.
     allWords: [
-      "Lundi",
-      "Rouge",
-      "Janvier",
-      "Manger",
-      "Heure",
-      "Grand",
-      "Minute",
-      "Fleur",
-      "Soleil",
-      "Petit",
-      "Chat",
-      "Mer",
+      { text: "Lundi", translation: "Monday" },
+      { text: "Rouge", translation: "Red" },
+      { text: "Janvier", translation: "January" },
+      { text: "Manger", translation: "To Eat" },
+      { text: "Heure", translation: "Hour" },
+      { text: "Grand", translation: "Big" },
+      { text: "Minute", translation: "Minute" },
+      { text: "Fleur", translation: "Flower" },
+      { text: "Soleil", translation: "Sun" },
+      { text: "Petit", translation: "Small" },
+      { text: "Chat", translation: "Cat" },
+      { text: "Mer", translation: "Sea" },
     ],
     reason: "These are all related to time.",
   },
@@ -63,6 +61,7 @@ const MOCK_QUESTIONS = [
 
 export default function GroupWordsGamePage() {
   const navigate = useNavigate();
+  const { speak } = useTextToSpeech();
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedWords, setSelectedWords] = useState([]);
   const [isSubmitted, setIsSubmitted] = useState(false);
@@ -99,8 +98,13 @@ export default function GroupWordsGamePage() {
   const totalQuestions = MOCK_QUESTIONS.length;
   const progress = ((currentIndex + 1) / totalQuestions) * 100;
 
-  const handleWordClick = (word) => {
+  const handleWordClick = (wordObj) => {
+    // Play audio always
+    speak(wordObj.text, "fr-FR");
+
     if (isSubmitted) return;
+
+    const word = wordObj.text;
 
     if (selectedWords.includes(word)) {
       setSelectedWords((prev) => prev.filter((w) => w !== word));
@@ -182,25 +186,19 @@ export default function GroupWordsGamePage() {
       >
         <div className="flex-1 flex flex-col items-center justify-center -mt-10 w-full max-w-7xl">
           <div className="mb-10 text-center">
-            <h2 className="text-3xl font-semibold text-gray-800 dark:text-gray-100">
-              {currentQuestion.theme
-                ? `Topic: ${currentQuestion.theme}`
-                : "Find the related words"}
-            </h2>
-            <p className="text-gray-500 dark:text-gray-400 mt-3 text-lg">
-              Select the {targetCount} words that belong together
-            </p>
+            {/* Removed Topic and Instruction headers as requested */}
           </div>
 
           {/* Grid: 6 columns for 12 items = 2 rows. Wide spacing. */}
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6 md:gap-12 w-full px-4 md:px-0">
-            {currentQuestion.allWords.map((word, idx) => {
+            {currentQuestion.allWords.map((wordObj, idx) => {
+              const word = wordObj.text;
               const isSelected = selectedWords.includes(word);
               const isTargetWord = currentQuestion.correctGroup.includes(word);
 
               // Square cards: aspect-square, remove fixed height
               let cardStyle =
-                "aspect-square rounded-2xl border-2 flex items-center justify-center text-lg md:text-xl font-medium transition-all duration-200 cursor-pointer relative shadow-sm";
+                "aspect-square rounded-2xl border-2 flex flex-col items-center justify-center text-lg md:text-xl font-medium transition-all duration-200 cursor-pointer relative shadow-sm p-2";
 
               if (showFeedback) {
                 if (isTargetWord) {
@@ -229,11 +227,16 @@ export default function GroupWordsGamePage() {
               return (
                 <button
                   key={idx}
-                  onClick={() => handleWordClick(word)}
-                  disabled={isSubmitted}
+                  onClick={() => handleWordClick(wordObj)}
+                  // disabled={isSubmitted} // Allow click for audio
                   className={cardStyle}
                 >
-                  {word}
+                  <span className="mb-1">{word}</span>
+                  {showFeedback && (
+                    <span className="text-sm font-normal opacity-90 block">
+                      {wordObj.translation}
+                    </span>
+                  )}
                 </button>
               );
             })}

@@ -1,6 +1,6 @@
-id,passage,question,correctWord,timeLimitSeconds
-1,"Le chat noir dort sur le canapé confortable. Il rêve de souris.","Find the word that means 'black'",noir,30
-2,"Marie va à la boulangerie pour acheter du pain frais chaque matin.","Find the word that means 'bakery'",boulangerie,30
-3,"Les enfants jouent dans le jardin ensoleillé pendant l'après-midi.","Find the word that means 'sunny'",ensoleillé,30
-4,"Mon frère travaille dans un grand hôpital au centre de la ville.","Find the word that means 'hospital'",hôpital,30
-5,"Elle prépare un délicieux gâteau au chocolat pour l'anniversaire.","Find the word that means 'delicious'",délicieux,30
+id,passage,question,correctWord,timeLimitSeconds,englishTranslation
+1,"Le chat noir dort sur le canapé confortable. Il rêve de souris.","Find the word that means 'black'",noir,30,"The black cat sleeps on the comfortable sofa. He dreams of mice."
+2,"Marie va à la boulangerie pour acheter du pain frais chaque matin.","Find the word that means 'bakery'",boulangerie,30,"Marie goes to the bakery to buy fresh bread every morning."
+3,"Les enfants jouent dans le jardin ensoleillé pendant l'après-midi.","Find the word that means 'sunny'",ensoleillé,30,"The children play in the sunny garden during the afternoon."
+4,"Mon frère travaille dans un grand hôpital au centre de la ville.","Find the word that means 'hospital'",hôpital,30,"My brother works in a large hospital in the center of the city."
+5,"Elle prépare un délicieux gâteau au chocolat pour l'anniversaire.","Find the word that means 'delicious'",délicieux,30,"She prepares a delicious chocolate cake for the birthday."

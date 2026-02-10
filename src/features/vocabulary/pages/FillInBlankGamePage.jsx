@@ -6,6 +6,7 @@ import { fetchPracticeQuestions } from "../../../services/vocabularyApi";
 import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
 import { getFeedbackMessage } from "@/utils/feedbackMessages";
 import { cn } from "@/lib/utils";
+import AudioPlayer from "../components/shared/AudioPlayer";
 
 export default function FillInBlankGamePage() {
   const navigate = useNavigate();
@@ -138,6 +139,8 @@ export default function FillInBlankGamePage() {
           id: "mock1",
           SentenceWithBlank: "Je vais à la [bakery] pour acheter du [bread].",
           CorrectAnswer: "boulangeriepain",
+          FullSentence: "Je vais à la boulangerie pour acheter du pain.",
+          Translation: "I am going to the bakery to buy bread",
           Instruction_FR: "Complétez la phrase",
           Instruction_EN: "Complete the sentence",
           TimeLimitSeconds: 60,
@@ -146,6 +149,8 @@ export default function FillInBlankGamePage() {
           id: "mock2",
           SentenceWithBlank: "Le [dog] court dans le [garden].",
           CorrectAnswer: "chienjardin",
+          FullSentence: "Le chien court dans le jardin.",
+          Translation: "The dog runs in the garden",
           Instruction_FR: "Traduisez les mots",
           Instruction_EN: "Translate the words in brackets",
           TimeLimitSeconds: 60,
@@ -254,69 +259,101 @@ export default function FillInBlankGamePage() {
       timerValue={timerString}
       showFeedback={showFeedback}
       isCorrect={isCorrect}
-      correctAnswer={!isCorrect ? currentQuestion.CorrectAnswer : null}
-      feedbackMessage={feedbackMessage}
+      correctAnswer={null} // We handle feedback display manually
+      feedbackMessage={feedbackMessage} // We handle feedback display manually but pass it for layout color logic
     >
       <div className="w-full max-w-4xl mx-auto p-4 md:p-8 flex flex-col items-center justify-center min-h-[400px]">
         {/* Sentence Container */}
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-8 md:p-12 w-full text-center">
-          <div className="text-2xl md:text-3xl leading-relaxed font-medium text-slate-800 whitespace-nowrap overflow-x-auto">
-            {parsedSentence.parts.map((part, idx) => {
-              if (part.type === "text") {
-                return (
-                  <span key={idx} className="whitespace-pre-wrap">
-                    {part.content}
-                  </span>
-                );
-              }
-              if (part.type === "blank") {
-                const isFilled = userInputs[part.index]?.length > 0;
-                const statusColor = showFeedback
-                  ? isCorrect
-                    ? "border-green-500 text-green-600 bg-green-50"
-                    : "border-red-300 text-red-500 bg-red-50"
-                  : isFilled
-                    ? "border-blue-400 bg-blue-50/30"
-                    : "border-slate-300 bg-slate-50";
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-8 md:p-12 w-full flex flex-col items-center">
+          <div className="flex items-center gap-4 w-full justify-center">
+            {/* Audio Player (Only visible after submit) */}
+            {showFeedback && currentQuestion?.FullSentence && (
+              <div className="animate-in fade-in slide-in-from-left-4 duration-500">
+                <AudioPlayer
+                  text={currentQuestion.FullSentence}
+                  showTurtle={false}
+                  className="mr-4" // Add spacing
+                />
+              </div>
+            )}
 
-                return (
-                  <span
-                    key={idx}
-                    className="relative inline-block mx-2 align-middle"
-                  >
-                    <input
-                      ref={(el) => (inputRefs.current[part.index] = el)}
-                      type="text"
-                      value={userInputs[part.index] || ""}
-                      onChange={(e) =>
-                        handleInputChange(part.index, e.target.value)
-                      }
-                      placeholder={part.hint} // Show English hint as placeholder
-                      disabled={showFeedback}
-                      className={cn(
-                        "w-[180px] h-12 px-4 rounded-xl border-2 outline-none text-center font-bold transition-all duration-200",
-                        "placeholder:text-slate-400 placeholder:font-normal placeholder:text-base",
-                        statusColor,
-                        "focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 focus:bg-white",
-                      )}
-                      autoComplete="off"
-                    />
-                    {showFeedback && (
-                      <div className="absolute -right-3 -top-3 bg-white rounded-full shadow-sm">
-                        {isCorrect ? (
-                          <Check className="w-6 h-6 text-green-500 fill-green-100 p-1 rounded-full" />
-                        ) : (
-                          <X className="w-6 h-6 text-red-500 fill-red-100 p-1 rounded-full" />
+            <div className="text-2xl md:text-3xl leading-relaxed font-medium text-slate-800 whitespace-nowrap overflow-x-auto text-center">
+              {parsedSentence.parts.map((part, idx) => {
+                if (part.type === "text") {
+                  return (
+                    <span key={idx} className="whitespace-pre-wrap">
+                      {part.content}
+                    </span>
+                  );
+                }
+                if (part.type === "blank") {
+                  const isFilled = userInputs[part.index]?.length > 0;
+                  const statusColor = showFeedback
+                    ? isCorrect
+                      ? "border-green-500 text-green-600 bg-green-50"
+                      : "border-red-300 text-red-500 bg-red-50"
+                    : isFilled
+                      ? "border-blue-400 bg-blue-50/30"
+                      : "border-slate-300 bg-slate-50";
+
+                  return (
+                    <span
+                      key={idx}
+                      className="relative inline-block mx-2 align-middle"
+                    >
+                      <input
+                        ref={(el) => (inputRefs.current[part.index] = el)}
+                        type="text"
+                        value={userInputs[part.index] || ""}
+                        onChange={(e) =>
+                          handleInputChange(part.index, e.target.value)
+                        }
+                        placeholder={part.hint} // Show English hint as placeholder
+                        disabled={showFeedback}
+                        className={cn(
+                          "w-[180px] h-12 px-4 rounded-xl border-2 outline-none text-center font-bold transition-all duration-200",
+                          "placeholder:text-slate-400 placeholder:font-normal placeholder:text-base",
+                          statusColor,
+                          "focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 focus:bg-white",
                         )}
-                      </div>
-                    )}
-                  </span>
-                );
-              }
-              return null;
-            })}
+                        autoComplete="off"
+                      />
+                      {showFeedback && (
+                        <div className="absolute -right-3 -top-3 bg-white rounded-full shadow-sm z-10">
+                          {isCorrect ? (
+                            <Check className="w-6 h-6 text-green-500 fill-green-100 p-1 rounded-full" />
+                          ) : (
+                            <X className="w-6 h-6 text-red-500 fill-red-100 p-1 rounded-full" />
+                          )}
+                        </div>
+                      )}
+                    </span>
+                  );
+                }
+                return null;
+              })}
+            </div>
           </div>
         </div>
+
+        {/* Custom Feedback Display */}
+        {showFeedback && (
+          <div className="mt-8 flex flex-col items-center gap-4 animate-in fade-in slide-in-from-bottom-4 duration-500 text-center">
+            {/* If Incorrect: Show Correct French Sentence */}
+            {!isCorrect && currentQuestion?.FullSentence && (
+              <div className="text-xl md:text-2xl font-medium text-slate-800">
+                {currentQuestion.FullSentence}
+              </div>
+            )}
+
+            {/* Always Show English Translation if available */}
+            {currentQuestion?.Translation && (
+              <div className="text-lg md:text-xl text-slate-500 italic font-medium">
+                {currentQuestion.Translation}
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </PracticeGameLayout>
   );

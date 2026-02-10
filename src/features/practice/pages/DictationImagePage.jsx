@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Image as ImageIcon, Loader2 } from "lucide-react";
+import { Image as ImageIcon, Loader2, Volume2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
 import { useNavigate } from "react-router-dom";
@@ -150,6 +150,13 @@ export default function DictationImagePage() {
     setFeedback(null);
   };
 
+  const playAudio = () => {
+    if (currentQuestion?.audioUrl) {
+      const audio = new Audio(currentQuestion.audioUrl);
+      audio.play().catch((err) => console.error("Error playing audio:", err));
+    }
+  };
+
   const formatTimer = (seconds) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
@@ -269,6 +276,41 @@ export default function DictationImagePage() {
                   />
                 );
               })}
+            </div>
+
+            {/* Feedback Section (Below inputs) */}
+            <div className="w-full max-w-2xl flex flex-col items-center gap-4 mt-8">
+              {/* Speaker Button - Only show after submit */}
+              {feedback && (
+                <Button
+                  onClick={playAudio}
+                  variant="outline"
+                  size="lg"
+                  className="rounded-full w-16 h-16 p-0 border-2 border-blue-200 hover:border-blue-300 hover:bg-blue-50 dark:border-blue-800 dark:hover:bg-blue-900/50 transition-all"
+                >
+                  <Volume2 className="w-8 h-8 text-blue-500" />
+                </Button>
+              )}
+
+              {/* Answer Display */}
+              {feedback === "incorrect" && (
+                <div className="flex flex-col items-center gap-1 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                  <p className="text-lg font-medium text-red-600 dark:text-red-400">
+                    {currentQuestion.correctAnswer}
+                  </p>
+                  <p className="text-slate-500 dark:text-slate-400 italic">
+                    {currentQuestion.translation}
+                  </p>
+                </div>
+              )}
+
+              {feedback === "correct" && (
+                <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
+                  <p className="text-lg text-slate-500 dark:text-slate-400 italic">
+                    {currentQuestion.translation}
+                  </p>
+                </div>
+              )}
             </div>
           </div>
         </div>

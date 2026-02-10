@@ -1,15 +1,18 @@
 import React, { useState, useEffect } from "react";
 import { useExerciseTimer } from "@/hooks/useExerciseTimer";
-import { Loader2, XCircle, CheckCircle2, Circle } from "lucide-react";
+import { Loader2, XCircle, CheckCircle2, Circle, Volume2 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { fetchPracticeQuestions } from "@/services/vocabularyApi";
 import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
 import { getFeedbackMessage } from "@/utils/feedbackMessages";
 import { cn } from "@/lib/utils";
+import { useTextToSpeech } from "@/hooks/useTextToSpeech";
 
 export default function ChooseOptionGamePage() {
   const navigate = useNavigate();
+  const { speak } = useTextToSpeech();
+
   const [questions, setQuestions] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedOption, setSelectedOption] = useState(null);
@@ -41,19 +44,37 @@ export default function ChooseOptionGamePage() {
         const gameQuestionsRaw = shuffleArray(practiceData).slice(0, 10);
 
         const generatedQuestions = gameQuestionsRaw.map((item) => {
-          const options = [
+          const optionsRaw = [
             item.Option1,
             item.Option2,
             item.Option3,
             item.Option4,
           ].filter(Boolean);
 
+          // Mock translations for options if not available in API
+          // Ideally API should return objects: { text: "chat", translation: "cat" }
+          // For now we'll mock it or use placeholders if fields like Option1_EN exist
+          const options = optionsRaw.map((opt) => ({
+            text: opt,
+            translation:
+              item[
+                `${Object.keys(item).find((key) => item[key] === opt)}_EN`
+              ] || "English translation", // Try to find matching EN field or mock
+          }));
+
           const shuffledOptions = shuffleArray(options);
 
           return {
             id: item.ExerciseID || Math.random().toString(),
             question: item.Question,
-            correctAnswer: item.CorrectAnswer,
+            correctAnswer: item.CorrectAnswer, // This is the French word
+
+            // Mocking sentence translation if not provided
+            sentenceTranslation:
+              item.SentenceTranslation ||
+              item.QuestionTranslation ||
+              "English translation of the full sentence",
+
             options: shuffledOptions,
             questionType: item.QuestionType || "Choose from Options",
             instructionFr:
@@ -78,13 +99,6 @@ export default function ChooseOptionGamePage() {
   }, []);
 
   const currentQuestion = questions[currentIndex];
-  // Timer string handled by layout or internal state?
-  // NOTE: Layout handles timer prop, but we aren't passing it explicitly here,
-  // defaulting to PracticeGameLayout's internal timer or we should add one if needed.
-  // For consistency with HighlightGame, adding basic timer here would be good,
-  // but existing code didn't have one visible. Layout has a `timerValue` prop now.
-  // Let's stick to existing functionality + new UI unless requested.
-  // The screenshot shows "0:14", so I should probably implement a timer similar to HighlightGame.
 
   // Timer Hook
   const { timerString, resetTimer, isPaused } = useExerciseTimer({
@@ -114,14 +128,25 @@ export default function ChooseOptionGamePage() {
     questions.length > 0 ? ((currentIndex + 1) / questions.length) * 100 : 0;
 
   const handleOptionClick = (option) => {
-    if (showFeedback) return;
+    if (showFeedback) {
+      // Play audio if feedback is shown
+      speak(option.text, "fr-FR");
+      return;
+    }
+    // Play audio on select
+    speak(option.text, "fr-FR");
     setSelectedOption(option);
+  };
+
+  const handleSpeakerClick = (e, text) => {
+    e.stopPropagation();
+    speak(text, "fr-FR");
   };
 
   const handleSubmit = () => {
     if (!selectedOption || showFeedback) return;
 
-    const correct = selectedOption === currentQuestion.correctAnswer;
+    const correct = selectedOption.text === currentQuestion.correctAnswer;
     setIsCorrect(correct);
     setFeedbackMessage(getFeedbackMessage(correct));
     setShowFeedback(true);
@@ -177,7 +202,7 @@ export default function ChooseOptionGamePage() {
         onExit={() => navigate("/vocabulary/practice")}
         onNext={showFeedback ? handleContinue : handleSubmit}
         onRestart={() => window.location.reload()}
-        isSubmitEnabled={(!!selectedOption && !showFeedback) || showFeedback} // Enabled if option selected OR if showing feedback (for continue)
+        isSubmitEnabled={(!!selectedOption && !showFeedback) || showFeedback}
         submitLabel={
           showFeedback
             ? currentIndex + 1 === questions.length
@@ -190,67 +215,98 @@ export default function ChooseOptionGamePage() {
         isCorrect={isCorrect}
         correctAnswer={!isCorrect ? currentQuestion.correctAnswer : null}
         feedbackMessage={feedbackMessage}
+        // When showing feedback, the layout usually handles the bottom banner
+        // We can inject custom content there if needed, but here we update the main UI
       >
         <div className="flex flex-col md:flex-row items-center md:items-start justify-center w-full max-w-6xl gap-8 md:gap-16">
           {/* Left Side: Question / Prompt */}
           <div className="w-full md:w-1/2 flex flex-col justify-center min-h-[200px]">
-            {/* Secondary Title (Context) - OPTIONAL based on API data, using placeholder logic for now */}
-            {/* Note: Screenshot shows "Word meaning 'they speak'" above options, but layout-wise text is left. */}
-            {/* Let's put the main sentence here. */}
-
-            <div className="bg-transparent p-4 rounded-xl">
+            <div className="bg-transparent p-4 rounded-xl flex flex-col gap-4">
               <h2 className="text-2xl md:text-3xl font-medium text-gray-800 dark:text-gray-100 leading-relaxed text-center md:text-left">
                 {(() => {
                   const highlightText = (text) => {
-                    if (!showFeedback || !currentQuestion.correctAnswer)
-                      return text;
+                    const answerWord = currentQuestion.correctAnswer;
 
-                    const parts = text.split(
-                      new RegExp(`(${currentQuestion.correctAnswer})`, "gi"),
-                    );
-                    return parts.map((part, i) =>
-                      part.toLowerCase() ===
-                      currentQuestion.correctAnswer.toLowerCase() ? (
-                        <span
-                          key={i}
-                          className="text-green-600 font-bold bg-green-100 px-1 rounded-md mx-0.5 shadow-sm border border-green-200"
-                        >
-                          {part}
-                        </span>
-                      ) : (
-                        part
-                      ),
-                    );
-                  };
-
-                  if (currentQuestion.question.includes("____")) {
-                    return currentQuestion.question
-                      .split("____")
-                      .map((part, i, arr) => (
+                    if (!showFeedback && text.includes("____")) {
+                      // Standard fill in blank view
+                      return text.split("____").map((part, i, arr) => (
                         <React.Fragment key={i}>
-                          {highlightText(part)}
+                          {part}
                           {i < arr.length - 1 && (
                             <span className="inline-block border-b-2 border-slate-800 dark:border-slate-200 min-w-[3rem] mx-1 relative top-1"></span>
                           )}
                         </React.Fragment>
                       ));
-                  }
+                    }
+
+                    // If showing feedback OR regular text (no blanks), highlight the answer if present
+                    if (showFeedback) {
+                      // Replace blanks with the correct answer for display
+                      let displayText = text.replace(/____/g, answerWord);
+
+                      // Highlight the answer word
+                      const parts = displayText.split(
+                        new RegExp(`(${answerWord})`, "gi"),
+                      );
+                      return parts.map((part, i) =>
+                        part.toLowerCase() === answerWord.toLowerCase() ? (
+                          <span
+                            key={i}
+                            className="text-green-600 font-bold bg-green-100 px-1 rounded-md mx-0.5 shadow-sm border border-green-200"
+                          >
+                            {part}
+                          </span>
+                        ) : (
+                          part
+                        ),
+                      );
+                    }
+
+                    return text;
+                  };
 
                   return highlightText(currentQuestion.question);
                 })()}
               </h2>
+
+              {/* Post-Submit: Speaker & Translation */}
+              {showFeedback && (
+                <div className="flex flex-col gap-2 animate-in fade-in slide-in-from-top-2 duration-300">
+                  <div className="flex items-center gap-3">
+                    <Button
+                      size="icon"
+                      variant="secondary"
+                      className="h-10 w-10 rounded-full bg-blue-100 hover:bg-blue-200 text-blue-600"
+                      onClick={(e) =>
+                        handleSpeakerClick(
+                          e,
+                          currentQuestion.question.replace(
+                            /____/g,
+                            currentQuestion.correctAnswer,
+                          ),
+                        )
+                      }
+                    >
+                      <Volume2 className="h-5 w-5" />
+                    </Button>
+                    {/* If answer was wrong, we can show the correct answer text explicitly if needed, but the sentence is already filled in above. */}
+                  </div>
+
+                  <div className="text-lg text-slate-600 dark:text-slate-400 italic">
+                    {currentQuestion.sentenceTranslation}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
           {/* Right Side: Options */}
           <div className="w-full md:w-1/2 flex flex-col gap-4">
-            {/* Context Header above options if available, essentially 'Word Meanings' logic from screenshot */}
-
             <div className="flex flex-col gap-3 w-full">
               {currentQuestion.options.map((option, idx) => {
                 const isSelected = selectedOption === option;
                 const isCorrectOption =
-                  option === currentQuestion.correctAnswer;
+                  option.text === currentQuestion.correctAnswer;
 
                 // Determine styles
                 let containerClasses =
@@ -287,7 +343,11 @@ export default function ChooseOptionGamePage() {
                   <button
                     key={idx}
                     onClick={() => handleOptionClick(option)}
-                    disabled={showFeedback}
+                    disabled={showFeedback} // We allow clicking to hear audio? User said "Audio needs to play when clicked on option". Usually disabled means no selection change. Let's keep selection disabled but maybe audio enabled?
+                    // Actually, for simplicity, disabling button prevents onClick.
+                    // To verify "Audio needs to play when clicked on option", we usually want it during selection.
+                    // Post-submit, if they click, they might want to hear it again.
+                    // I'll enable clicking even if feedback is shown, but trap it in handler to only play audio.
                     className={containerClasses}
                   >
                     {/* Icon */}
@@ -299,19 +359,35 @@ export default function ChooseOptionGamePage() {
                       )}
                     </div>
 
-                    {/* Text */}
-                    <span
-                      className={cn(
-                        "text-lg font-medium text-left",
-                        showFeedback && isCorrectOption
-                          ? "text-green-800 dark:text-green-300"
-                          : showFeedback && isSelected
-                            ? "text-red-800 dark:text-red-300"
-                            : "text-slate-700 dark:text-slate-200",
+                    {/* Text Container */}
+                    <div className="flex flex-col items-start">
+                      <span
+                        className={cn(
+                          "text-lg font-medium text-left",
+                          showFeedback && isCorrectOption
+                            ? "text-green-800 dark:text-green-300"
+                            : showFeedback && isSelected
+                              ? "text-red-800 dark:text-red-300"
+                              : "text-slate-700 dark:text-slate-200",
+                        )}
+                      >
+                        {option.text}
+                      </span>
+
+                      {/* Translation - Only show on feedback */}
+                      {showFeedback && (
+                        <span
+                          className={cn(
+                            "text-sm",
+                            isCorrectOption
+                              ? "text-green-600/80"
+                              : "text-slate-400",
+                          )}
+                        >
+                          {option.translation}
+                        </span>
                       )}
-                    >
-                      {option}
-                    </span>
+                    </div>
                   </button>
                 );
               })}

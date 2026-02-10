@@ -147,53 +147,72 @@ export default function HighlightPage() {
           </div>
 
           {/* Passage with clickable words */}
-          <div className="w-full bg-white dark:bg-slate-800 rounded-2xl p-6 mb-6 shadow-lg border border-slate-200 dark:border-slate-700">
-            <div className="flex flex-wrap gap-2 justify-center leading-relaxed">
-              {words.map((word, index) => {
-                const cleanWord = word.replace(/[.,!?;:'"]/g, "");
-                const isSelected = selectedWord === cleanWord;
-                const isCorrectWord =
-                  showFeedback &&
-                  normalize(cleanWord) ===
-                    normalize(currentQuestion.correctWord);
+          {/* Passage Area with Speaker and Translation */}
+          <div className="w-full max-w-2xl">
+            <div className="flex gap-4 items-start">
+              {/* Speaker Icon - Only visible after feedback */}
+              {showFeedback && (
+                <button
+                  onClick={handlePlayAudio}
+                  disabled={isSpeaking}
+                  className={cn(
+                    "flex-shrink-0 p-3 rounded-full transition-all mt-2",
+                    isSpeaking
+                      ? "bg-emerald-100 text-emerald-600 animate-pulse"
+                      : "bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-emerald-100 hover:text-emerald-600",
+                  )}
+                  aria-label="Listen to passage"
+                >
+                  <Volume2 className="w-6 h-6" />
+                </button>
+              )}
 
-                return (
-                  <button
-                    key={index}
-                    onClick={() => handleWordClick(cleanWord)}
-                    disabled={showFeedback}
-                    className={cn(
-                      "px-3 py-1 rounded-lg text-lg font-medium transition-all duration-200 border-2",
-                      isCorrectWord
-                        ? "bg-emerald-500 text-white border-emerald-500"
-                        : isSelected && showFeedback && !isCorrect
-                          ? "bg-red-500 text-white border-red-500"
-                          : isSelected
-                            ? "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 border-emerald-500"
-                            : "bg-transparent border-transparent text-slate-800 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-700 hover:border-slate-300",
-                    )}
-                  >
-                    {word}
-                  </button>
-                );
-              })}
+              <div className="flex-grow">
+                {/* Passage with clickable words */}
+                <div className="w-full bg-white dark:bg-slate-800 rounded-2xl p-6 shadow-lg border border-slate-200 dark:border-slate-700 relative">
+                  <div className="flex flex-wrap gap-2 justify-center leading-relaxed">
+                    {words.map((word, index) => {
+                      const cleanWord = word.replace(/[.,!?;:'"]/g, "");
+                      const isSelected = selectedWord === cleanWord;
+                      const isCorrectWord =
+                        showFeedback &&
+                        normalize(cleanWord) ===
+                          normalize(currentQuestion.correctWord);
+
+                      return (
+                        <button
+                          key={index}
+                          onClick={() => handleWordClick(cleanWord)}
+                          disabled={showFeedback}
+                          className={cn(
+                            "px-3 py-1 rounded-lg text-lg font-medium transition-all duration-200 border-2",
+                            isCorrectWord
+                              ? "bg-emerald-500 text-white border-emerald-500"
+                              : isSelected && showFeedback && !isCorrect
+                                ? "bg-red-500 text-white border-red-500"
+                                : isSelected
+                                  ? "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 border-emerald-500"
+                                  : "bg-transparent border-transparent text-slate-800 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-700 hover:border-slate-300",
+                          )}
+                        >
+                          {word}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* English Translation - Only visible after feedback */}
+                {showFeedback && currentQuestion.englishTranslation && (
+                  <div className="mt-6 p-4 bg-slate-50 dark:bg-slate-900/50 rounded-xl border border-slate-200 dark:border-slate-700 text-center">
+                    <p className="text-slate-700 dark:text-slate-300 text-lg font-medium">
+                      {currentQuestion.englishTranslation}
+                    </p>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
-
-          {/* Audio button */}
-          <button
-            onClick={handlePlayAudio}
-            disabled={isSpeaking}
-            className={cn(
-              "flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all",
-              isSpeaking
-                ? "bg-emerald-100 text-emerald-600"
-                : "bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-emerald-100 hover:text-emerald-600",
-            )}
-          >
-            <Volume2 className="w-4 h-4" />
-            Listen to passage
-          </button>
         </div>
       </PracticeGameLayout>
 
