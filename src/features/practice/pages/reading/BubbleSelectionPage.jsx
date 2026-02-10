@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { usePracticeExit } from "@/hooks/usePracticeExit";
 import { useExerciseTimer } from "@/hooks/useExerciseTimer";
 import { useTextToSpeech } from "@/hooks/useTextToSpeech";
@@ -19,8 +20,6 @@ function shuffleArray(array) {
   }
   return shuffled;
 }
-
-
 
 export default function BubbleSelectionPage() {
   const handleExit = usePracticeExit();
@@ -67,7 +66,6 @@ export default function BubbleSelectionPage() {
     };
     fetchQuestions();
   }, []);
-
 
   // Initialize available words when question changes (shuffled)
   useEffect(() => {
@@ -150,15 +148,18 @@ export default function BubbleSelectionPage() {
   if (questions.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-slate-50 dark:bg-slate-900">
-        <p className="text-xl text-slate-600 dark:text-slate-400">No content available.</p>
-        <Button onClick={() => handleExit()} variant="outline" className="mt-4">Back</Button>
+        <p className="text-xl text-slate-600 dark:text-slate-400">
+          No content available.
+        </p>
+        <Button onClick={() => handleExit()} variant="outline" className="mt-4">
+          Back
+        </Button>
       </div>
     );
   }
 
   const progress =
     questions.length > 0 ? ((currentIndex + 1) / questions.length) * 100 : 0;
-
 
   return (
     <>
@@ -185,6 +186,26 @@ export default function BubbleSelectionPage() {
               {currentQuestion?.sourceText}
             </p>
           </div>
+
+          {/* Correct Answer Pop-down */}
+          <AnimatePresence>
+            {showFeedback && (
+              <motion.div
+                initial={{ opacity: 0, y: -20, height: 0 }}
+                animate={{ opacity: 1, y: 0, height: "auto" }}
+                exit={{ opacity: 0, y: -20, height: 0 }}
+                transition={{ duration: 0.3, ease: "easeOut" }}
+                className="w-full bg-white dark:bg-slate-800 rounded-2xl p-6 mb-6 border-2 border-emerald-500 shadow-lg overflow-hidden"
+              >
+                <p className="text-sm text-slate-500 dark:text-slate-400 mb-1 font-medium">
+                  Correct Answer:
+                </p>
+                <p className="text-xl md:text-2xl text-slate-800 dark:text-white font-semibold">
+                  {currentQuestion?.correctAnswer}
+                </p>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           {/* Answer Area - Selected Words */}
           <div className="w-full min-h-[80px] bg-white dark:bg-slate-800 rounded-2xl p-4 mb-6 border-2 border-dashed border-slate-300 dark:border-slate-600 shadow-inner">

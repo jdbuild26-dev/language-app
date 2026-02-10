@@ -195,6 +195,35 @@ export default function SpellingPage() {
               />
             </div>
           </div>
+
+          {/* English Translation Display - Shows after submission */}
+          {showFeedback && currentQuestion?.englishTranslation && (
+            <div className="w-full mt-4 p-6 bg-gradient-to-br from-sky-50 to-blue-50 dark:from-slate-800 dark:to-slate-700 rounded-2xl border-2 border-sky-200 dark:border-sky-700 shadow-sm">
+              <div className="flex items-center justify-center gap-3">
+                <div className="flex items-center gap-2 text-sky-600 dark:text-sky-400">
+                  <svg
+                    className="w-5 h-5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129"
+                    />
+                  </svg>
+                  <span className="text-sm font-semibold uppercase tracking-wide">
+                    English Translation
+                  </span>
+                </div>
+              </div>
+              <p className="text-center text-lg lg:text-xl font-medium text-slate-700 dark:text-slate-200 mt-3">
+                "{currentQuestion.englishTranslation}"
+              </p>
+            </div>
+          )}
         </div>
       </PracticeGameLayout>
 

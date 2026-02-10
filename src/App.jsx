@@ -99,6 +99,8 @@ import ListenInteractivePage from "@/features/practice/pages/listening/ListenInt
 import ListeningComprehensionPage from "@/features/practice/pages/listening/ListeningComprehensionPage";
 import ListeningConversationPage from "@/features/practice/pages/listening/ListeningConversationPage";
 import AudioFillInTheBlanksProPage from "@/features/vocabulary/pages/listening/AudioFillInTheBlanksProPage";
+import AudioFillInTheBlanksDropdownPage from "@/features/vocabulary/pages/listening/AudioFillInTheBlanksDropdownPage";
+import ListenBubblePage from "@/features/practice/pages/listening/ListenBubblePage";
 
 // Practice Module Writing Exercises
 import TranslateTypedPage from "@/features/practice/pages/writing/TranslateTypedPage";
@@ -674,6 +676,26 @@ function App() {
             <ProtectedRoute>
               <FullScreenLayout>
                 <AudioFillInTheBlanksProPage />
+              </FullScreenLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/practice/listening/audio-fill-blanks-dropdown"
+          element={
+            <ProtectedRoute>
+              <FullScreenLayout>
+                <AudioFillInTheBlanksDropdownPage />
+              </FullScreenLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/practice/listening/bubble"
+          element={
+            <ProtectedRoute>
+              <FullScreenLayout>
+                <ListenBubblePage />
               </FullScreenLayout>
             </ProtectedRoute>
           }

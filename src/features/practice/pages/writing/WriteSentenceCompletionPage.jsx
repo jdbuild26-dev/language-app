@@ -225,12 +225,6 @@ export default function WriteSentenceCompletionPage() {
                             </p>
                           </div>
                         )}
-
-                        {!showFeedback && q.hint && (
-                          <p className="text-xs text-slate-400 italic font-medium px-1">
-                            💡 Hint: {q.hint}
-                          </p>
-                        )}
                       </div>
                     </div>
                   );

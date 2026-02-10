@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Play, Loader2 } from "lucide-react";
+import { Play, Pause, RotateCcw, Loader2 } from "lucide-react";
 import { useTextToSpeech } from "@/hooks/useTextToSpeech";
 import { cn } from "@/lib/utils";
 import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
@@ -8,7 +8,8 @@ import { usePracticeExit } from "@/hooks/usePracticeExit";
 
 export default function AudioFillInTheBlanksProPage() {
   const handleExit = usePracticeExit();
-  const { speak, isSpeaking } = useTextToSpeech();
+  const { speak, isSpeaking, pause, resume, isPaused, cancel } =
+    useTextToSpeech();
   const [hasStarted, setHasStarted] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
@@ -67,8 +68,23 @@ export default function AudioFillInTheBlanksProPage() {
   const [score, setScore] = useState(0);
 
   const handlePlay = () => {
-    if (isPlaying) return;
+    if (isSpeaking) {
+      if (isPaused) {
+        resume();
+        setIsPlaying(true);
+      } else {
+        pause();
+        setIsPlaying(false);
+      }
+    } else {
+      setHasStarted(true);
+      setIsPlaying(true);
+      speak(audioText, "fr-FR", 0.9);
+    }
+  };
 
+  const handleRewind = () => {
+    cancel();
     setHasStarted(true);
     setIsPlaying(true);
     speak(audioText, "fr-FR", 0.9);
@@ -76,10 +92,10 @@ export default function AudioFillInTheBlanksProPage() {
 
   // Monitor isSpeaking to detect end of playback
   useEffect(() => {
-    if (hasStarted && isPlaying && !isSpeaking) {
+    if (hasStarted && !isSpeaking && !isPaused) {
       setIsPlaying(false);
     }
-  }, [isSpeaking, hasStarted, isPlaying]);
+  }, [isSpeaking, hasStarted, isPaused]);
 
   const handleChange = (id, value) => {
     setInputs((prev) => ({ ...prev, [id]: value }));
@@ -117,47 +133,71 @@ export default function AudioFillInTheBlanksProPage() {
         {/* Sticky Audio Player */}
         <div className="sticky top-0 z-40 bg-white/95 dark:bg-slate-950/95 backdrop-blur-md w-full -mx-4 px-4 py-4 border-b border-slate-200/50 dark:border-slate-800/50 shadow-sm">
           <div className="max-w-2xl mx-auto">
-            <div className="bg-slate-100 dark:bg-slate-900 rounded-2xl p-6 border border-slate-200 dark:border-slate-800 flex items-center gap-6 shadow-inner">
-              <button
-                onClick={handlePlay}
-                disabled={isPlaying}
-                className={cn(
-                  "w-16 h-16 rounded-full flex items-center justify-center flex-shrink-0 transition-all shadow-lg hover:shadow-xl",
-                  isPlaying
-                    ? "bg-slate-200 dark:bg-slate-800 cursor-not-allowed opacity-80"
-                    : "bg-blue-600 hover:bg-blue-500 active:scale-95 text-white",
-                )}
-              >
-                {isPlaying ? (
-                  <div className="flex gap-1 h-5 items-center">
-                    <span className="w-1 bg-blue-500 h-full animate-pulse" />
-                    <span
-                      className="w-1 bg-blue-500 h-3/4 animate-pulse"
-                      style={{ animationDelay: "0.1s" }}
-                    />
-                    <span
-                      className="w-1 bg-blue-500 h-1/2 animate-pulse"
-                      style={{ animationDelay: "0.2s" }}
-                    />
+            <div className="bg-slate-100 dark:bg-slate-900 rounded-2xl p-6 border border-slate-200 dark:border-slate-800 flex items-center gap-6 shadow-inner relative overflow-hidden">
+              {/* Audio Wave Animation Background */}
+              {isPlaying && (
+                <div className="absolute inset-0 flex items-center justify-center opacity-10 pointer-events-none overflow-hidden">
+                  <div className="flex gap-1 h-full items-center justify-center w-full">
+                    {[...Array(20)].map((_, i) => (
+                      <div
+                        key={i}
+                        className="w-2 bg-blue-500 rounded-full animate-pulse"
+                        style={{
+                          height: `${Math.random() * 60 + 20}%`,
+                          animationDuration: `${Math.random() * 0.5 + 0.5}s`,
+                        }}
+                      />
+                    ))}
                   </div>
-                ) : (
-                  <Play className="w-7 h-7 ml-1" />
-                )}
-              </button>
+                </div>
+              )}
 
-              <div className="flex-1 space-y-2">
+              <div className="flex items-center gap-4 z-10">
+                <button
+                  onClick={handlePlay}
+                  className={cn(
+                    "w-16 h-16 rounded-full flex items-center justify-center flex-shrink-0 transition-all shadow-lg hover:shadow-xl hover:scale-105 active:scale-95",
+                    isPlaying
+                      ? "bg-amber-500 hover:bg-amber-600 text-white"
+                      : "bg-blue-600 hover:bg-blue-500 text-white",
+                  )}
+                >
+                  {isPlaying ? (
+                    <Pause className="w-7 h-7 fill-current" />
+                  ) : (
+                    <Play className="w-7 h-7 ml-1 fill-current" />
+                  )}
+                </button>
+
+                {hasStarted && (
+                  <button
+                    onClick={handleRewind}
+                    className="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 transition-all shadow-md hover:shadow-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 hover:scale-105 active:scale-95"
+                    title="Restart Audio"
+                  >
+                    <RotateCcw className="w-5 h-5" />
+                  </button>
+                )}
+              </div>
+
+              <div className="flex-1 space-y-2 z-10">
                 <p className="text-sm font-medium text-slate-500 dark:text-slate-400">
                   {isPlaying
                     ? "Playing audio..."
-                    : hasStarted
-                      ? "Audio complete - Click to replay"
-                      : "Tap play to start"}
+                    : isPaused
+                      ? "Audio paused"
+                      : hasStarted
+                        ? "Audio complete"
+                        : "Tap play to start"}
                 </p>
                 <div className="h-2 w-full bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
                   {isPlaying && (
-                    <div className="h-full bg-blue-500 w-full animate-pulse" />
+                    <div className="h-full bg-blue-500 w-full animate-progress" />
                   )}
-                  {!isPlaying && hasStarted && (
+                  {!isPlaying && isPaused && (
+                    <div className="h-full bg-amber-500 w-1/2" />
+                  )}
+                  {!isPlaying && !isPaused && hasStarted && (
                     <div className="h-full bg-blue-500 w-full" />
                   )}
                 </div>
@@ -167,7 +207,7 @@ export default function AudioFillInTheBlanksProPage() {
             <p className="mt-4 text-sm text-slate-500 dark:text-slate-400 text-center">
               {!hasStarted
                 ? "Listen to the scenario carefully and answer the questions below."
-                : "You can replay the audio as many times as needed."}
+                : "You can pause, replay, or restart the audio as needed."}
             </p>
           </div>
         </div>

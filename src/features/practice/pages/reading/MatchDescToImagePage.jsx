@@ -1,6 +1,12 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, RefreshCw, CheckCircle, XCircle, Loader2 } from "lucide-react";
+import {
+  ArrowLeft,
+  RefreshCw,
+  CheckCircle,
+  XCircle,
+  Loader2,
+} from "lucide-react";
 import { loadMockCSV } from "@/utils/csvLoader";
 
 // QUESTIONS removed - migrated to CSV
@@ -21,12 +27,37 @@ export default function MatchDescToImagePage() {
         setQuestions(data);
       } catch (error) {
         console.error("Error loading mock data:", error);
+        setQuestions([]); // Ensure it's empty array on error
       } finally {
         setLoading(false);
       }
     };
     fetchQuestions();
   }, []);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-900">
+        <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+      </div>
+    );
+  }
+
+  if (!questions || questions.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen bg-slate-50 dark:bg-slate-900">
+        <p className="text-xl text-slate-600 dark:text-slate-400">
+          No content available or failed to load.
+        </p>
+        <button
+          onClick={() => navigate("/practice")}
+          className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+        >
+          Back to Practice
+        </button>
+      </div>
+    );
+  }
 
   const currentQuestion = questions[currentQuestionIndex];
 

@@ -28,6 +28,8 @@ export default function HighlightTextPage() {
     };
     fetchQuestions();
   }, []);
+
+  const passageRef = React.useRef(null);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedText, setSelectedText] = useState("");
   const [isCompleted, setIsCompleted] = useState(false);
@@ -73,11 +75,19 @@ export default function HighlightTextPage() {
       if (showFeedback) return;
 
       const selection = window.getSelection();
+
+      // Check if selection is within the passage container
+      if (
+        !passageRef.current ||
+        !passageRef.current.contains(selection.anchorNode) ||
+        !passageRef.current.contains(selection.focusNode)
+      ) {
+        return;
+      }
+
       const text = selection.toString().trim();
 
       // Only update if we have a valid selection
-      // We could also check if the selection is within our passage container if we had a ref
-      // causing issues with focus? simple check for now.
       if (text.length > 0) {
         setSelectedText(text);
       }
@@ -199,8 +209,8 @@ export default function HighlightTextPage() {
               {currentQuestion.title}
             </h3>
             <div
+              ref={passageRef}
               className="prose dark:prose-invert max-w-none text-lg leading-relaxed text-slate-800 dark:text-slate-200 select-text"
-              /* onMouseUp handler removed in favor of global selection listener */
             >
               {currentQuestion.passage}
             </div>

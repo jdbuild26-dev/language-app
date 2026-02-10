@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils";
 import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
 import FeedbackBanner from "@/components/ui/FeedbackBanner";
 import { getFeedbackMessage } from "@/utils/feedbackMessages";
+import { Languages } from "lucide-react";
 
 import { loadMockCSV } from "@/utils/csvLoader";
 
@@ -18,6 +19,7 @@ export default function WriteFillBlanksPage() {
   const [showFeedback, setShowFeedback] = useState(false);
   const [isCorrect, setIsCorrect] = useState(false);
   const [score, setScore] = useState(0);
+  const [showTranslation, setShowTranslation] = useState(false);
   const inputRefs = useRef({});
 
   useEffect(() => {
@@ -271,21 +273,38 @@ export default function WriteFillBlanksPage() {
           }
           correctAnswer={
             !isCorrect && (
-              <span>
-                {processedWords.map((word, wIdx) => {
-                  if (word.isTarget) {
-                    return (
-                      <span
-                        key={wIdx}
-                        className="font-bold underline decoration-2 underline-offset-2"
-                      >
-                        {word.text}
-                      </span>
-                    );
-                  }
-                  return <span key={wIdx}>{word.text}</span>;
-                })}
-              </span>
+              <div className="flex flex-col gap-2">
+                {/* Translate Toggle Button */}
+                <button
+                  onClick={() => setShowTranslation(!showTranslation)}
+                  className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-red-200 dark:bg-red-800 hover:bg-red-300 dark:hover:bg-red-700 transition-colors text-red-900 dark:text-red-100 text-sm font-medium self-start"
+                >
+                  <Languages className="w-4 h-4" />
+                  {showTranslation ? "Show French" : "Translate"}
+                </button>
+
+                {/* Answer Display */}
+                <span>
+                  {showTranslation
+                    ? // Show English translation
+                      currentExercise.englishTranslation ||
+                      "Translation not available"
+                    : // Show French answer with highlighted words
+                      processedWords.map((word, wIdx) => {
+                        if (word.isTarget) {
+                          return (
+                            <span
+                              key={wIdx}
+                              className="font-bold underline decoration-2 underline-offset-2"
+                            >
+                              {word.text}
+                            </span>
+                          );
+                        }
+                        return <span key={wIdx}>{word.text}</span>;
+                      })}
+                </span>
+              </div>
             )
           }
           continueLabel={

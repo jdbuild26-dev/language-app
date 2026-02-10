@@ -1,79 +1,26 @@
 import React, { useState, useEffect, useRef } from "react";
 import { usePracticeExit } from "@/hooks/usePracticeExit";
 import { useTextToSpeech } from "@/hooks/useTextToSpeech";
-import { Play, Pause, Volume2 } from "lucide-react";
+import { Play, Pause, RotateCcw, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import FullScreenLayout from "@/components/layout/FullScreenLayout";
-import FeedbackBanner from "@/components/ui/FeedbackBanner";
-import { Button } from "@/components/ui/button";
+import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
 import { loadMockCSV } from "@/utils/csvLoader";
-import { Loader2 } from "lucide-react";
 
 export default function ListeningComprehensionPage() {
   const handleExit = usePracticeExit();
-  const { speak, isSpeaking, stop } = useTextToSpeech();
+  const { speak, isSpeaking, pause, resume, isPaused, cancel } =
+    useTextToSpeech();
 
   // State
   const [scenarioData, setScenarioData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [hasStarted, setHasStarted] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [showQuestions, setShowQuestions] = useState(false);
   const [userAnswers, setUserAnswers] = useState({});
   const [isSubmitted, setIsSubmitted] = useState(false);
-  const [showFeedback, setShowFeedback] = useState(false);
   const [score, setScore] = useState(0);
 
-  // Audio Control State
-  const [progress, setProgress] = useState(0);
-  const [charOffset, setCharOffset] = useState(0);
-
-  // Use ref for isDragging to avoid stale closures in callbacks
-  const isDraggingRef = useRef(false);
-  const textLength = scenarioData?.audioText.length || 0;
-
-  const speakChunk = (offset) => {
-    const textToSpeak = scenarioData?.audioText.slice(offset);
-
-    speak(textToSpeak, "fr-FR", 0.9, {
-      onBoundary: (e) => {
-        if (!isDraggingRef.current) {
-          const currentGlobalIndex = offset + e.charIndex;
-          const p = (currentGlobalIndex / textLength) * 100;
-          setProgress(p);
-        }
-      },
-      onEnd: () => {
-        if (!isDraggingRef.current) {
-          setIsPlaying(false);
-          setProgress(100);
-          setCharOffset(0);
-        }
-      },
-      onStart: () => {
-        setIsPlaying(true);
-      },
-    });
-  };
-
-  const handlePlayPause = () => {
-    if (isSpeaking || isPlaying) {
-      stop();
-      setIsPlaying(false);
-    } else {
-      // If we finished (progress 100), restart from 0
-      const startOffset = progress >= 100 ? 0 : charOffset;
-      if (startOffset === 0) setProgress(0); // Reset visual
-      speakChunk(startOffset);
-    }
-  };
-
-  // Sync external interruption logic
-  useEffect(() => {
-    if (!isSpeaking && isPlaying) {
-      // Logic handled mostly by callbacks now
-    }
-  }, [isSpeaking]);
-
+  // Load Data
   useEffect(() => {
     const fetchScenario = async () => {
       try {
@@ -92,50 +39,45 @@ export default function ListeningComprehensionPage() {
     fetchScenario();
   }, []);
 
+  // Monitor isSpeaking to detect end of playback
+  useEffect(() => {
+    if (hasStarted && !isSpeaking && !isPaused) {
+      setIsPlaying(false);
+    }
+  }, [isSpeaking, hasStarted, isPaused]);
+
   // Cleanup on unmount
   useEffect(() => {
     return () => {
-      stop();
-      isDraggingRef.current = false;
+      cancel();
     };
   }, []); // eslint-disable-line
 
-  const handleSliderChange = (e) => {
-    const val = parseFloat(e.target.value);
-    isDraggingRef.current = true;
-    setProgress(val);
-  };
-
-  const handleSliderCommit = () => {
-    const val = progress; // Use current progress state
-
-    // Calculate new offset
-    let newIndex = Math.floor((val / 100) * textLength);
-    // Safety check
-    if (newIndex >= textLength) newIndex = textLength - 1;
-    if (newIndex < 0) newIndex = 0;
-
-    // Word boundary heuristic: find previous space
-    if (newIndex > 0) {
-      const lastSpace = scenarioData?.audioText.lastIndexOf(" ", newIndex);
-
-      if (lastSpace !== -1) {
-        newIndex = lastSpace + 1; // Start after the space
+  const handlePlay = () => {
+    if (isSpeaking) {
+      if (isPaused) {
+        resume();
+        setIsPlaying(true);
+      } else {
+        pause();
+        setIsPlaying(false);
+      }
+    } else {
+      setHasStarted(true);
+      setIsPlaying(true);
+      if (scenarioData?.audioText) {
+        speak(scenarioData.audioText, "fr-FR", 0.9);
       }
     }
+  };
 
-    setCharOffset(newIndex);
-
-    // Stop first
-    stop();
-
-    // We set dragging to false right before restarting or resuming logic
-    setTimeout(() => {
-      isDraggingRef.current = false;
-      if (isPlaying) {
-        speakChunk(newIndex);
-      }
-    }, 50);
+  const handleRewind = () => {
+    cancel();
+    setHasStarted(true);
+    setIsPlaying(true);
+    if (scenarioData?.audioText) {
+      speak(scenarioData.audioText, "fr-FR", 0.9);
+    }
   };
 
   const handleInputChange = (id, value) => {
@@ -166,11 +108,10 @@ export default function ListeningComprehensionPage() {
         correctCount++;
       }
     });
-    setScore(correctCount);
 
+    setScore(correctCount);
     setIsSubmitted(true);
-    setShowFeedback(true);
-    stop(); // Stop audio if playing
+    cancel(); // Stop audio if playing
     setIsPlaying(false);
   };
 
@@ -188,188 +129,208 @@ export default function ListeningComprehensionPage() {
         <p className="text-xl text-slate-600 dark:text-slate-400">
           No content available.
         </p>
-        <Button onClick={() => handleExit()} variant="outline" className="mt-4">
+        <button
+          onClick={() => handleExit()}
+          className="mt-4 px-4 py-2 border rounded hover:bg-slate-100"
+        >
           Back
-        </Button>
+        </button>
       </div>
     );
   }
 
-  return (
-    <FullScreenLayout>
-      <div className="min-h-screen bg-slate-50 dark:bg-slate-900 flex flex-col">
-        {/* Sticky Header with Audio Player */}
-        <div className="sticky top-0 z-10 bg-white dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800 shadow-sm px-4 py-4">
-          <div className="max-w-3xl mx-auto flex items-center gap-4">
-            <button
-              onClick={handlePlayPause}
-              className={cn(
-                "w-12 h-12 rounded-full flex items-center justify-center transition-all bg-blue-500 hover:bg-blue-600 text-white shadow-lg shrink-0",
-                isPlaying && "ring-4 ring-blue-500/20",
-              )}
-            >
-              {isPlaying ? (
-                <Pause className="w-5 h-5 fill-current" />
-              ) : (
-                <Play className="w-5 h-5 fill-current ml-1" />
-              )}
-            </button>
+  const questionsCount = scenarioData?.questions?.length || 0;
+  // Progress is simply based on how many questions are answered (filled)
+  // or could be current question index if step-by-step. Let's do filled / total.
+  const filledCount = Object.keys(userAnswers).filter(
+    (k) => userAnswers[k] && userAnswers[k].trim() !== "",
+  ).length;
+  const progress =
+    questionsCount > 0 ? (filledCount / questionsCount) * 100 : 0;
 
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-medium text-slate-700 dark:text-slate-200 truncate">
-                  Audio Scenario
-                </span>
-                {isPlaying && (
-                  <span className="text-xs font-bold text-blue-500 animate-pulse ml-2">
-                    PLAYING...
-                  </span>
+  const isAllFilled = filledCount === questionsCount;
+
+  return (
+    <PracticeGameLayout
+      questionTypeFr="Compréhension Orale"
+      questionTypeEn="Listening Comprehension"
+      instructionFr="Écoutez le scénario et répondez aux questions"
+      instructionEn="Listen to the scenario and answer the questions"
+      progress={progress}
+      isGameOver={isSubmitted}
+      score={score}
+      totalQuestions={questionsCount}
+      onExit={handleExit}
+      onNext={handleSubmit}
+      onRestart={() => window.location.reload()}
+      isSubmitEnabled={isAllFilled && !isSubmitted}
+      showSubmitButton={hasStarted}
+      submitLabel="CHECK"
+      showFeedback={isSubmitted}
+      isCorrect={score === questionsCount}
+      feedbackMessage={`You got ${score} out of ${questionsCount} correct.`}
+    >
+      <div className="flex flex-col items-center w-full max-w-4xl mx-auto px-4 space-y-6 pb-24">
+        {/* Sticky Audio Player */}
+        <div className="sticky top-0 z-40 bg-white/95 dark:bg-slate-950/95 backdrop-blur-md w-full -mx-4 px-4 py-4 border-b border-slate-200/50 dark:border-slate-800/50 shadow-sm transition-all duration-300">
+          <div className="max-w-2xl mx-auto">
+            <div className="bg-slate-100 dark:bg-slate-900 rounded-2xl p-6 border border-slate-200 dark:border-slate-800 flex items-center gap-6 shadow-inner relative overflow-hidden transition-all duration-300">
+              {/* Audio Wave Animation Background */}
+              {isPlaying && (
+                <div className="absolute inset-0 flex items-center justify-center opacity-10 pointer-events-none overflow-hidden">
+                  <div className="flex gap-1 h-full items-center justify-center w-full">
+                    {[...Array(20)].map((_, i) => (
+                      <div
+                        key={i}
+                        className="w-2 bg-blue-500 rounded-full animate-pulse"
+                        style={{
+                          height: `${Math.random() * 60 + 20}%`,
+                          animationDuration: `${Math.random() * 0.5 + 0.5}s`,
+                        }}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div className="flex items-center gap-4 z-10">
+                <button
+                  onClick={handlePlay}
+                  className={cn(
+                    "w-16 h-16 rounded-full flex items-center justify-center flex-shrink-0 transition-all shadow-lg hover:shadow-xl hover:scale-105 active:scale-95",
+                    isPlaying
+                      ? "bg-amber-500 hover:bg-amber-600 text-white"
+                      : "bg-blue-600 hover:bg-blue-500 text-white",
+                  )}
+                >
+                  {isPlaying ? (
+                    <Pause className="w-7 h-7 fill-current" />
+                  ) : (
+                    <Play className="w-7 h-7 ml-1 fill-current" />
+                  )}
+                </button>
+
+                {hasStarted && (
+                  <button
+                    onClick={handleRewind}
+                    className="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 transition-all shadow-md hover:shadow-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 hover:scale-105 active:scale-95"
+                    title="Restart Audio"
+                  >
+                    <RotateCcw className="w-5 h-5" />
+                  </button>
                 )}
               </div>
 
-              {/* Slider Control */}
-              <div className="relative w-full h-6 flex items-center">
-                <input
-                  type="range"
-                  min="0"
-                  max="100"
-                  step="0.1"
-                  value={progress}
-                  onChange={handleSliderChange}
-                  onMouseUp={handleSliderCommit}
-                  onTouchEnd={handleSliderCommit}
-                  className="w-full h-2 bg-slate-200 dark:bg-slate-800 rounded-lg appearance-none cursor-pointer accent-blue-500 hover:accent-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
-                />
+              <div className="flex-1 space-y-2 z-10">
+                <p className="text-sm font-medium text-slate-500 dark:text-slate-400 truncate">
+                  {isPlaying
+                    ? "Playing scenario..."
+                    : isPaused
+                      ? "Audio paused"
+                      : hasStarted
+                        ? "Audio complete"
+                        : "Tap play to start"}
+                </p>
+                <div className="h-2 w-full bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
+                  {isPlaying && (
+                    <div className="h-full bg-blue-500 w-full animate-progress" />
+                  )}
+                  {!isPlaying && isPaused && (
+                    <div className="h-full bg-amber-500 w-1/2" />
+                  )}
+                  {!isPlaying && !isPaused && hasStarted && (
+                    <div className="h-full bg-blue-500 w-full" />
+                  )}
+                </div>
               </div>
             </div>
 
-            <button
-              onClick={handleExit}
-              className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
-            >
-              <span className="sr-only">Exit</span>
-              <svg
-                className="w-6 h-6"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M6 18L18 6M6 6l12 12"
-                />
-              </svg>
-            </button>
+            <p className="mt-4 text-sm text-slate-500 dark:text-slate-400 text-center animate-in fade-in slide-in-from-top-2">
+              {!hasStarted
+                ? "Listen to the scenario carefully. Questions are hidden until you start listening."
+                : "Focus on listening. You can pause or replay if needed."}
+            </p>
           </div>
         </div>
 
-        {/* Main Content */}
-        <div className="flex-1 max-w-3xl mx-auto w-full px-4 py-8 pb-32">
-          <div className="text-center mb-10 space-y-4">
-            <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
-              {scenarioData?.title}
-            </h1>
+        {/* Questions Area */}
+        <div className="w-full max-w-2xl space-y-6">
+          <h2 className="text-2xl font-bold text-center text-slate-800 dark:text-white mb-8">
+            {scenarioData.title}
+          </h2>
 
-            <p className="text-slate-600 dark:text-slate-400 max-w-lg mx-auto">
-              Listen to the scenario carefully. The questions are hidden so you
-              can focus on listening. When you are ready, reveal the questions.
-            </p>
-          </div>
+          <div className="space-y-6">
+            {scenarioData.questions.map((q, index) => {
+              const isCorrectItem =
+                isSubmitted && checkAnswer(userAnswers[q.id], q);
+              const isWrongItem = isSubmitted && !isCorrectItem;
 
-          {!showQuestions ? (
-            <div className="flex flex-col items-center justify-center py-12 space-y-6 animate-in fade-in zoom-in duration-500">
-              <div className="w-32 h-32 bg-blue-50 dark:bg-blue-900/20 rounded-full flex items-center justify-center">
-                <Volume2 className="w-16 h-16 text-blue-500 opacity-80" />
-              </div>
-              <Button
-                onClick={() => setShowQuestions(true)}
-                className="h-14 px-8 text-lg rounded-xl"
-                size="lg"
-                variant="outline"
-              >
-                Show Questions
-              </Button>
-            </div>
-          ) : (
-            <div className="space-y-6 animate-in slide-in-from-bottom-8 duration-500">
-              {Array.isArray(scenarioData?.questions) ? (
-                scenarioData?.questions.map((q, index) => {
-                  const isCorrectItem =
-                    isSubmitted && checkAnswer(userAnswers[q.id], q);
-                  const isWrongItem = isSubmitted && !isCorrectItem;
+              return (
+                <div
+                  key={q.id}
+                  className={cn(
+                    "bg-white dark:bg-slate-950 rounded-xl p-6 shadow-sm border border-slate-200 dark:border-slate-800 transition-all duration-500",
+                    hasStarted
+                      ? "opacity-100 transform translate-y-0"
+                      : "opacity-40 blur-sm pointer-events-none transform translate-y-4",
+                    isSubmitted &&
+                      (isCorrectItem
+                        ? "border-green-500 bg-green-50/10"
+                        : "border-red-300 bg-red-50/10"),
+                  )}
+                  style={{
+                    transitionDelay: `${index * 100}ms`,
+                  }}
+                >
+                  <h3 className="font-medium text-lg text-slate-900 dark:text-white mb-4 flex items-start gap-3">
+                    <span className="flex-shrink-0 w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center text-sm font-bold shadow-sm">
+                      {index + 1}
+                    </span>
+                    <span className="pt-0.5">{q.question}</span>
+                  </h3>
 
-                  return (
-                    <div
-                      key={q.id}
+                  <div className="pl-11">
+                    <input
+                      type="text"
+                      value={userAnswers[q.id] || ""}
+                      onChange={(e) => handleInputChange(q.id, e.target.value)}
+                      disabled={!hasStarted || isSubmitted}
+                      placeholder={q.placeholder || "Your answer..."}
                       className={cn(
-                        "bg-white dark:bg-slate-800 rounded-xl p-6 border-2 transition-all",
+                        "w-full px-4 py-3 rounded-lg border bg-slate-50 dark:bg-slate-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all placeholder:text-slate-400 disabled:opacity-70 disabled:cursor-not-allowed",
                         isSubmitted
                           ? isCorrectItem
-                            ? "border-green-500 bg-green-50/10"
-                            : "border-red-300 bg-red-50/10"
-                          : "border-slate-100 dark:border-slate-700 shadow-sm",
+                            ? "border-green-200 text-green-700"
+                            : "border-red-200 text-red-700"
+                          : "border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100",
                       )}
-                    >
-                      <label className="block text-base font-medium text-slate-800 dark:text-slate-200 mb-3">
-                        {index + 1}. {q.question}
-                      </label>
-                      <input
-                        type="text"
-                        disabled={isSubmitted}
-                        value={userAnswers[q.id] || ""}
-                        onChange={(e) =>
-                          handleInputChange(q.id, e.target.value)
-                        }
-                        placeholder={q.placeholder}
-                        className="w-full px-4 py-3 rounded-lg border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 focus:ring-2 focus:ring-blue-500 outline-none transition-all disabled:opacity-70"
-                      />
-                      {isSubmitted && !isCorrectItem && (
-                        <div className="mt-2 text-sm text-red-500 dark:text-red-400 font-medium animate-in fade-in">
-                          Correct answer:{" "}
-                          <span className="text-slate-600 dark:text-slate-300 ml-1">
-                            {q.answer}
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })
-              ) : (
-                <div className="p-4 text-red-500 text-center">
-                  Error loading questions. Please try again later.
+                    />
+                    {isSubmitted && !isCorrectItem && (
+                      <div className="mt-3 text-sm flex items-center gap-2 text-slate-600 dark:text-slate-400 animate-in fade-in slide-in-from-top-1">
+                        <span className="font-semibold text-red-500 dark:text-red-400">
+                          Correct:
+                        </span>
+                        <span className="bg-green-100 dark:bg-green-900/30 px-2 py-0.5 rounded text-green-700 dark:text-green-300 font-medium">
+                          {q.answer}
+                        </span>
+                      </div>
+                    )}
+                  </div>
                 </div>
-              )}
+              );
+            })}
+          </div>
 
-              {!isSubmitted && (
-                <div className="pt-8 flex justify-center">
-                  <button
-                    onClick={handleSubmit}
-                    className="px-10 py-4 bg-green-600 hover:bg-green-700 text-white font-bold rounded-2xl shadow-lg shadow-green-600/20 transform active:scale-95 transition-all text-lg"
-                  >
-                    Submit Answers
-                  </button>
-                </div>
-              )}
+          {!hasStarted && (
+            <div className="text-center p-8 bg-blue-50 dark:bg-blue-950/20 rounded-xl border-2 border-dashed border-blue-200 dark:border-blue-800 animate-pulse">
+              <p className="text-blue-600 dark:text-blue-400 font-medium flex items-center justify-center gap-2">
+                <Play className="w-5 h-5" />
+                Click Play to start and unlock questions
+              </p>
             </div>
           )}
         </div>
       </div>
-
-      {/* Feedback Banner */}
-      {showFeedback && (
-        <FeedbackBanner
-          isCorrect={score === scenarioData?.questions.length} // Only "Success" style if 100%, otherwise just info
-          message={`You got ${score} out of ${scenarioData?.questions.length} correct.`}
-          onContinue={handleExit} // Or maybe retry?
-          continueLabel="Finish"
-        >
-          {/* Custom secondary button for retry if needed, but FeedbackBanner might not support children as buttons easily without looking into it. 
-               We'll just use the default Continue which exits. 
-           */}
-        </FeedbackBanner>
-      )}
-    </FullScreenLayout>
+    </PracticeGameLayout>
   );
 }

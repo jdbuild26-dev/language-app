@@ -51,59 +51,62 @@ export default function ListenSelectPage() {
           return;
         }
 
-        // Transform data: Invert logic
-        // Original: French Audio -> English Options
+        // Helper to get English text from an item
+        const getEnglishText = (item) => {
+          try {
+            let opts = [];
+            if (Array.isArray(item.options)) {
+              opts = item.options;
+            } else if (typeof item.options === "string") {
+              opts = JSON.parse(item.options.replace(/'/g, '"'));
+            }
+            return opts[item.correctIndex] || "Translation unavailable";
+          } catch (e) {
+            return "Translation error";
+          }
+        };
+
+        // Transform data:
         // New: English Text (from Correct Option) -> French Audio Options (Correct + 3 Distractors)
+        // Each option now needs { french, english }
 
         const transformed = data.map((item, index, allItems) => {
           // 1. Identify Correct French Audio and English Text
           const correctFrenchAudio = item.audioText;
+          const correctEnglishText = getEnglishText(item);
 
-          // Parse options if they are stringified JSON (as seen in CSV)
-          let originalOptions = [];
-          try {
-            // Handle case where options might be already parsed or string array
-            if (Array.isArray(item.options)) {
-              originalOptions = item.options;
-            } else if (typeof item.options === "string") {
-              // The CSV loader might have returned it as string with quotes, e.g. "['a', 'b']"
-              // simple replacement for mock data standard usually used in this project
-              originalOptions = JSON.parse(item.options.replace(/'/g, '"'));
-            }
-          } catch (e) {
-            console.error("Error parsing options", e);
-            originalOptions = ["Error loading options"];
-          }
-
-          const englishText =
-            originalOptions[item.correctIndex] || "Translate this";
-
-          // 2. Generate Distractors from OTHER items' audioText
+          // 2. Generate Distractors from OTHER items
           const otherItems = allItems.filter((i) => i.id !== item.id);
-          // Shuffle other items
           const shuffledOthers = [...otherItems].sort(
             () => Math.random() - 0.5,
           );
-          const distractors = shuffledOthers
-            .slice(0, 3)
-            .map((i) => i.audioText);
 
-          // 3. Create Audio Options
-          const audioOptions = [correctFrenchAudio, ...distractors];
+          const distractors = shuffledOthers.slice(0, 3).map((i) => ({
+            french: i.audioText,
+            english: getEnglishText(i),
+          }));
+
+          // 3. Create Audio Options (Objects now)
+          const audioOptionsRaw = [
+            { french: correctFrenchAudio, english: correctEnglishText },
+            ...distractors,
+          ];
+
           // Shuffle options
-          const shuffledAudioOptions = audioOptions
+          const shuffledAudioOptions = audioOptionsRaw
             .map((value) => ({ value, sort: Math.random() }))
             .sort((a, b) => a.sort - b.sort)
             .map(({ value }) => value);
 
           // 4. Find new correct index
-          const newCorrectIndex =
-            shuffledAudioOptions.indexOf(correctFrenchAudio);
+          const newCorrectIndex = shuffledAudioOptions.findIndex(
+            (opt) => opt.french === correctFrenchAudio,
+          );
 
           return {
             ...item,
-            questionText: englishText, // New English Prompt
-            audioOptions: shuffledAudioOptions, // French Audio Strings
+            questionText: correctEnglishText, // New English Prompt
+            audioOptions: shuffledAudioOptions, // Array of { french, english }
             correctIndex: newCorrectIndex,
           };
         });
@@ -127,13 +130,14 @@ export default function ListenSelectPage() {
   }, [currentIndex, currentQuestion, isCompleted]);
 
   const handleOptionClick = (index, audioText) => {
-    if (showFeedback) return;
-
-    // Play the option audio in French
+    // Always allow playing audio
     cancel();
     speak(audioText, "fr-FR");
 
-    setSelectedOption(index);
+    // Only allow changing selection if feedback is not shown
+    if (!showFeedback) {
+      setSelectedOption(index);
+    }
   };
 
   const handleSubmit = () => {
@@ -204,28 +208,16 @@ export default function ListenSelectPage() {
       >
         <div className="flex flex-col items-center w-full max-w-3xl mx-auto px-4 py-6">
           {/* Main Question (English Text) */}
-          <div className="w-full bg-slate-800 text-white rounded-xl p-8 mb-8 shadow-lg text-center relative overflow-hidden">
+          <div className="w-full bg-slate-800 text-white rounded-xl p-6 mb-6 shadow-lg text-center relative overflow-hidden">
             <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-indigo-500 opacity-50"></div>
-            <h3 className="text-2xl md:text-3xl font-semibold leading-relaxed">
+            <h3 className="text-xl md:text-2xl font-semibold leading-relaxed">
               {currentQuestion?.questionText}
             </h3>
-            <p className="mt-4 text-indigo-200 text-sm font-medium uppercase tracking-wider">
-              English Sentence
-            </p>
-          </div>
-
-          <div className="w-full flex justify-between items-end mb-4 px-1">
-            <p className="text-slate-500 dark:text-slate-400 font-medium">
-              What is being said?
-            </p>
-            <p className="text-xs text-slate-400">
-              Select the correct French audio
-            </p>
           </div>
 
           {/* Audio Options Grid */}
-          <div className="w-full grid grid-cols-1 gap-4">
-            {currentQuestion?.audioOptions.map((audioText, index) => {
+          <div className="w-full grid grid-cols-1 md:grid-cols-2 gap-4">
+            {currentQuestion?.audioOptions.map((optionObj, index) => {
               const isSelected = selectedOption === index;
               const isCorrectOption = index === currentQuestion.correctIndex;
               const isWrongSelection =
@@ -235,10 +227,10 @@ export default function ListenSelectPage() {
               return (
                 <button
                   key={index}
-                  onClick={() => handleOptionClick(index, audioText)}
-                  disabled={showFeedback}
+                  onClick={() => handleOptionClick(index, optionObj.french)}
+                  // Removed disabled={showFeedback} to allow audio playback
                   className={cn(
-                    "group relative p-4 rounded-2xl border-2 text-left transition-all flex items-center gap-4 bg-white dark:bg-slate-800 shadow-sm",
+                    "group relative p-3 rounded-2xl border-2 text-left transition-all flex items-center gap-3 bg-white dark:bg-slate-800 shadow-sm",
                     // Default state
                     "border-slate-200 dark:border-slate-700 hover:border-indigo-300 dark:hover:border-indigo-700 hover:shadow-md",
                     // Selected (pre-submission)
@@ -256,7 +248,7 @@ export default function ListenSelectPage() {
                   {/* Selection Indicator */}
                   <div
                     className={cn(
-                      "w-8 h-8 rounded-full border-2 flex items-center justify-center transition-colors flex-shrink-0",
+                      "w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors flex-shrink-0",
                       isSelected || isCorrectHighlight
                         ? "border-indigo-500 bg-indigo-500 text-white"
                         : "border-slate-300 dark:border-slate-600 group-hover:border-indigo-300",
@@ -265,64 +257,62 @@ export default function ListenSelectPage() {
                     )}
                   >
                     {isCorrectHighlight && (
-                      <span className="font-bold text-sm">✓</span>
+                      <span className="font-bold text-xs">✓</span>
                     )}
                     {isWrongSelection && (
-                      <span className="font-bold text-sm">✕</span>
+                      <span className="font-bold text-xs">✕</span>
                     )}
                     {!isCorrectHighlight && !isWrongSelection && isSelected && (
-                      <div className="w-3 h-3 bg-white rounded-full" />
+                      <div className="w-2 h-2 bg-white rounded-full" />
                     )}
                   </div>
 
-                  {/* Audio Visualizer & Placeholder */}
-                  <div className="flex-1 flex items-center gap-4">
-                    <div
-                      className={cn(
-                        "p-3 rounded-full bg-slate-100 dark:bg-slate-700 group-hover:bg-indigo-100 dark:group-hover:bg-indigo-900/30 transition-colors",
-                        (isSelected || isCorrectHighlight) &&
-                          "bg-indigo-100 dark:bg-indigo-900/50",
-                      )}
-                    >
-                      <Volume2
+                  {/* Audio Visualizer & Content */}
+                  <div className="flex-1 flex flex-col justify-center">
+                    <div className="flex items-center gap-3">
+                      <div
                         className={cn(
-                          "w-6 h-6 text-slate-500 dark:text-slate-400 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors",
+                          "p-2 rounded-full bg-slate-100 dark:bg-slate-700 group-hover:bg-indigo-100 dark:group-hover:bg-indigo-900/30 transition-colors",
                           (isSelected || isCorrectHighlight) &&
-                            "text-indigo-600 dark:text-indigo-400",
-                        )}
-                      />
-                    </div>
-
-                    {/* Fake Waveform */}
-                    <div className="flex items-center gap-1 opacity-40 group-hover:opacity-60 transition-opacity">
-                      {[1, 2, 3, 2, 4, 2, 1, 2, 3, 1, 2, 1].map((h, i) => (
-                        <div
-                          key={i}
-                          className={cn(
-                            "w-1 bg-slate-800 dark:bg-white rounded-full transition-all duration-300",
-                            isSelected && !showFeedback ? "animate-pulse" : "",
-                          )}
-                          style={{ height: `${h * 4 + 4}px` }}
-                        ></div>
-                      ))}
-                    </div>
-
-                    {!showFeedback && (
-                      <span className="text-sm text-slate-400 font-medium ml-2">
-                        Click to listen
-                      </span>
-                    )}
-                    {showFeedback && (
-                      <span
-                        className={cn(
-                          "text-sm font-medium ml-2",
-                          isCorrectHighlight
-                            ? "text-green-600"
-                            : "text-slate-500",
+                            "bg-indigo-100 dark:bg-indigo-900/50",
                         )}
                       >
-                        {isCorrectHighlight ? "Correct Audio" : "Audio Option"}
-                      </span>
+                        <Volume2
+                          className={cn(
+                            "w-5 h-5 text-slate-500 dark:text-slate-400 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors",
+                            (isSelected || isCorrectHighlight) &&
+                              "text-indigo-600 dark:text-indigo-400",
+                          )}
+                        />
+                      </div>
+
+                      {/* Fake Waveform */}
+                      <div className="flex items-center gap-1 opacity-40 group-hover:opacity-60 transition-opacity">
+                        {[1, 2, 3, 2, 4, 2, 1, 2, 3, 1, 2, 1].map((h, i) => (
+                          <div
+                            key={i}
+                            className={cn(
+                              "w-1 bg-slate-800 dark:bg-white rounded-full transition-all duration-300",
+                              isSelected && !showFeedback
+                                ? "animate-pulse"
+                                : "",
+                            )}
+                            style={{ height: `${h * 3 + 3}px` }}
+                          ></div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Show Text on Feedback */}
+                    {showFeedback && (
+                      <div className="mt-2 ml-1">
+                        <p className="text-base font-medium text-slate-800 dark:text-slate-200">
+                          {optionObj.french}
+                        </p>
+                        <p className="text-xs text-slate-500 dark:text-slate-400 italic">
+                          {optionObj.english}
+                        </p>
+                      </div>
                     )}
                   </div>
                 </button>

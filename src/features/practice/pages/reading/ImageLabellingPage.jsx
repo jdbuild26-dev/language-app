@@ -30,7 +30,11 @@ export default function ImageLabellingPage() {
   useEffect(() => {
     const fetchData = async () => {
       const data = await loadMockCSV("practice/reading/image_labelling.csv");
-      setQuestions(data);
+      if (data) {
+        setQuestions(data);
+      } else {
+        setQuestions([]);
+      }
       setIsLoading(false);
     };
     fetchData();
@@ -46,7 +50,7 @@ export default function ImageLabellingPage() {
   const handleImageLoad = (e) => {
     setImgSize({
       width: e.target.clientWidth,
-      height: e.target.clientHeight
+      height: e.target.clientHeight,
     });
   };
 
@@ -56,12 +60,12 @@ export default function ImageLabellingPage() {
       if (imageRef.current) {
         setImgSize({
           width: imageRef.current.clientWidth,
-          height: imageRef.current.clientHeight
+          height: imageRef.current.clientHeight,
         });
       }
     };
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
   }, []);
 
   // Initialize/Reset when index changes
@@ -104,7 +108,7 @@ export default function ImageLabellingPage() {
     if (showFeedback) return;
 
     const alreadyPlaced = placedItems.find(
-      (p) => p.x === target.x && p.y === target.y
+      (p) => p.x === target.x && p.y === target.y,
     );
 
     if (alreadyPlaced) {
@@ -144,7 +148,7 @@ export default function ImageLabellingPage() {
 
     const newPlacedItems = placedItems.map((placed) => {
       const target = currentExercise.items.find(
-        (k) => k.x === placed.x && k.y === placed.y
+        (k) => k.x === placed.x && k.y === placed.y,
       );
       if (!target) return placed;
 
@@ -163,12 +167,12 @@ export default function ImageLabellingPage() {
     if (correct === total) {
       setIsCorrect(true);
       setFeedbackMessage(
-        `Perfect! You identified all ${total} items correctly!`
+        `Perfect! You identified all ${total} items correctly!`,
       );
     } else {
       setIsCorrect(false);
       setFeedbackMessage(
-        `You got ${correct} out of ${total} correct. Check your placements!`
+        `You got ${correct} out of ${total} correct. Check your placements!`,
       );
     }
     setShowFeedback(true);
@@ -199,8 +203,12 @@ export default function ImageLabellingPage() {
   if (!currentExercise) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-slate-50 dark:bg-slate-900">
-        <p className="text-xl text-slate-600 dark:text-slate-400">No questions available.</p>
-        <Button onClick={() => handleExit()} variant="outline" className="mt-4">Back</Button>
+        <p className="text-xl text-slate-600 dark:text-slate-400">
+          No questions available.
+        </p>
+        <Button onClick={() => handleExit()} variant="outline" className="mt-4">
+          Back
+        </Button>
       </div>
     );
   }
@@ -211,7 +219,12 @@ export default function ImageLabellingPage() {
         questionType={currentExercise.title}
         instructionFr={currentExercise.instructionFr}
         instructionEn={currentExercise.instructionEn}
-        progress={((currentIndex + placedItems.length / (currentExercise.items?.length || 1)) / (questions.length || 1)) * 100}
+        progress={
+          ((currentIndex +
+            placedItems.length / (currentExercise.items?.length || 1)) /
+            (questions.length || 1)) *
+          100
+        }
         isGameOver={isCompleted}
         score={score}
         totalQuestions={currentExercise.items.length}
@@ -240,7 +253,7 @@ export default function ImageLabellingPage() {
 
             <div className="flex lg:flex-col flex-row gap-2 p-3 overflow-x-auto lg:overflow-y-auto custom-scrollbar no-scrollbar lg:flex-1">
               {bankItems.length === 0 &&
-                placedItems.length === currentExercise.items.length ? (
+              placedItems.length === currentExercise.items.length ? (
                 <div className="flex flex-1 items-center justify-center gap-2 text-slate-400 min-w-full">
                   <CheckCircle2 className="w-5 h-5 opacity-50 text-emerald-500" />
                   <span className="text-xs font-semibold">Done!</span>
@@ -254,7 +267,7 @@ export default function ImageLabellingPage() {
                       "px-4 py-2.5 rounded-xl font-bold text-sm shadow-sm border transition-all active:scale-95 select-none whitespace-nowrap lg:whitespace-normal text-center min-w-[120px] lg:min-w-0 flex-shrink-0 lg:flex-shrink",
                       selectedLabel === name
                         ? "bg-blue-600 text-white border-blue-400 shadow-md ring-4 ring-blue-100 dark:ring-blue-900/50"
-                        : "bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700 hover:border-blue-300 hover:bg-blue-50 dark:hover:bg-slate-700/50"
+                        : "bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700 hover:border-blue-300 hover:bg-blue-50 dark:hover:bg-slate-700/50",
                     )}
                   >
                     {name}
@@ -268,7 +281,11 @@ export default function ImageLabellingPage() {
           <div className="flex-1 flex flex-col min-w-0 bg-white dark:bg-slate-900/40 rounded-3xl border-2 border-slate-200 dark:border-slate-700 overflow-hidden shadow-sm relative">
             <div className="absolute top-4 left-4 right-4 z-10 pointer-events-none text-center">
               <span className="inline-block px-4 py-1.5 bg-slate-900/80 backdrop-blur-md text-white text-[10px] lg:text-xs font-bold rounded-full shadow-lg border border-white/20">
-                {selectedLabel ? `📍 Tap a dot for "${selectedLabel}"` : selectedTarget ? "🏷️ Tap a label now" : "Tap a label then a dot"}
+                {selectedLabel
+                  ? `📍 Tap a dot for "${selectedLabel}"`
+                  : selectedTarget
+                    ? "🏷️ Tap a label now"
+                    : "Tap a label then a dot"}
               </span>
             </div>
 
@@ -276,10 +293,10 @@ export default function ImageLabellingPage() {
               <div
                 className="relative transition-transform duration-500 ease-out shadow-2xl rounded-2xl overflow-hidden"
                 style={{
-                  width: imgSize.width || 'auto',
-                  height: imgSize.height || 'auto',
-                  maxWidth: '100%',
-                  maxHeight: '100%'
+                  width: imgSize.width || "auto",
+                  height: imgSize.height || "auto",
+                  maxWidth: "100%",
+                  maxHeight: "100%",
                 }}
               >
                 <img
@@ -293,7 +310,9 @@ export default function ImageLabellingPage() {
                 {/* Targets (Dots) */}
                 {currentExercise.items.map((target, idx) => {
                   const isPlaced = placedItems.some(
-                    (p) => Math.abs(p.x - target.x) < 0.0001 && Math.abs(p.y - target.y) < 0.0001
+                    (p) =>
+                      Math.abs(p.x - target.x) < 0.0001 &&
+                      Math.abs(p.y - target.y) < 0.0001,
                   );
                   const isSelected = selectedTarget === target;
 
@@ -307,14 +326,16 @@ export default function ImageLabellingPage() {
                           ? "bg-blue-500 ring-2 ring-blue-200 dark:ring-blue-900 scale-110 shadow-xl"
                           : isPlaced
                             ? "opacity-0 pointer-events-none"
-                            : "bg-amber-400/90 hover:bg-amber-500 hover:scale-110 border-2 border-white dark:border-slate-800 shadow-lg animate-pulse"
+                            : "bg-amber-400/90 hover:bg-amber-500 hover:scale-110 border-2 border-white dark:border-slate-800 shadow-lg animate-pulse",
                       )}
                       style={{
                         left: `${target.x * 100}%`,
                         top: `${target.y * 100}%`,
                       }}
                     >
-                      {isSelected && <div className="w-1.5 h-1.5 bg-white rounded-full shadow-inner" />}
+                      {isSelected && (
+                        <div className="w-1.5 h-1.5 bg-white rounded-full shadow-inner" />
+                      )}
                     </button>
                   );
                 })}
@@ -330,9 +351,12 @@ export default function ImageLabellingPage() {
                         ? "bg-emerald-500 text-white border-emerald-400 ring-2 ring-emerald-100 dark:ring-emerald-900/30"
                         : item.isCorrect === false
                           ? "bg-red-500 text-white border-red-400 ring-2 ring-red-100 dark:ring-red-900/30"
-                          : "bg-white/95 dark:bg-slate-800/95 backdrop-blur-sm text-slate-800 dark:text-white border-white dark:border-slate-600 hover:border-red-400 hover:bg-red-50"
+                          : "bg-white/95 dark:bg-slate-800/95 backdrop-blur-sm text-slate-800 dark:text-white border-white dark:border-slate-600 hover:border-red-400 hover:bg-red-50",
                     )}
-                    style={{ left: `${item.x * 100}%`, top: `${item.y * 100}%` }}
+                    style={{
+                      left: `${item.x * 100}%`,
+                      top: `${item.y * 100}%`,
+                    }}
                   >
                     {item.name}
                     {!showFeedback && item.isCorrect === null && (
@@ -354,7 +378,13 @@ export default function ImageLabellingPage() {
           correctAnswer={null}
           onContinue={handleContinue}
           message={feedbackMessage}
-          continueLabel={isCorrect ? (currentIndex < questions.length - 1 ? "NEXT EXERCISE" : "FINISH") : "TRY AGAIN"}
+          continueLabel={
+            isCorrect
+              ? currentIndex < questions.length - 1
+                ? "NEXT EXERCISE"
+                : "FINISH"
+              : "TRY AGAIN"
+          }
         />
       )}
     </>

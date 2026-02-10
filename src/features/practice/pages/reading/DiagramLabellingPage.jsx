@@ -8,7 +8,6 @@ import { cn } from "@/lib/utils";
 import { loadMockCSV } from "@/utils/csvLoader";
 import { Button } from "@/components/ui/button";
 
-
 export default function DiagramLabellingPage() {
   const handleExit = usePracticeExit();
 
@@ -37,7 +36,6 @@ export default function DiagramLabellingPage() {
   const OPTIONS = currentQuestion?.options || [];
   const DIAGRAM_QUESTIONS = currentQuestion?.questions || [];
   const eggDiagram = currentQuestion?.imagePath || "";
-
 
   // Timer
   const { timerString, stopTimer } = useExerciseTimer({
@@ -108,12 +106,15 @@ export default function DiagramLabellingPage() {
   if (questions.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-slate-50 dark:bg-slate-900">
-        <p className="text-xl text-slate-600 dark:text-slate-400">No content available.</p>
-        <Button onClick={() => handleExit()} variant="outline" className="mt-4">Back</Button>
+        <p className="text-xl text-slate-600 dark:text-slate-400">
+          No content available.
+        </p>
+        <Button onClick={() => handleExit()} variant="outline" className="mt-4">
+          Back
+        </Button>
       </div>
     );
   }
-
 
   return (
     <>
@@ -129,7 +130,6 @@ export default function DiagramLabellingPage() {
         isGameOver={isCompleted}
         score={score}
         totalQuestions={DIAGRAM_QUESTIONS.length}
-
         onExit={handleExit}
         onNext={handleNext}
         onRestart={handleRestart}
@@ -178,14 +178,16 @@ export default function DiagramLabellingPage() {
                 Select the best option for each missing word
               </h3>
 
-              <div className="grid grid-cols-1 gap-3">
+              <div className="grid grid-cols-1 gap-2">
                 {DIAGRAM_QUESTIONS.map((q) => {
-
                   const isWrong = showFeedback && answers[q.id] !== q.correct;
                   const isRight = showFeedback && answers[q.id] === q.correct;
 
                   return (
-                    <div key={q.id} className="flex items-center gap-3">
+                    <div
+                      key={q.id}
+                      className="flex items-center gap-2 flex-wrap"
+                    >
                       {/* Number Label */}
                       <div
                         className={cn(
@@ -201,7 +203,7 @@ export default function DiagramLabellingPage() {
                       </div>
 
                       {/* Dropdown */}
-                      <div className="flex-1 relative">
+                      <div className="w-64 relative shrink-0">
                         <select
                           value={answers[q.id] || ""}
                           onChange={(e) => handleSelect(q.id, e.target.value)}

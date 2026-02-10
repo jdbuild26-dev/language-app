@@ -262,6 +262,33 @@ export default function ListenTypePage() {
         </div>
       </PracticeGameLayout>
 
+      {/* Answer Display Section */}
+      {showFeedback && (
+        <div className="fixed bottom-32 left-0 right-0 z-40 px-4 animate-in slide-in-from-bottom-5 fade-in duration-300">
+          <div className="max-w-2xl mx-auto bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-200 dark:border-slate-700 p-6">
+            <div className="flex flex-col gap-3 text-center">
+              <div>
+                <p className="text-sm text-slate-500 dark:text-slate-400 mb-1 uppercase tracking-wider font-semibold">
+                  French
+                </p>
+                <p className="text-xl font-medium text-slate-800 dark:text-slate-100">
+                  {currentQuestion.audioText}
+                </p>
+              </div>
+              <div className="w-12 h-px bg-slate-200 dark:bg-slate-700 mx-auto" />
+              <div>
+                <p className="text-sm text-slate-500 dark:text-slate-400 mb-1 uppercase tracking-wider font-semibold">
+                  English
+                </p>
+                <p className="text-lg text-slate-600 dark:text-slate-300 italic">
+                  {currentQuestion.englishText}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Feedback Banner */}
       {showFeedback && (
         <FeedbackBanner
