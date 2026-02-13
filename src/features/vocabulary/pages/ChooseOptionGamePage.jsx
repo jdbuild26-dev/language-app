@@ -30,7 +30,7 @@ export default function ChooseOptionGamePage() {
     const loadGameData = async () => {
       try {
         setLoading(true);
-        const response = await fetchPracticeQuestions("A2_choose from options");
+        const response = await fetchPracticeQuestions("choose_options");
         const practiceData = response.data || [];
 
         if (!practiceData || practiceData.length === 0) {
@@ -52,16 +52,17 @@ export default function ChooseOptionGamePage() {
 
           return {
             id: item.ExerciseID || Math.random().toString(),
-            question: item.Question,
-            correctAnswer: item.CorrectAnswer,
+            question: item.Question || item.question || item.Sentence || "",
+            correctAnswer: item.CorrectAnswer || item.correctAnswer || item.Answer || "",
             options: shuffledOptions,
-            questionType: item.QuestionType || "Choose from Options",
+            questionType: item.TypeName || item.QuestionType || "Choose from Options",
             instructionFr:
-              item.Instruction_FR || "Complétez la phrase avec le mot correct",
+              item.Instruction_FR || item.instructionFr || "Complétez la phrase avec le mot correct",
             instructionEn:
               item.Instruction_EN ||
+              item.instructionEn ||
               "Complete the sentence with the correct word",
-            image: item.ImageURL,
+            image: item.ImageURL || item.imageUrl,
           };
         });
 
@@ -210,7 +211,7 @@ export default function ChooseOptionGamePage() {
                     );
                     return parts.map((part, i) =>
                       part.toLowerCase() ===
-                      currentQuestion.correctAnswer.toLowerCase() ? (
+                        currentQuestion.correctAnswer.toLowerCase() ? (
                         <span
                           key={i}
                           className="text-green-600 font-bold bg-green-100 px-1 rounded-md mx-0.5 shadow-sm border border-green-200"

@@ -86,9 +86,7 @@ export default function CorrectSpellingGamePage() {
   const loadQuestions = async () => {
     try {
       setLoading(true);
-      const response = await fetchPracticeQuestions(
-        "C2_Writing_Correct spelling",
-      );
+      const response = await fetchPracticeQuestions("correct_spelling");
       if (response && response.data && response.data.length > 0) {
         const normalized = response.data.map((item) => ({
           id: item.ExerciseID || Math.random(),
@@ -211,9 +209,9 @@ export default function CorrectSpellingGamePage() {
     // We must clean the right answer same way to ensure match
     const rightAnswer = currentQuestion?.correctAnswer
       ? currentQuestion.correctAnswer
-          .trim()
-          .replace(/\u200B/g, "")
-          .normalize("NFC")
+        .trim()
+        .replace(/\u200B/g, "")
+        .normalize("NFC")
       : "";
 
     const correct = userAnswer.toLowerCase() === rightAnswer.toLowerCase();
@@ -290,10 +288,10 @@ export default function CorrectSpellingGamePage() {
           {(currentQuestion?.meaning ||
             currentQuestion?.wordMeaningEn ||
             currentQuestion?.instructionFr) && (
-            <div className="bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-300 px-4 py-2 rounded-lg text-sm font-medium mb-8">
-              {currentQuestion.meaning || currentQuestion.wordMeaningEn || ""}
-            </div>
-          )}
+              <div className="bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-300 px-4 py-2 rounded-lg text-sm font-medium mb-8">
+                {currentQuestion.meaning || currentQuestion.wordMeaningEn || ""}
+              </div>
+            )}
 
           {/* Misspelled Word */}
           <div className="mb-12 text-center">

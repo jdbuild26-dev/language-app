@@ -43,7 +43,7 @@ export default function DictationPage() {
   const loadData = async () => {
     try {
       setLoading(true);
-      const response = await fetchPracticeQuestions("B6_Fill blanks_Typing");
+      const response = await fetchPracticeQuestions("listen_type");
       if (response && response.data) {
         const transformed = response.data.map((item) => ({
           id: item["ExerciseID"],
@@ -163,9 +163,8 @@ export default function DictationPage() {
                 <span className="inline-block w-32 border-b-2 border-gray-400 mx-2 relative top-1">
                   {status !== "idle" && (
                     <span
-                      className={`absolute -top-8 left-0 w-full text-center text-sm font-bold ${
-                        status === "success" ? "text-green-500" : "text-red-500"
-                      }`}
+                      className={`absolute -top-8 left-0 w-full text-center text-sm font-bold ${status === "success" ? "text-green-500" : "text-red-500"
+                        }`}
                     >
                       {status === "success" ? userInput : currentQ.answer}
                     </span>
@@ -188,21 +187,18 @@ export default function DictationPage() {
             }}
             placeholder="Type the missing word..."
             className={`w-full p-4 text-center text-xl rounded-xl border-2 outline-none transition-all
-                      ${
-                        status === "idle"
-                          ? "border-gray-200 dark:border-slate-700 focus:border-blue-500 bg-white dark:bg-slate-800"
-                          : ""
-                      }
-                      ${
-                        status === "success"
-                          ? "border-green-500 bg-green-50 text-green-900"
-                          : ""
-                      }
-                      ${
-                        status === "error"
-                          ? "border-red-500 bg-red-50 text-red-900"
-                          : ""
-                      }
+                      ${status === "idle"
+                ? "border-gray-200 dark:border-slate-700 focus:border-blue-500 bg-white dark:bg-slate-800"
+                : ""
+              }
+                      ${status === "success"
+                ? "border-green-500 bg-green-50 text-green-900"
+                : ""
+              }
+                      ${status === "error"
+                ? "border-red-500 bg-red-50 text-red-900"
+                : ""
+              }
                    `}
           />
         </div>

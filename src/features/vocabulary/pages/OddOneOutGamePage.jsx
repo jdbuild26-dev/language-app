@@ -7,44 +7,11 @@ import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
 import { getFeedbackMessage } from "@/utils/feedbackMessages";
 
 // MOCK DATA for "Odd One Out"
-const MOCK_QUESTIONS = [
-  {
-    id: 1,
-    words: ["Chien", "Chat", "Lapin", "Pomme"],
-    correctAnswer: "Pomme",
-    reason: "'Pomme' is a fruit, the others are animals.",
-    type: "Odd One Out",
-    instructionFr: "Trouvez l'intrus",
-    instructionEn: "Select the odd one out",
-  },
-  {
-    id: 2,
-    words: ["Rouge", "Bleu", "Voiture", "Vert"],
-    correctAnswer: "Voiture",
-    reason: "'Voiture' is a vehicle, the others are colors.",
-  },
-  {
-    id: 3,
-    words: ["Manger", "Boire", "Dormir", "Heureux"],
-    correctAnswer: "Heureux",
-    reason: "'Heureux' is an adjective, the others are verbs.",
-  },
-  {
-    id: 4,
-    words: ["Lundi", "Mardi", "Janvier", "Mercredi"],
-    correctAnswer: "Janvier",
-    reason: "'Janvier' is a month, the others are days.",
-  },
-  {
-    id: 5,
-    words: ["Un", "Deux", "Trois", "Livre"],
-    correctAnswer: "Livre",
-    reason: "'Livre' is an object, the others are numbers.",
-  },
-];
-
 export default function OddOneOutGamePage() {
   const navigate = useNavigate();
+  const [questions, setQuestions] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedWord, setSelectedWord] = useState(null);
   const [isSubmitted, setIsSubmitted] = useState(false);
@@ -56,7 +23,7 @@ export default function OddOneOutGamePage() {
 
   // Timer Hook
   const { timerString, resetTimer, isPaused } = useExerciseTimer({
-    duration: 20,
+    duration: 30,
     mode: "timer",
     onExpire: () => {
       if (!isSubmitted && !showFeedback && !isGameOver) {
@@ -70,11 +37,39 @@ export default function OddOneOutGamePage() {
   });
 
   useEffect(() => {
+    loadQuestions();
+  }, []);
+
+  useEffect(() => {
     resetTimer();
   }, [currentIndex, resetTimer]);
 
-  const currentQuestion = MOCK_QUESTIONS[currentIndex];
-  const totalQuestions = MOCK_QUESTIONS.length;
+  const loadQuestions = async () => {
+    try {
+      setLoading(true);
+      const response = await fetchPracticeQuestions("odd_one_out");
+      if (response && response.data) {
+        const normalized = response.data.map((item) => ({
+          id: item.id || item.ExerciseID,
+          words: item.words || [item.Option1, item.Option2, item.Option3, item.Option4].filter(Boolean),
+          correctAnswer: item.correctword || item.CorrectAnswer || item.Answer,
+          reason: item.CorrectExplanation_EN || item.Reason || item.Explanation || "",
+          instructionFr: item.Instruction_FR || "Trouvez l'intrus",
+          instructionEn: item.Instruction_EN || "Select the odd one out",
+          type: "Odd One Out"
+        }));
+        setQuestions(normalized);
+      }
+    } catch (err) {
+      console.error("Failed to load odd one out questions:", err);
+      setError("Failed to load questions.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const currentQuestion = questions[currentIndex];
+  const totalQuestions = questions.length;
   const progress = ((currentIndex + 1) / totalQuestions) * 100;
 
   const handleWordClick = (word) => {

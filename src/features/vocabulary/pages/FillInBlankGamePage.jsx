@@ -130,33 +130,24 @@ export default function FillInBlankGamePage() {
   const loadQuestions = async () => {
     try {
       setLoading(true);
-      // MOCK DATA FOR TESTING
-      // In production, we would just use the fetch call directly.
-      // For now, we inject mock data to verify the UI changes.
-      const mockData = [
-        {
-          id: "mock1",
-          SentenceWithBlank: "Je vais à la [bakery] pour acheter du [bread].",
-          CorrectAnswer: "boulangeriepain",
-          Instruction_FR: "Complétez la phrase",
-          Instruction_EN: "Complete the sentence",
-          TimeLimitSeconds: 60,
-        },
-        {
-          id: "mock2",
-          SentenceWithBlank: "Le [dog] court dans le [garden].",
-          CorrectAnswer: "chienjardin",
-          Instruction_FR: "Traduisez les mots",
-          Instruction_EN: "Translate the words in brackets",
-          TimeLimitSeconds: 60,
-        },
-      ];
-
-      // Restore original fetch when ready
-      // const response = await fetchPracticeQuestions("C1_Writing_FITB");
-      // if (response && response.data) setQuestions(response.data);
-
-      setQuestions(mockData);
+      const response = await fetchPracticeQuestions("vocab_typing_blanks");
+      if (response && response.data) {
+        const normalized = response.data.map((item) => ({
+          ...item,
+          id: item.id || item.ExerciseID || Math.random(),
+          SentenceWithBlank:
+            item.SentenceWithBlank || item.Sentence || item.Question || "",
+          CorrectAnswer: item.CorrectAnswer || item.Answer || "",
+          Instruction_FR:
+            item.Instruction_FR || item.instructionFr || "Complétez la phrase",
+          Instruction_EN:
+            item.Instruction_EN ||
+            item.instructionEn ||
+            "Complete the sentence",
+          TimeLimitSeconds: item.TimeLimitSeconds || item.timeLimit || 60,
+        }));
+        setQuestions(normalized);
+      }
     } catch (err) {
       console.error("Failed to load practice questions:", err);
       setError("Failed to load questions.");

@@ -29,15 +29,14 @@ export default function HighlightWordGamePage() {
   const loadQuestions = async () => {
     try {
       setLoading(true);
-      const response = await fetchPracticeQuestions("A4_Highlight word");
+      const response = await fetchPracticeQuestions("highlight_word");
       if (response && response.data && response.data.length > 0) {
         // Map API response keys to component state keys
         const formattedQuestions = response.data.map((q) => ({
           ...q,
-          sentence: q["Complete sentence"],
-          correctWord: q["CorrectAnswer"],
-          prompt: q["Question_EN"]?.trim(),
-          meaning: q["Question_EN"]?.trim(), // Keeping as fallback or redundant, but UI will remove usage
+          sentence: q.sentence || q.Sentence || q["Complete sentence"] || "",
+          correctWord: q.correctAnswer || q.CorrectAnswer || q.Answer || "",
+          prompt: (q.instructionEn || q.Instruction_EN || q.Question_EN || "")?.trim(),
         }));
         setQuestions(formattedQuestions);
       } else {
