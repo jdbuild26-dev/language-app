@@ -38,7 +38,7 @@ export default function WriteAnalysisPage() {
     const handleExit = usePracticeExit();
     const { speak, isSpeaking } = useTextToSpeech();
 
-    const [questions] = useState(MOCK_QUESTIONS);
+    const [questions, setQuestions] = useState([]);
     const [currentIndex, setCurrentIndex] = useState(0);
     const [userAnswer, setUserAnswer] = useState("");
     const [isCompleted, setIsCompleted] = useState(false);
@@ -47,6 +47,7 @@ export default function WriteAnalysisPage() {
     const [isCorrect, setIsCorrect] = useState(false);
     const [feedbackMessage, setFeedbackMessage] = useState("");
     const [score, setScore] = useState(0);
+    const [isLoading, setIsLoading] = useState(true);
 
     const { evaluation, isSubmitting, evaluate, resetEvaluation } = useWritingEvaluation();
 
@@ -61,8 +62,22 @@ export default function WriteAnalysisPage() {
                 handleSubmit();
             }
         },
-        isPaused: isCompleted || showFeedback,
+        isPaused: isCompleted || showFeedback || isLoading,
     });
+
+    useEffect(() => {
+        const fetchQuestions = async () => {
+            try {
+                const data = await loadMockCSV("practice/writing/write_analysis.csv");
+                setQuestions(data);
+            } catch (error) {
+                console.error("Error loading mock data:", error);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+        fetchQuestions();
+    }, []);
 
     useEffect(() => {
         if (currentQuestion && !isCompleted) {
@@ -71,7 +86,7 @@ export default function WriteAnalysisPage() {
             resetTimer();
             resetEvaluation();
         }
-    }, [currentIndex, currentQuestion, isCompleted, resetTimer]);
+    }, [currentIndex, currentQuestion, isCompleted, resetTimer, resetEvaluation]);
 
     const handlePlaySample = () => {
         if (currentQuestion) {
@@ -120,6 +135,22 @@ export default function WriteAnalysisPage() {
     const wordCount = getWordCount(userAnswer);
     const progress = questions.length > 0 ? ((currentIndex + 1) / questions.length) * 100 : 0;
 
+    if (isLoading) {
+        return (
+            <div className="flex items-center justify-center min-h-screen bg-slate-50 dark:bg-slate-900">
+                <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+            </div>
+        );
+    }
+
+    if (questions.length === 0) {
+        return (
+            <div className="flex flex-col items-center justify-center min-h-screen bg-slate-50 dark:bg-slate-900">
+                <p className="text-xl text-slate-600 dark:text-slate-400">No content available.</p>
+                <Button onClick={() => handleExit()} variant="outline" className="mt-4">Back</Button>
+            </div>
+        );
+    }
     return (
         <>
             <PracticeGameLayout
@@ -256,14 +287,16 @@ export default function WriteAnalysisPage() {
                 </div>
             </PracticeGameLayout>
 
-            {showFeedback && (
-                <FeedbackBanner
-                    isCorrect={isCorrect}
-                    onContinue={handleContinue}
-                    message={feedbackMessage}
-                    continueLabel={currentIndex + 1 === questions.length ? "FINISH SESSION" : "NEXT TASK"}
-                />
-            )}
+            {
+                showFeedback && (
+                    <FeedbackBanner
+                        isCorrect={isCorrect}
+                        onContinue={handleContinue}
+                        message={feedbackMessage}
+                        continueLabel={currentIndex + 1 === questions.length ? "FINISH SESSION" : "NEXT TASK"}
+                    />
+                )
+            }
         </>
     );
 }

@@ -7,6 +7,7 @@ import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 
 import { calculateSimilarity, normalizeText } from "@/utils/textComparison";
+import { loadMockCSV } from "@/utils/csvLoader";
 
 export default function RepeatWordPage() {
   const navigate = useNavigate();
@@ -61,25 +62,15 @@ export default function RepeatWordPage() {
   }, []);
 
   // Fetch Data
-  // Fetch Data
-  const hasFetched = useRef(false);
   useEffect(() => {
-    if (hasFetched.current) return;
-    hasFetched.current = true;
-
     const fetchData = async () => {
       try {
-        const response = await fetch(
-          `${import.meta.env.VITE_API_URL}/api/practice/repeat-sentence`,
-        );
-        if (!response.ok) throw new Error("Failed to fetch data");
-        const data = await response.json();
-
+        const data = await loadMockCSV("practice/speaking/repeat_word.csv");
         // Shuffle or just use as is
         const shuffled = data.sort(() => 0.5 - Math.random());
         setQuestions(shuffled);
       } catch (error) {
-        console.error("Error fetching repeat sentence data:", error);
+        console.error("Error fetching repeat word data:", error);
       } finally {
         setIsLoading(false);
       }
@@ -89,7 +80,7 @@ export default function RepeatWordPage() {
   }, []);
 
   // Timer (Stopwatch mode)
-  const { timerString, resetTimer, isPaused } = useExerciseTimer({
+  const { timerString, resetTimer } = useExerciseTimer({
     mode: "stopwatch",
     isPaused: isLoading || isGameOver,
   });
@@ -113,7 +104,7 @@ export default function RepeatWordPage() {
   };
 
   const handleSubmit = () => {
-    if (!currentQuestion) return;
+    if (!currentQuestion || !spokenText) return;
 
     // Strict matching: User must speak ONLY the word, not the full sentence
     // We compare the normalized spoken text directly against the correct answer
@@ -121,7 +112,7 @@ export default function RepeatWordPage() {
       spokenText,
       currentQuestion.correctAnswer,
     );
-    const isCorrect = similarity >= 0.7;
+    const isCorrectMatch = similarity >= 0.7;
 
     console.groupCollapsed(
       `🎤 Repeat Word: "${spokenText}" vs "${currentQuestion.correctAnswer}"`,
@@ -129,10 +120,10 @@ export default function RepeatWordPage() {
     console.log(`Spoken: "${spokenText}"`);
     console.log(`Target: "${currentQuestion.correctAnswer}"`);
     console.log(`Similarity Score: ${similarity.toFixed(2)}`);
-    console.log(`Match Result: ${isCorrect ? "✅ MATCH" : "❌ NO MATCH"}`);
+    console.log(`Match Result: ${isCorrectMatch ? "✅ MATCH" : "❌ NO MATCH"}`);
     console.groupEnd();
 
-    if (isCorrect) {
+    if (isCorrectMatch) {
       setScore((prev) => prev + 1);
       setFeedback("correct");
     } else {
@@ -175,7 +166,7 @@ export default function RepeatWordPage() {
           No questions available.
         </p>
         <Button
-          onClick={() => navigate("/vocabulary/practice")}
+          onClick={() => navigate("/practice")}
           variant="outline"
           className="mt-4"
         >
@@ -189,14 +180,14 @@ export default function RepeatWordPage() {
     <PracticeGameLayout
       title="Repeat Word"
       questionType="Fill in the blank by speaking the missing word"
-      instructionFr={currentQuestion.instructionFr}
-      instructionEn={currentQuestion.instructionEn}
+      instructionFr={currentQuestion.instructionFr || currentQuestion.instruction}
+      instructionEn={currentQuestion.instructionEn || currentQuestion.instruction_en}
       progress={((currentIndex + 1) / questions.length) * 100}
       score={score}
       totalQuestions={questions.length}
       isGameOver={isGameOver}
       timerValue={timerString}
-      onExit={() => navigate("/vocabulary/practice")}
+      onExit={() => navigate("/practice")}
       onNext={feedback ? handleNext : handleSubmit}
       onRestart={handleRestart}
       isSubmitEnabled={Boolean(spokenText)}
@@ -205,11 +196,7 @@ export default function RepeatWordPage() {
       feedbackMessage={feedback === "correct" ? "Excellent!" : "Try again"}
       correctAnswer={currentQuestion?.correctAnswer}
       submitLabel={
-        feedback === "correct"
-          ? "Continue"
-          : feedback === "incorrect"
-            ? "Continue"
-            : "Submit"
+        feedback ? "Continue" : "Submit"
       }
     >
       <div className="flex flex-col items-center justify-center max-w-3xl w-full gap-12">

@@ -11,8 +11,6 @@ import { getFeedbackMessage } from "@/utils/feedbackMessages";
 import FeedbackBanner from "@/components/ui/FeedbackBanner";
 import { loadMockCSV } from "@/utils/csvLoader";
 
-// MOCK_DATA removed - now fetching from backend
-
 export default function RepeatSentencePage() {
   const navigate = useNavigate();
 
@@ -71,20 +69,7 @@ export default function RepeatSentencePage() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        let data = [];
-        try {
-          const response = await fetch(`${import.meta.env.VITE_API_URL}/api/practice/repeat-sentence`);
-          if (response.ok) {
-            data = await response.json();
-          }
-        } catch (e) {
-          console.warn("Backend fetch failed, falling back to mock CSV", e);
-        }
-
-        if (!data || data.length === 0) {
-          data = await loadMockCSV("practice/speaking/repeat_sentence.csv");
-        }
-
+        const data = await loadMockCSV("practice/speaking/repeat_sentence.csv");
         // Shuffle or use as is
         const shuffled = [...data].sort(() => 0.5 - Math.random());
         setQuestions(shuffled);
@@ -223,8 +208,8 @@ export default function RepeatSentencePage() {
       totalQuestions={questions.length}
       isGameOver={isGameOver}
       timerValue={timerString}
-      onExit={() => navigate("/vocabulary/practice")}
-      onNext={handleSubmit}
+      onExit={() => navigate("/practice")}
+      onNext={showFeedback ? handleNext : handleSubmit}
       onRestart={handleRestart}
       isSubmitEnabled={Boolean(spokenText) && !isSubmitting}
       showSubmitButton={!showFeedback}
