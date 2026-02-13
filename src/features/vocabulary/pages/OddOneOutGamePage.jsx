@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from "react";
 import { useExerciseTimer } from "@/hooks/useExerciseTimer";
-import { CheckCircle, XCircle } from "lucide-react";
+import { CheckCircle, XCircle, Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
 import { getFeedbackMessage } from "@/utils/feedbackMessages";
+import { fetchPracticeQuestions } from "@/services/vocabularyApi";
 
 // MOCK DATA for "Odd One Out"
 export default function OddOneOutGamePage() {
@@ -49,16 +50,20 @@ export default function OddOneOutGamePage() {
       setLoading(true);
       const response = await fetchPracticeQuestions("odd_one_out");
       if (response && response.data) {
-        const normalized = response.data.map((item) => ({
-          id: item.id || item.ExerciseID,
-          words: item.words || [item.Option1, item.Option2, item.Option3, item.Option4].filter(Boolean),
-          correctAnswer: item.correctword || item.CorrectAnswer || item.Answer,
-          reason: item.CorrectExplanation_EN || item.Reason || item.Explanation || "",
-          instructionFr: item.Instruction_FR || "Trouvez l'intrus",
-          instructionEn: item.Instruction_EN || "Select the odd one out",
-          type: "Odd One Out"
-        }));
+        const normalized = response.data
+          .filter(item => (item.words || item.Option1) && (item.words || item.Option1) !== "None")
+          .map((item) => ({
+            id: item.id || item.ExerciseID,
+            words: item.words || [item.Option1, item.Option2, item.Option3, item.Option4].filter(Boolean),
+            correctAnswer: item.correctword || item.CorrectAnswer || item.Answer,
+            reason: item.CorrectExplanation_EN || item.Reason || item.Explanation || "",
+            instructionFr: item.Instruction_FR || "Trouvez l'intrus",
+            instructionEn: item.Instruction_EN || "Select the odd one out",
+            type: "Odd One Out"
+          }));
         setQuestions(normalized);
+      } else {
+        setQuestions([]);
       }
     } catch (err) {
       console.error("Failed to load odd one out questions:", err);
@@ -130,6 +135,17 @@ export default function OddOneOutGamePage() {
 
     return `${baseStyle} bg-gray-50 dark:bg-gray-800/50 border-gray-100 dark:border-gray-800 text-gray-400 opacity-50`;
   };
+
+  if (loading) return (
+    <div className="min-h-screen flex items-center justify-center">
+      <Loader2 className="animate-spin text-blue-500 w-8 h-8" />
+    </div>
+  );
+  if (error || questions.length === 0) return (
+    <div className="min-h-screen flex items-center justify-center text-red-500">
+      {error || "No questions found for this activity."}
+    </div>
+  );
 
   let submitLabel = "Submit";
   if (isSubmitted) {

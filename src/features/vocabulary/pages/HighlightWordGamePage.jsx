@@ -32,15 +32,17 @@ export default function HighlightWordGamePage() {
       const response = await fetchPracticeQuestions("highlight_word");
       if (response && response.data && response.data.length > 0) {
         // Map API response keys to component state keys
-        const formattedQuestions = response.data.map((q) => ({
-          ...q,
-          sentence: q.sentence || q.Sentence || q["Complete sentence"] || "",
-          correctWord: q.correctAnswer || q.CorrectAnswer || q.Answer || "",
-          prompt: (q.instructionEn || q.Instruction_EN || q.Question_EN || "")?.trim(),
-        }));
+        const formattedQuestions = response.data
+          .filter(q => (q.passage || q.sentence || q.Sentence) && (q.passage || q.sentence || q.Sentence) !== "None")
+          .map((q) => ({
+            ...q,
+            sentence: q.passage || q.sentence || q.Sentence || q["Complete sentence"] || "",
+            correctWord: q.correctWord || q.correctAnswer || q.CorrectAnswer || q.Answer || "",
+            prompt: (q.question || q.instructionEn || q.Instruction_EN || q.Question_EN || "")?.trim(),
+          }));
         setQuestions(formattedQuestions);
       } else {
-        console.error("No questions received from backend");
+        console.error("No valid questions received from backend");
         setQuestions([]);
       }
     } catch (error) {
@@ -138,12 +140,28 @@ export default function HighlightWordGamePage() {
   const progress =
     questions.length > 0 ? ((currentIndex + 1) / questions.length) * 100 : 0;
 
-  if (loading)
+  if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Loader2 className="animate-spin w-10 h-10 text-blue-500" />
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="animate-spin text-blue-500 w-8 h-8" />
       </div>
     );
+  }
+
+  if (questions.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen text-red-500">
+        <p className="text-xl font-bold">No questions found</p>
+        <Button
+          className="mt-4"
+          variant="outline"
+          onClick={() => navigate("/vocabulary/practice")}
+        >
+          Back to Practice
+        </Button>
+      </div>
+    );
+  }
 
   return (
     <>

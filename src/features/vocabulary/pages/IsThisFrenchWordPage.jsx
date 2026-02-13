@@ -110,6 +110,20 @@ export default function IsThisFrenchWordPage() {
     );
   }
 
+  if (questions.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen text-red-500">
+        <p className="text-xl font-bold">No questions found</p>
+        <button
+          className="mt-4 px-6 py-2 border border-slate-300 rounded-lg text-slate-600"
+          onClick={() => navigate("/vocabulary/practice")}
+        >
+          Back to Practice
+        </button>
+      </div>
+    );
+  }
+
   return (
     <>
       <PracticeGameLayout

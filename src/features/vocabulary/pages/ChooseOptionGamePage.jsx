@@ -152,6 +152,17 @@ export default function ChooseOptionGamePage() {
     );
   }
 
+  if (!error && questions.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen px-4 text-center">
+        <h2 className="text-xl font-bold mb-2 text-slate-800 dark:text-slate-100">No questions found</h2>
+        <Link to="/vocabulary/practice">
+          <Button variant="outline">Back to Practice</Button>
+        </Link>
+      </div>
+    );
+  }
+
   if (error) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen px-4 text-center">
