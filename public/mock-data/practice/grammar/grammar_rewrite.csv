@@ -1,0 +1,3 @@
+id,instruction,sentence,answer,timeLimitSeconds
+1,Rewrite in future tense,Je mange une pomme.,Je mangerai une pomme.|Je vais manger une pomme.,60
+2,Rewrite in past tense,Il regarde la télé.,Il a regardé la télé.,60

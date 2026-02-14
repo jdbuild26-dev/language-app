@@ -1,0 +1,4 @@
+id,sentence,question,options,correctIndex,explanation,translation,timeLimitSeconds
+1,Le chat _____ sur le canapé.,Choose the correct verb form.,"[""dormir"", ""dort"", ""dormons""]",1,"The subject is 'Le chat' (singular), so we use 'dort'.","The cat sleeps on the sofa.",60
+2,Nous _____ au cinéma ce soir.,Choose the correct verb form.,"[""allons"", ""va"", ""vont""]",0,"The subject is 'Nous' (we), so we use 'allons'.","We are going to the cinema tonight.",60
+3,Elles _____ des pommes.,Choose the correct verb form.,"[""mange"", ""mangent"", ""mangeons""]",1,"The subject is 'Elles' (they feminine), so we use 'mangent'.","They are eating apples.",60

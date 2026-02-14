@@ -1,0 +1,5 @@
+id,image,englishDescription,hint,sampleAnswer,minWords,timeLimitSeconds
+1,🏖️,A beach with sun and waves,"beach, sun, water, sand","C'est une plage avec du soleil et des vagues. Le sable est doré et l'eau est bleue.",8,120
+2,🍽️,A dinner table with food,"table, food, plate, dinner","Je vois une table avec de la nourriture. Il y a des assiettes et des verres pour le dîner.",8,120
+3,🏔️,A mountain with snow,"mountain, snow, nature, sky","C'est une grande montagne avec de la neige. Le ciel est bleu et le paysage est magnifique.",8,120
+4,🎉,A party celebration,"party, celebration, happy, decoration","C'est une fête. Les gens sont contents et il y a des décorations colorées partout.",8,120

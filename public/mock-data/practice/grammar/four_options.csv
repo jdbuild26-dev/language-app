@@ -1,0 +1,3 @@
+id,question,options,correctIndex,explanation,timeLimitSeconds
+1,Which sentence is correct?,"[""Je vais à la piscine."", ""Je vais au piscine."", ""Je vas à la piscine."", ""Je aller à la piscine.""]",0,"'Piscine' is feminine, so 'à la' is correct. Conjugation 'vais' matches 'Je'.",60
+2,Choose the correct translation: 'I have a red car.',"[""J'ai une voiture rouge."", ""J'ai un voiture rouge."", ""Je suis une voiture rouge."", ""J'ai une rouge voiture.""]",0,"Adjectives of color typically go after the noun.",60

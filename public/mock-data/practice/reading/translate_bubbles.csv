@@ -1,0 +1,6 @@
+id,sourceText,correctAnswer,wordBubbles,timeLimitSeconds,ExerciseID,Level,Skill,QuestionType,Instruction_FR,Instruction_EN,SourceLanguage,TargetLanguage,SourceSentence,SourceAudioID,TargetSentence,BubbleTokens,CorrectTokenOrder,AllowExtraTokens,AllowMultipleSolutions,AcceptableTranslations,CaseSensitive,AccentSensitive,MinTokensRequired,MaxTokensAllowed,ShuffleBubbles,GrammarTag,VocabularyTag,DifficultyTag
+1,The cat is sleeping.,Le chat dort.,"[""Le"", ""chat"", ""dort"", ""mange"", ""chien"", ""un""]",45,,,,,,,,,,,,,,,,,,,,,,,,
+2,I eat an apple.,Je mange une pomme.,"[""Je"", ""mange"", ""une"", ""pomme"", ""Tu"", ""poire"", ""le""]",45,,,,,,,,,,,,,,,,,,,,,,,,
+3,She reads a book.,Elle lit un livre.,"[""Elle"", ""lit"", ""un"", ""livre"", ""Il"", ""écrit"", ""une""]",45,,,,,,,,,,,,,,,,,,,,,,,,
+4,We go to school.,Nous allons à l'école.,"[""Nous"", ""allons"", ""à"", ""l'école"", ""Vous"", ""la"", ""maison""]",45,,,,,,,,,,,,,,,,,,,,,,,,
+5,They play in the garden.,Ils jouent dans le jardin.,"[""Ils"", ""jouent"", ""dans"", ""le"", ""jardin"", ""Elle"", ""parc"", ""sur""]",45,,,,,,,,,,,,,,,,,,,,,,,,

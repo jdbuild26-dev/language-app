@@ -1,0 +1,3 @@
+id,question,options,correctIndex,explanation,timeLimitSeconds
+1,Complete: Je _____ français.,"[""parle"", ""parles"", ""parlons""]",0,"'Je' requires the ending '-e' for -er verbs.",60
+2,Complete: Tu _____ gentil.,"[""es"", ""est"", ""sont""]",0,"'Tu' form of être is 'es'.",60
