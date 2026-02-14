@@ -41,7 +41,7 @@ export default function MultiSelectPage() {
     try {
       setLoading(true);
       const response = await fetchPracticeQuestions(
-        "B3_what you hear-Multiple",
+        "phonetics__what_do_you_hear",
       );
       if (response && response.data && response.data.length > 0) {
         const transformed = response.data.map((q) => ({
@@ -59,10 +59,10 @@ export default function MultiSelectPage() {
           correctIndices:
             q.CorrectOptionIndexes || q.CorrectOptions
               ? (q.CorrectOptionIndexes || q.CorrectOptions)
-                  .toString()
-                  .split(/[|,]+/)
-                  .map((s) => parseInt(s.trim()) - 1)
-                  .filter((i) => !isNaN(i))
+                .toString()
+                .split(/[|,]+/)
+                .map((s) => parseInt(s.trim()) - 1)
+                .filter((i) => !isNaN(i))
               : [],
           audioText: q.Question || q.Audio || q.Prompt || "", // Text to speak
         }));

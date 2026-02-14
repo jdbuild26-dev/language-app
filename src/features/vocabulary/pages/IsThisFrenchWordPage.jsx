@@ -5,20 +5,7 @@ import { Check, X, Loader2 } from "lucide-react";
 import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
 import { getFeedbackMessage } from "@/utils/feedbackMessages";
 import { cn } from "@/lib/utils";
-
-// MOCK DATA - Mix of real French words and non-French words
-const MOCK_QUESTIONS = [
-  { id: 1, word: "behavioral", isFrench: false },
-  { id: 2, word: "bonjour", isFrench: true },
-  { id: 3, word: "computer", isFrench: false },
-  { id: 4, word: "château", isFrench: true },
-  { id: 5, word: "beautiful", isFrench: false },
-  { id: 6, word: "bibliothèque", isFrench: true },
-  { id: 7, word: "restaurant", isFrench: true },
-  { id: 8, word: "keyboard", isFrench: false },
-  { id: 9, word: "papillon", isFrench: true },
-  { id: 10, word: "mountain", isFrench: false },
-];
+import { fetchPracticeQuestions } from "../../../services/vocabularyApi";
 
 export default function IsThisFrenchWordPage() {
   const navigate = useNavigate();
@@ -35,11 +22,33 @@ export default function IsThisFrenchWordPage() {
   // Timer
 
   useEffect(() => {
-    // Shuffle and load questions
-    const shuffled = [...MOCK_QUESTIONS].sort(() => Math.random() - 0.5);
-    setQuestions(shuffled.slice(0, 6)); // Pick 6 questions
-    setLoading(false);
+    loadQuestions();
   }, []);
+
+  const loadQuestions = async () => {
+    try {
+      setLoading(true);
+      const response = await fetchPracticeQuestions("is_french_word");
+      if (response && response.data) {
+        const normalized = response.data.map((item) => {
+          // Logic for isFrench: if CorrectAnswer is YES/OUI or 1 or true
+          const ans = (item.CorrectAnswer || item.Answer || "").toString().toLowerCase();
+          const isFr = ["yes", "oui", "true", "1"].includes(ans);
+
+          return {
+            id: item.id || item.ExerciseID,
+            word: item.Question || item.Word || item.Word_FR || "",
+            isFrench: isFr
+          };
+        });
+        setQuestions(normalized.sort(() => Math.random() - 0.5));
+      }
+    } catch (err) {
+      console.error("Failed to load French word questions:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Timer Hook
   const { timerString, resetTimer, isPaused } = useExerciseTimer({
@@ -97,6 +106,20 @@ export default function IsThisFrenchWordPage() {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Loader2 className="animate-spin text-blue-500 w-8 h-8" />
+      </div>
+    );
+  }
+
+  if (questions.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen text-red-500">
+        <p className="text-xl font-bold">No questions found</p>
+        <button
+          className="mt-4 px-6 py-2 border border-slate-300 rounded-lg text-slate-600"
+          onClick={() => navigate("/vocabulary/practice")}
+        >
+          Back to Practice
+        </button>
       </div>
     );
   }

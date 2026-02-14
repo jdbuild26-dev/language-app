@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { usePracticeExit } from "@/hooks/usePracticeExit";
 import { useExerciseTimer } from "@/hooks/useExerciseTimer";
-import { Volume2, FileText } from "lucide-react";
+import { Loader2, Volume2, FileText } from "lucide-react";
 import { cn } from "@/lib/utils";
 import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
 import FeedbackBanner from "@/components/ui/FeedbackBanner";
@@ -9,92 +9,15 @@ import { getFeedbackMessage } from "@/utils/feedbackMessages";
 import { useTextToSpeech } from "@/hooks/useTextToSpeech";
 import { useWritingEvaluation } from "../../hooks/useWritingEvaluation";
 import WritingFeedbackResult from "../../components/WritingFeedbackResult";
-
-// Mock data for Document Writing exercise
-const MOCK_QUESTIONS = [
-  {
-    id: 1,
-    documentType: "Email",
-    scenario:
-      "Write an email to your friend inviting them to your birthday party.",
-    recipient: "Ami(e)",
-    subject: "Mon anniversaire",
-    template: `Cher/Chère [nom],
-
-Je t'écris pour...
-
-[corps du message]
-
-À bientôt,
-[ton nom]`,
-    sampleAnswer: `Cher Pierre,
-
-Je t'écris pour t'inviter à ma fête d'anniversaire. Elle aura lieu samedi prochain à 18 heures chez moi. Il y aura de la musique et un gâteau au chocolat.
-
-J'espère te voir là-bas !
-
-À bientôt,
-Marie`,
-    minWords: 20,
-    timeLimitSeconds: 240,
-  },
-  {
-    id: 2,
-    documentType: "Letter",
-    scenario: "Write a letter to thank someone for a gift.",
-    recipient: "Grand-mère",
-    subject: "Remerciement",
-    template: `Chère Grand-mère,
-
-Je voulais te remercier pour...
-
-[corps du message]
-
-Je t'embrasse,
-[ton nom]`,
-    sampleAnswer: `Chère Grand-mère,
-
-Je voulais te remercier pour le magnifique pull que tu m'as offert pour mon anniversaire. La couleur bleue est ma préférée et il me tient très chaud.
-
-Je pense à toi souvent et j'espère te voir bientôt.
-
-Je t'embrasse fort,
-Sophie`,
-    minWords: 20,
-    timeLimitSeconds: 240,
-  },
-  {
-    id: 3,
-    documentType: "Postcard",
-    scenario: "Write a postcard from your vacation.",
-    recipient: "Famille",
-    subject: "Vacances",
-    template: `Chers tous,
-
-Je suis en vacances à...
-
-[description]
-
-Bisous,
-[ton nom]`,
-    sampleAnswer: `Chers tous,
-
-Je suis en vacances à Nice depuis trois jours. La plage est magnifique et l'eau est chaude. Hier, j'ai visité le vieux Nice et j'ai mangé une délicieuse salade niçoise.
-
-Je rentre dimanche !
-
-Bisous,
-Lucas`,
-    minWords: 15,
-    timeLimitSeconds: 180,
-  },
-];
+import { loadMockCSV } from "@/utils/csvLoader";
+import { Button } from "@/components/ui/button";
 
 export default function WriteDocumentsPage() {
   const handleExit = usePracticeExit();
   const { speak, isSpeaking } = useTextToSpeech();
 
-  const [questions] = useState(MOCK_QUESTIONS);
+  const [questions, setQuestions] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [userAnswer, setUserAnswer] = useState("");
   const [isCompleted, setIsCompleted] = useState(false);
@@ -105,6 +28,20 @@ export default function WriteDocumentsPage() {
   const [score, setScore] = useState(0);
 
   const { evaluation, isSubmitting, evaluate, resetEvaluation } = useWritingEvaluation();
+
+  useEffect(() => {
+    const fetchQuestions = async () => {
+      try {
+        const data = await loadMockCSV("practice/writing/write_documents.csv");
+        setQuestions(data);
+      } catch (error) {
+        console.error("Error loading mock data:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchQuestions();
+  }, []);
 
   const currentQuestion = questions[currentIndex];
   const timerDuration = currentQuestion?.timeLimitSeconds || 240;
@@ -117,12 +54,12 @@ export default function WriteDocumentsPage() {
         handleSubmit();
       }
     },
-    isPaused: isCompleted || showFeedback,
+    isPaused: isCompleted || showFeedback || isLoading,
   });
 
   useEffect(() => {
     if (currentQuestion && !isCompleted) {
-      setUserAnswer(currentQuestion.template);
+      setUserAnswer(currentQuestion.template || "");
       setShowSample(false);
       resetTimer();
       resetEvaluation();
@@ -136,11 +73,33 @@ export default function WriteDocumentsPage() {
   };
 
   const getWordCount = (text) => {
+    if (!text) return 0;
     return text
       .trim()
       .split(/\s+/)
       .filter((word) => word.length > 0).length;
   };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-900">
+        <Loader2 className="animate-spin text-blue-500 w-8 h-8" />
+      </div>
+    );
+  }
+
+  if (questions.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen bg-slate-50 dark:bg-slate-900">
+        <p className="text-xl text-slate-600 dark:text-slate-400">
+          No content available.
+        </p>
+        <Button onClick={() => handleExit()} variant="outline" className="mt-4">
+          Back
+        </Button>
+      </div>
+    );
+  }
 
   const handleSubmit = async () => {
     if (showFeedback || isSubmitting) return;

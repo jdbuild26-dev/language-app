@@ -6,51 +6,14 @@ import { motion, AnimatePresence } from "framer-motion";
 import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
 import { useTextToSpeech } from "@/hooks/useTextToSpeech";
 
-// MOCK DATA for Match Pairs
-const MOCK_DATA = [
-  {
-    id: 1,
-    french: "Chien",
-    english: "Dog",
-    instructionFr: "Associez les paires",
-    instructionEn: "Match the pairs",
-  },
-  {
-    id: 2,
-    french: "Chat",
-    english: "Cat",
-    instructionFr: "Associez les paires",
-    instructionEn: "Match the pairs",
-  },
-  {
-    id: 3,
-    french: "Maison",
-    english: "House",
-    instructionFr: "Associez les paires",
-    instructionEn: "Match the pairs",
-  },
-  {
-    id: 4,
-    french: "Voiture",
-    english: "Car",
-    instructionFr: "Associez les paires",
-    instructionEn: "Match the pairs",
-  },
-  {
-    id: 5,
-    french: "Pomme",
-    english: "Apple",
-    instructionFr: "Associez les paires",
-    instructionEn: "Match the pairs",
-  },
-  // Add more if needed, game logic handles slicing
-];
+import { fetchMatchPairsData } from "@/utils/practiceFetcher";
 
 export default function MatchPairsGamePage() {
   const navigate = useNavigate();
   const { speak } = useTextToSpeech();
 
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [exercises, setExercises] = useState([]);
   const [topCards, setTopCards] = useState([]); // French
   const [bottomCards, setBottomCards] = useState([]); // English
 
@@ -68,7 +31,20 @@ export default function MatchPairsGamePage() {
   const PAIRS_PER_ROUND = 5;
 
   useEffect(() => {
-    initializeGame();
+    const loadContent = async () => {
+      try {
+        const data = await fetchMatchPairsData();
+        setExercises(data);
+        if (data.length > 0) {
+          initializeGame(data);
+        }
+      } catch (error) {
+        console.error("Failed to load match pairs:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadContent();
   }, []);
 
   // Timer Hook
@@ -79,10 +55,9 @@ export default function MatchPairsGamePage() {
     isPaused: loading || isGameOver,
   });
 
-  const initializeGame = () => {
-    setLoading(true);
+  const initializeGame = (data = exercises) => {
     // Shuffle and pick pairs
-    const shuffledSource = [...MOCK_DATA].sort(() => 0.5 - Math.random());
+    const shuffledSource = [...data].sort(() => 0.5 - Math.random());
     const activePairs = shuffledSource.slice(0, PAIRS_PER_ROUND);
 
     const top = activePairs
@@ -105,7 +80,9 @@ export default function MatchPairsGamePage() {
 
     setTopCards(top);
     setBottomCards(bottom);
-    setLoading(false);
+    setMatchedIds([]);
+    setScore(0);
+    setIsGameOver(false);
   };
 
   const handleTopClick = (card) => {

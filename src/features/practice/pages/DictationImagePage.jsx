@@ -17,6 +17,8 @@ const normalizeText = (text) => {
 
 import FeedbackBanner from "@/components/ui/FeedbackBanner";
 
+import { loadMockCSV } from "@/utils/csvLoader";
+
 export default function DictationImagePage() {
   const navigate = useNavigate();
 
@@ -38,11 +40,7 @@ export default function DictationImagePage() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await fetch(
-          `${import.meta.env.VITE_API_URL}/api/practice/dictation-image`,
-        );
-        if (!response.ok) throw new Error("Failed to fetch data");
-        const data = await response.json();
+        const data = await loadMockCSV("practice/writing/dictation_image.csv");
 
         // Shuffle
         const shuffled = data.sort(() => 0.5 - Math.random());
@@ -195,8 +193,8 @@ export default function DictationImagePage() {
         totalQuestions={questions.length}
         isGameOver={isGameOver}
         timerValue={formatTimer(timer)}
-        onExit={() => navigate("/vocabulary/practice")}
-        onNext={handleSubmit}
+        onExit={() => navigate("/practice")}
+        onNext={feedback ? handleNext : handleSubmit}
         onRestart={handleRestart}
         // Hide standard submit button when feedback banner is active
         showSubmitButton={!feedback}
@@ -207,7 +205,7 @@ export default function DictationImagePage() {
           {/* Left Side: Image */}
           <div className="w-64 h-64 md:w-96 md:h-96 bg-slate-100 dark:bg-slate-800 rounded-2xl overflow-hidden shadow-sm flex items-center justify-center relative shrink-0">
             {currentQuestion.imageUrl &&
-            !currentQuestion.imageUrl.includes("placeholder") ? (
+              !currentQuestion.imageUrl.includes("placeholder") ? (
               <img
                 src={currentQuestion.imageUrl}
                 alt="Dictation"
@@ -255,16 +253,16 @@ export default function DictationImagePage() {
                       "border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white",
                       // Focus Style (only if not disabled)
                       !isPreFilled &&
-                        feedback === null &&
-                        "focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20",
+                      feedback === null &&
+                      "focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20",
                       // Pre-filled Style
                       isPreFilled &&
-                        "bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700 select-none",
+                      "bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700 select-none",
                       // Correct/Incorrect Feedback
                       feedback === "correct" &&
-                        "border-green-500 bg-green-50 text-green-700",
+                      "border-green-500 bg-green-50 text-green-700",
                       feedback === "incorrect" &&
-                        "border-red-500 bg-red-50 text-red-700",
+                      "border-red-500 bg-red-50 text-red-700",
                     )}
                   />
                 );

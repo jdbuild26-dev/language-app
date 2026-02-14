@@ -21,9 +21,8 @@ export async function fetchVocabulary({
     params.append("sub_category", subCategory);
   }
 
-  const url = `${API_BASE_URL}/api/vocabulary${
-    params.toString() ? "?" + params : ""
-  }`;
+  const url = `${API_BASE_URL}/api/vocabulary${params.toString() ? "?" + params : ""
+    }`;
   const response = await fetch(url);
 
   if (!response.ok) {
@@ -303,7 +302,7 @@ export async function deleteRelationship(relationshipId, token) {
 }
 
 /**
- * Fetch practice questions from a specific sheet
+ * Fetch practice questions from a specific sheet or slug
  */
 export async function fetchPracticeQuestions(sheetName, limit) {
   const params = new URLSearchParams();
@@ -317,6 +316,44 @@ export async function fetchPracticeQuestions(sheetName, limit) {
     throw new Error(`Failed to fetch practice questions for ${sheetName}`);
   }
 
+  return response.json();
+}
+
+/**
+ * Fetch specialized Match Pairs data
+ */
+export async function fetchMatchPairsData(level) {
+  const url = `${API_BASE_URL}/api/practice/match-pairs${level ? `?level=${level}` : ""}`;
+  const response = await fetch(url);
+  if (!response.ok) throw new Error("Failed to fetch match pairs");
+  return response.json();
+}
+
+/**
+ * Fetch specialized Repeat Sentence data
+ */
+export async function fetchRepeatSentenceData(level) {
+  const url = `${API_BASE_URL}/api/practice/repeat-sentence${level ? `?level=${level}` : ""}`;
+  const response = await fetch(url);
+  if (!response.ok) throw new Error("Failed to fetch repeat sentence");
+  return response.json();
+}
+
+/**
+ * Fetch specialized What Do You See data
+ */
+export async function fetchWhatDoYouSeeData() {
+  const response = await fetch(`${API_BASE_URL}/api/practice/what-do-you-see`);
+  if (!response.ok) throw new Error("Failed to fetch what do you see");
+  return response.json();
+}
+
+/**
+ * Fetch specialized Dictation Image data
+ */
+export async function fetchDictationImageData() {
+  const response = await fetch(`${API_BASE_URL}/api/practice/dictation-image`);
+  if (!response.ok) throw new Error("Failed to fetch dictation image");
   return response.json();
 }
 

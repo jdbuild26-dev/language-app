@@ -4,7 +4,7 @@ import { Loader2, CheckCircle2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
 import { useTextToSpeech } from "@/hooks/useTextToSpeech";
-import { fetchPracticeQuestions } from "@/services/vocabularyApi";
+import { fetchMatchPairsData } from "@/services/vocabularyApi";
 
 // MOCK DATA Fallback
 const MOCK_DATA = [
@@ -92,33 +92,24 @@ export default function MatchPairsB1GamePage() {
     isPaused: loading || isGameOver,
   });
 
+
   const initializeGame = async () => {
     setLoading(true);
     try {
-      // Fetch or Mock
-      let rawData = [];
-      try {
-        const response = await fetchPracticeQuestions("B1.Match the pairs");
-        if (
-          response &&
-          response.data &&
-          response.data.length >= PAIRS_PER_ROUND
-        ) {
-          rawData = response.data.map((item, idx) => ({
-            id: idx,
-            french: item.Prompt || item.French, // Audio content
-            english: item.Target || item.English, // Text content
-            instructionFr: item.Instruction_FR,
-            instructionEn: item.Instruction_EN,
-          }));
-        }
-      } catch (e) {
-        console.warn("API fetch failed, using mock", e);
+      // Fetch specialized Match Pairs data
+      const data = await fetchMatchPairsData("B1");
+
+      if (!data || data.length === 0) {
+        throw new Error("No data returned from API");
       }
 
-      if (rawData.length < PAIRS_PER_ROUND) {
-        rawData = MOCK_DATA;
-      }
+      const rawData = data.map((item, idx) => ({
+        id: item.id || idx,
+        french: item.french, // Text to speak (French word/sentence)
+        english: item.english, // Text to display (English translation)
+        instructionFr: item.instructionFr || "Associez les paires",
+        instructionEn: item.instructionEn || "Match the pairs",
+      }));
 
       // Shuffle and pick pairs
       const shuffledSource = [...rawData].sort(() => 0.5 - Math.random());

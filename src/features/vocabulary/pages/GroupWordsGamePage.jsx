@@ -1,68 +1,17 @@
 import React, { useState, useEffect } from "react";
 import { useExerciseTimer } from "@/hooks/useExerciseTimer";
-import { CheckCircle, AlertCircle } from "lucide-react";
+import { CheckCircle, AlertCircle, Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
 import { cn } from "@/lib/utils";
 
 // MOCK DATA for "Pick 4" (Group Words)
-const MOCK_QUESTIONS = [
-  {
-    id: 1,
-    title: "Pick 4",
-    instructionFr: "Triez les mots",
-    instructionEn: "Select 4 words that are related",
-    theme: "Fruits",
-    allWords: [
-      "Pomme",
-      "Chien",
-      "Banane",
-      "Voiture",
-      "Orange",
-      "Livre",
-      "Raisin",
-      "Stylo",
-      "Fraise",
-      "Lampe",
-      "Chat",
-      "Vélo",
-    ],
-    correctWords: ["Pomme", "Banane", "Orange", "Raisin", "Fraise"], // Wait, usually 4. Let's stick to 4.
-    // Let's refine mock data to have exactly 4 correct words from the prompt "Pick 4"
-    // Modified list to ensure 4 distinct fruits: Pomme, Banane, Orange, Raisin. (Fraise removed from logic if we want strict 4)
-    // Actually let's use 4 correct.
-    correctGroup: ["Pomme", "Banane", "Orange", "Raisin"],
-    reason: "These are all fruits.",
-  },
-  {
-    id: 2,
-    title: "Pick 4",
-    instructionFr: "Triez les mots",
-    instructionEn: "Select 4 words related to Time",
-    theme: "Time",
-    correctGroup: ["Lundi", "Janvier", "Heure", "Minute"],
-    // Need to ensure these are in allWords.
-    allWords: [
-      "Lundi",
-      "Rouge",
-      "Janvier",
-      "Manger",
-      "Heure",
-      "Grand",
-      "Minute",
-      "Fleur",
-      "Soleil",
-      "Petit",
-      "Chat",
-      "Mer",
-    ],
-    reason: "These are all related to time.",
-  },
-];
-
 export default function GroupWordsGamePage() {
   const navigate = useNavigate();
+  const [questions, setQuestions] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedWords, setSelectedWords] = useState([]);
   const [isSubmitted, setIsSubmitted] = useState(false);
@@ -88,15 +37,45 @@ export default function GroupWordsGamePage() {
   });
 
   useEffect(() => {
+    loadQuestions();
+  }, []);
+
+  useEffect(() => {
     resetTimer();
   }, [currentIndex, resetTimer]);
 
-  const currentQuestion = MOCK_QUESTIONS[currentIndex];
-  // Ensure we rely on 'correctGroup' being exactly 4 items for "Pick 4" logic
-  // If backend returns more, we might need to adjust, but for now we enforce 4.
-  const targetCount = 4;
+  const loadQuestions = async () => {
+    try {
+      setLoading(true);
+      const response = await fetchPracticeQuestions("group_words");
+      if (response && response.data) {
+        const normalized = response.data.map((item) => {
+          const correct = (item.correctGroup || item.CorrectGroup || item.CorrectAnswer || "").split(/[|,]+/).map(s => s.trim());
+          const others = (item.otherWords || item.OtherWords || item.Options || "").split(/[|,]+/).map(s => s.trim());
+          const all = [...correct, ...others].sort(() => Math.random() - 0.5);
 
-  const totalQuestions = MOCK_QUESTIONS.length;
+          return {
+            id: item.id || item.ExerciseID,
+            theme: item.theme || item.Topic || item.Theme || "",
+            instructionFr: item.Instruction_FR || "Triez les mots",
+            instructionEn: item.Instruction_EN || "Select 4 words that are related",
+            allWords: all,
+            correctGroup: correct,
+            reason: item.Reason || item.Explanation || item.CorrectExplanation_EN || `These are all related to ${item.theme || 'the topic'}.`
+          };
+        });
+        setQuestions(normalized);
+      }
+    } catch (err) {
+      console.error("Failed to load group words:", err);
+      setError("Failed to load questions.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const currentQuestion = questions[currentIndex];
+  const totalQuestions = questions.length;
   const progress = ((currentIndex + 1) / totalQuestions) * 100;
 
   const handleWordClick = (word) => {
@@ -143,6 +122,17 @@ export default function GroupWordsGamePage() {
       setScore((prev) => prev + 1);
     }
   };
+
+  if (loading) return (
+    <div className="min-h-screen flex items-center justify-center">
+      <Loader2 className="animate-spin text-blue-500 w-8 h-8" />
+    </div>
+  );
+  if (error || questions.length === 0) return (
+    <div className="min-h-screen flex items-center justify-center text-red-500">
+      {error || "No questions found for this activity."}
+    </div>
+  );
 
   let submitLabel = "Submit";
   if (isSubmitted) {

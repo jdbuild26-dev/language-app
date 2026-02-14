@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { usePracticeExit } from "@/hooks/usePracticeExit";
 import { useExerciseTimer } from "@/hooks/useExerciseTimer";
-import { Volume2, Lightbulb, MessageCircle } from "lucide-react";
+import { Volume2, Lightbulb, MessageCircle, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
 import FeedbackBanner from "@/components/ui/FeedbackBanner";
@@ -9,6 +9,8 @@ import { getFeedbackMessage } from "@/utils/feedbackMessages";
 import { useTextToSpeech } from "@/hooks/useTextToSpeech";
 import { useWritingEvaluation } from "../../hooks/useWritingEvaluation";
 import WritingFeedbackResult from "../../components/WritingFeedbackResult";
+import { Button } from "@/components/ui/button";
+import { loadMockCSV } from "@/utils/csvLoader";
 
 // Mock data for Write on Topic exercise
 const MOCK_QUESTIONS = [
@@ -63,7 +65,7 @@ export default function WriteTopicPage() {
   const handleExit = usePracticeExit();
   const { speak, isSpeaking } = useTextToSpeech();
 
-  const [questions] = useState(MOCK_QUESTIONS);
+  const [questions, setQuestions] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [userAnswer, setUserAnswer] = useState("");
   const [isCompleted, setIsCompleted] = useState(false);
@@ -73,6 +75,7 @@ export default function WriteTopicPage() {
   const [isCorrect, setIsCorrect] = useState(false);
   const [feedbackMessage, setFeedbackMessage] = useState("");
   const [score, setScore] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
 
   const { evaluation, isSubmitting, evaluate, resetEvaluation } =
     useWritingEvaluation();
@@ -88,8 +91,22 @@ export default function WriteTopicPage() {
         handleSubmit();
       }
     },
-    isPaused: isCompleted || showFeedback,
+    isPaused: isCompleted || showFeedback || isLoading,
   });
+
+  useEffect(() => {
+    const fetchQuestions = async () => {
+      try {
+        const data = await loadMockCSV("practice/writing/write_topic.csv");
+        setQuestions(data);
+      } catch (error) {
+        console.error("Error loading mock data:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchQuestions();
+  }, []);
 
   useEffect(() => {
     if (currentQuestion && !isCompleted) {
@@ -99,7 +116,7 @@ export default function WriteTopicPage() {
       resetTimer();
       resetEvaluation();
     }
-  }, [currentIndex, currentQuestion, isCompleted, resetTimer]);
+  }, [currentIndex, currentQuestion, isCompleted, resetTimer, resetEvaluation]);
 
   const handlePlaySample = () => {
     if (currentQuestion) {
@@ -146,9 +163,26 @@ export default function WriteTopicPage() {
     }
   };
 
-  const wordCount = getWordCount(userAnswer);
-  const progress =
-    questions.length > 0 ? ((currentIndex + 1) / questions.length) * 100 : 0;
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-slate-50 dark:bg-slate-900">
+        <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+      </div>
+    );
+  }
+
+  if (questions.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen bg-slate-50 dark:bg-slate-900">
+        <p className="text-xl text-slate-600 dark:text-slate-400">
+          No content available.
+        </p>
+        <Button onClick={() => handleExit()} variant="outline" className="mt-4">
+          Back
+        </Button>
+      </div>
+    );
+  }
 
   return (
     <>

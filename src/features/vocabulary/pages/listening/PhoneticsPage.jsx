@@ -47,7 +47,7 @@ export default function PhoneticsPage() {
   const loadData = async () => {
     try {
       setLoading(true);
-      const response = await fetchPracticeQuestions("B2_Phonetics");
+      const response = await fetchPracticeQuestions("listen_phonetics");
       if (response && response.data) {
         const gameQuestions = response.data.map((item) => ({
           id: item["ExerciseID"] || Math.random().toString(),
@@ -176,7 +176,7 @@ export default function PhoneticsPage() {
                       "border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700",
                       // Selected
                       isSelected &&
-                        "border-sky-400 bg-sky-50 dark:bg-sky-900/20 text-sky-600 dark:text-sky-300",
+                      "border-sky-400 bg-sky-50 dark:bg-sky-900/20 text-sky-600 dark:text-sky-300",
                     )}
                   >
                     {/* Fake Radio/Checkbox Circle */}

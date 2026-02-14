@@ -9,6 +9,8 @@ import { getFeedbackMessage } from "@/utils/feedbackMessages";
 
 import { fuzzyIncludes, matchSpeechToAnswer } from "@/utils/textComparison";
 
+import { loadMockCSV } from "@/utils/csvLoader";
+
 export default function WhatDoYouSeePage() {
   const navigate = useNavigate();
 
@@ -67,12 +69,7 @@ export default function WhatDoYouSeePage() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await fetch(
-          `${import.meta.env.VITE_API_URL}/api/practice/what-do-you-see`,
-        );
-        if (!response.ok) throw new Error("Failed to fetch data");
-        const data = await response.json();
-
+        const data = await loadMockCSV("practice/speaking/what_do_you_see.csv");
         // Shuffle or just use as is
         const shuffled = data.sort(() => 0.5 - Math.random());
         setQuestions(shuffled);
@@ -202,8 +199,8 @@ export default function WhatDoYouSeePage() {
         totalQuestions={questions.length}
         isGameOver={isGameOver}
         timerValue={formatTimer(timer)}
-        onExit={() => navigate("/vocabulary/practice")}
-        onNext={handleSubmit}
+        onExit={() => navigate("/practice")}
+        onNext={showFeedback ? handleContinue : handleSubmit}
         onRestart={handleRestart}
         isSubmitEnabled={Boolean(spokenText) && !showFeedback}
         showSubmitButton={!showFeedback}
@@ -213,7 +210,7 @@ export default function WhatDoYouSeePage() {
           {/* Image Section */}
           <div className="w-full max-w-md aspect-square bg-slate-200 dark:bg-slate-800 rounded-2xl overflow-hidden shadow-lg flex items-center justify-center">
             {currentQuestion.imageUrl &&
-            !currentQuestion.imageUrl.includes("placeholder") ? (
+              !currentQuestion.imageUrl.includes("placeholder") ? (
               <img
                 src={currentQuestion.imageUrl}
                 alt="What do you see?"
