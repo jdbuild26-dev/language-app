@@ -1,0 +1,4 @@
+id,sentence,errorIndex,explanation,timeLimitSeconds
+1,Je|suis|aller|au marché.,2,"Passé composé with être requires agreement, but 'aller' is infinitive. Should be 'allé'.",60
+2,Il|a|mangé|une pomme|rouge.,-1,No error.,60
+3,Nous|avons|finir|nos|devoirs.,2,"Past participle of 'finir' is 'fini'.",60

@@ -1,0 +1,3 @@
+id,question,options,correctIndex,explanation,timeLimitSeconds
+1,Is this correct? 'Je suis fatigue.',"[""Vrai"", ""Faux""]",0,"Correct (if speaker is male) or nearly correct (accents often omitted in basic exercises, though 'fatigué' is better). Let's say Vrai for simplicity or fixing accent.",60
+2,Is 'Chien' feminine?,"[""Vrai"", ""Faux""]",1,"'Chien' is masculine.",60

@@ -1,0 +1,6 @@
+id,correctOrder,timeLimitSeconds,ExerciseID,Level,Skill,QuestionType,Instruction_FR,Instruction_EN,ContextTitle,Sentences_Unordered,TotalSentences,AllowPartialCredit,ShuffleSentences,GrammarTag,VocabularyTag
+1,"[""Marie se réveille à sept heures."", ""Elle prend son petit déjeuner."", ""Elle prend le bus pour aller au travail."", ""Elle arrive au bureau à huit heures et demie.""]",60,RS001,A1,Reading,Reorder sentences,,,,,,,,,
+2,"[""D'abord, je vais au supermarché."", ""Ensuite, j'achète des légumes et des fruits."", ""Après, je paye à la caisse."", ""Finalement, je rentre chez moi.""]",60,RS002,A1,Reading,Reorder sentences,,,,,,,,,
+3,"[""Le matin, le soleil se lève."", ""À midi, il fait très chaud."", ""Le soir, le soleil se couche."", ""La nuit, les étoiles brillent.""]",60,RS003,A1,Reading,Reorder sentences,,,,,,,,,
+4,"[""Nous arrivons à l'aéroport."", ""Nous passons le contrôle de sécurité."", ""Nous attendons à la porte d'embarquement."", ""Nous montons dans l'avion.""]",60,RS004,A1,Reading,Reorder sentences,,,,,,,,,
+5,"[""Je choisis un livre dans la bibliothèque."", ""Je m'assieds dans un fauteuil confortable."", ""Je lis pendant deux heures."", ""Je rends le livre avant de partir.""]",60,RS005,A1,Reading,Reorder sentences,,,,,,,,,

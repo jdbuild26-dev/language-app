@@ -1,0 +1,46 @@
+id,documentType,scenario,recipient,subject,template,sampleAnswer,minWords,timeLimitSeconds
+1,Email,Write an email to your friend inviting them to your birthday party.,Ami(e),Mon anniversaire,"Cher/Chère [nom],
+
+Je t'écris pour...
+
+[corps du message]
+
+À bientôt,
+[ton nom]","Cher Pierre,
+
+Je t'écris pour t'inviter à ma fête d'anniversaire. Elle aura lieu samedi prochain à 18 heures chez moi. Il y aura de la musique et un gâteau au chocolat.
+
+J'espère te voir là-bas !
+
+À bientôt,
+Marie",20,240
+2,Letter,Write a letter to thank someone for a gift.,Grand-mère,Remerciement,"Chère Grand-mère,
+
+Je voulais te remercier pour...
+
+[corps du message]
+
+Je t'embrasse,
+[ton nom]","Chère Grand-mère,
+
+Je voulais te remercier pour le magnifique pull que tu m'as offert pour mon anniversaire. La couleur bleue est ma préférée et il me tient très chaud.
+
+Je pense à toi souvent et j'espère te voir bientôt.
+
+Je t'embrasse fort,
+Sophie",20,240
+3,Postcard,Write a postcard from your vacation.,Famille,Vacances,"Chers tous,
+
+Je suis en vacances à...
+
+[description]
+
+Bisous,
+[ton nom]","Chers tous,
+
+Je suis en vacances à Nice depuis trois jours. La plage est magnifique et l'eau est chaude. Hier, j'ai visité le vieux Nice et j'ai mangé une délicieuse salade niçoise.
+
+Je rentre dimanche !
+
+Bisous,
+Lucas",15,180
