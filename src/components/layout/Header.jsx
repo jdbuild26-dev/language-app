@@ -15,6 +15,7 @@ import ActionsGroup from "./header/ActionsGroup";
 import LanguageSelector from "./header/LanguageSelector";
 import MobileMenu from "./header/MobileMenu";
 import { DarkModeToggle } from "@/components/shared/DarkModeToggle";
+import ProfileMenu from "./header/ProfileMenu";
 
 export default function Header() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -53,16 +54,8 @@ export default function Header() {
 
             <div className="h-6 w-px bg-white/20 dark:bg-slate-600" />
 
-            {/* User Button */}
-            <UserButton
-              afterSignOutUrl="/"
-              appearance={{
-                elements: {
-                  avatarBox:
-                    "w-9 h-9 border-2 border-white shadow-sm hover:border-brand-blue-2 transition-all",
-                },
-              }}
-            />
+            {/* User Profile Menu with Role Toggle */}
+            <ProfileMenu />
           </SignedIn>
 
           <SignedOut>
