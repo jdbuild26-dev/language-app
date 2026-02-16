@@ -54,6 +54,13 @@ import OverviewPage from "@/features/teacher-dashboard/pages/OverviewPage";
 import MyStudentsPage from "@/features/teacher-dashboard/pages/MyStudentsPage";
 import ClassesPage from "@/features/teacher-dashboard/pages/ClassesPage";
 
+// Student Dashboard Feature
+import StudentLayout from "@/features/student-dashboard/layout/StudentLayout";
+import ProfilePage from "@/features/student-dashboard/pages/ProfilePage";
+import AssignmentsPage from "@/features/student-dashboard/pages/AssignmentsPage";
+import StudentProgressPage from "@/features/student-dashboard/pages/StudentProgressPage";
+import ReferralPage from "@/features/student-dashboard/pages/ReferralPage";
+
 // Practice Games
 import ChooseOptionGamePage from "@/features/vocabulary/pages/ChooseOptionGamePage";
 import HighlightWordGamePage from "@/features/vocabulary/pages/HighlightWordGamePage";
@@ -143,10 +150,15 @@ function App() {
             path="dashboard"
             element={
               <ProtectedRoute>
-                <ProgressReportPage />
+                <StudentLayout />
               </ProtectedRoute>
             }
-          />
+          >
+            <Route index element={<ProfilePage />} />
+            <Route path="assignments" element={<AssignmentsPage />} />
+            <Route path="progress" element={<StudentProgressPage />} />
+            <Route path="referral" element={<ReferralPage />} />
+          </Route>
 
           {/* Learning Feature Routes (Protected) */}
           <Route
