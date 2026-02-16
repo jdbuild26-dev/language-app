@@ -1,0 +1,3 @@
+id,instruction,sentence,answer,timeLimitSeconds
+1,Combine using 'parce que',Il ne sort pas. Il pleut.,Il ne sort pas parce qu'il pleut.,60
+2,Combine using 'qui',C'est un livre. Il est intéressant.,C'est un livre qui est intéressant.,60
