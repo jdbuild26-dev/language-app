@@ -85,6 +85,7 @@ export default function ListenOrderPage() {
 
   const handlePlaySlowItem = (text, e) => {
     e.stopPropagation();
+    window.speechSynthesis.cancel(); // Force stop existing audio
     speak(text, "fr-FR", 0.55); // Slower speed
     setPlayedAudio(true);
   };
@@ -276,7 +277,6 @@ const SortableItem = ({
   return (
     <Reorder.Item
       value={sentence}
-      onClick={(e) => onPlayItem(sentence, e)}
       className={cn(
         "flex items-center gap-3 p-4 rounded-xl border-2 transition-colors duration-200 select-none bg-white dark:bg-slate-800",
         !showFeedback &&
