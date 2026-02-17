@@ -1,9 +1,7 @@
 import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { CheckCheckbox } from "@/components/ui/checkbox"; // Assuming standard Shadcn checkbox if available, else standard input
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   ClipboardDocumentCheckIcon,
   CheckCircleIcon,
@@ -65,13 +63,23 @@ export default function AssignmentsPage() {
         </Button>
       </div>
 
-      <Tabs defaultValue="all" className="w-full">
-        <TabsList>
-          <TabsTrigger value="all">All</TabsTrigger>
-          <TabsTrigger value="active">Active</TabsTrigger>
-          <TabsTrigger value="completed">Completed</TabsTrigger>
-        </TabsList>
-      </Tabs>
+      <div className="w-full border-b border-gray-200 dark:border-gray-700">
+        <div className="flex gap-4">
+          {["all", "active", "completed"].map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setFilter(tab)}
+              className={`pb-2 text-sm font-medium capitalize transition-colors ${
+                filter === tab
+                  ? "border-b-2 border-brand-blue-1 text-brand-blue-1"
+                  : "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+              }`}
+            >
+              {tab}
+            </button>
+          ))}
+        </div>
+      </div>
 
       <div className="grid gap-4">
         {MOCK_ASSIGNMENTS.map((assign) => (

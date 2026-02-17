@@ -7,7 +7,6 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   UsersIcon,
   VideoCameraIcon,
@@ -93,14 +92,14 @@ export default function ClassesPage() {
               <div className="mt-6 pt-4 border-t dark:border-gray-700 flex justify-between items-center">
                 <div className="flex -space-x-2 overflow-hidden">
                   {[...Array(3)].map((_, i) => (
-                    <Avatar
+                    <div
                       key={i}
-                      className="inline-block h-6 w-6 ring-2 ring-white dark:ring-gray-800"
+                      className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-gray-100 ring-2 ring-white dark:bg-gray-800 dark:ring-gray-800"
                     >
-                      <AvatarFallback className="text-[10px]">
+                      <span className="text-[10px] font-medium text-gray-600 dark:text-gray-300">
                         ST
-                      </AvatarFallback>
-                    </Avatar>
+                      </span>
+                    </div>
                   ))}
                   {cls.students > 3 && (
                     <div className="h-6 w-6 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center text-[10px] ring-2 ring-white dark:ring-gray-800">

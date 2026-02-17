@@ -1,6 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import {
   BriefcaseIcon,
@@ -19,10 +18,20 @@ export default function TeacherProfilePage() {
         <div className="h-32 bg-gradient-to-r from-brand-blue-1 to-brand-blue-2"></div>
         <CardContent className="relative pt-0 px-6 pb-6">
           <div className="flex flex-col sm:flex-row items-center sm:items-end -mt-12 mb-6 gap-6">
-            <Avatar className="w-24 h-24 border-4 border-white dark:border-card-dark shadow-md">
-              <AvatarImage src="https://github.com/shadcn.png" alt="Teacher" />
-              <AvatarFallback>TC</AvatarFallback>
-            </Avatar>
+            <div className="w-24 h-24 rounded-full border-4 border-white dark:border-card-dark shadow-md bg-gray-200 dark:bg-gray-700 overflow-hidden flex items-center justify-center">
+              <img
+                src="https://github.com/shadcn.png"
+                alt="Teacher"
+                className="w-full h-full object-cover"
+                onError={(e) => {
+                  e.target.style.display = "none";
+                  e.target.nextSibling.style.display = "flex";
+                }}
+              />
+              <span className="hidden w-full h-full items-center justify-center text-2xl font-bold text-gray-500">
+                TC
+              </span>
+            </div>
             <div className="flex-1 text-center sm:text-left space-y-1">
               <div className="flex items-center justify-center sm:justify-start gap-2">
                 <h1 className="text-2xl font-bold text-gray-900 dark:text-primary-dark">
