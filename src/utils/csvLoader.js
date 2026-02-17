@@ -66,7 +66,7 @@ const FILE_TO_SLUG = {
   "grammar/grammar_rewrite.csv": "grammar_rewrite",
   "grammar/fill_blanks_options.csv": "fill_blanks_options",
   "grammar/grammar_fill_blanks.csv": "grammar_fill_blanks",
-  "grammar/grammar_fill_blanks_question.csv": "grammar_fill_blanks_question"
+  "grammar/grammar_fill_blanks_question.csv": "grammar_fill_blanks_question",
 };
 
 /**
@@ -84,20 +84,29 @@ export const loadMockCSV = async (fileName, options = {}) => {
       const params = new URLSearchParams();
       if (level) params.append("level", level);
 
-      const response = await fetch(`${API_URL}/api/practice/${slug}${params.toString() ? `?${params}` : ""}`);
+      const response = await fetch(
+        `${API_URL}/api/practice/${slug}${params.toString() ? `?${params}` : ""}`,
+      );
       if (response.ok) {
         const result = await response.json();
         // Backend returns {count, data} for generic, or Array for specialized
         const data = result.data || result;
         if (Array.isArray(data) && data.length > 0) {
-          console.log(`Successfully fetched live data for ${slug}`);
+          console.log(
+            `[DATA_SOURCE] Successfully fetched live data for ${slug} from BACKEND`,
+          );
           return data;
         }
       }
     } catch (e) {
-      console.warn(`Backend fetch failed for ${slug}, falling back to CSV:`, e);
+      console.warn(
+        `[DATA_SOURCE] Backend fetch failed for ${slug}, falling back to CSV:`,
+        e,
+      );
     }
   }
+
+  console.log(`[DATA_SOURCE] Fetching from local CSV: ${fileName}`);
 
   // Fallback to local CSV
   try {
@@ -124,7 +133,7 @@ export const loadMockCSV = async (fileName, options = {}) => {
                 ) {
                   try {
                     newRow[key] = JSON.parse(value);
-                  } catch (e) { }
+                  } catch (e) {}
                 }
               }
             }

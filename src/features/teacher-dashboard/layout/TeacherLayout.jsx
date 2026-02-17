@@ -14,17 +14,18 @@ const navigation = [
     href: "/teacher-dashboard/students",
     icon: UserGroupIcon,
   },
-  { name: "Classes", href: "/teacher-dashboard/classes", icon: CalendarIcon },
+  { name: "Classes", href: "/teacher-dashboard/classes", icon: UserGroupIcon }, // Reusing icon for now or changing to Calendar
+  { name: "Calendar", href: "/teacher-dashboard/calendar", icon: CalendarIcon },
   {
     name: "Assignments",
     href: "/teacher-dashboard/assignments",
     icon: ClipboardDocumentCheckIcon,
   },
   {
-    name: "Analytics",
-    href: "/teacher-dashboard/analytics",
-    icon: ChartBarIcon,
-  },
+    name: "Referral",
+    href: "/teacher-dashboard/referral",
+    icon: UserGroupIcon,
+  }, // Placeholder icon
 ];
 
 function classNames(...classes) {
@@ -50,7 +51,7 @@ export default function TeacherLayout() {
                     isActive
                       ? "bg-brand-blue-1 text-white"
                       : "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800",
-                    "group flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors"
+                    "group flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors",
                   )}
                   aria-current={isActive ? "page" : undefined}
                 >
@@ -59,7 +60,7 @@ export default function TeacherLayout() {
                       isActive
                         ? "text-white"
                         : "text-gray-400 group-hover:text-gray-500",
-                      "flex-shrink-0 -ml-1 mr-3 h-6 w-6"
+                      "flex-shrink-0 -ml-1 mr-3 h-6 w-6",
                     )}
                     aria-hidden="true"
                   />
@@ -70,16 +71,7 @@ export default function TeacherLayout() {
           </nav>
 
           <div className="mt-8 pt-8 border-t border-gray-200 dark:border-gray-700">
-            <Link
-              to="/dashboard"
-              className="group flex items-center px-3 py-2 text-sm font-medium rounded-md text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-            >
-              <UserGroupIcon
-                className="flex-shrink-0 -ml-1 mr-3 h-6 w-6 text-gray-400 group-hover:text-gray-500"
-                aria-hidden="true"
-              />
-              <span className="truncate">Student Dashboard</span>
-            </Link>
+            {/* Space reserved for future footer items */}
           </div>
         </aside>
 

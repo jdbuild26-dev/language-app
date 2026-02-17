@@ -72,7 +72,7 @@ export default function ListenBubblePage() {
     if (currentQuestion) {
       // Generate bubbles from sentence if not provided
       let words = [];
-      if (currentQuestion.wordBubbles) {
+      if (Array.isArray(currentQuestion.wordBubbles)) {
         words = currentQuestion.wordBubbles;
       } else {
         // Simple split by space, can be improved to handle punctuation

@@ -53,6 +53,10 @@ import TeacherLayout from "@/features/teacher-dashboard/layout/TeacherLayout";
 import OverviewPage from "@/features/teacher-dashboard/pages/OverviewPage";
 import MyStudentsPage from "@/features/teacher-dashboard/pages/MyStudentsPage";
 import ClassesPage from "@/features/teacher-dashboard/pages/ClassesPage";
+import CalendarPage from "@/features/teacher-dashboard/pages/CalendarPage";
+import TeacherAssignmentsPage from "@/features/teacher-dashboard/pages/AssignmentsPage";
+import TeacherReferralPage from "@/features/teacher-dashboard/pages/TeacherReferralPage";
+import TeacherProfilePage from "@/features/teacher-dashboard/pages/TeacherProfilePage";
 
 // Student Dashboard Feature
 import StudentLayout from "@/features/student-dashboard/layout/StudentLayout";
@@ -269,6 +273,10 @@ function App() {
             <Route index element={<OverviewPage />} />
             <Route path="students" element={<MyStudentsPage />} />
             <Route path="classes" element={<ClassesPage />} />
+            <Route path="profile" element={<TeacherProfilePage />} />
+            <Route path="calendar" element={<CalendarPage />} />
+            <Route path="assignments" element={<TeacherAssignmentsPage />} />
+            <Route path="referral" element={<TeacherReferralPage />} />
           </Route>
 
           <Route path="404" element={<NotFound />} />
