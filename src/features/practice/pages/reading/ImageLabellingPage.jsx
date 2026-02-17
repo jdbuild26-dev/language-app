@@ -70,10 +70,14 @@ export default function ImageLabellingPage() {
 
   // Initialize/Reset when index changes
   useEffect(() => {
-    resetGame();
-  }, [currentIndex]);
+    if (questions.length > 0) {
+      resetGame();
+    }
+  }, [currentIndex, questions]);
 
   const resetGame = () => {
+    if (!currentExercise) return;
+
     // Shuffle items for the bank
     const shuffled = [...currentExercise.items]
       .map((item) => item.name)

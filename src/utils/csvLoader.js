@@ -22,7 +22,7 @@ const FILE_TO_SLUG = {
   "practice/reading/match_sentence_ending.csv": "match_sentence_ending",
   "practice/reading/reorder.csv": "reorder_sentences",
   "practice/speaking/image.csv": "speak_image",
-  "practice/reading/reading_conversation.csv": "reading_conversation",
+  // "practice/reading/reading_conversation.csv": "reading_conversation",
   "practice/reading/diagram_labelling.csv": "diagram_mapping",
   "practice/reading/fill_blanks.csv": "fill_blanks",
   "practice/reading/highlight.csv": "highlight_word",
@@ -30,7 +30,7 @@ const FILE_TO_SLUG = {
   "practice/reading/image_labelling.csv": "image_labelling",
   "practice/reading/image_mcq.csv": "image_mcq",
   "practice/reading/match_desc_game.csv": "match_desc_game",
-  "practice/reading/conversation.csv": "reading_conversation",
+  // "practice/reading/conversation.csv": "reading_conversation",
   // Listening
   "practice/listening/listen_bubble.csv": "listen_bubble",
   "practice/listening/listen_interactive.csv": "listen_interactive",
@@ -93,7 +93,8 @@ export const loadMockCSV = async (fileName, options = {}) => {
         const data = result.data || result;
         if (Array.isArray(data) && data.length > 0) {
           console.log(
-            `[DATA_SOURCE] Successfully fetched live data for ${slug} from BACKEND`,
+            `[DATA_SOURCE] Successfully fetched live data for ${slug} from BACKEND. Count: ${data.length}`,
+            data[0],
           );
           return data;
         }

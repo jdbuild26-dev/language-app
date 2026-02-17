@@ -4,35 +4,60 @@ import { useExerciseTimer } from "@/hooks/useExerciseTimer";
 import { cn } from "@/lib/utils";
 import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
 import FeedbackBanner from "@/components/ui/FeedbackBanner";
-import { CheckCircle, XCircle, BookOpen, Loader2 } from "lucide-react";
-import { loadMockCSV } from "@/utils/csvLoader";
-
-// MOCK_DATA removed - migrated to CSV
+import { CheckCircle, XCircle, Loader2 } from "lucide-react";
+import { fetchSummaryCompletionData } from "@/services/vocabularyApi";
 
 export default function SummaryCompletionPage() {
   const handleExit = usePracticeExit();
 
-  const [data, setData] = useState(null);
+  // State
+  const [passageSegments, setPassageSegments] = useState([]);
+  const [blanksData, setBlanksData] = useState({});
+  const [wordBank, setWordBank] = useState([]);
+  const [passageTitle, setPassageTitle] = useState("Summary Completion");
+
   const [answers, setAnswers] = useState({}); // { 1: "option", 2: "option" }
   const [showFeedback, setShowFeedback] = useState(false);
   const [isCorrect, setIsCorrect] = useState(false);
   const [feedbackMessage, setFeedbackMessage] = useState("");
   const [score, setScore] = useState(0);
   const [isCompleted, setIsCompleted] = useState(false);
-  const [isPassageOpen, setIsPassageOpen] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const loadedData = await loadMockCSV(
-          "practice/reading/match_sentence_ending.csv",
-        );
-        if (loadedData && loadedData.length > 0) {
-          setData(loadedData[0]); // We expect one row with JSON columns
+        const data = await fetchSummaryCompletionData();
+        if (data) {
+          // Handle if data is array or single object
+          console.log("[SummaryCompletion] Raw data received:", data);
+          const row = Array.isArray(data) ? data[0] : data;
+          console.log("[SummaryCompletion] Processing row:", row);
+
+          setPassageSegments(row.passageSegments || []);
+          const blanks = row.blanksData || {};
+          setBlanksData(blanks);
+
+          console.log(
+            "[SummaryCompletion] State updates -> segments:",
+            row.passageSegments,
+            "blanks:",
+            blanks,
+          );
+
+          // Generate word bank from correct answers
+          const options = Object.values(blanks).map((b) =>
+            typeof b === "object" ? b.correct : b,
+          );
+          // Shuffle options (simple shuffle)
+          setWordBank(options.sort(() => Math.random() - 0.5));
+
+          if (row.title) setPassageTitle(row.title);
         }
-      } catch (error) {
-        console.error("Failed to load match sentence data", error);
+      } catch (err) {
+        console.error("Failed to load summary completion data", err);
+        setError("Failed to load practice data. Please try again later.");
       } finally {
         setLoading(false);
       }
@@ -41,42 +66,48 @@ export default function SummaryCompletionPage() {
   }, []);
 
   // Timer configuration
-  const { timerString, resetTimer } = useExerciseTimer({
-    duration: 120,
+  const { timerString } = useExerciseTimer({
+    duration: 300,
     mode: "timer",
     onExpire: () => {
       if (!showFeedback && !isCompleted) {
         handleSubmit();
       }
     },
-    isPaused: showFeedback || isCompleted,
+    isPaused: showFeedback || isCompleted || loading,
   });
 
-  const handleOptionSelect = (questionId, value) => {
+  const handleOptionSelect = (blankId, value) => {
     if (showFeedback) return;
-    setAnswers((prev) => ({ ...prev, [questionId]: value }));
+    setAnswers((prev) => ({ ...prev, [blankId]: value }));
   };
 
   const checkAnswers = () => {
-    if (!data) return;
-    let correctCount = 0;
-    const totalQuestions = data.questions.length;
+    if (Object.keys(blanksData).length === 0) return;
 
-    data.questions.forEach((q) => {
-      if (answers[q.id] === q.correctAnswer) {
+    let correctCount = 0;
+    const totalBlanks = Object.keys(blanksData).length;
+
+    Object.keys(blanksData).forEach((key) => {
+      const id = parseInt(key);
+      const correctVal =
+        typeof blanksData[id] === "object"
+          ? blanksData[id].correct
+          : blanksData[id];
+      if (answers[id] === correctVal) {
         correctCount++;
       }
     });
 
-    const verifyAllCorrect = correctCount === totalQuestions;
+    const verifyAllCorrect = correctCount === totalBlanks;
     setIsCorrect(verifyAllCorrect);
     setScore(correctCount);
 
     if (verifyAllCorrect) {
-      setFeedbackMessage("Excellent! All matches are correct.");
+      setFeedbackMessage("Excellent! All answers are correct.");
     } else {
       setFeedbackMessage(
-        `You got ${correctCount} out of ${totalQuestions} correct.`,
+        `You got ${correctCount} out of ${totalBlanks} correct.`,
       );
     }
 
@@ -92,14 +123,9 @@ export default function SummaryCompletionPage() {
   };
 
   const handleContinue = () => {
-    if (isCorrect) {
-      setIsCompleted(true);
-      handleExit();
-    } else {
-      // For now, exit on continue even if wrong, or we could allow retry
-      setIsCompleted(true);
-      handleExit();
-    }
+    // For now, simple exit. Could allow retry if wrong.
+    setIsCompleted(true);
+    handleExit();
   };
 
   if (loading) {
@@ -110,29 +136,42 @@ export default function SummaryCompletionPage() {
     );
   }
 
-  if (!data) {
+  if (error || !passageSegments.length) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-slate-50 dark:bg-slate-900">
-        <p className="text-xl text-slate-600 dark:text-slate-400">
-          Failed to load data.
-        </p>
+      <div className="flex flex-col items-center justify-center min-h-screen bg-slate-50 dark:bg-slate-900 p-4">
+        <div className="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 max-w-md w-full text-center">
+          <XCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
+          <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">
+            Error Loading Practice
+          </h3>
+          <p className="text-slate-500 dark:text-slate-400 mb-6">
+            {error || "No data available."}
+          </p>
+          <button
+            onClick={handleExit}
+            className="px-4 py-2 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors font-medium"
+          >
+            Go Back
+          </button>
+        </div>
       </div>
     );
   }
 
-  const allAnswered = data.questions.every((q) => answers[q.id]);
-  const progress = (Object.keys(answers).length / data.questions.length) * 100;
+  const allAnswered = Object.keys(blanksData).every((key) => answers[key]);
+  const progress =
+    (Object.keys(answers).length / Object.keys(blanksData).length) * 100;
 
   return (
     <>
       <PracticeGameLayout
-        questionType="Match Sentence Ending"
-        instructionFr="Faites correspondre les fins de phrase"
-        instructionEn="Match the sentence ending"
+        questionType="Summary Completion"
+        instructionFr="Complétez le résumé"
+        instructionEn="Complete the summary using the words provided"
         progress={progress}
         isGameOver={isCompleted}
         score={score}
-        totalQuestions={data.questions.length}
+        totalQuestions={Object.keys(blanksData).length}
         onExit={handleExit}
         onNext={handleSubmit}
         onRestart={() => window.location.reload()}
@@ -142,168 +181,119 @@ export default function SummaryCompletionPage() {
         timerValue={timerString}
       >
         <div className="flex flex-col lg:flex-row w-full max-w-7xl mx-auto gap-6 p-4 h-full md:items-stretch overflow-hidden">
-          {/* Left Column: Passage (Hidden on mobile, shown on lg) */}
-          <div className="hidden lg:flex flex-1 flex flex-col bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden min-h-[400px]">
-            {/* Header */}
+          {/* Main Passage Area */}
+          <div className="flex-1 flex flex-col bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden min-h-[400px]">
             <div className="p-6 border-b border-slate-100 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50">
               <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100">
-                {data.passageTitle}
+                {passageTitle}
               </h3>
-              <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-                {data.passageSubtitle}
-              </p>
             </div>
 
-            <div className="p-6 md:p-8 overflow-y-auto custom-scrollbar flex-1">
-              <div className="text-sm md:text-base leading-relaxed text-slate-700 dark:text-slate-300 space-y-4">
-                {data.passageContent.map((paragraph, idx) => (
-                  <p key={idx}>{paragraph}</p>
+            <div className="p-6 md:p-8 overflow-y-auto custom-scrollbar">
+              <div className="text-lg md:text-xl leading-loose text-slate-800 dark:text-slate-100 font-serif">
+                {passageSegments.map((segment, index) => {
+                  if (typeof segment === "string") {
+                    return <span key={index}>{segment}</span>;
+                  } else if (segment.id) {
+                    // It's a blank!
+                    const id = segment.id;
+                    const userAnswer = answers[id];
+                    const correctVal =
+                      typeof blanksData[id] === "object"
+                        ? blanksData[id].correct
+                        : blanksData[id];
+                    const isCorrectAnswer = userAnswer === correctVal;
+
+                    return (
+                      <span
+                        key={index}
+                        className="mx-1 inline-flex items-center relative"
+                      >
+                        <span className="inline-flex items-center justify-center px-1.5 py-0.5 rounded border border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 text-xs font-bold text-slate-500 mr-1 min-w-[20px]">
+                          {id}
+                        </span>
+
+                        {/* Dropdown */}
+                        <div className="relative inline-block mx-1">
+                          <select
+                            value={userAnswer || ""}
+                            onChange={(e) =>
+                              handleOptionSelect(id, e.target.value)
+                            }
+                            disabled={showFeedback}
+                            className={cn(
+                              "appearance-none bg-slate-50 dark:bg-slate-900 border-2 rounded-lg px-3 py-1 pr-8 text-base font-medium outline-none transition-all cursor-pointer shadow-sm",
+                              userAnswer
+                                ? "border-sky-500 text-sky-700 dark:text-sky-300 bg-white dark:bg-slate-800"
+                                : "border-slate-200 dark:border-slate-600 text-slate-500 dark:text-slate-400 min-w-[100px]",
+                              showFeedback &&
+                                isCorrectAnswer &&
+                                "border-green-500 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300",
+                              showFeedback &&
+                                !isCorrectAnswer &&
+                                "border-red-500 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300",
+                            )}
+                          >
+                            <option value="" disabled>
+                              Select...
+                            </option>
+                            {wordBank.map((word, i) => (
+                              <option key={i} value={word}>
+                                {word}
+                              </option>
+                            ))}
+                          </select>
+
+                          {/* Arrow Icon */}
+                          <div className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2">
+                            <svg
+                              className="w-4 h-4 text-slate-400"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M19 9l-7 7-7-7"
+                              />
+                            </svg>
+                          </div>
+                        </div>
+
+                        {showFeedback && !isCorrectAnswer && (
+                          <span className="text-sm font-bold text-green-600 ml-1">
+                            ({correctVal})
+                          </span>
+                        )}
+                      </span>
+                    );
+                  }
+                  return null;
+                })}
+              </div>
+            </div>
+
+            {/* Word Bank Display (Optional helper) */}
+            <div className="p-4 bg-slate-50 dark:bg-slate-800/80 border-t border-slate-200 dark:border-slate-700">
+              <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
+                Word Bank:
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {wordBank.map((word, i) => (
+                  <span
+                    key={i}
+                    className="px-2 py-1 bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded text-sm text-slate-600 dark:text-slate-300"
+                  >
+                    {word}
+                  </span>
                 ))}
               </div>
             </div>
           </div>
-
-          {/* Vertical Divider (visible on lg screens) */}
-          <div className="hidden lg:block w-px bg-slate-200 dark:bg-slate-700 self-stretch my-4" />
-
-          {/* Right Column: Questions & Dropdowns */}
-          <div className="flex-1 flex flex-col justify-start lg:max-w-md overflow-hidden">
-            <div className="bg-white dark:bg-slate-800/50 rounded-xl p-6 h-full overflow-y-auto custom-scrollbar border border-slate-200 dark:border-slate-700 shadow-sm">
-              <h2 className="text-xl font-bold text-slate-800 dark:text-white mb-6">
-                Match the sentence endings
-              </h2>
-
-              <div className="space-y-8">
-                {data.questions.map((q) => {
-                  const userAnswer = answers[q.id];
-                  const isCorrectAnswer = userAnswer === q.correctAnswer;
-
-                  return (
-                    <div key={q.id} className="flex flex-col gap-3">
-                      <div className="flex items-start gap-3">
-                        <div className="flex-shrink-0 w-6 h-6 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center font-bold text-xs text-slate-500 border border-slate-200 dark:border-slate-600 mt-0.5">
-                          {q.id}.
-                        </div>
-                        <p className="text-base text-slate-800 dark:text-slate-200 font-medium">
-                          {q.text}
-                        </p>
-                      </div>
-
-                      {/* Dropdown immediately below the question text */}
-                      <div className="pl-9">
-                        <select
-                          value={userAnswer || ""}
-                          onChange={(e) =>
-                            handleOptionSelect(q.id, e.target.value)
-                          }
-                          disabled={showFeedback}
-                          className={cn(
-                            "w-full p-3 rounded-lg border bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 outline-none transition-all appearance-none cursor-pointer text-sm shadow-sm",
-                            "focus:ring-2 focus:ring-sky-500 border-slate-200 dark:border-slate-700 hover:border-sky-400 dark:hover:border-sky-500",
-                            showFeedback &&
-                              isCorrectAnswer &&
-                              "border-green-500 bg-green-50 dark:bg-green-900/20 text-green-900 dark:text-green-100",
-                            showFeedback &&
-                              !isCorrectAnswer &&
-                              "border-red-500 bg-red-50 dark:bg-red-900/20 text-red-900 dark:text-red-100",
-                          )}
-                        >
-                          <option value="" disabled>
-                            Select a word
-                          </option>
-                          {data.options.map((opt, i) => (
-                            <option key={i} value={opt}>
-                              {opt}
-                            </option>
-                          ))}
-                        </select>
-
-                        {showFeedback && (
-                          <div className="mt-2 text-sm">
-                            {isCorrectAnswer ? (
-                              <div className="flex items-center gap-2 text-green-600 dark:text-green-400 font-medium">
-                                <CheckCircle className="w-4 h-4" /> Correct
-                              </div>
-                            ) : (
-                              <div className="flex items-start gap-2 text-red-600 dark:text-red-400">
-                                <XCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
-                                <div className="flex flex-col">
-                                  <span className="font-medium">Incorrect</span>
-                                  <span className="text-slate-500 dark:text-slate-400 text-xs mt-0.5">
-                                    Correct answer: {q.correctAnswer}
-                                  </span>
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-
-              {/* Mobile Only: Floating See Passage Button */}
-              {!showFeedback && (
-                <div className="fixed bottom-24 right-6 z-40 lg:hidden">
-                  <button
-                    onClick={() => setIsPassageOpen(true)}
-                    className="flex items-center justify-center gap-2 px-6 py-3 bg-sky-500 hover:bg-sky-600 text-white font-bold rounded-full shadow-lg shadow-sky-500/30 transition-all active:scale-95 animate-in slide-in-from-bottom duration-500"
-                  >
-                    <BookOpen className="w-5 h-5" />
-                    See Passage
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
         </div>
       </PracticeGameLayout>
-
-      {/* Passage Modal for Mobile */}
-      {isPassageOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm lg:hidden">
-          <div className="w-full max-w-lg bg-white dark:bg-slate-900 rounded-2xl shadow-2xl flex flex-col max-h-[85vh] overflow-hidden border border-slate-200 dark:border-slate-800 animate-in fade-in zoom-in duration-200">
-            {/* Modal Header */}
-            <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-slate-50 dark:bg-slate-900">
-              <div>
-                <h3 className="text-lg font-bold text-slate-900 dark:text-white leading-tight">
-                  {data.passageTitle}
-                </h3>
-                <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-                  Read carefully to find the answers
-                </p>
-              </div>
-              <button
-                onClick={() => setIsPassageOpen(false)}
-                className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400 transition-colors"
-                aria-label="Close passage"
-              >
-                <XCircle className="w-6 h-6" />
-              </button>
-            </div>
-
-            {/* Modal Content */}
-            <div className="p-6 md:p-8 overflow-y-auto custom-scrollbar flex-1 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 leading-relaxed space-y-4">
-              {data.passageContent.map((paragraph, idx) => (
-                <p key={idx} className="text-[15px] md:text-base">
-                  {paragraph}
-                </p>
-              ))}
-            </div>
-
-            {/* Modal Footer */}
-            <div className="p-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900">
-              <button
-                onClick={() => setIsPassageOpen(false)}
-                className="w-full p-4 bg-sky-500 hover:bg-sky-600 text-white font-bold rounded-xl shadow-lg shadow-sky-200 dark:shadow-none transition-all active:scale-[0.98]"
-              >
-                Back to Questions
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Feedback Banner */}
       {showFeedback && (

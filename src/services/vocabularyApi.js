@@ -21,8 +21,9 @@ export async function fetchVocabulary({
     params.append("sub_category", subCategory);
   }
 
-  const url = `${API_BASE_URL}/api/vocabulary${params.toString() ? "?" + params : ""
-    }`;
+  const url = `${API_BASE_URL}/api/vocabulary${
+    params.toString() ? "?" + params : ""
+  }`;
   const response = await fetch(url);
 
   if (!response.ok) {
@@ -408,4 +409,28 @@ export async function fetchLearningQueue({
   }
 
   return response.json();
+}
+
+/**
+ * Fetch specialized Complete Passage data
+ */
+export async function fetchCompletePassageData() {
+  const response = await fetch(
+    `${API_BASE_URL}/api/practice/complete_passage_dropdown`,
+  );
+  if (!response.ok) throw new Error("Failed to fetch complete passage data");
+  const result = await response.json();
+  return result.data || result;
+}
+
+/**
+ * Fetch specialized Summary Completion data
+ */
+export async function fetchSummaryCompletionData() {
+  const response = await fetch(
+    `${API_BASE_URL}/api/practice/summary_completion`,
+  );
+  if (!response.ok) throw new Error("Failed to fetch summary completion data");
+  const result = await response.json();
+  return result.data || result;
 }
