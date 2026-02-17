@@ -2,15 +2,42 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   ArrowLeft,
-  RefreshCw,
   CheckCircle,
   XCircle,
   Loader2,
+  ImageOff,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { loadMockCSV } from "@/utils/csvLoader";
+import TranslationBubble from "@/features/practice/components/shared/TranslationBubble";
 
-// QUESTIONS removed - migrated to CSV
+// Simple dictionary for demo translations
+const TRANSLATIONS = {
+  Une: "A",
+  femme: "woman",
+  mange: "is eating",
+  une: "an",
+  pomme: "apple",
+  Le: "The",
+  chat: "cat",
+  dort: "is sleeping",
+  sur: "on",
+  le: "the",
+  lit: "bed",
+  Un: "A",
+  garçon: "boy",
+  court: "runs",
+  dans: "in",
+  parc: "park",
+  L: "The",
+  homme: "man",
+  lit: "reads",
+  livre: "book",
+  La: "The",
+  fille: "girl",
+  boit: "drinks",
+  eau: "water",
+};
 
 export default function MatchDescToImagePage() {
   const navigate = useNavigate();
@@ -95,10 +122,32 @@ export default function MatchDescToImagePage() {
     }
   };
 
+  const handleImageError = (e) => {
+    e.target.onerror = null; // Prevent infinite loop
+    e.target.src = "https://placehold.co/400?text=Image+Not+Found"; // Fallback placeholder
+    // Alternatively, could set a class on parent to show an icon instead
+  };
+
   // derived state for UI
   const isCorrectSelection =
     isChecked &&
     currentQuestion.images.find((img) => img.id === selectedImageId)?.isCorrect;
+
+  // Helper to render interactive sentence
+  const renderInteractiveDescription = (text) => {
+    return text.split(" ").map((word, index) => {
+      // Remove punctuation for lookup
+      const cleanWord = word.replace(/[.,!?;:]/g, "");
+      const translation = TRANSLATIONS[cleanWord] || "?";
+
+      return (
+        <React.Fragment key={index}>
+          <TranslationBubble text={word} translation={translation} />
+          {index < text.split(" ").length - 1 && " "}
+        </React.Fragment>
+      );
+    });
+  };
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-900 flex flex-col">
@@ -128,11 +177,14 @@ export default function MatchDescToImagePage() {
         <>
           {/* Main Content */}
           <div className="flex-1 max-w-5xl mx-auto w-full p-6 flex flex-col items-center justify-center gap-12">
-            {/* Description Text */}
+            {/* Description Text with Translation Bubbles */}
             <div className="text-center space-y-4">
-              <h2 className="text-3xl md:text-4xl font-bold text-slate-800 dark:text-white transition-all">
-                {currentQuestion.description}
+              <h2 className="text-3xl md:text-4xl font-bold text-slate-800 dark:text-white transition-all leading-relaxed">
+                {renderInteractiveDescription(currentQuestion.description)}
               </h2>
+              <p className="text-slate-500 dark:text-slate-400 text-sm">
+                Hover over words for translation
+              </p>
             </div>
 
             {/* Image Grid */}
@@ -157,7 +209,7 @@ export default function MatchDescToImagePage() {
                     onClick={() => handleImageClick(image.id)}
                     disabled={isChecked}
                     className={cn(
-                      "relative aspect-square rounded-2xl overflow-hidden transition-all duration-300 group",
+                      "relative aspect-square rounded-2xl overflow-hidden transition-all duration-300 group bg-slate-100",
                       "hover:scale-[1.02] active:scale-[0.98]",
                       "ring-offset-4 ring-offset-slate-50 dark:ring-offset-slate-900",
                       ringColor,
@@ -165,12 +217,15 @@ export default function MatchDescToImagePage() {
                     )}
                   >
                     <img
-                      src={image.src}
+                      src={
+                        image.src || "https://placehold.co/400?text=No+Image"
+                      }
                       alt="Option"
                       className="w-full h-full object-cover"
+                      onError={handleImageError}
                     />
 
-                    {/* Overlay Badge for "Original" - mimicking screenshot logic mainly aesthetic here */}
+                    {/* Overlay Badge for "Option" */}
                     <div className="absolute top-3 left-3 px-2 py-1 bg-black/50 backdrop-blur-md rounded-md text-xs text-white font-medium">
                       Option
                     </div>

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { usePracticeExit } from "@/hooks/usePracticeExit";
 import { useExerciseTimer } from "@/hooks/useExerciseTimer";
 import { CheckCircle, XCircle, Loader2 } from "lucide-react";
+import { fetchCompletePassageData } from "@/services/vocabularyApi";
 import { loadMockCSV } from "@/utils/csvLoader";
 import { cn } from "@/lib/utils";
 import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
@@ -21,6 +22,7 @@ export default function CompletePassagePage() {
   const [blanksData, setBlanksData] = useState({});
   const [fullText, setFullText] = useState("");
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   const [answers, setAnswers] = useState({}); // { 1: "option", 2: "option" }
   const [showFeedback, setShowFeedback] = useState(false);
@@ -31,19 +33,53 @@ export default function CompletePassagePage() {
 
   useEffect(() => {
     const fetchData = async () => {
+      let data = null;
       try {
-        const data = await loadMockCSV("practice/reading/complete_passage.csv");
-        if (data && data.length > 0) {
-          const row = data[0];
-          setPassageSegments(row.passageSegments || []);
-          setBlanksData(row.blanksData || {});
-          setFullText(row.fullText || "");
+        console.log(
+          "[CompletePassagePage] Attempting to fetch data from BACKEND API...",
+        );
+        data = await fetchCompletePassageData();
+        if (data) {
+          console.log(
+            "[CompletePassagePage] Data Source: BACKEND API (Success)",
+          );
         }
-      } catch (error) {
-        console.error("Error loading complete passage data", error);
-      } finally {
-        setLoading(false);
+      } catch (err) {
+        console.warn(
+          "[CompletePassagePage] Backend fetch failed, falling back to local CSV",
+          err,
+        );
+        // Fallback to CSV
+        try {
+          console.log(
+            "[CompletePassagePage] Attempting to fetch data from LOCAL CSV...",
+          );
+          data = await loadMockCSV(
+            "practice/reading/complete_passage_dropdown.csv",
+          );
+          if (data && data.length > 0) {
+            console.log(
+              "[CompletePassagePage] Data Source: LOCAL CSV (Success)",
+            );
+          }
+        } catch (csvErr) {
+          console.error("CSV Fallback failed", csvErr);
+          setError("Failed to load practice data from both API and CSV.");
+        }
       }
+
+      if (data) {
+        // If API returns array (like CSV loader did)
+        const row = Array.isArray(data) ? data[0] : data;
+
+        setPassageSegments(row.passageSegments || []);
+        setBlanksData(row.blanksData || {});
+        setFullText(row.fullText || "");
+      } else if (!error) {
+        // If we didn't set error above but have no data
+        // setError("No data found."); // Optional: verify if we want to show error here
+      }
+      setLoading(false);
     };
     fetchData();
   }, []);
@@ -130,6 +166,26 @@ export default function CompletePassagePage() {
     return (
       <div className="flex items-center justify-center min-h-screen bg-slate-50 dark:bg-slate-900">
         <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen bg-slate-50 dark:bg-slate-900 p-4">
+        <div className="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 max-w-md w-full text-center">
+          <XCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
+          <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">
+            Error Loading Practice
+          </h3>
+          <p className="text-slate-500 dark:text-slate-400 mb-6">{error}</p>
+          <button
+            onClick={handleExit}
+            className="px-4 py-2 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors font-medium"
+          >
+            Go Back
+          </button>
+        </div>
       </div>
     );
   }
