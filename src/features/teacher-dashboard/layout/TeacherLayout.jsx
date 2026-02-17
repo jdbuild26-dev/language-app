@@ -1,4 +1,4 @@
-import { Outlet, Link, useLocation } from "react-router-dom";
+import { Outlet, Link, useLocation, useNavigate } from "react-router-dom";
 import {
   HomeIcon,
   UserGroupIcon,
@@ -34,6 +34,8 @@ function classNames(...classes) {
 
 export default function TeacherLayout() {
   const location = useLocation();
+  const navigate = useNavigate();
+
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-body-dark flex flex-col">
@@ -71,8 +73,22 @@ export default function TeacherLayout() {
           </nav>
 
           <div className="mt-8 pt-8 border-t border-gray-200 dark:border-gray-700">
-            {/* Space reserved for future footer items */}
+            <button
+              onClick={() => {
+                localStorage.setItem("active_role", "learner");
+                window.dispatchEvent(new Event("roleChange"));
+                navigate("/dashboard");
+              }}
+              className="w-full group flex items-center px-3 py-2 text-sm font-medium rounded-md text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+            >
+              <ChartBarIcon
+                className="flex-shrink-0 -ml-1 mr-3 h-6 w-6 text-gray-400 group-hover:text-gray-500"
+                aria-hidden="true"
+              />
+              <span className="truncate">Student Dashboard</span>
+            </button>
           </div>
+
         </aside>
 
         {/* Main Content */}

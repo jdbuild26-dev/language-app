@@ -1,6 +1,10 @@
-import { Fragment } from "react";
+import { Fragment, useState, useEffect } from "react";
 import { Dialog, Transition } from "@headlessui/react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
+import { useTeacherProfile } from "@/hooks/useTeacherProfile";
+import TeacherOnboardingModal from "@/features/auth/components/TeacherOnboardingModal";
+import { AcademicCapIcon, UserCircleIcon } from "@heroicons/react/24/outline";
+
 import { SignedIn, SignedOut, UserButton } from "@clerk/clerk-react";
 import {
   UserGroupIcon,
@@ -25,6 +29,61 @@ export default function MobileMenu({
   friends,
   notifications,
 }) {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { needsOnboarding: needsTeacherOnboarding, refreshProfile: refreshTeacherProfile } = useTeacherProfile();
+  const [showTeacherOnboarding, setShowTeacherOnboarding] = useState(false);
+
+  // Initialize role from localStorage or default to 'learner'
+  const [role, setRole] = useState(() => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("active_role") || "learner";
+    }
+    return "learner";
+  });
+
+  // Persist role changes
+  useEffect(() => {
+    localStorage.setItem("active_role", role);
+    window.dispatchEvent(new Event("roleChange"));
+  }, [role]);
+
+  // Listen for external role changes
+  useEffect(() => {
+    const handleRoleChange = () => {
+      const newRole = localStorage.getItem("active_role") || "learner";
+      if (newRole !== role) {
+        setRole(newRole);
+      }
+    };
+    window.addEventListener("roleChange", handleRoleChange);
+    return () => window.removeEventListener("roleChange", handleRoleChange);
+  }, [role]);
+
+  const isTeacher = role === "teacher";
+
+  const toggleRole = () => {
+    if (role === "learner") {
+      if (needsTeacherOnboarding) {
+        setShowTeacherOnboarding(true);
+        return;
+      }
+      const newRole = "teacher";
+      setRole(newRole);
+      if (location.pathname.startsWith("/dashboard")) {
+        navigate("/teacher-dashboard");
+        setIsOpen(false);
+      }
+    } else {
+      const newRole = "learner";
+      setRole(newRole);
+      if (location.pathname.startsWith("/teacher-dashboard")) {
+        navigate("/dashboard");
+        setIsOpen(false);
+      }
+    }
+  };
+
   return (
     <Transition show={isOpen} as={Fragment}>
       <Dialog as="div" className="relative z-50 md:hidden" onClose={setIsOpen}>
@@ -71,16 +130,70 @@ export default function MobileMenu({
               <div className="mt-6 px-6">
                 <SignedIn>
                   <div className="space-y-8">
+                    {/* Role Toggle Switch Mobile */}
+                    <div
+                      onClick={(e) => {
+                        e.preventDefault();
+                        toggleRole();
+                      }}
+                      className={cn(
+                        "cursor-pointer relative flex items-center justify-between p-3 rounded-xl transition-colors border select-none",
+                        isTeacher
+                          ? "bg-emerald-50 border-emerald-200 dark:bg-emerald-950/30 dark:border-emerald-900"
+                          : "bg-blue-50 border-blue-200 dark:bg-blue-950/30 dark:border-blue-900"
+                      )}
+                    >
+                      <div className="flex items-center gap-3 px-2">
+                        {isTeacher ? (
+                          <AcademicCapIcon className="h-6 w-6 text-emerald-600 dark:text-emerald-400" />
+                        ) : (
+                          <UserCircleIcon className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+                        )}
+                        <span
+                          className={cn(
+                            "text-sm font-bold uppercase tracking-wider",
+                            isTeacher
+                              ? "text-emerald-700 dark:text-emerald-300"
+                              : "text-blue-700 dark:text-blue-300"
+                          )}
+                        >
+                          {isTeacher ? "Teaching Mode" : "Learning Mode"}
+                        </span>
+                      </div>
+
+                      <div
+                        className={cn(
+                          "relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2",
+                          isTeacher ? "bg-emerald-500" : "bg-blue-500"
+                        )}
+                      >
+                        <span
+                          className={cn(
+                            "inline-block h-4 w-4 transform rounded-full bg-white transition duration-200 ease-in-out",
+                            isTeacher ? "translate-x-6" : "translate-x-1"
+                          )}
+                        />
+                      </div>
+                    </div>
+
                     {/* Dashboard Link Mobile */}
-                    <Link to="/dashboard" onClick={() => setIsOpen(false)}>
+                    <Link
+                      to={isTeacher ? "/teacher-dashboard" : "/dashboard"}
+                      onClick={() => setIsOpen(false)}
+                    >
                       <Button
                         variant="ghost"
                         className="w-full justify-start text-lg font-semibold text-gray-900 dark:text-white hover:bg-gray-50 dark:hover:bg-slate-800"
                       >
-                        <UserGroupIcon className="mr-3 h-6 w-6 text-brand-blue-1" />
-                        Dashboard
+                        {isTeacher ? (
+                          <AcademicCapIcon className="mr-3 h-6 w-6 text-emerald-600" />
+                        ) : (
+                          <UserGroupIcon className="mr-3 h-6 w-6 text-brand-blue-1" />
+                        )}
+                        {isTeacher ? "Teacher Dashboard" : "Student Dashboard"}
                       </Button>
                     </Link>
+
 
                     {/* Streaks Mobile */}
                     <button
@@ -108,6 +221,7 @@ export default function MobileMenu({
                     </button>
 
                     {/* Streak Expanded Content */}
+
                     {activeSection === "streak" && (
                       <div className="animate-fade-in rounded-xl bg-brand-yellow-1/30 p-4 text-center border border-brand-yellow-1">
                         <p className="text-sm text-gray-700 dark:text-slate-300 mb-3">
@@ -330,6 +444,18 @@ export default function MobileMenu({
           </Transition.Child>
         </div>
       </Dialog>
+      {showTeacherOnboarding && (
+        <TeacherOnboardingModal
+          onComplete={() => {
+            setShowTeacherOnboarding(false);
+            refreshTeacherProfile();
+            setRole("teacher");
+            navigate("/teacher-dashboard");
+            setIsOpen(false);
+          }}
+        />
+      )}
     </Transition>
+
   );
 }
