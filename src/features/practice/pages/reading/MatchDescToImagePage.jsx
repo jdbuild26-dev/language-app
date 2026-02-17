@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   ArrowLeft,
@@ -7,6 +7,7 @@ import {
   XCircle,
   Loader2,
 } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { loadMockCSV } from "@/utils/csvLoader";
 
 // QUESTIONS removed - migrated to CSV

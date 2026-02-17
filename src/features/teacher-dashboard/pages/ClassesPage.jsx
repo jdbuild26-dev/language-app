@@ -1,364 +1,127 @@
-import { useState } from "react";
-import { useUser } from "@clerk/clerk-react";
 import {
-  UserGroupIcon,
-  CalendarIcon,
-  PlusIcon,
-  XMarkIcon,
-  TrashIcon,
-} from "@heroicons/react/24/outline";
-import { Loader2 } from "lucide-react";
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
-  useTeacherGroups,
-  useCreateGroup, // Restored
-  useDeleteGroup,
-  useAddStudentsToGroup,
-} from "@/hooks/useGroups";
-import { useTeacherStudents } from "@/hooks/useTeacherStudents"; // Restored
-import { useTeacherProfile } from "@/hooks/useTeacherProfile"; // Added debug import // Restored
+  UsersIcon,
+  VideoCameraIcon,
+  ClockIcon,
+  EllipsisHorizontalIcon,
+  PlusIcon,
+} from "@heroicons/react/24/outline";
+
+const MOCK_CLASSES = [
+  {
+    id: 1,
+    name: "Beginner French - Group A",
+    level: "A1",
+    students: 5,
+    schedule: "Mon, Wed 10:00 AM",
+    nextSession: "Today, 10:00 AM",
+    link: "https://meet.google.com/abc-defg-hij",
+    color: "bg-blue-100 text-blue-700",
+  },
+  {
+    id: 2,
+    name: "Intermediate Business English",
+    level: "B2",
+    students: 3,
+    schedule: "Tue, Thu 2:00 PM",
+    nextSession: "Tomorrow, 2:00 PM",
+    link: "https://meet.google.com/xyz-uvwx-yz",
+    color: "bg-purple-100 text-purple-700",
+  },
+  {
+    id: 3,
+    name: "IELTS Preparation",
+    level: "Advanced",
+    students: 8,
+    schedule: "Fri 9:00 AM",
+    nextSession: "Fri, Feb 20",
+    link: "https://meet.google.com/lmn-opqr-stu",
+    color: "bg-green-100 text-green-700",
+  },
+];
 
 export default function ClassesPage() {
-  const { data: groups, isLoading } = useTeacherGroups();
-  const [showCreateGroup, setShowCreateGroup] = useState(false);
-  const deleteGroupMutation = useDeleteGroup();
-
-  // Debug
-  const {
-    profile,
-    isLoading: isProfileLoading,
-    refreshProfile,
-  } = useTeacherProfile();
-  const { user } = useUser();
-  const [isCreatingProfile, setIsCreatingProfile] = useState(false);
-
-  // Debug log
-  // console.log("ClassesPage Profile State:", { profile, isProfileLoading });
-
-  if (isLoading || isProfileLoading) {
-    return (
-      <div className="flex justify-center items-center h-64">
-        <Loader2 className="h-8 w-8 animate-spin text-brand-blue-1" />
-      </div>
-    );
-  }
-
-  // Temporary Onboarding Handling
-  if (!profile) {
-    const handleCreateProfile = async () => {
-      try {
-        setIsCreatingProfile(true);
-        const { createTeacherProfile } = await import("@/services/userApi");
-
-        await createTeacherProfile({
-          clerkUserId: user.id,
-          teachingLanguages: ["French"],
-          instructionLanguage: "English",
-          experience: {
-            years: 0,
-            studentsTaught: 0,
-            hoursTaught: 0,
-          },
-        });
-
-        // Refresh to get the new profile
-        await refreshProfile();
-      } catch (error) {
-        console.error("Failed to create profile:", error);
-        alert("Failed to create teacher profile. Please try again.");
-      } finally {
-        setIsCreatingProfile(false);
-      }
-    };
-
-    return (
-      <div className="flex flex-col items-center justify-center h-96 space-y-4 text-center">
-        <div className="bg-blue-50 p-4 rounded-full">
-          <UserGroupIcon className="h-12 w-12 text-brand-blue-1" />
-        </div>
-        <h2 className="text-2xl font-bold text-gray-900">One Last Step!</h2>
-        <p className="text-gray-500 max-w-md">
-          To start managing classes, we need to set up your teacher profile.
-          This will only take a second.
-        </p>
-        <Button
-          onClick={handleCreateProfile}
-          disabled={isCreatingProfile}
-          className="mt-4"
-        >
-          {isCreatingProfile && (
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-          )}
-          Complete Teacher Setup
-        </Button>
-      </div>
-    );
-  }
-
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 animate-fade-in">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-primary-dark">
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-primary-dark">
             My Classes
           </h1>
-          <p className="text-gray-500 dark:text-secondary-dark mt-1">
-            Organize students into groups for easier management.
+          <p className="text-gray-500 dark:text-secondary-dark">
+            Manage your class groups and schedules.
           </p>
         </div>
-        <Button
-          onClick={() => setShowCreateGroup(true)}
-          className="flex items-center gap-2"
-        >
-          <PlusIcon className="h-4 w-4" />
-          Create Class
+        <Button>
+          <PlusIcon className="w-4 h-4 mr-2" /> Create Class
         </Button>
       </div>
 
-      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {groups?.map((group) => (
-          <Card
-            key={group.id}
-            className="hover:shadow-md transition-shadow cursor-pointer border-l-4 border-l-brand-blue-1 group relative"
-          >
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                if (confirm("Are you sure you want to delete this group?")) {
-                  deleteGroupMutation.mutate(group.id);
-                }
-              }}
-              className="absolute top-2 right-2 p-1 text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
-            >
-              <TrashIcon className="h-4 w-4" />
-            </button>
-            <CardHeader className="pb-2">
-              <div className="flex justify-between items-start">
-                <Badge variant="secondary" className="mb-2">
-                  {group.level}
-                </Badge>
-                <span className="text-xs text-gray-400 font-mono">
-                  {group.id.slice(0, 8)}...
-                </span>
-              </div>
-              <CardTitle className="text-lg pr-6">{group.name}</CardTitle>
+      <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-6">
+        {MOCK_CLASSES.map((cls) => (
+          <Card key={cls.id} className="hover:shadow-md transition-shadow">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <Badge variant="secondary" className={cls.color}>
+                {cls.level}
+              </Badge>
+              <Button variant="ghost" size="icon" className="h-8 w-8">
+                <EllipsisHorizontalIcon className="w-5 h-5 text-gray-500" />
+              </Button>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-secondary-dark">
-                  <UserGroupIcon className="h-4 w-4" />
-                  <span>
-                    {group.studentCount}{" "}
-                    {group.studentCount === 1 ? "Student" : "Students"}
-                  </span>
+              <CardTitle className="text-lg mb-2">{cls.name}</CardTitle>
+              <div className="space-y-3 text-sm text-gray-500 dark:text-gray-400">
+                <div className="flex items-center gap-2">
+                  <ClockIcon className="w-4 h-4" />
+                  {cls.schedule}
                 </div>
-                <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-secondary-dark">
-                  <CalendarIcon className="h-4 w-4" />
-                  <span>{group.schedule || "No schedule set"}</span>
+                <div className="flex items-center gap-2">
+                  <UsersIcon className="w-4 h-4" />
+                  {cls.students} Students Enrolled
                 </div>
-                {/* Visual indicator for students would require fetching student details or storing basic info in group */}
+              </div>
+
+              <div className="mt-6 pt-4 border-t dark:border-gray-700 flex justify-between items-center">
+                <div className="flex -space-x-2 overflow-hidden">
+                  {[...Array(3)].map((_, i) => (
+                    <Avatar
+                      key={i}
+                      className="inline-block h-6 w-6 ring-2 ring-white dark:ring-gray-800"
+                    >
+                      <AvatarFallback className="text-[10px]">
+                        ST
+                      </AvatarFallback>
+                    </Avatar>
+                  ))}
+                  {cls.students > 3 && (
+                    <div className="h-6 w-6 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center text-[10px] ring-2 ring-white dark:ring-gray-800">
+                      +{cls.students - 3}
+                    </div>
+                  )}
+                </div>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="gap-2"
+                  onClick={() => window.open(cls.link, "_blank")}
+                >
+                  <VideoCameraIcon className="w-4 h-4" />
+                  Join Meet
+                </Button>
               </div>
             </CardContent>
           </Card>
         ))}
-
-        {/* Empty State Action */}
-        <button
-          onClick={() => setShowCreateGroup(true)}
-          className="flex flex-col items-center justify-center h-full min-h-[200px] border-2 border-dashed border-gray-200 dark:border-subtle-dark rounded-xl text-gray-400 hover:text-brand-blue-1 hover:border-brand-blue-1 hover:bg-brand-blue-1/5 transition-all"
-        >
-          <PlusIcon className="h-10 w-10 mb-2" />
-          <span className="font-medium">Create New Class</span>
-        </button>
-      </div>
-
-      {showCreateGroup && (
-        <CreateGroupModal onClose={() => setShowCreateGroup(false)} />
-      )}
-    </div>
-  );
-}
-
-function CreateGroupModal({ onClose }) {
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-      <div className="bg-white dark:bg-card-dark rounded-xl shadow-xl w-full max-w-lg overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-        <div className="flex justify-between items-center p-6 border-b border-gray-100 dark:border-subtle-dark">
-          <h2 className="text-xl font-bold text-gray-900 dark:text-primary-dark">
-            Create New Class
-          </h2>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-500 transition-colors"
-          >
-            <XMarkIcon className="h-6 w-6" />
-          </button>
-        </div>
-
-        <CreateGroupForm onClose={onClose} />
       </div>
     </div>
-  );
-}
-
-function CreateGroupForm({ onClose }) {
-  const [name, setName] = useState("");
-  const [level, setLevel] = useState("A1");
-  const [schedule, setSchedule] = useState("");
-  const [selectedStudents, setSelectedStudents] = useState([]);
-
-  const { data: students, isLoading: isLoadingStudents } = useTeacherStudents();
-  const createGroupMutation = useCreateGroup();
-  const addStudentsMutation = useAddStudentsToGroup();
-
-  const toggleStudent = (id) => {
-    if (selectedStudents.includes(id)) {
-      setSelectedStudents(selectedStudents.filter((s) => s !== id));
-    } else {
-      setSelectedStudents([...selectedStudents, id]);
-    }
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!name) return;
-
-    try {
-      const newGroup = await createGroupMutation.mutateAsync({
-        name,
-        level,
-        schedule,
-      });
-
-      if (selectedStudents.length > 0) {
-        await addStudentsMutation.mutateAsync({
-          groupId: newGroup.id,
-          studentIds: selectedStudents,
-        });
-      }
-
-      onClose();
-    } catch (error) {
-      console.error("Failed to create class:", error);
-    }
-  };
-
-  return (
-    <form onSubmit={handleSubmit} className="p-6 space-y-4">
-      <div className="space-y-2">
-        <label className="text-sm font-medium text-gray-700 dark:text-secondary-dark">
-          Class Name
-        </label>
-        <Input
-          placeholder="e.g., A1 Morning Batch"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          required
-        />
-      </div>
-
-      <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <label className="text-sm font-medium text-gray-700 dark:text-secondary-dark">
-            Level
-          </label>
-          <select
-            className="w-full h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-            value={level}
-            onChange={(e) => setLevel(e.target.value)}
-          >
-            {["A1", "A2", "B1", "B2", "C1", "C2"].map((l) => (
-              <option key={l} value={l}>
-                {l}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div className="space-y-2">
-          <label className="text-sm font-medium text-gray-700 dark:text-secondary-dark">
-            Schedule (Optional)
-          </label>
-          <Input
-            placeholder="e.g., Mon/Wed 9AM"
-            value={schedule}
-            onChange={(e) => setSchedule(e.target.value)}
-          />
-        </div>
-      </div>
-
-      <div className="space-y-2">
-        <label className="text-sm font-medium text-gray-700 dark:text-secondary-dark">
-          Select Students ({selectedStudents.length})
-        </label>
-        <div className="border rounded-md max-h-40 overflow-y-auto p-2 bg-gray-50 dark:bg-elevated-2">
-          {isLoadingStudents ? (
-            <div className="flex justify-center p-4">
-              <Loader2 className="h-4 w-4 animate-spin text-gray-400" />
-            </div>
-          ) : !students || students.length === 0 ? (
-            <p className="text-sm text-gray-400 p-2">
-              No students found. Link students from the 'My Students' page
-              first.
-            </p>
-          ) : (
-            <div className="space-y-1">
-              {students.map((student) => (
-                <div
-                  key={student.studentId}
-                  onClick={() => toggleStudent(student.studentId)}
-                  className={`flex items-center gap-3 p-2 rounded-md cursor-pointer transition-colors ${
-                    selectedStudents.includes(student.studentId)
-                      ? "bg-brand-blue-1/10 border border-brand-blue-1/20"
-                      : "hover:bg-gray-100 dark:hover:bg-elevated-3 border border-transparent"
-                  }`}
-                >
-                  <div
-                    className={`w-4 h-4 rounded border flex items-center justify-center ${
-                      selectedStudents.includes(student.studentId)
-                        ? "bg-brand-blue-1 border-brand-blue-1"
-                        : "border-gray-300"
-                    }`}
-                  >
-                    {selectedStudents.includes(student.studentId) && (
-                      <div className="w-2 h-2 bg-white rounded-full" />
-                    )}
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-gray-900 dark:text-primary-dark">
-                      {student.name || "Student"}
-                    </p>
-                    <p className="text-xs text-gray-500">
-                      {student.level || "N/A"} • {student.studentId}
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-
-      <div className="flex justify-end gap-3 pt-4">
-        <Button type="button" variant="ghost" onClick={onClose}>
-          Cancel
-        </Button>
-        <Button
-          type="submit"
-          disabled={
-            !name ||
-            createGroupMutation.isPending ||
-            addStudentsMutation.isPending
-          }
-        >
-          {(createGroupMutation.isPending || addStudentsMutation.isPending) && (
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-          )}
-          Create Class
-        </Button>
-      </div>
-    </form>
   );
 }
