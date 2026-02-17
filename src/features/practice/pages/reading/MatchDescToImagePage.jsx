@@ -31,7 +31,7 @@ const TRANSLATIONS = {
   parc: "park",
   L: "The",
   homme: "man",
-  lit: "reads",
+  // lit: "reads", // Duplicate key removed
   livre: "book",
   La: "The",
   fille: "girl",
