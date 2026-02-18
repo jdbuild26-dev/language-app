@@ -1,0 +1,11 @@
+id,Instruction_EN,Instruction_FR,SentenceWithBlank,CompleteSentence,Option1,Option2,Option3,Option4,CorrectAnswer,Level
+1,"Fill in the blank","Remplissez le formulaire","Je m'appelle _____ et je suis _____.","Je m'appelle Jean et je suis étudiant.","Jean","étudiant","Pierre","professeur","Jean","A1"
+2,"Complete the form","Complétez le formulaire","Mon numéro de téléphone est _____ .","Mon numéro de téléphone est 06 12 34 56 78.","06 12 34 56 78","01 23 45 67 89","07 89 10 11 12","09 87 65 43 21","06 12 34 56 78","A1"
+3,"Select the correct detail","Sélectionnez le détail correct","J'habite à _____ en _____.","J'habite à Paris en France.","Paris","France","Lyon","Espagne","Paris","A1"
+4,"Fill in the blank","Remplissez le blanc","Ma date de naissance est le _____.","Ma date de naissance est le 15 mars 1995.","15 mars 1995","20 juin 2000","1er janvier 1990","5 décembre 1988","15 mars 1995","A1"
+5,"Complete the registration","Complétez l'inscription","Mon adresse e-mail est _____.","Mon adresse e-mail est jean.dupont@email.fr.","jean.dupont@email.fr","marie@gmail.com","paul.martin@yahoo.fr","sophie@hotmail.com","jean.dupont@email.fr","A1"
+6,"Fill in the blank","Remplissez le blanc","Je suis de nationalité _____.","Je suis de nationalité française.","française","espagnole","italienne","allemande","française","A1"
+7,"Select the correct answer","Sélectionnez la bonne réponse","Mon état civil est _____.","Mon état civil est célibataire.","célibataire","marié(e)","divorcé(e)","veuf/veuve","célibataire","A2"
+8,"Complete the form","Complétez le formulaire","Ma profession est _____.","Ma profession est ingénieur.","ingénieur","médecin","avocat","enseignant","ingénieur","A2"
+9,"Fill in the blank","Remplissez le blanc","Le motif de ma visite est _____.","Le motif de ma visite est le tourisme.","le tourisme","les affaires","les études","la famille","le tourisme","B1"
+10,"Complete the application","Complétez la demande","Ma langue maternelle est _____.","Ma langue maternelle est le français.","le français","l'anglais","l'espagnol","l'arabe","le français","A2"

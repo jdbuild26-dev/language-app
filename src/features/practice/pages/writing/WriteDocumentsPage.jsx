@@ -9,7 +9,7 @@ import { getFeedbackMessage } from "@/utils/feedbackMessages";
 import { useTextToSpeech } from "@/hooks/useTextToSpeech";
 import { useWritingEvaluation } from "../../hooks/useWritingEvaluation";
 import WritingFeedbackResult from "../../components/WritingFeedbackResult";
-import { loadMockCSV } from "@/utils/csvLoader";
+import * as vocabularyApi from "@/services/vocabularyApi";
 import { Button } from "@/components/ui/button";
 
 export default function WriteDocumentsPage() {
@@ -27,15 +27,28 @@ export default function WriteDocumentsPage() {
   const [feedbackMessage, setFeedbackMessage] = useState("");
   const [score, setScore] = useState(0);
 
-  const { evaluation, isSubmitting, evaluate, resetEvaluation } = useWritingEvaluation();
+  const { evaluation, isSubmitting, evaluate, resetEvaluation } =
+    useWritingEvaluation();
 
   useEffect(() => {
     const fetchQuestions = async () => {
       try {
-        const data = await loadMockCSV("practice/writing/write_documents.csv");
-        setQuestions(data);
+        const data = await vocabularyApi.fetchWritingDocuments();
+        if (data && data.length > 0) {
+          console.log(
+            `[DATA_SOURCE] WriteDocumentsPage: Successfully fetched from BACKEND. Count: ${data.length}`,
+          );
+          setQuestions(data);
+        } else {
+          console.warn(
+            `[DATA_SOURCE] WriteDocumentsPage: BACKEND returned empty data. No fallback available.`,
+          );
+        }
       } catch (error) {
-        console.error("Error loading mock data:", error);
+        console.error(
+          `[DATA_SOURCE] WriteDocumentsPage: BACKEND fetch FAILED. No fallback available.`,
+          error,
+        );
       } finally {
         setIsLoading(false);
       }
@@ -109,7 +122,7 @@ export default function WriteDocumentsPage() {
       user_text: userAnswer,
       topic: `${currentQuestion.documentType}: ${currentQuestion.scenario}`,
       reference: currentQuestion.sampleAnswer,
-      context: `Recipient: ${currentQuestion.recipient}, Subject: ${currentQuestion.subject}`
+      context: `Recipient: ${currentQuestion.recipient}, Subject: ${currentQuestion.subject}`,
     });
 
     if (result) {

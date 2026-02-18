@@ -434,3 +434,25 @@ export async function fetchSummaryCompletionData() {
   const result = await response.json();
   return result.data || result;
 }
+
+/**
+ * Fetch specialized Writing Documents data
+ */
+export async function fetchWritingDocuments(level) {
+  const url = `${API_BASE_URL}/api/practice/write_documents${level ? `?level=${level}` : ""}`;
+  console.log(`[vocabularyApi] Fetching writing documents from: ${url}`);
+  const response = await fetch(url);
+  if (!response.ok) throw new Error("Failed to fetch writing documents");
+  const result = await response.json();
+  return result.data || result;
+}
+
+/**
+ * Fetch specialized Writing Analysis data
+ */
+export async function fetchWriteAnalysisData() {
+  const response = await fetch(`${API_BASE_URL}/api/practice/write_analysis`);
+  if (!response.ok) throw new Error("Failed to fetch writing analysis data");
+  const result = await response.json();
+  return result.data || result;
+}

@@ -46,7 +46,38 @@ export default function SpellingPage() {
     const fetchQuestions = async () => {
       try {
         const data = await loadMockCSV("practice/writing/spelling.csv");
-        setQuestions(data);
+        // Normalize backend field names to what this component expects
+        const normalized = data.map((item) => ({
+          ...item,
+          correctText:
+            item.correctText ||
+            item.CorrectAnswer_FR ||
+            item["Correct Answer"] ||
+            item.Correct ||
+            item.correctAnswer ||
+            "",
+          incorrectText:
+            item.incorrectText ||
+            item.IncorrectWord_FR ||
+            item.MisspelledWord ||
+            item["Misspelled Word"] ||
+            item.Incorrect ||
+            item.misspelledWord ||
+            "",
+          englishTranslation:
+            item.englishTranslation ||
+            item["Word Meaning_EN"] ||
+            item["Word Meaning"] ||
+            item.Translation ||
+            item.wordMeaningEn ||
+            "",
+          timeLimitSeconds:
+            item.timeLimitSeconds ||
+            item.TimeLimitSeconds ||
+            item["Time Limit"] ||
+            60,
+        }));
+        setQuestions(normalized);
       } catch (error) {
         console.error("Error loading mock data:", error);
       } finally {
@@ -70,7 +101,8 @@ export default function SpellingPage() {
   };
 
   // Normalize for comparison
-  const normalize = (str) => str.toLowerCase().replace(/\s+/g, " ").trim();
+  const normalize = (str) =>
+    (str || "").toLowerCase().replace(/\s+/g, " ").trim();
 
   const handleSubmit = () => {
     if (showFeedback || !userInput.trim()) return;
