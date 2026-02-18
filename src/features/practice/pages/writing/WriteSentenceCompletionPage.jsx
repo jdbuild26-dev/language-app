@@ -5,9 +5,16 @@ import { cn } from "@/lib/utils";
 import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
 import FeedbackBanner from "@/components/ui/FeedbackBanner";
 import { getFeedbackMessage } from "@/utils/feedbackMessages";
-import { BookOpen, XCircle, CheckCircle, XCircle as XIcon } from "lucide-react";
+import {
+  BookOpen,
+  XCircle,
+  CheckCircle,
+  XCircle as XIcon,
+  Loader2,
+} from "lucide-react";
+import { fetchPracticeQuestions } from "@/services/vocabularyApi";
 
-// Mock data for Write Sentence Completion (Passage-based)
+// Fallback mock data for Write Sentence Completion (Passage-based)
 const MOCK_DATA = {
   passageTitle: "La Révolution du Travail Hybride",
   passageSubtitle: "Comment les entreprises s'adaptent à la nouvelle ère",
@@ -43,6 +50,8 @@ const MOCK_DATA = {
 export default function WriteSentenceCompletionPage() {
   const handleExit = usePracticeExit();
 
+  const [exerciseData, setExerciseData] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [userInputs, setUserInputs] = useState({}); // { 1: "text", 2: "text" }
   const [showFeedback, setShowFeedback] = useState(false);
   const [isCorrect, setIsCorrect] = useState(false);
@@ -51,7 +60,58 @@ export default function WriteSentenceCompletionPage() {
   const [isCompleted, setIsCompleted] = useState(false);
   const [isPassageOpen, setIsPassageOpen] = useState(false);
 
-  const timerDuration = MOCK_DATA.timeLimitSeconds;
+  // Fetch data from backend, fallback to mock
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        const response = await fetchPracticeQuestions(
+          "sentence_completion_writing",
+        );
+        if (response && response.data && response.data.length > 0) {
+          const item = response.data[0]; // Use first exercise
+          const content = item.content || item;
+          const data = {
+            passageTitle:
+              content.passageTitle ||
+              item.passageTitle ||
+              MOCK_DATA.passageTitle,
+            passageSubtitle:
+              content.passageSubtitle ||
+              item.passageSubtitle ||
+              MOCK_DATA.passageSubtitle,
+            passageContent:
+              content.passageContent ||
+              item.passageContent ||
+              MOCK_DATA.passageContent,
+            questions:
+              content.questions || item.questions || MOCK_DATA.questions,
+            timeLimitSeconds:
+              content.timeLimitSeconds || item.timeLimitSeconds || 300,
+          };
+          console.log(
+            `[DATA_SOURCE] WriteSentenceCompletionPage: Successfully fetched from BACKEND. Exercises: ${response.data.length}`,
+          );
+          setExerciseData(data);
+        } else {
+          console.warn(
+            `[DATA_SOURCE] WriteSentenceCompletionPage: BACKEND returned empty data. Falling back to MOCK_DATA.`,
+          );
+          setExerciseData(MOCK_DATA);
+        }
+      } catch (error) {
+        console.error(
+          `[DATA_SOURCE] WriteSentenceCompletionPage: BACKEND fetch FAILED. Falling back to MOCK_DATA.`,
+          error,
+        );
+        setExerciseData(MOCK_DATA);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    loadData();
+  }, []);
+
+  const timerDuration = exerciseData?.timeLimitSeconds || 300;
 
   const { timerString, resetTimer } = useExerciseTimer({
     duration: timerDuration,
@@ -80,9 +140,9 @@ export default function WriteSentenceCompletionPage() {
     if (showFeedback) return;
 
     let correctCount = 0;
-    const totalQuestions = MOCK_DATA.questions.length;
+    const totalQuestions = exerciseData.questions.length;
 
-    MOCK_DATA.questions.forEach((q) => {
+    exerciseData.questions.forEach((q) => {
       const userNorm = normalize(userInputs[q.id]);
       const correctNorm = normalize(q.correctEnding);
       if (userNorm === correctNorm) {
@@ -111,11 +171,21 @@ export default function WriteSentenceCompletionPage() {
     handleExit();
   };
 
-  const allAnswered = MOCK_DATA.questions.every(
-    (q) => (userInputs[q.id] || "").trim().length > 0,
-  );
-  const progress =
-    (Object.keys(userInputs).length / MOCK_DATA.questions.length) * 100;
+  const allAnswered =
+    exerciseData?.questions?.every(
+      (q) => (userInputs[q.id] || "").trim().length > 0,
+    ) || false;
+  const progress = exerciseData?.questions?.length
+    ? (Object.keys(userInputs).length / exerciseData.questions.length) * 100
+    : 0;
+
+  if (isLoading || !exerciseData) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+      </div>
+    );
+  }
 
   return (
     <>
@@ -126,7 +196,7 @@ export default function WriteSentenceCompletionPage() {
         progress={progress}
         isGameOver={isCompleted}
         score={score}
-        totalQuestions={MOCK_DATA.questions.length}
+        totalQuestions={exerciseData.questions.length}
         onExit={handleExit}
         onNext={handleSubmit}
         isSubmitEnabled={allAnswered && !showFeedback}
@@ -139,16 +209,16 @@ export default function WriteSentenceCompletionPage() {
           <div className="hidden lg:flex flex-1 flex flex-col bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden">
             <div className="p-6 border-b border-slate-100 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50">
               <h3 className="text-xl font-bold text-slate-900 dark:text-slate-100">
-                {MOCK_DATA.passageTitle}
+                {exerciseData.passageTitle}
               </h3>
               <p className="text-sm text-slate-500 dark:text-slate-400 mt-1 uppercase tracking-wider font-semibold">
-                {MOCK_DATA.passageSubtitle}
+                {exerciseData.passageSubtitle}
               </p>
             </div>
 
             <div className="p-8 overflow-y-auto custom-scrollbar flex-1">
               <div className="text-base leading-relaxed text-slate-700 dark:text-slate-300 space-y-6">
-                {MOCK_DATA.passageContent.map((paragraph, idx) => (
+                {exerciseData.passageContent.map((paragraph, idx) => (
                   <p key={idx}>{paragraph}</p>
                 ))}
               </div>
@@ -166,7 +236,7 @@ export default function WriteSentenceCompletionPage() {
               </h2>
 
               <div className="space-y-10">
-                {MOCK_DATA.questions.map((q) => {
+                {exerciseData.questions.map((q) => {
                   const userVal = userInputs[q.id] || "";
                   const isCorrectAnswer =
                     normalize(userVal) === normalize(q.correctEnding);
@@ -256,7 +326,7 @@ export default function WriteSentenceCompletionPage() {
             <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-slate-50 dark:bg-slate-900">
               <div>
                 <h3 className="text-lg font-bold text-slate-900 dark:text-white leading-tight">
-                  {MOCK_DATA.passageTitle}
+                  {exerciseData.passageTitle}
                 </h3>
                 <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 font-bold uppercase tracking-tight">
                   Lisez attentivement
@@ -272,7 +342,7 @@ export default function WriteSentenceCompletionPage() {
 
             {/* Modal Content */}
             <div className="p-6 md:p-8 overflow-y-auto custom-scrollbar flex-1 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 leading-relaxed space-y-6">
-              {MOCK_DATA.passageContent.map((paragraph, idx) => (
+              {exerciseData.passageContent.map((paragraph, idx) => (
                 <p key={idx} className="text-base">
                   {paragraph}
                 </p>

@@ -93,7 +93,17 @@ export default function WriteImagePage() {
     const fetchQuestions = async () => {
       try {
         const data = await loadMockCSV("practice/writing/write_image.csv");
-        setQuestions(data);
+        // Map backend keys to component keys if necessary, or update component to use backend keys
+        // Backend returns: imageUrl, question, hint, sampleAnswer
+        // Component expects: image, englishDescription, hint, sampleAnswer
+
+        const mappedData = data.map((item) => ({
+          ...item,
+          image: item.imageUrl || item.image,
+          englishDescription: item.question || item.englishDescription,
+        }));
+
+        setQuestions(mappedData);
       } catch (error) {
         console.error("Error loading mock data:", error);
       } finally {

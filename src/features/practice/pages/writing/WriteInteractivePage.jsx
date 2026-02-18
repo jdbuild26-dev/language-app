@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { usePracticeExit } from "@/hooks/usePracticeExit";
 import { useExerciseTimer } from "@/hooks/useExerciseTimer";
 import { MessageSquare, User, MessageCircle, Send } from "lucide-react";
@@ -17,6 +17,12 @@ export default function WriteInteractivePage() {
   const handleExit = usePracticeExit();
   const { speak } = useTextToSpeech();
   const chatEndRef = useRef(null);
+
+  // Use a ref for speak so the auto-advance effect doesn't re-run when voices load
+  const speakRef = useRef(speak);
+  useEffect(() => {
+    speakRef.current = speak;
+  }, [speak]);
 
   // Current turn/exchange index (0-based)
   const [conversation, setConversation] = useState(null);
@@ -52,7 +58,8 @@ export default function WriteInteractivePage() {
   const currentExchange = conversation?.exchanges[currentTurnIndex];
   const totalExchanges = conversation?.exchanges.length || 0;
 
-  const timerDuration = conversation?.timeLimitSeconds || 300;
+  const timerDuration =
+    conversation?.timeLimitSeconds || conversation?.TimeLimitSeconds || 300;
 
   const totalQuestions =
     conversation?.exchanges.filter((e) => e.isQuestion).length || 0;
@@ -94,14 +101,10 @@ export default function WriteInteractivePage() {
     if (!currentExchange || isCompleted) return;
 
     if (!currentExchange.isQuestion && !hasAnswered) {
-      // Add speaker's message to history
+      // Add speaker's message to history (without side effects inside updater)
       setConversationHistory((prev) => {
         const last = prev[prev.length - 1];
         if (last?.speakerText !== currentExchange.speakerText) {
-          if (currentExchange.speakerAudio && !hasPlayedAudio) {
-            speak(currentExchange.speakerAudio, "fr-FR");
-            setHasPlayedAudio(true);
-          }
           return [
             ...prev,
             {
@@ -112,6 +115,16 @@ export default function WriteInteractivePage() {
         }
         return prev;
       });
+
+      // Play audio outside the state updater
+      if (currentExchange.speakerAudio && !hasPlayedAudio) {
+        try {
+          speakRef.current(currentExchange.speakerAudio, "fr-FR");
+        } catch (e) {
+          console.warn("TTS failed, continuing without audio:", e);
+        }
+        setHasPlayedAudio(true);
+      }
 
       // Auto-advance after delay
       const delay = 1500 + (currentExchange.speakerText?.length || 0) * 50;
@@ -130,7 +143,6 @@ export default function WriteInteractivePage() {
     currentTurnIndex,
     currentExchange,
     isCompleted,
-    speak,
     totalExchanges,
     hasPlayedAudio,
     hasAnswered,

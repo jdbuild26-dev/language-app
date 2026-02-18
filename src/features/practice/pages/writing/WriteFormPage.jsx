@@ -56,13 +56,21 @@ export default function WriteFormPage() {
           options: [q.Option1, q.Option2, q.Option3, q.Option4].filter(Boolean),
           correctAnswer: q.CorrectAnswer || q.Option1, // Fallback
         }));
+        console.log(
+          `[DATA_SOURCE] WriteFormPage: Successfully fetched from BACKEND. Count: ${transformed.length}`,
+        );
         setQuestions(transformed);
       } else {
-        console.error("API returned empty data");
+        console.warn(
+          `[DATA_SOURCE] WriteFormPage: BACKEND returned empty data. No fallback available.`,
+        );
         setQuestions([]);
       }
     } catch (err) {
-      console.error("Failed to load questions:", err);
+      console.error(
+        `[DATA_SOURCE] WriteFormPage: BACKEND fetch FAILED. No fallback available.`,
+        err,
+      );
       setQuestions([]);
     } finally {
       setLoading(false);

@@ -131,6 +131,8 @@ export default function WriteTopicPage() {
       .filter((word) => word.length > 0).length;
   };
 
+  const wordCount = getWordCount(userAnswer);
+
   const handleSubmit = async () => {
     if (showFeedback || isSubmitting) return;
 
@@ -190,7 +192,11 @@ export default function WriteTopicPage() {
         questionType="Write on Topic"
         instructionFr="Écrivez sur le sujet donné"
         instructionEn="Write about the given topic"
-        progress={progress}
+        progress={
+          questions.length > 0
+            ? ((currentIndex + 1) / questions.length) * 100
+            : 0
+        }
         isGameOver={isCompleted}
         score={score}
         totalQuestions={questions.length}
