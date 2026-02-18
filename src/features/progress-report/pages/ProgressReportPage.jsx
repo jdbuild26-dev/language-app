@@ -128,7 +128,11 @@ export default function ProgressReportPage() {
               </div>
               {profile && (
                 <div className="flex items-center gap-2 bg-brand-blue-1/10 text-brand-blue-1 px-3 py-1 rounded-full text-sm font-semibold">
-                  <span className="uppercase">{profile.targetLanguage}</span>
+                  <span className="uppercase">
+                    {profile.targetLanguages?.length > 0
+                      ? profile.targetLanguages.map((tl) => tl.language).join(" & ")
+                      : profile.targetLanguage}
+                  </span>
                   <span className="text-gray-300">|</span>
                   <span>{profile.level}</span>
                 </div>
@@ -162,7 +166,7 @@ export default function ProgressReportPage() {
                 </div>
                 {profile && (
                   <div className="mt-2 flex flex-wrap gap-2">
-                    {profile.purpose.map((p) => (
+                    {(profile.learningGoals || profile.purpose || []).map((p) => (
                       <span
                         key={p}
                         className="text-xs bg-gray-100 dark:bg-elevated-2 text-gray-600 dark:text-secondary-dark px-2 py-0.5 rounded-md border border-gray-200 dark:border-subtle-dark"
@@ -170,11 +174,19 @@ export default function ProgressReportPage() {
                         {p}
                       </span>
                     ))}
-                    {profile.examIntent?.hasExam && (
-                      <span className="text-xs bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-300 px-2 py-0.5 rounded-md border border-purple-200 dark:border-purple-800">
-                        Target: {profile.examIntent.examType}
+                    {(profile.examIntents?.length > 0
+                      ? profile.examIntents.filter((ei) => ei.hasExam)
+                      : profile.examIntent?.hasExam
+                        ? [profile.examIntent]
+                        : []
+                    ).map((ei, idx) => (
+                      <span
+                        key={idx}
+                        className="text-xs bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-300 px-2 py-0.5 rounded-md border border-purple-200 dark:border-purple-800"
+                      >
+                        Target: {ei.examType} ({ei.language})
                       </span>
-                    )}
+                    ))}
                   </div>
                 )}
               </div>
@@ -208,10 +220,10 @@ export default function ProgressReportPage() {
                 <p className="text-sm font-medium text-gray-700 dark:text-primary-dark">
                   {user?.createdAt
                     ? new Date(user.createdAt).toLocaleDateString(undefined, {
-                        year: "numeric",
-                        month: "long",
-                        day: "numeric",
-                      })
+                      year: "numeric",
+                      month: "long",
+                      day: "numeric",
+                    })
                     : "N/A"}
                 </p>
               </div>

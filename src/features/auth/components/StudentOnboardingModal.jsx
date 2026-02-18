@@ -151,6 +151,11 @@ export default function StudentOnboardingModal({ onComplete }) {
         clerkUserId: user.id,
         name: formData.name,
         targetLanguages: formData.targetLanguages,
+        // Legacy fields for backward compatibility with current backend
+        targetLanguage: formData.targetLanguages[0]?.language || "",
+        purpose: formData.learningGoals,
+        examIntent: formData.examIntents[0] || { language: "", hasExam: false, examType: null },
+
         translationLanguage: formData.translationLanguage,
         instructionLanguage: formData.instructionLanguage,
         mainReason: formData.mainReason,
