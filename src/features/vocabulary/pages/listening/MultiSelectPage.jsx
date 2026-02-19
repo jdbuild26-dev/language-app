@@ -40,17 +40,11 @@ export default function MultiSelectPage() {
   const loadData = async () => {
     try {
       setLoading(true);
-      console.log(
-        `[MultiSelect] 📡 Fetching data from backend (slug: phonetics__what_do_you_hear)...`,
-      );
+
       const response = await fetchPracticeQuestions(
         "phonetics__what_do_you_hear",
       );
       if (response && response.data && response.data.length > 0) {
-        console.log(
-          `[MultiSelect] ✅ Loaded ${response.data.length} questions`,
-          { sample: response.data[0] },
-        );
         const transformed = response.data.map((q) => ({
           id: q.ExerciseID || Math.random(),
           instruction: q.Instruction_EN || "Select what you hear",

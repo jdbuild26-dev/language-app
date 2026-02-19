@@ -47,14 +47,9 @@ export default function AudioMatchingPage() {
   const loadData = async () => {
     try {
       setLoading(true);
-      console.log(
-        `[AudioMatching] 📡 Fetching data from backend (slug: A1.Match the pairs)...`,
-      );
+
       const response = await fetchPracticeQuestions("A1.Match the pairs");
       if (response && response.data) {
-        console.log(`[AudioMatching] ✅ Loaded ${response.data.length} items`, {
-          sample: response.data[0],
-        });
         generateQuestions(response.data);
       }
     } catch (err) {

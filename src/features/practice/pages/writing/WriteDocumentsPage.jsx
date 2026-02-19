@@ -35,9 +35,6 @@ export default function WriteDocumentsPage() {
       try {
         const data = await vocabularyApi.fetchWritingDocuments();
         if (data && data.length > 0) {
-          console.log(
-            `[DATA_SOURCE] WriteDocumentsPage: Successfully fetched from BACKEND. Count: ${data.length}`,
-          );
           setQuestions(data);
         } else {
           console.warn(

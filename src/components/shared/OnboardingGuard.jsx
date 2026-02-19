@@ -8,6 +8,10 @@ import TeacherOnboardingModal from "@/features/auth/components/TeacherOnboarding
 import RoleSelectionModal from "@/features/auth/components/RoleSelectionModal";
 
 export default function OnboardingGuard({ children }) {
+  const location = useLocation();
+  const isTeacherRoute = location.pathname.startsWith("/teacher-dashboard");
+  const isStudentRoute = location.pathname.startsWith("/dashboard");
+
   const {
     needsOnboarding: needsStudentOnboarding,
     isLoading: isStudentLoading,
@@ -38,10 +42,6 @@ export default function OnboardingGuard({ children }) {
     );
   }
 
-  const location = useLocation();
-  const isTeacherRoute = location.pathname.startsWith("/teacher-dashboard");
-  const isStudentRoute = location.pathname.startsWith("/dashboard");
-
   // Force teacher onboarding if on a teacher route and needs it
   if (isTeacherRoute && needsTeacherOnboarding) {
     return (
@@ -71,7 +71,6 @@ export default function OnboardingGuard({ children }) {
   if (hasProfile) {
     return <>{children}</>;
   }
-
 
   // If user has NO profile, show Role Selection or specific Onboarding
   if (selectedRole === "student") {

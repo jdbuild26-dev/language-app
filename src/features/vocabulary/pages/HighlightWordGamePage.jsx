@@ -29,15 +29,9 @@ export default function HighlightWordGamePage() {
   const loadQuestions = async () => {
     try {
       setLoading(true);
-      console.log(
-        `[HighlightWord] 📡 Fetching data from backend (slug: highlight_word)...`,
-      );
+
       const response = await fetchPracticeQuestions("highlight_word");
       if (response && response.data && response.data.length > 0) {
-        console.log(
-          `[HighlightWord] ✅ Loaded ${response.data.length} questions`,
-          { sample: response.data[0] },
-        );
         // Map API response keys to component state keys
         const formattedQuestions = response.data
           .filter(

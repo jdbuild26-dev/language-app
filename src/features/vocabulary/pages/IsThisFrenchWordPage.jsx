@@ -28,15 +28,9 @@ export default function IsThisFrenchWordPage() {
   const loadQuestions = async () => {
     try {
       setLoading(true);
-      console.log(
-        `[IsThisFrenchWord] 📡 Fetching data from backend (slug: is_french_word)...`,
-      );
+
       const response = await fetchPracticeQuestions("is_french_word");
       if (response && response.data) {
-        console.log(
-          `[IsThisFrenchWord] ✅ Loaded ${response.data.length} questions`,
-          { sample: response.data[0] },
-        );
         const normalized = response.data.map((item) => {
           // Handle new structure from vocabularyApi transformer
           if (item.content) {
