@@ -130,8 +130,15 @@ export default function FillInBlankGamePage() {
   const loadQuestions = async () => {
     try {
       setLoading(true);
+      console.log(
+        `[FillInBlank] 📡 Fetching data from backend (slug: vocab_typing_blanks)...`,
+      );
       const response = await fetchPracticeQuestions("vocab_typing_blanks");
       if (response && response.data) {
+        console.log(
+          `[FillInBlank] ✅ Loaded ${response.data.length} questions`,
+          { sample: response.data[0] },
+        );
         const normalized = response.data.map((item) => ({
           ...item,
           id: item.id || item.ExerciseID || Math.random(),
@@ -149,7 +156,7 @@ export default function FillInBlankGamePage() {
         setQuestions(normalized);
       }
     } catch (err) {
-      console.error("Failed to load practice questions:", err);
+      console.error("[FillInBlank] ❌ Failed to load:", err);
       setError("Failed to load questions.");
     } finally {
       setLoading(false);

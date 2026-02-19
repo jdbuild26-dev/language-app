@@ -1,33 +1,14 @@
 import React, { useState, useEffect, useRef } from "react";
 import { usePracticeExit } from "@/hooks/usePracticeExit";
 import { useExerciseTimer } from "@/hooks/useExerciseTimer";
-import { Volume2 } from "lucide-react";
+import { Volume2, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
 import FeedbackBanner from "@/components/ui/FeedbackBanner";
 import { getFeedbackMessage } from "@/utils/feedbackMessages";
 import { useTextToSpeech } from "@/hooks/useTextToSpeech";
 import { useNavigate } from "react-router-dom";
-
-// Standard Fill in the Blanks with typed inputs
-const MOCK_QUESTIONS = [
-  {
-    id: 1,
-    fullText: "Je vais à la boulangerie pour acheter du pain.",
-    displayParts: ["Je vais à la ", " pour acheter du ", "."],
-    blanks: ["boulangerie", "pain"],
-    hints: ["bakery", "bread"],
-    timeLimitSeconds: 60,
-  },
-  {
-    id: 2,
-    fullText: "Ma sœur travaille dans un hôpital comme médecin.",
-    displayParts: ["Ma sœur travaille dans un ", " comme ", "."],
-    blanks: ["hôpital", "médecin"],
-    hints: ["hospital", "doctor"],
-    timeLimitSeconds: 60,
-  },
-];
+import { fetchPracticeQuestions } from "@/services/vocabularyApi";
 
 export default function TypingFillInBlankPage() {
   const navigate = useNavigate();
@@ -35,7 +16,9 @@ export default function TypingFillInBlankPage() {
   const { speak, isSpeaking } = useTextToSpeech();
   const inputRefs = useRef([]);
 
-  const [questions] = useState(MOCK_QUESTIONS);
+  const [questions, setQuestions] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [userInputs, setUserInputs] = useState([]);
   const [isCompleted, setIsCompleted] = useState(false);
@@ -44,6 +27,78 @@ export default function TypingFillInBlankPage() {
   const [feedbackMessage, setFeedbackMessage] = useState("");
   const [score, setScore] = useState(0);
   const [blankResults, setBlankResults] = useState([]);
+
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        setLoading(true);
+        console.log(
+          "[TypingFillInBlank] 📡 Fetching data from backend (slug: vocab_typing_blanks)...",
+        );
+        const response = await fetchPracticeQuestions("vocab_typing_blanks");
+        const practiceData = response.data || [];
+        console.log(
+          `[TypingFillInBlank] ✅ Loaded ${practiceData.length} questions`,
+          { sample: practiceData[0] },
+        );
+
+        if (!practiceData || practiceData.length === 0) {
+          throw new Error("No questions found");
+        }
+
+        // Normalize backend data to expected format
+        const normalized = practiceData
+          .map((item) => {
+            // Try to extract blanks and displayParts from the data
+            const blanks = item.blanks || item.Blanks || [];
+            const displayParts = item.displayParts || item.DisplayParts || [];
+            const fullText =
+              item.fullText ||
+              item.FullText ||
+              item.Sentence ||
+              item.sentence ||
+              item.CompleteSentence ||
+              item.completeSentence ||
+              "";
+            const hints = item.hints || item.Hints || [];
+            const timeLimitSeconds = parseInt(
+              item.TimeLimitSeconds || item.timeLimitSeconds || "60",
+              10,
+            );
+
+            return {
+              id: item.id || item.ExerciseID || Math.random().toString(),
+              fullText,
+              displayParts:
+                displayParts.length > 0
+                  ? displayParts
+                  : fullText.split(/____/).map((p) => p),
+              blanks: Array.isArray(blanks)
+                ? blanks
+                : typeof blanks === "string"
+                  ? blanks.split("|").map((b) => b.trim())
+                  : [],
+              hints: Array.isArray(hints)
+                ? hints
+                : typeof hints === "string"
+                  ? hints.split("|").map((h) => h.trim())
+                  : [],
+              timeLimitSeconds,
+            };
+          })
+          .filter((q) => q.blanks.length > 0);
+
+        setQuestions(normalized);
+      } catch (err) {
+        console.error("[TypingFillInBlank] ❌ Failed to fetch:", err);
+        setError("Failed to load questions. Please check data source.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadData();
+  }, []);
 
   const currentQuestion = questions[currentIndex];
   const timerDuration = currentQuestion?.timeLimitSeconds || 60;
@@ -58,7 +113,7 @@ export default function TypingFillInBlankPage() {
         setShowFeedback(true);
       }
     },
-    isPaused: isCompleted || showFeedback,
+    isPaused: isCompleted || showFeedback || loading,
   });
 
   useEffect(() => {
@@ -122,6 +177,22 @@ export default function TypingFillInBlankPage() {
       setIsCompleted(true);
     }
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="animate-spin text-blue-500 w-8 h-8" />
+      </div>
+    );
+  }
+
+  if (error || questions.length === 0) {
+    return (
+      <div className="min-h-screen flex items-center justify-center text-red-500">
+        {error || "No questions found for this activity."}
+      </div>
+    );
+  }
 
   const allFilled = userInputs.every((input) => input.trim().length > 0);
   const progress =

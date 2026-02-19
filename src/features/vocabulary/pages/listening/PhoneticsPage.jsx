@@ -47,8 +47,14 @@ export default function PhoneticsPage() {
   const loadData = async () => {
     try {
       setLoading(true);
+      console.log(
+        `[Phonetics] 📡 Fetching data from backend (slug: listen_phonetics)...`,
+      );
       const response = await fetchPracticeQuestions("listen_phonetics");
       if (response && response.data) {
+        console.log(`[Phonetics] ✅ Loaded ${response.data.length} questions`, {
+          sample: response.data[0],
+        });
         const gameQuestions = response.data.map((item) => ({
           id: item["ExerciseID"] || Math.random().toString(),
           prompt: item["Audio"] || item["Word ID"],
@@ -65,7 +71,7 @@ export default function PhoneticsPage() {
         setQuestions(gameQuestions);
       }
     } catch (err) {
-      console.error(err);
+      console.error(`[Phonetics] ❌ Failed to load:`, err);
     } finally {
       setLoading(false);
     }
@@ -176,7 +182,7 @@ export default function PhoneticsPage() {
                       "border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700",
                       // Selected
                       isSelected &&
-                      "border-sky-400 bg-sky-50 dark:bg-sky-900/20 text-sky-600 dark:text-sky-300",
+                        "border-sky-400 bg-sky-50 dark:bg-sky-900/20 text-sky-600 dark:text-sky-300",
                     )}
                   >
                     {/* Fake Radio/Checkbox Circle */}

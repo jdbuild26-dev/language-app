@@ -48,25 +48,44 @@ export default function OddOneOutGamePage() {
   const loadQuestions = async () => {
     try {
       setLoading(true);
+      console.log(
+        `[OddOneOut] 📡 Fetching data from backend (slug: odd_one_out)...`,
+      );
       const response = await fetchPracticeQuestions("odd_one_out");
       if (response && response.data) {
+        console.log(`[OddOneOut] ✅ Loaded ${response.data.length} questions`, {
+          sample: response.data[0],
+        });
         const normalized = response.data
-          .filter(item => (item.words || item.Option1) && (item.words || item.Option1) !== "None")
+          .filter(
+            (item) =>
+              (item.words || item.Option1) &&
+              (item.words || item.Option1) !== "None",
+          )
           .map((item) => ({
             id: item.id || item.ExerciseID,
-            words: item.words || [item.Option1, item.Option2, item.Option3, item.Option4].filter(Boolean),
-            correctAnswer: item.correctword || item.CorrectAnswer || item.Answer,
-            reason: item.CorrectExplanation_EN || item.Reason || item.Explanation || "",
+            words:
+              item.words ||
+              [item.Option1, item.Option2, item.Option3, item.Option4].filter(
+                Boolean,
+              ),
+            correctAnswer:
+              item.correctword || item.CorrectAnswer || item.Answer,
+            reason:
+              item.CorrectExplanation_EN ||
+              item.Reason ||
+              item.Explanation ||
+              "",
             instructionFr: item.Instruction_FR || "Trouvez l'intrus",
             instructionEn: item.Instruction_EN || "Select the odd one out",
-            type: "Odd One Out"
+            type: "Odd One Out",
           }));
         setQuestions(normalized);
       } else {
         setQuestions([]);
       }
     } catch (err) {
-      console.error("Failed to load odd one out questions:", err);
+      console.error("[OddOneOut] ❌ Failed to load:", err);
       setError("Failed to load questions.");
     } finally {
       setLoading(false);
@@ -136,16 +155,18 @@ export default function OddOneOutGamePage() {
     return `${baseStyle} bg-gray-50 dark:bg-gray-800/50 border-gray-100 dark:border-gray-800 text-gray-400 opacity-50`;
   };
 
-  if (loading) return (
-    <div className="min-h-screen flex items-center justify-center">
-      <Loader2 className="animate-spin text-blue-500 w-8 h-8" />
-    </div>
-  );
-  if (error || questions.length === 0) return (
-    <div className="min-h-screen flex items-center justify-center text-red-500">
-      {error || "No questions found for this activity."}
-    </div>
-  );
+  if (loading)
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="animate-spin text-blue-500 w-8 h-8" />
+      </div>
+    );
+  if (error || questions.length === 0)
+    return (
+      <div className="min-h-screen flex items-center justify-center text-red-500">
+        {error || "No questions found for this activity."}
+      </div>
+    );
 
   let submitLabel = "Submit";
   if (isSubmitted) {

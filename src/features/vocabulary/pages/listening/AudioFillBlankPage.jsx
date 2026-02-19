@@ -95,20 +95,34 @@ export default function AudioFillBlankPage() {
   const loadData = async () => {
     try {
       setLoading(true);
+      console.log(
+        `[AudioFillBlank] 📡 Fetching data from backend (slug: B5_Fill blanks_Audio)...`,
+      );
       const response = await fetchPracticeQuestions("B5_Fill blanks_Audio");
       if (response && response.data) {
-        const transformed = response.data.map((item) => ({
-          id: item["ExerciseID"],
-          fullSentence: item["CompleteSentence"] || item["Audio"],
-          displaySentence: item["SentenceWithBlank"],
-          answer: item["CorrectAnswer"],
-          instruction:
-            item["Instruction_EN"] || "Listen and complete the sentence",
-        }));
+        console.log(
+          `[AudioFillBlank] ✅ Loaded ${response.data.length} questions`,
+          { sample: response.data[0] },
+        );
+        const transformed = response.data.map((item) => {
+          // Handle both nested structure (from vocabularyApi transformer) and flat structure
+          const content = item.content || item;
+
+          return {
+            id: item.external_id || item["ExerciseID"],
+            fullSentence: content["CompleteSentence"] || content["Audio"],
+            displaySentence: content["SentenceWithBlank"],
+            answer: item.evaluation?.correctAnswer || content["CorrectAnswer"],
+            instruction:
+              item.instruction_en ||
+              item["Instruction_EN"] ||
+              "Listen and complete the sentence",
+          };
+        });
         setQuestions(transformed);
       }
     } catch (err) {
-      console.error(err);
+      console.error(`[AudioFillBlank] ❌ Failed to load:`, err);
     } finally {
       setLoading(false);
     }

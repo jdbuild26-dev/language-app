@@ -92,16 +92,21 @@ export default function MatchPairsB1GamePage() {
     isPaused: loading || isGameOver,
   });
 
-
   const initializeGame = async () => {
     setLoading(true);
     try {
       // Fetch specialized Match Pairs data
+      console.log(
+        `[MatchPairsB1] 📡 Fetching data from backend (fetchMatchPairsData("B1"))...`,
+      );
       const data = await fetchMatchPairsData("B1");
 
       if (!data || data.length === 0) {
         throw new Error("No data returned from API");
       }
+      console.log(`[MatchPairsB1] ✅ Loaded ${data.length} pairs`, {
+        sample: data[0],
+      });
 
       const rawData = data.map((item, idx) => ({
         id: item.id || idx,

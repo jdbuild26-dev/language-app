@@ -29,24 +29,53 @@ export default function HighlightWordGamePage() {
   const loadQuestions = async () => {
     try {
       setLoading(true);
+      console.log(
+        `[HighlightWord] 📡 Fetching data from backend (slug: highlight_word)...`,
+      );
       const response = await fetchPracticeQuestions("highlight_word");
       if (response && response.data && response.data.length > 0) {
+        console.log(
+          `[HighlightWord] ✅ Loaded ${response.data.length} questions`,
+          { sample: response.data[0] },
+        );
         // Map API response keys to component state keys
         const formattedQuestions = response.data
-          .filter(q => (q.passage || q.sentence || q.Sentence) && (q.passage || q.sentence || q.Sentence) !== "None")
+          .filter(
+            (q) =>
+              (q.passage || q.sentence || q.Sentence) &&
+              (q.passage || q.sentence || q.Sentence) !== "None",
+          )
           .map((q) => ({
             ...q,
-            sentence: q.passage || q.sentence || q.Sentence || q["Complete sentence"] || "",
-            correctWord: q.correctWord || q.correctAnswer || q.CorrectAnswer || q.Answer || "",
-            prompt: (q.question || q.instructionEn || q.Instruction_EN || q.Question_EN || "")?.trim(),
+            sentence:
+              q.passage ||
+              q.sentence ||
+              q.Sentence ||
+              q["Complete sentence"] ||
+              "",
+            correctWord:
+              q.correctWord ||
+              q.correctAnswer ||
+              q.CorrectAnswer ||
+              q.Answer ||
+              "",
+            prompt: (
+              q.question ||
+              q.instructionEn ||
+              q.Instruction_EN ||
+              q.Question_EN ||
+              ""
+            )?.trim(),
           }));
         setQuestions(formattedQuestions);
       } else {
-        console.error("No valid questions received from backend");
+        console.error(
+          "[HighlightWord] ❌ No valid questions received from backend",
+        );
         setQuestions([]);
       }
     } catch (error) {
-      console.error("Failed to load questions:", error);
+      console.error("[HighlightWord] ❌ Failed to load:", error);
       setQuestions([]);
     } finally {
       setLoading(false);

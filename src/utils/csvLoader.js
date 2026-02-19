@@ -7,7 +7,7 @@ const FILE_TO_SLUG = {
   "practice/reading/bubble_selection.csv": "translate_bubbles",
   "practice/reading/match_pairs.csv": "match_pairs",
   "practice/speaking/repeat_sentence.csv": "repeat_sentence",
-  "practice/speaking/what_do_you_see.csv": "what_do_you_see",
+  "practice/speaking/what_do_you_see.csv": "what-do-you-see",
   "practice/writing/dictation_image.csv": "dictation_image",
   "practice/reading/comprehension.csv": "passage_mcq",
   "practice/reading/fill_blanks_passage.csv": "complete_passage_dropdown",

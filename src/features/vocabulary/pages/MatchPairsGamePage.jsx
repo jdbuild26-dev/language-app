@@ -33,13 +33,19 @@ export default function MatchPairsGamePage() {
   useEffect(() => {
     const loadContent = async () => {
       try {
+        console.log(
+          `[MatchPairs] 📡 Fetching data from backend (via practiceFetcher)...`,
+        );
         const data = await fetchMatchPairsData();
+        console.log(`[MatchPairs] ✅ Loaded ${data.length} pairs`, {
+          sample: data[0],
+        });
         setExercises(data);
         if (data.length > 0) {
           initializeGame(data);
         }
       } catch (error) {
-        console.error("Failed to load match pairs:", error);
+        console.error("[MatchPairs] ❌ Failed to load:", error);
       } finally {
         setLoading(false);
       }
@@ -164,8 +170,8 @@ export default function MatchPairsGamePage() {
     }
   };
 
-  const instructionFr = MOCK_DATA[0].instructionFr;
-  const instructionEn = MOCK_DATA[0].instructionEn;
+  const instructionFr = "Associez les paires";
+  const instructionEn = "Match the pairs";
   const progress = (matchedIds.length / PAIRS_PER_ROUND) * 100;
 
   if (loading)
