@@ -4,6 +4,62 @@ const API_BASE_URL =
 /**
  * Fetch vocabulary with optional filtering
  */
+const CSV_TRANSFORMERS = {
+  group_words: (row) => ({
+    external_id: row.ExerciseID || `GW_${Math.random()}`,
+    instruction_en: row.Instruction_EN || "Group the related words",
+    instruction_fr: row.Instruction_FR || "Groupez les mots liés",
+    theme: row.Theme,
+    correctGroup: (row.CorrectGroup || "").split("|"),
+    otherWords: (row.OtherWords || "").split("|"),
+    explanation: row.Explanation,
+    config: { targetCount: (row.CorrectGroup || "").split("|").length },
+  }),
+  vocab_typing_blanks: (row) => {
+    const parts = (row.DisplayParts || "").split("|");
+    return {
+      external_id: row.ExerciseID,
+      instruction_en: row.Instruction_EN,
+      instruction_fr: row.Instruction_FR,
+      content: {
+        fullText: row.FullText,
+        displayParts: parts.filter((_, i) => i % 2 === 0),
+        blanks: (row.Blanks || "").split("|"),
+        hints: row.Hints ? row.Hints.split("|") : [],
+      },
+      evaluation: { correctAnswer: (row.Blanks || "").split("|") },
+      config: { TimeLimitSeconds: parseInt(row.TimeLimitSeconds || "60") },
+    };
+  },
+  is_french_word: (row) => ({
+    external_id: row.ExerciseID,
+    instruction_en: row.Instruction_EN,
+    instruction_fr: row.Instruction_FR,
+    content: {
+      word: row.Question,
+      isFrench: row.CorrectAnswer?.toLowerCase() === "yes",
+      correctAnswer: row.CorrectAnswer,
+    },
+    evaluation: { correctAnswer: row.CorrectAnswer?.toLowerCase() === "yes" },
+  }),
+  b5_fill_blanks_audio: (row) => ({
+    external_id: row.ExerciseID,
+    instruction_en: row.Instruction_EN,
+    instruction_fr: row.Instruction_FR,
+    content: {
+      CompleteSentence: row.CompleteSentence,
+      SentenceWithBlank: row.SentenceWithBlank,
+      Audio: row.CompleteSentence,
+      Option1: row.Option1,
+      Option2: row.Option2,
+      Option3: row.Option3,
+      Option4: row.Option4,
+      CorrectAnswer: row.CorrectAnswer,
+    },
+    evaluation: { correctAnswer: row.CorrectAnswer },
+  }),
+};
+
 export async function fetchVocabulary({
   level,
   category,
@@ -320,6 +376,48 @@ export async function fetchPracticeQuestions(sheetName, { limit, learningLang, k
     `${API_BASE_URL}/api/practice/${encodeURIComponent(sheetName)}?${params}`,
   );
 
+  if (response.status === 404) {
+    // Normalizing slug to match file naming convention (e.g., 'B5_Fill blanks_Audio' -> 'b5_fill_blanks_audio')
+    const normalizedSheetName = sheetName.toLowerCase().replace(/ /g, "_");
+    const transformer = CSV_TRANSFORMERS[normalizedSheetName];
+    if (transformer) {
+      console.warn(
+        `[vocabularyApi] API 404 for ${sheetName}, falling back to CSV: ${normalizedSheetName}.csv`,
+      );
+      try {
+        const Papa = await import("papaparse");
+        const csvResponse = await fetch(
+          `/mock-data/csv/${normalizedSheetName}.csv`,
+        );
+        if (!csvResponse.ok) {
+          throw new Error(
+            `Failed to fetch fallback CSV: ${normalizedSheetName}.csv`,
+          );
+        }
+        const csvText = await csvResponse.text();
+
+        return new Promise((resolve, reject) => {
+          Papa.parse(csvText, {
+            header: true,
+            skipEmptyLines: true,
+            complete: (results) => {
+              try {
+                const transformedData = results.data.map(transformer);
+                resolve({ data: transformedData });
+              } catch (err) {
+                reject(err);
+              }
+            },
+            error: (err) => reject(err),
+          });
+        });
+      } catch (err) {
+        console.error(`[vocabularyApi] Fallback failed for ${sheetName}:`, err);
+        throw new Error(`Failed to fetch practice questions for ${sheetName}`);
+      }
+    }
+  }
+
   if (!response.ok) {
     throw new Error(`Failed to fetch practice questions for ${sheetName}`);
   }
@@ -333,6 +431,57 @@ export async function fetchPracticeQuestions(sheetName, { limit, learningLang, k
 export async function fetchMatchPairsData(level) {
   const url = `${API_BASE_URL}/api/practice/match-pairs${level ? `?level=${level}` : ""}`;
   const response = await fetch(url);
+
+  if (response.status === 404) {
+    console.warn(
+      `[vocabularyApi] API 404 for match-pairs, falling back to CSV: match_pairs.csv`,
+    );
+    try {
+      const Papa = await import("papaparse");
+      const csvResponse = await fetch(`/mock-data/csv/match_pairs.csv`);
+      if (!csvResponse.ok) {
+        throw new Error(`Failed to fetch fallback CSV: match_pairs.csv`);
+      }
+      const csvText = await csvResponse.text();
+
+      return new Promise((resolve, reject) => {
+        Papa.parse(csvText, {
+          header: true,
+          skipEmptyLines: true,
+          complete: (results) => {
+            try {
+              // Transform CSV data to expected format
+              const transformedData = results.data
+                .map((row) => ({
+                  id: Math.random().toString(36).substr(2, 9),
+                  french: row["Word - French"],
+                  english: row["English word"],
+                  image: row["Image"]
+                    ? `/mock-data/images/${row["Image"]}`
+                    : null,
+                  instructionFr: "Associez les paires",
+                  instructionEn: "Match the pairs",
+                  level: row["Level"],
+                }))
+                // Filter by level if requested and level column exists
+                .filter(
+                  (item) => !level || !item.level || item.level === level,
+                );
+
+              resolve(transformedData);
+            } catch (err) {
+              reject(err);
+            }
+          },
+          error: (err) => reject(err),
+        });
+      });
+    } catch (err) {
+      console.error(`[vocabularyApi] Fallback failed for match-pairs:`, err);
+      throw new Error("Failed to fetch match pairs");
+    }
+  }
+
   if (!response.ok) throw new Error("Failed to fetch match pairs");
   return response.json();
 }

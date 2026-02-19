@@ -5,8 +5,9 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
 import { cn } from "@/lib/utils";
+import { fetchPracticeQuestions } from "@/services/vocabularyApi";
 
-// MOCK DATA for "Pick 4" (Group Words)
+// Group Words (Pick 4)
 export default function GroupWordsGamePage() {
   const navigate = useNavigate();
   const [questions, setQuestions] = useState([]);
@@ -47,21 +48,45 @@ export default function GroupWordsGamePage() {
   const loadQuestions = async () => {
     try {
       setLoading(true);
+      console.log(
+        `[GroupWords] 📡 Fetching data from backend (slug: group_words)...`,
+      );
       const response = await fetchPracticeQuestions("group_words");
       if (response && response.data) {
+        console.log(
+          `[GroupWords] ✅ Loaded ${response.data.length} questions`,
+          { sample: response.data[0] },
+        );
         const normalized = response.data.map((item) => {
-          const correct = (item.correctGroup || item.CorrectGroup || item.CorrectAnswer || "").split(/[|,]+/).map(s => s.trim());
-          const others = (item.otherWords || item.OtherWords || item.Options || "").split(/[|,]+/).map(s => s.trim());
+          // Helper to parse string or array
+          const parseList = (val) => {
+            if (Array.isArray(val)) return val;
+            if (typeof val === "string")
+              return val.split(/[|,]+/).map((s) => s.trim());
+            return [];
+          };
+
+          const correct = parseList(
+            item.correctGroup || item.CorrectGroup || item.CorrectAnswer,
+          );
+          const others = parseList(
+            item.otherWords || item.OtherWords || item.Options,
+          );
           const all = [...correct, ...others].sort(() => Math.random() - 0.5);
 
           return {
             id: item.id || item.ExerciseID,
             theme: item.theme || item.Topic || item.Theme || "",
             instructionFr: item.Instruction_FR || "Triez les mots",
-            instructionEn: item.Instruction_EN || "Select 4 words that are related",
+            instructionEn:
+              item.Instruction_EN || "Select 4 words that are related",
             allWords: all,
             correctGroup: correct,
-            reason: item.Reason || item.Explanation || item.CorrectExplanation_EN || `These are all related to ${item.theme || 'the topic'}.`
+            reason:
+              item.Reason ||
+              item.Explanation ||
+              item.CorrectExplanation_EN ||
+              `These are all related to ${item.theme || "the topic"}.`,
           };
         });
         setQuestions(normalized);
@@ -77,6 +102,7 @@ export default function GroupWordsGamePage() {
   const currentQuestion = questions[currentIndex];
   const totalQuestions = questions.length;
   const progress = ((currentIndex + 1) / totalQuestions) * 100;
+  const targetCount = currentQuestion?.correctGroup?.length || 4;
 
   const handleWordClick = (word) => {
     if (isSubmitted) return;
@@ -123,16 +149,18 @@ export default function GroupWordsGamePage() {
     }
   };
 
-  if (loading) return (
-    <div className="min-h-screen flex items-center justify-center">
-      <Loader2 className="animate-spin text-blue-500 w-8 h-8" />
-    </div>
-  );
-  if (error || questions.length === 0) return (
-    <div className="min-h-screen flex items-center justify-center text-red-500">
-      {error || "No questions found for this activity."}
-    </div>
-  );
+  if (loading)
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="animate-spin text-blue-500 w-8 h-8" />
+      </div>
+    );
+  if (error || questions.length === 0)
+    return (
+      <div className="min-h-screen flex items-center justify-center text-red-500">
+        {error || "No questions found for this activity."}
+      </div>
+    );
 
   let submitLabel = "Submit";
   if (isSubmitted) {

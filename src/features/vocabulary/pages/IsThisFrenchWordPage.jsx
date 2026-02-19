@@ -28,23 +28,47 @@ export default function IsThisFrenchWordPage() {
   const loadQuestions = async () => {
     try {
       setLoading(true);
+      console.log(
+        `[IsThisFrenchWord] 📡 Fetching data from backend (slug: is_french_word)...`,
+      );
       const response = await fetchPracticeQuestions("is_french_word");
       if (response && response.data) {
+        console.log(
+          `[IsThisFrenchWord] ✅ Loaded ${response.data.length} questions`,
+          { sample: response.data[0] },
+        );
         const normalized = response.data.map((item) => {
-          // Logic for isFrench: if CorrectAnswer is YES/OUI or 1 or true
-          const ans = (item.CorrectAnswer || item.Answer || "").toString().toLowerCase();
-          const isFr = ["yes", "oui", "true", "1"].includes(ans);
+          // Handle new structure from vocabularyApi transformer
+          if (item.content) {
+            return {
+              id: item.external_id || item.id,
+              word: item.content.word,
+              isFrench: item.content.isFrench,
+            };
+          }
+
+          // Handle flattened API structure
+          const word =
+            item.word || item.Question || item.Word || item.Word_FR || "";
+
+          let isFr = item.isFrench;
+          if (isFr === undefined) {
+            const ans = (item.CorrectAnswer || item.Answer || "")
+              .toString()
+              .toLowerCase();
+            isFr = ["yes", "oui", "true", "1"].includes(ans);
+          }
 
           return {
             id: item.id || item.ExerciseID,
-            word: item.Question || item.Word || item.Word_FR || "",
-            isFrench: isFr
+            word: word,
+            isFrench: isFr,
           };
         });
         setQuestions(normalized.sort(() => Math.random() - 0.5));
       }
     } catch (err) {
-      console.error("Failed to load French word questions:", err);
+      console.error("[IsThisFrenchWord] ❌ Failed to load:", err);
     } finally {
       setLoading(false);
     }

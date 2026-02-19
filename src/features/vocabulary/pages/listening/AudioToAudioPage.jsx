@@ -45,23 +45,47 @@ export default function AudioToAudioPage() {
   const loadData = async () => {
     try {
       setLoading(true);
+      console.log(
+        `[AudioToAudio] 📡 Fetching data from backend (slug: B5_Fill blanks_Audio)...`,
+      );
       const response = await fetchPracticeQuestions("B5_Fill blanks_Audio");
       if (response && response.data && response.data.length > 0) {
-        const transformed = response.data.map((q) => ({
-          id: q.ExerciseID || Math.random(),
-          instruction: q.Instruction_EN || "What do you hear?",
-          displaySentence: q.SentenceWithBlank || "Le ___ est dans la cuisine.",
-          fullSentence: q.CompleteSentence || q.Audio || "", // Text to speak for context
-          options: [q.Option1, q.Option2, q.Option3, q.Option4].filter(Boolean),
-          correctAnswer: q.CorrectAnswer || q.Option1, // Fallback
-        }));
+        console.log(
+          `[AudioToAudio] ✅ Loaded ${response.data.length} questions`,
+          { sample: response.data[0] },
+        );
+        const transformed = response.data.map((q) => {
+          const content = q.content || {};
+          return {
+            id: q.ExerciseID || q.external_id || Math.random(),
+            instruction:
+              q.Instruction_EN || q.instruction_en || "What do you hear?",
+            displaySentence:
+              q.SentenceWithBlank ||
+              content.SentenceWithBlank ||
+              "Le ___ est dans la cuisine.",
+            fullSentence:
+              q.CompleteSentence || content.CompleteSentence || q.Audio || "",
+            options: [
+              q.Option1 || content.Option1,
+              q.Option2 || content.Option2,
+              q.Option3 || content.Option3,
+              q.Option4 || content.Option4,
+            ].filter(Boolean),
+            correctAnswer:
+              q.CorrectAnswer ||
+              content.CorrectAnswer ||
+              q.Option1 ||
+              content.Option1,
+          };
+        });
         setQuestions(transformed);
       } else {
-        console.error("API returned empty data");
+        console.error("[AudioToAudio] ❌ API returned empty data");
         setQuestions([]);
       }
     } catch (err) {
-      console.error("Failed to load questions:", err);
+      console.error("[AudioToAudio] ❌ Failed to load:", err);
       setQuestions([]);
     } finally {
       setLoading(false);

@@ -4,45 +4,7 @@ import { Loader2, Volume2, Image as ImageIcon } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
 import { useTextToSpeech } from "@/hooks/useTextToSpeech";
-
-// MOCK DATA
-const MOCK_DATA = [
-  {
-    id: 1,
-    french: "Chien",
-    english: "Dog",
-    image:
-      "https://images.unsplash.com/photo-1543466835-00a7907e9de1?auto=format&fit=crop&q=80&w=300",
-  },
-  {
-    id: 2,
-    french: "Chat",
-    english: "Cat",
-    image:
-      "https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?auto=format&fit=crop&q=80&w=300",
-  },
-  {
-    id: 3,
-    french: "Maison",
-    english: "House",
-    image:
-      "https://images.unsplash.com/photo-1518780664697-55e3ad937233?auto=format&fit=crop&q=80&w=300",
-  },
-  {
-    id: 4,
-    french: "Voiture",
-    english: "Car",
-    image:
-      "https://images.unsplash.com/photo-1568605114967-8130f3a36994?auto=format&fit=crop&q=80&w=300",
-  },
-  {
-    id: 5,
-    french: "Pomme",
-    english: "Apple",
-    image:
-      "https://images.unsplash.com/photo-1568702846914-96b305d2aaeb?auto=format&fit=crop&q=80&w=300",
-  },
-];
+import { fetchMatchPairsData } from "@/services/vocabularyApi";
 
 export default function MatchWordsActivityPage({ mode = "text" }) {
   // mode: 'text' (English <-> French) or 'image' (Image <-> French)
@@ -53,7 +15,8 @@ export default function MatchWordsActivityPage({ mode = "text" }) {
   // Allow overriding mode via query param if needed, though prop is cleaner for distinct routes
   const currentMode = searchParams.get("mode") || mode;
 
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [topCards, setTopCards] = useState([]); // French words
   const [bottomCards, setBottomCards] = useState([]); // English words or Images
 
@@ -70,7 +33,7 @@ export default function MatchWordsActivityPage({ mode = "text" }) {
   const PAIRS_PER_ROUND = 5;
 
   useEffect(() => {
-    initializeGame();
+    loadData();
   }, [currentMode]);
 
   const { timerString, resetTimer } = useExerciseTimer({
@@ -80,9 +43,33 @@ export default function MatchWordsActivityPage({ mode = "text" }) {
     isPaused: loading || isGameOver,
   });
 
-  const initializeGame = () => {
-    setLoading(true);
-    const shuffledSource = [...MOCK_DATA].sort(() => 0.5 - Math.random());
+  const loadData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      console.log(
+        `[MatchWordsActivity] 📡 Fetching match pairs data from backend (mode: ${currentMode})...`,
+      );
+      const data = await fetchMatchPairsData();
+      console.log(`[MatchWordsActivity] ✅ Loaded ${data?.length || 0} pairs`, {
+        sample: data?.[0],
+      });
+
+      if (!data || data.length === 0) {
+        throw new Error("No match pairs data available");
+      }
+
+      initializeGame(data);
+    } catch (err) {
+      console.error("[MatchWordsActivity] ❌ Failed to fetch:", err);
+      setError("Failed to load data. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const initializeGame = (data) => {
+    const shuffledSource = [...data].sort(() => 0.5 - Math.random());
     const activePairs = shuffledSource.slice(0, PAIRS_PER_ROUND);
 
     const top = activePairs
@@ -98,15 +85,14 @@ export default function MatchWordsActivityPage({ mode = "text" }) {
       .map((p) => ({
         id: `bottom-${p.id}`,
         pairId: p.id,
-        content: currentMode === "image" ? p.image : p.english,
+        content: currentMode === "image" ? p.image || p.english : p.english,
         type: "bottom",
-        isImage: currentMode === "image",
+        isImage: currentMode === "image" && !!p.image,
       }))
       .sort(() => 0.5 - Math.random());
 
     setTopCards(top);
     setBottomCards(bottom);
-    setLoading(false);
 
     // Reset state
     setMatchedIds([]);
@@ -212,6 +198,13 @@ export default function MatchWordsActivityPage({ mode = "text" }) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Loader2 className="animate-spin text-blue-500 w-8 h-8" />
+      </div>
+    );
+
+  if (error)
+    return (
+      <div className="min-h-screen flex items-center justify-center text-red-500">
+        {error}
       </div>
     );
 
