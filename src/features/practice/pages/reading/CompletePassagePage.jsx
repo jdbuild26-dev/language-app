@@ -8,6 +8,8 @@ import { cn } from "@/lib/utils";
 import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
 import FeedbackBanner from "@/components/ui/FeedbackBanner";
 
+import { useLanguage } from "@/contexts/LanguageContext";
+
 /* 
   Data for the exercise: 
   A longer passage with multiple blanks.
@@ -16,6 +18,7 @@ import FeedbackBanner from "@/components/ui/FeedbackBanner";
 
 export default function CompletePassagePage() {
   const handleExit = usePracticeExit();
+  const { learningLang, knownLang } = useLanguage();
 
   // State
   const [passageSegments, setPassageSegments] = useState([]);
@@ -23,6 +26,7 @@ export default function CompletePassagePage() {
   const [fullText, setFullText] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [currentQuestion, setCurrentQuestion] = useState(null);
 
   const [answers, setAnswers] = useState({}); // { 1: "option", 2: "option" }
   const [showFeedback, setShowFeedback] = useState(false);
@@ -35,10 +39,11 @@ export default function CompletePassagePage() {
     const fetchData = async () => {
       let data = null;
       try {
+        setLoading(true);
         console.log(
           "[CompletePassagePage] Attempting to fetch data from BACKEND API...",
         );
-        data = await fetchCompletePassageData();
+        data = await fetchCompletePassageData({ learningLang, knownLang });
         if (data) {
           console.log(
             "[CompletePassagePage] Data Source: BACKEND API (Success)",
@@ -56,6 +61,7 @@ export default function CompletePassagePage() {
           );
           data = await loadMockCSV(
             "practice/reading/complete_passage_dropdown.csv",
+            { learningLang, knownLang }
           );
           if (data && data.length > 0) {
             console.log(
@@ -71,6 +77,7 @@ export default function CompletePassagePage() {
       if (data) {
         // If API returns array (like CSV loader did)
         const row = Array.isArray(data) ? data[0] : data;
+        setCurrentQuestion(row);
 
         setPassageSegments(row.passageSegments || []);
         setBlanksData(row.blanksData || {});
@@ -82,11 +89,11 @@ export default function CompletePassagePage() {
       setLoading(false);
     };
     fetchData();
-  }, []);
+  }, [learningLang, knownLang]);
 
   // Timer: 8 minutes (480s) to match screenshot mostly
   const { timerString, resetTimer, pauseTimer } = useExerciseTimer({
-    duration: 480,
+    duration: currentQuestion?.timeLimitSeconds || 480,
     mode: "timer",
     onExpire: () => {
       if (!showFeedback && !isCompleted) {
@@ -194,8 +201,9 @@ export default function CompletePassagePage() {
     <>
       <PracticeGameLayout
         questionType="Fill in the blanks - Passage"
-        instructionFr="Complétez le passage"
-        instructionEn="Select the best option for each missing word"
+        localizedInstruction={currentQuestion?.localizedInstruction}
+        instructionFr={currentQuestion?.instructionFr || "Complétez le passage"}
+        instructionEn={currentQuestion?.instructionEn || "Select the best option for each missing word"}
         progress={progress}
         isGameOver={isCompleted}
         score={score}
@@ -234,11 +242,11 @@ export default function CompletePassagePage() {
                           className={cn(
                             "inline-flex items-center justify-center px-1.5 py-0.5 rounded border border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 text-sm font-bold text-slate-500 mr-1 min-w-[24px]",
                             showFeedback &&
-                              isCorrectAnswer &&
-                              "bg-green-100 border-green-400 text-green-700",
+                            isCorrectAnswer &&
+                            "bg-green-100 border-green-400 text-green-700",
                             showFeedback &&
-                              !isCorrectAnswer &&
-                              "bg-red-100 border-red-400 text-red-700",
+                            !isCorrectAnswer &&
+                            "bg-red-100 border-red-400 text-red-700",
                           )}
                         >
                           {id}
@@ -350,11 +358,11 @@ export default function CompletePassagePage() {
                             "w-full p-3 rounded-lg border bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 outline-none transition-all appearance-none cursor-pointer",
                             "focus:ring-2 focus:ring-sky-500 border-slate-200 dark:border-slate-700",
                             showFeedback &&
-                              isCorrectAnswer &&
-                              "border-green-500 bg-green-50 dark:bg-green-900/20 text-green-900 dark:text-green-100",
+                            isCorrectAnswer &&
+                            "border-green-500 bg-green-50 dark:bg-green-900/20 text-green-900 dark:text-green-100",
                             showFeedback &&
-                              !isCorrectAnswer &&
-                              "border-red-500 bg-red-50 dark:bg-red-900/20 text-red-900 dark:text-red-100",
+                            !isCorrectAnswer &&
+                            "border-red-500 bg-red-50 dark:bg-red-900/20 text-red-900 dark:text-red-100",
                           )}
                         >
                           <option value="" disabled>

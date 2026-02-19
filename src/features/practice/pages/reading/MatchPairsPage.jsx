@@ -8,11 +8,12 @@ import { useTextToSpeech } from "@/hooks/useTextToSpeech";
 
 // MATCH_PAIRS_DATA import removed - migrated to CSV
 
-import { Button } from "@/components/ui/button";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 export default function MatchPairsPage() {
   const handleExit = usePracticeExit();
   const { speak } = useTextToSpeech();
+  const { learningLang, knownLang } = useLanguage();
 
   const [loading, setLoading] = useState(true);
   const [exercises, setExercises] = useState([]);
@@ -35,7 +36,11 @@ export default function MatchPairsPage() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const data = await loadMockCSV("practice/reading/match_pairs.csv");
+        setLoading(true);
+        const data = await loadMockCSV("practice/reading/match_pairs.csv", {
+          learningLang,
+          knownLang
+        });
         setExercises(data);
       } catch (error) {
         console.error("Error loading match pairs data:", error);
@@ -44,7 +49,7 @@ export default function MatchPairsPage() {
       }
     };
     fetchData();
-  }, []);
+  }, [learningLang, knownLang]);
 
   useEffect(() => {
     if (exercises.length > 0) {
@@ -206,15 +211,14 @@ export default function MatchPairsPage() {
     );
   }
 
-  const instructionFr = currentExercise?.instructionFr || "Associez les paires";
-  const instructionEn = currentExercise?.instructionEn || "Match the pairs";
   const progress = (matchedIds.length / topCards.length) * 100;
 
   return (
     <PracticeGameLayout
       questionType="Match the Pairs"
-      instructionFr={instructionFr}
-      instructionEn={instructionEn}
+      localizedInstruction={currentExercise?.localizedInstruction}
+      instructionFr={currentExercise?.instructionFr || "Associez les paires"}
+      instructionEn={currentExercise?.instructionEn || "Match the pairs"}
       progress={progress}
       currentQuestionIndex={matchedIds.length}
       isGameOver={isGameOver}

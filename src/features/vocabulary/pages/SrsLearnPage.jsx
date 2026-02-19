@@ -9,16 +9,15 @@ import {
   LessonHeader,
   CompletionScreen,
 } from "../components/lesson-learn";
-import {
-  fetchLearningQueue,
-  trackEvent,
-} from "../../../services/vocabularyApi";
+import { fetchLearningQueue, trackEvent } from "@/services/vocabularyApi";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 export default function SrsLearnPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useUser();
   const { getToken } = useAuth();
+  const { learningLang, knownLang } = useLanguage();
 
   // Read optional URL params (similar to LessonLearnPage)
   const queryParams = new URLSearchParams(location.search);
@@ -55,6 +54,8 @@ export default function SrsLearnPage() {
         dailyLimitNew: 20,
         level: level,
         category: categoryToUse,
+        learningLang,
+        knownLang,
       });
 
       const newQueue = data.queue || [];
@@ -74,7 +75,7 @@ export default function SrsLearnPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [user, level, categoryToUse]);
+  }, [user, level, categoryToUse, learningLang, knownLang]);
 
   useEffect(() => {
     loadQueue();

@@ -11,6 +11,8 @@ import { getFeedbackMessage } from "@/utils/feedbackMessages";
 import { loadMockCSV } from "@/utils/csvLoader";
 import { Button } from "@/components/ui/button";
 
+import { useLanguage } from "@/contexts/LanguageContext";
+
 // Fisher-Yates shuffle algorithm
 function shuffleArray(array) {
   const shuffled = [...array];
@@ -24,6 +26,7 @@ function shuffleArray(array) {
 export default function BubbleSelectionPage() {
   const handleExit = usePracticeExit();
   const { speak } = useTextToSpeech();
+  const { learningLang, knownLang } = useLanguage();
 
   const [questions, setQuestions] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -56,7 +59,11 @@ export default function BubbleSelectionPage() {
   useEffect(() => {
     const fetchQuestions = async () => {
       try {
-        const data = await loadMockCSV("practice/reading/bubble_selection.csv");
+        setIsLoading(true);
+        const data = await loadMockCSV("practice/reading/bubble_selection.csv", {
+          learningLang,
+          knownLang
+        });
         setQuestions(data);
       } catch (error) {
         console.error("Error loading mock data:", error);
@@ -65,7 +72,7 @@ export default function BubbleSelectionPage() {
       }
     };
     fetchQuestions();
-  }, []);
+  }, [learningLang, knownLang]);
 
   // Initialize available words when question changes (shuffled)
   useEffect(() => {
@@ -171,8 +178,9 @@ export default function BubbleSelectionPage() {
     <>
       <PracticeGameLayout
         questionType="Translate the Sentence"
-        instructionFr="Construisez la phrase en français"
-        instructionEn="Build the sentence in French"
+        localizedInstruction={currentQuestion?.localizedInstruction}
+        instructionFr={currentQuestion?.instructionFr || "Construisez la phrase en français"}
+        instructionEn={currentQuestion?.instructionEn || "Build the sentence in French"}
         progress={progress}
         isGameOver={isCompleted}
         score={score}
