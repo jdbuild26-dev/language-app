@@ -86,11 +86,20 @@ export default function CorrectSpellingGamePage() {
   const loadQuestions = async () => {
     try {
       setLoading(true);
+      console.log(
+        `[CorrectSpelling] 📡 Fetching data from backend (slug: correct_spelling)...`,
+      );
       const response = await fetchPracticeQuestions("correct_spelling");
       if (response && response.data && response.data.length > 0) {
+        console.log(
+          `[CorrectSpelling] ✅ Loaded ${response.data.length} questions`,
+          { sample: response.data[0] },
+        );
         const normalized = response.data.map((item) => ({
           id: item.ExerciseID || Math.random(),
           misspelledWord:
+            item.incorrectText ||
+            item.incorrect ||
             item.MisspelledWord ||
             item["Misspelled Word"] ||
             item.Misspelled ||
@@ -99,6 +108,8 @@ export default function CorrectSpellingGamePage() {
             item["Incorrect Word"] ||
             "Error",
           correctAnswer:
+            item.correctText ||
+            item.correct ||
             item.CorrectAnswer_FR ||
             item["Correct Answer"] ||
             item.Answer ||
@@ -109,6 +120,8 @@ export default function CorrectSpellingGamePage() {
           instructionEn: item.Instruction_EN || "Fix the spelling error",
           timeLimit: item.TimeLimitSeconds || item["Time Limit"] || 60,
           wordMeaningEn:
+            item.englishTranslation ||
+            item.wordMeaning ||
             item["Word Meaning_EN"] ||
             item["Word Meaning"] ||
             item.Meaning ||
@@ -117,11 +130,11 @@ export default function CorrectSpellingGamePage() {
         }));
         setQuestions(normalized);
       } else {
-        console.error("API returned empty data");
+        console.error("[CorrectSpelling] ❌ API returned empty data");
         setQuestions([]);
       }
     } catch (err) {
-      console.error("Failed to load practice questions:", err);
+      console.error("[CorrectSpelling] ❌ Failed to load:", err);
       setQuestions([]);
     } finally {
       setLoading(false);
@@ -209,9 +222,9 @@ export default function CorrectSpellingGamePage() {
     // We must clean the right answer same way to ensure match
     const rightAnswer = currentQuestion?.correctAnswer
       ? currentQuestion.correctAnswer
-        .trim()
-        .replace(/\u200B/g, "")
-        .normalize("NFC")
+          .trim()
+          .replace(/\u200B/g, "")
+          .normalize("NFC")
       : "";
 
     const correct = userAnswer.toLowerCase() === rightAnswer.toLowerCase();
@@ -288,10 +301,10 @@ export default function CorrectSpellingGamePage() {
           {(currentQuestion?.meaning ||
             currentQuestion?.wordMeaningEn ||
             currentQuestion?.instructionFr) && (
-              <div className="bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-300 px-4 py-2 rounded-lg text-sm font-medium mb-8">
-                {currentQuestion.meaning || currentQuestion.wordMeaningEn || ""}
-              </div>
-            )}
+            <div className="bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-300 px-4 py-2 rounded-lg text-sm font-medium mb-8">
+              {currentQuestion.meaning || currentQuestion.wordMeaningEn || ""}
+            </div>
+          )}
 
           {/* Misspelled Word */}
           <div className="mb-12 text-center">

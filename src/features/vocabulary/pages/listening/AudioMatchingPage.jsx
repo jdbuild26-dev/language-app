@@ -47,13 +47,18 @@ export default function AudioMatchingPage() {
   const loadData = async () => {
     try {
       setLoading(true);
-      // "A1.Match the pairs" is what was used previously via raw fetch
+      console.log(
+        `[AudioMatching] 📡 Fetching data from backend (slug: A1.Match the pairs)...`,
+      );
       const response = await fetchPracticeQuestions("A1.Match the pairs");
       if (response && response.data) {
+        console.log(`[AudioMatching] ✅ Loaded ${response.data.length} items`, {
+          sample: response.data[0],
+        });
         generateQuestions(response.data);
       }
     } catch (err) {
-      console.error("Error loading data:", err);
+      console.error("[AudioMatching] ❌ Failed to load:", err);
     } finally {
       setLoading(false);
     }
@@ -212,9 +217,7 @@ export default function AudioMatchingPage() {
             </AnimatePresence>
           </div>
         </div>
-      </PracticeGameLayout>          hideButton={true}
-        />
-      )}
+      </PracticeGameLayout>
     </>
   );
 }

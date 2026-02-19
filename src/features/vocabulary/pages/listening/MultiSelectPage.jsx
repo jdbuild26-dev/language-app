@@ -40,14 +40,20 @@ export default function MultiSelectPage() {
   const loadData = async () => {
     try {
       setLoading(true);
+      console.log(
+        `[MultiSelect] 📡 Fetching data from backend (slug: phonetics__what_do_you_hear)...`,
+      );
       const response = await fetchPracticeQuestions(
         "phonetics__what_do_you_hear",
       );
       if (response && response.data && response.data.length > 0) {
+        console.log(
+          `[MultiSelect] ✅ Loaded ${response.data.length} questions`,
+          { sample: response.data[0] },
+        );
         const transformed = response.data.map((q) => ({
           id: q.ExerciseID || Math.random(),
           instruction: q.Instruction_EN || "Select what you hear",
-          // Sheet likely has Option1...Option6 based on user image showing 6 buttons
           options: [
             q.Option1,
             q.Option2,
@@ -59,20 +65,20 @@ export default function MultiSelectPage() {
           correctIndices:
             q.CorrectOptionIndexes || q.CorrectOptions
               ? (q.CorrectOptionIndexes || q.CorrectOptions)
-                .toString()
-                .split(/[|,]+/)
-                .map((s) => parseInt(s.trim()) - 1)
-                .filter((i) => !isNaN(i))
+                  .toString()
+                  .split(/[|,]+/)
+                  .map((s) => parseInt(s.trim()) - 1)
+                  .filter((i) => !isNaN(i))
               : [],
-          audioText: q.Question || q.Audio || q.Prompt || "", // Text to speak
+          audioText: q.Question || q.Audio || q.Prompt || "",
         }));
         setQuestions(transformed);
       } else {
-        console.error("API returned empty data");
+        console.error("[MultiSelect] ❌ API returned empty data");
         setQuestions([]);
       }
     } catch (err) {
-      console.error("Failed to load questions:", err);
+      console.error("[MultiSelect] ❌ Failed to load:", err);
       setQuestions([]);
     } finally {
       setLoading(false);

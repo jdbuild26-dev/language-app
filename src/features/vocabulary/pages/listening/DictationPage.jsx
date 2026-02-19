@@ -5,6 +5,7 @@ import { fetchPracticeQuestions } from "../../../../services/vocabularyApi";
 import { Loader2 } from "lucide-react";
 import AudioPlayer from "../../components/shared/AudioPlayer";
 import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
+import FeedbackBanner from "@/components/ui/FeedbackBanner";
 
 export default function DictationPage() {
   const { speak, isSpeaking } = useTextToSpeech();
@@ -43,20 +44,33 @@ export default function DictationPage() {
   const loadData = async () => {
     try {
       setLoading(true);
+      console.log(
+        `[Dictation] 📡 Fetching data from backend (slug: listen_type)...`,
+      );
       const response = await fetchPracticeQuestions("listen_type");
       if (response && response.data) {
+        console.log(`[Dictation] ✅ Loaded ${response.data.length} questions`, {
+          sample: response.data[0],
+        });
         const transformed = response.data.map((item) => ({
-          id: item["ExerciseID"],
-          fullSentence: item["CompleteSentence"] || item["Audio"],
-          displaySentence: item["SentenceWithBlank"],
-          answer: item["CorrectAnswer"],
+          id: item["ExerciseID"] || item["id"],
+          fullSentence:
+            item["CompleteSentence"] || item["Audio"] || item["audioText"],
+          displaySentence: item["SentenceWithBlank"] || "___", // Default to full blank if missing
+          answer:
+            item["CorrectAnswer"] ||
+            item["audioText"] || // Correct answer is the French text (what is heard)
+            item["englishText"] ||
+            "",
           instruction:
-            item["Instruction_EN"] || "Listen and complete the sentence",
+            item["Instruction_EN"] ||
+            item["instructionEn"] ||
+            "Listen and complete the sentence",
         }));
         setQuestions(transformed);
       }
     } catch (err) {
-      console.error(err);
+      console.error(`[Dictation] ❌ Failed to load:`, err);
     } finally {
       setLoading(false);
     }
@@ -146,7 +160,7 @@ export default function DictationPage() {
       onNext={handleSubmit}
       onRestart={() => window.location.reload()}
       isSubmitEnabled={userInput.trim().length > 0}
-      showSubmitButton={true}
+      showSubmitButton={status === "idle"}
       submitLabel={submitLabel}
       timerValue={timerString}
     >
@@ -155,21 +169,18 @@ export default function DictationPage() {
           <AudioPlayer text={questions[currentIndex]?.fullSentence || ""} />
         </div>
 
-        <div className="text-lg md:text-xl font-medium text-center text-gray-800 dark:text-gray-100 mb-8 leading-relaxed">
+        <div className="text-lg md:text-xl font-medium text-center text-gray-800 dark:text-gray-100 mb-8 leading-relaxed w-full">
           {currentQ?.displaySentence.split("___").map((part, i, arr) => (
             <span key={i}>
               {part}
               {i < arr.length - 1 && (
-                <span className="inline-block w-32 border-b-2 border-gray-400 mx-2 relative top-1">
-                  {status !== "idle" && (
-                    <span
-                      className={`absolute -top-8 left-0 w-full text-center text-sm font-bold ${status === "success" ? "text-green-500" : "text-red-500"
-                        }`}
-                    >
-                      {status === "success" ? userInput : currentQ.answer}
-                    </span>
-                  )}
-                </span>
+                <span
+                  className={`inline-block border-b-2 border-gray-400 mx-2 relative top-1 ${
+                    currentQ.displaySentence === "___"
+                      ? "w-full max-w-xl"
+                      : "w-32"
+                  }`}
+                ></span>
               )}
             </span>
           ))}
@@ -187,22 +198,34 @@ export default function DictationPage() {
             }}
             placeholder="Type the missing word..."
             className={`w-full p-4 text-center text-xl rounded-xl border-2 outline-none transition-all
-                      ${status === "idle"
-                ? "border-gray-200 dark:border-slate-700 focus:border-blue-500 bg-white dark:bg-slate-800"
-                : ""
-              }
-                      ${status === "success"
-                ? "border-green-500 bg-green-50 text-green-900"
-                : ""
-              }
-                      ${status === "error"
-                ? "border-red-500 bg-red-50 text-red-900"
-                : ""
-              }
+                      ${
+                        status === "idle"
+                          ? "border-gray-200 dark:border-slate-700 focus:border-blue-500 bg-white dark:bg-slate-800"
+                          : ""
+                      }
+                      ${
+                        status === "success"
+                          ? "border-green-500 bg-green-50 text-green-900"
+                          : ""
+                      }
+                      ${
+                        status === "error"
+                          ? "border-red-500 bg-red-50 text-red-900"
+                          : ""
+                      }
                    `}
           />
         </div>
       </div>
+
+      {status !== "idle" && (
+        <FeedbackBanner
+          isCorrect={status === "success"}
+          correctAnswer={currentQ.answer}
+          onContinue={handleNext}
+          message={status === "success" ? "Correct!" : "Incorrect"}
+        />
+      )}
     </PracticeGameLayout>
   );
 }

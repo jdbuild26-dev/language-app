@@ -7,7 +7,7 @@ import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
 import FeedbackBanner from "@/components/ui/FeedbackBanner";
 import { getFeedbackMessage } from "@/utils/feedbackMessages";
 import { useTextToSpeech } from "@/hooks/useTextToSpeech";
-import { loadMockCSV } from "@/utils/csvLoader";
+import { fetchPracticeQuestions } from "@/services/vocabularyApi";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -48,12 +48,79 @@ export default function ListenFillBlanksPage() {
   useEffect(() => {
     const fetchQuestions = async () => {
       try {
-        const data = await loadMockCSV(
-          "practice/listening/listen_fill_blanks.csv",
+        console.log(
+          "[ListenFillBlanks] 📡 Fetching data from backend (slug: listen_fill_blanks)...",
         );
-        setQuestions(data);
+        const response = await fetchPracticeQuestions("listen_fill_blanks");
+        const practiceData = response.data || [];
+        console.log(
+          `[ListenFillBlanks] ✅ Loaded ${practiceData.length} questions`,
+          { sample: practiceData[0] },
+        );
+
+        if (!practiceData || practiceData.length === 0) {
+          throw new Error("No questions found");
+        }
+
+        // Normalize backend data to expected format
+        const normalized = practiceData
+          .map((item) => {
+            const audioText =
+              item.audioText ||
+              item.AudioText ||
+              item.Sentence ||
+              item.sentence ||
+              item.CompleteSentence ||
+              "";
+            const blanks = item.blanks || item.Blanks || [];
+            const displayParts = item.displayParts || item.DisplayParts || [];
+            const timeLimitSeconds = parseInt(
+              item.TimeLimitSeconds || item.timeLimitSeconds || "60",
+              10,
+            );
+
+            // If displayParts not provided, derive from audioText by splitting on blanks
+            let parts = displayParts;
+            if (
+              (!parts || parts.length === 0) &&
+              audioText &&
+              blanks.length > 0
+            ) {
+              // Try to create displayParts by splitting text at blank positions
+              let text = audioText;
+              parts = [];
+              const blankArr = Array.isArray(blanks)
+                ? blanks
+                : typeof blanks === "string"
+                  ? blanks.split("|").map((b) => b.trim())
+                  : [];
+              for (const blank of blankArr) {
+                const idx = text.toLowerCase().indexOf(blank.toLowerCase());
+                if (idx >= 0) {
+                  parts.push(text.substring(0, idx));
+                  text = text.substring(idx + blank.length);
+                }
+              }
+              parts.push(text);
+            }
+
+            return {
+              id: item.id || item.ExerciseID || Math.random().toString(),
+              audioText,
+              displayParts: parts.length > 0 ? parts : [audioText],
+              blanks: Array.isArray(blanks)
+                ? blanks
+                : typeof blanks === "string"
+                  ? blanks.split("|").map((b) => b.trim())
+                  : [],
+              timeLimitSeconds,
+            };
+          })
+          .filter((q) => q.blanks.length > 0);
+
+        setQuestions(normalized);
       } catch (error) {
-        console.error("Error loading mock data:", error);
+        console.error("[ListenFillBlanks] ❌ Failed to fetch:", error);
       } finally {
         setIsLoading(false);
       }
