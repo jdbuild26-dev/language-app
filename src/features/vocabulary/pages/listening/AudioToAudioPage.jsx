@@ -45,15 +45,9 @@ export default function AudioToAudioPage() {
   const loadData = async () => {
     try {
       setLoading(true);
-      console.log(
-        `[AudioToAudio] 📡 Fetching data from backend (slug: B5_Fill blanks_Audio)...`,
-      );
+
       const response = await fetchPracticeQuestions("B5_Fill blanks_Audio");
       if (response && response.data && response.data.length > 0) {
-        console.log(
-          `[AudioToAudio] ✅ Loaded ${response.data.length} questions`,
-          { sample: response.data[0] },
-        );
         const transformed = response.data.map((q) => {
           const content = q.content || {};
           return {

@@ -48,14 +48,9 @@ export default function OddOneOutGamePage() {
   const loadQuestions = async () => {
     try {
       setLoading(true);
-      console.log(
-        `[OddOneOut] 📡 Fetching data from backend (slug: odd_one_out)...`,
-      );
+
       const response = await fetchPracticeQuestions("odd_one_out");
       if (response && response.data) {
-        console.log(`[OddOneOut] ✅ Loaded ${response.data.length} questions`, {
-          sample: response.data[0],
-        });
         const normalized = response.data
           .filter(
             (item) =>

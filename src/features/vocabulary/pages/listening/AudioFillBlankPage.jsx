@@ -95,15 +95,9 @@ export default function AudioFillBlankPage() {
   const loadData = async () => {
     try {
       setLoading(true);
-      console.log(
-        `[AudioFillBlank] 📡 Fetching data from backend (slug: B5_Fill blanks_Audio)...`,
-      );
+
       const response = await fetchPracticeQuestions("B5_Fill blanks_Audio");
       if (response && response.data) {
-        console.log(
-          `[AudioFillBlank] ✅ Loaded ${response.data.length} questions`,
-          { sample: response.data[0] },
-        );
         const transformed = response.data.map((item) => {
           // Handle both nested structure (from vocabularyApi transformer) and flat structure
           const content = item.content || item;

@@ -88,9 +88,6 @@ export default function WriteAnalysisPage() {
         // Try fetching from backend first
         const data = await fetchWriteAnalysisData();
         if (data && data.length > 0) {
-          console.log(
-            `[DATA_SOURCE] WriteAnalysisPage: Successfully fetched from BACKEND. Count: ${data.length}`,
-          );
           setQuestions(data);
         } else {
           console.warn(

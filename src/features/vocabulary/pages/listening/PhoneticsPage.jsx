@@ -47,14 +47,9 @@ export default function PhoneticsPage() {
   const loadData = async () => {
     try {
       setLoading(true);
-      console.log(
-        `[Phonetics] 📡 Fetching data from backend (slug: listen_phonetics)...`,
-      );
+
       const response = await fetchPracticeQuestions("listen_phonetics");
       if (response && response.data) {
-        console.log(`[Phonetics] ✅ Loaded ${response.data.length} questions`, {
-          sample: response.data[0],
-        });
         const gameQuestions = response.data.map((item) => ({
           id: item["ExerciseID"] || Math.random().toString(),
           prompt: item["Audio"] || item["Word ID"],

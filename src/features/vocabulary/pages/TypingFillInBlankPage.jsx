@@ -32,15 +32,9 @@ export default function TypingFillInBlankPage() {
     const loadData = async () => {
       try {
         setLoading(true);
-        console.log(
-          "[TypingFillInBlank] 📡 Fetching data from backend (slug: vocab_typing_blanks)...",
-        );
+
         const response = await fetchPracticeQuestions("vocab_typing_blanks");
         const practiceData = response.data || [];
-        console.log(
-          `[TypingFillInBlank] ✅ Loaded ${practiceData.length} questions`,
-          { sample: practiceData[0] },
-        );
 
         if (!practiceData || practiceData.length === 0) {
           throw new Error("No questions found");

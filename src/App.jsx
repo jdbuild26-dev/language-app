@@ -134,6 +134,7 @@ import SpeakInteractivePage from "@/features/practice/pages/speaking/SpeakIntera
 import MatchDescToImagePage from "@/features/practice/pages/reading/MatchDescToImagePage";
 import ImageLabellingPage from "@/features/practice/pages/reading/ImageLabellingPage";
 import SentenceCompletionPage from "@/features/practice/pages/reading/SentenceCompletionPage";
+import MatchWordsActivityPage from "@/features/vocabulary/pages/MatchWordsActivityPage";
 import SummaryCompletionPage from "@/features/practice/pages/reading/SummaryCompletionPage";
 
 function App() {
@@ -468,6 +469,16 @@ function App() {
             <ProtectedRoute>
               <FullScreenLayout>
                 <MatchPairsPage />
+              </FullScreenLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/vocabulary/practice/match-words"
+          element={
+            <ProtectedRoute>
+              <FullScreenLayout>
+                <MatchWordsActivityPage />
               </FullScreenLayout>
             </ProtectedRoute>
           }

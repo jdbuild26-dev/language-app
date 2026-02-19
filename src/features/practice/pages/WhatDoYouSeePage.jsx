@@ -185,7 +185,9 @@ export default function WhatDoYouSeePage() {
 
   // Generate blank boxes based on answer characters
   // Split by characters to show exact length
-  const answerChars = currentQuestion.correctAnswer.split("");
+  const answerChars = currentQuestion.correctAnswer
+    ? currentQuestion.correctAnswer.split("")
+    : [];
 
   return (
     <>
@@ -210,7 +212,7 @@ export default function WhatDoYouSeePage() {
           {/* Image Section */}
           <div className="w-full max-w-md aspect-square bg-slate-200 dark:bg-slate-800 rounded-2xl overflow-hidden shadow-lg flex items-center justify-center">
             {currentQuestion.imageUrl &&
-              !currentQuestion.imageUrl.includes("placeholder") ? (
+            !currentQuestion.imageUrl.includes("placeholder") ? (
               <img
                 src={currentQuestion.imageUrl}
                 alt="What do you see?"

@@ -48,15 +48,8 @@ export default function ListenFillBlanksPage() {
   useEffect(() => {
     const fetchQuestions = async () => {
       try {
-        console.log(
-          "[ListenFillBlanks] 📡 Fetching data from backend (slug: listen_fill_blanks)...",
-        );
         const response = await fetchPracticeQuestions("listen_fill_blanks");
         const practiceData = response.data || [];
-        console.log(
-          `[ListenFillBlanks] ✅ Loaded ${practiceData.length} questions`,
-          { sample: practiceData[0] },
-        );
 
         if (!practiceData || practiceData.length === 0) {
           throw new Error("No questions found");

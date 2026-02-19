@@ -35,14 +35,8 @@ export default function CompletePassagePage() {
     const fetchData = async () => {
       let data = null;
       try {
-        console.log(
-          "[CompletePassagePage] Attempting to fetch data from BACKEND API...",
-        );
         data = await fetchCompletePassageData();
         if (data) {
-          console.log(
-            "[CompletePassagePage] Data Source: BACKEND API (Success)",
-          );
         }
       } catch (err) {
         console.warn(
@@ -51,16 +45,10 @@ export default function CompletePassagePage() {
         );
         // Fallback to CSV
         try {
-          console.log(
-            "[CompletePassagePage] Attempting to fetch data from LOCAL CSV...",
-          );
           data = await loadMockCSV(
             "practice/reading/complete_passage_dropdown.csv",
           );
           if (data && data.length > 0) {
-            console.log(
-              "[CompletePassagePage] Data Source: LOCAL CSV (Success)",
-            );
           }
         } catch (csvErr) {
           console.error("CSV Fallback failed", csvErr);

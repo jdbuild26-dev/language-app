@@ -70,9 +70,6 @@ export default function BubbleSelectionPage() {
   // Initialize available words when question changes (shuffled)
   useEffect(() => {
     if (currentQuestion) {
-      console.log("Current Question:", currentQuestion);
-      console.log("Word Bubbles:", currentQuestion.wordBubbles);
-
       // Shuffle the word bubbles for randomized display
       const bubbles = Array.isArray(currentQuestion.wordBubbles)
         ? currentQuestion.wordBubbles

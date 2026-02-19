@@ -31,20 +31,12 @@ export default function SummaryCompletionPage() {
         const data = await fetchSummaryCompletionData();
         if (data) {
           // Handle if data is array or single object
-          console.log("[SummaryCompletion] Raw data received:", data);
+
           const row = Array.isArray(data) ? data[0] : data;
-          console.log("[SummaryCompletion] Processing row:", row);
 
           setPassageSegments(row.passageSegments || []);
           const blanks = row.blanksData || {};
           setBlanksData(blanks);
-
-          console.log(
-            "[SummaryCompletion] State updates -> segments:",
-            row.passageSegments,
-            "blanks:",
-            blanks,
-          );
 
           // Generate word bank from correct answers
           const options = Object.values(blanks).map((b) =>

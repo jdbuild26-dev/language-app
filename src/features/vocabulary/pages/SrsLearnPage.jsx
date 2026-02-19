@@ -58,10 +58,6 @@ export default function SrsLearnPage() {
       });
 
       const newQueue = data.queue || [];
-      console.log("[SrsLearnPage] Loaded Learning Queue:", newQueue);
-      console.log(
-        `[SrsLearnPage] Stats: ${data.reviewsCount} Reviews, ${data.newCount} New Cards`,
-      );
 
       setQueue(newQueue);
 
@@ -81,7 +77,6 @@ export default function SrsLearnPage() {
   }, [loadQueue]);
 
   const handleGrade = async (rating) => {
-    console.log(`[SrsLearnPage] User graded card: ${rating}`);
     // rating: 'unknown' (Again), 'hard', 'known' (Good), 'mastered' (Easy)
     if (isProcessing) return;
     setIsProcessing(true);
@@ -100,10 +95,6 @@ export default function SrsLearnPage() {
         interactionType: rating,
         type: "vocab",
       });
-
-      console.log(
-        `[SrsLearnPage] Successfully tracked event for item: ${currentItem.id}`,
-      );
 
       if (currentIndex < queue.length - 1) {
         setCurrentIndex((prev) => prev + 1);

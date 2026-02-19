@@ -48,15 +48,9 @@ export default function GroupWordsGamePage() {
   const loadQuestions = async () => {
     try {
       setLoading(true);
-      console.log(
-        `[GroupWords] 📡 Fetching data from backend (slug: group_words)...`,
-      );
+
       const response = await fetchPracticeQuestions("group_words");
       if (response && response.data) {
-        console.log(
-          `[GroupWords] ✅ Loaded ${response.data.length} questions`,
-          { sample: response.data[0] },
-        );
         const normalized = response.data.map((item) => {
           // Helper to parse string or array
           const parseList = (val) => {

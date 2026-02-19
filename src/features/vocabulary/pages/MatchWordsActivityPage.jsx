@@ -47,13 +47,8 @@ export default function MatchWordsActivityPage({ mode = "text" }) {
     try {
       setLoading(true);
       setError(null);
-      console.log(
-        `[MatchWordsActivity] 📡 Fetching match pairs data from backend (mode: ${currentMode})...`,
-      );
+
       const data = await fetchMatchPairsData();
-      console.log(`[MatchWordsActivity] ✅ Loaded ${data?.length || 0} pairs`, {
-        sample: data?.[0],
-      });
 
       if (!data || data.length === 0) {
         throw new Error("No match pairs data available");

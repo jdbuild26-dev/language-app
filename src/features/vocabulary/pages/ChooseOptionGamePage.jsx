@@ -30,15 +30,9 @@ export default function ChooseOptionGamePage() {
     const loadGameData = async () => {
       try {
         setLoading(true);
-        console.log(
-          `[ChooseOption] 📡 Fetching data from backend (slug: choose_options)...`,
-        );
+
         const response = await fetchPracticeQuestions("choose_options");
         const practiceData = response.data || [];
-        console.log(
-          `[ChooseOption] ✅ Loaded ${practiceData.length} questions`,
-          { sample: practiceData[0] },
-        );
 
         if (!practiceData || practiceData.length === 0) {
           throw new Error("No practice questions found.");

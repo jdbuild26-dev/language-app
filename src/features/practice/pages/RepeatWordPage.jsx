@@ -114,15 +114,6 @@ export default function RepeatWordPage() {
     );
     const isCorrectMatch = similarity >= 0.7;
 
-    console.groupCollapsed(
-      `🎤 Repeat Word: "${spokenText}" vs "${currentQuestion.correctAnswer}"`,
-    );
-    console.log(`Spoken: "${spokenText}"`);
-    console.log(`Target: "${currentQuestion.correctAnswer}"`);
-    console.log(`Similarity Score: ${similarity.toFixed(2)}`);
-    console.log(`Match Result: ${isCorrectMatch ? "✅ MATCH" : "❌ NO MATCH"}`);
-    console.groupEnd();
-
     if (isCorrectMatch) {
       setScore((prev) => prev + 1);
       setFeedback("correct");
@@ -180,8 +171,12 @@ export default function RepeatWordPage() {
     <PracticeGameLayout
       title="Repeat Word"
       questionType="Fill in the blank by speaking the missing word"
-      instructionFr={currentQuestion.instructionFr || currentQuestion.instruction}
-      instructionEn={currentQuestion.instructionEn || currentQuestion.instruction_en}
+      instructionFr={
+        currentQuestion.instructionFr || currentQuestion.instruction
+      }
+      instructionEn={
+        currentQuestion.instructionEn || currentQuestion.instruction_en
+      }
       progress={((currentIndex + 1) / questions.length) * 100}
       score={score}
       totalQuestions={questions.length}
@@ -195,9 +190,7 @@ export default function RepeatWordPage() {
       isCorrect={feedback === "correct"}
       feedbackMessage={feedback === "correct" ? "Excellent!" : "Try again"}
       correctAnswer={currentQuestion?.correctAnswer}
-      submitLabel={
-        feedback ? "Continue" : "Submit"
-      }
+      submitLabel={feedback ? "Continue" : "Submit"}
     >
       <div className="flex flex-col items-center justify-center max-w-3xl w-full gap-12">
         {/* Sentence Display with Inline Input Boxes */}
@@ -211,7 +204,11 @@ export default function RepeatWordPage() {
 
           <div className="text-lg md:text-xl text-slate-800 dark:text-slate-100 leading-relaxed font-medium relative z-10">
             {(() => {
-              const sentence = currentQuestion.sentenceWithBlank || "";
+              const sentence =
+                currentQuestion.sentenceWithBlank ||
+                currentQuestion["Sentence With Blank"] ||
+                currentQuestion.Sentence ||
+                "";
               const correctAnswer = currentQuestion.correctAnswer || "";
               const words = sentence.split(" ");
 
@@ -219,8 +216,8 @@ export default function RepeatWordPage() {
                 const isLast = idx === words.length - 1;
                 const spacer = !isLast ? " " : "";
 
-                // Check if this word contains the blank (underscores)
-                if (word.includes("_____") || word.includes("______")) {
+                // Check if this word contains the blank (underscores) - supporting 3+ underscores
+                if (word.includes("___")) {
                   // Split by _ to get surrounding punctuation/text
                   const parts = word.split(/_{3,}/);
                   const beforeBlank = parts[0] || "";
