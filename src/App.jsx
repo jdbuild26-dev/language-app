@@ -64,6 +64,7 @@ import ProfilePage from "@/features/student-dashboard/pages/ProfilePage";
 import AssignmentsPage from "@/features/student-dashboard/pages/AssignmentsPage";
 import StudentProgressPage from "@/features/student-dashboard/pages/StudentProgressPage";
 import ReferralPage from "@/features/student-dashboard/pages/ReferralPage";
+import PublicProfilePage from "@/features/student-dashboard/pages/PublicProfilePage";
 
 // Practice Games
 import ChooseOptionGamePage from "@/features/vocabulary/pages/ChooseOptionGamePage";
@@ -137,11 +138,13 @@ import SentenceCompletionPage from "@/features/practice/pages/reading/SentenceCo
 import SummaryCompletionPage from "@/features/practice/pages/reading/SummaryCompletionPage";
 
 import { LanguageProvider } from "@/contexts/LanguageContext";
+import { Toaster } from "react-hot-toast";
 
 function App() {
   return (
     <Router>
       <LanguageProvider>
+        <Toaster position="top-center" reverseOrder={false} />
         <Routes>
           {/* Public routes */}
           <Route path="/" element={<Layout />}>
@@ -151,6 +154,7 @@ function App() {
             <Route path="privacy-policy" element={<PrivacyPolicy />} />
             <Route path="refund-policy" element={<RefundPolicy />} />
             <Route path="terms-conditions" element={<TermsConditions />} />
+            <Route path="profile/:username" element={<PublicProfilePage />} />
 
             {/* Protected routes */}
             <Route

@@ -6,10 +6,12 @@ import {
   updateRelationshipStatus,
   deleteRelationship,
 } from "@/services/vocabularyApi";
-import { UserPlus, Trash2 } from "lucide-react";
+import { UserPlus, Trash2, BookPlus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@clerk/clerk-react";
+import { useState } from "react";
+import { AssignTaskModal } from "../components/AssignTaskModal";
 
 export default function MyStudentsPage() {
   const { profile } = useTeacherProfile();
@@ -70,6 +72,20 @@ export default function MyStudentsPage() {
         variant: "destructive",
       });
     }
+  };
+
+  const [assignModal, setAssignModal] = useState({
+    isOpen: false,
+    studentId: null,
+    studentName: "",
+  });
+
+  const openAssignModal = (student) => {
+    setAssignModal({
+      isOpen: true,
+      studentId: student.studentId,
+      studentName: student.name || "Student",
+    });
   };
 
   const isLoading = activeLoading || pendingLoading;
@@ -224,6 +240,15 @@ export default function MyStudentsPage() {
                     {new Date(student.createdAt).toLocaleDateString()}
                   </p>
                 </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="border-brand-blue-1/50 text-brand-blue-1 hover:bg-brand-blue-1/10 flex items-center gap-2"
+                  onClick={() => openAssignModal(student)}
+                >
+                  <BookPlus className="h-4 w-4" />
+                  Assign Task
+                </Button>
                 <Button variant="outline" size="sm">
                   View Profile
                 </Button>
@@ -240,6 +265,13 @@ export default function MyStudentsPage() {
           </Card>
         ))}
       </div>
+
+      <AssignTaskModal
+        isOpen={assignModal.isOpen}
+        onClose={() => setAssignModal({ ...assignModal, isOpen: false })}
+        studentId={assignModal.studentId}
+        studentName={assignModal.studentName}
+      />
     </div>
   );
 }

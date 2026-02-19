@@ -32,7 +32,7 @@ const GrammarPage = () => {
           <Route path="lessons" element={<GrammarNotesList />} />
           <Route path="lessons/:noteId" element={<GrammarNotePage />} />
           <Route path="practice" element={<GrammarPracticePage />} />
-          <Route path="*" element={<Navigate to="lessons" replace />} />
+          <Route path="*" element={<Navigate to="/grammar/lessons" replace />} />
         </Routes>
       </div>
     </div>

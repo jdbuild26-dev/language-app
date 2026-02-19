@@ -1,44 +1,29 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   ArrowLeft,
   RotateCcw,
   Languages,
   CheckCircle,
   XCircle,
+  Loader2
 } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ProgressBar } from "@/components/ui/ProgressBar";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@clerk/clerk-react";
+import { completeAssignment } from "@/services/assignmentsApi";
 
 /**
  * Standard Layout for Practice Games
- * @param {string} title - Page title (fallback)
- * @param {string} questionType - "What do you hear", "Fill in the blank", etc. (from Sheet)
- * @param {string} instructionFr - French instruction (from Sheet)
- * @param {string} instructionEn - English instruction (from Sheet)
- * @param {number} progress - 0 to 100
- * @param {boolean} isGameOver - Show completion screen?
- * @param {number} score - Current score
- * @param {number} totalQuestions - Total count
- * @param {function} onExit - Handle exit
- * @param {function} onNext - Handle next/submit
- * @param {function} onRestart - Handle restart
- * @param {boolean} isSubmitEnabled - Can user submit?
- * @param {boolean} showSubmitButton - Show the manual submit button?
- * @param {React.ReactNode} children - Game content
- * @param {boolean} showFeedback - Is feedback banner active?
- * @param {boolean} isCorrect - Is the answer correct?
- * @param {string} feedbackMessage - Feedback text
- * @param {string} correctAnswer - The correct answer string
  */
 export default function PracticeGameLayout({
   questionType,
-  questionTypeFr, // New: French specific question type heading
-  questionTypeEn, // New: English specific question type heading
+  questionTypeFr,
+  questionTypeEn,
   instructionFr,
   instructionEn,
-  localizedInstruction, // New: Prioritized localized instruction
+  localizedInstruction,
   progress,
   isGameOver,
   score,
@@ -49,35 +34,81 @@ export default function PracticeGameLayout({
   isSubmitEnabled = true,
   showSubmitButton = true,
   submitLabel = "Submit",
-  timerValue, // New prop for Timer string (e.g. "0:17")
-  currentQuestionIndex, // Optional: Explicit current question index (0-based) for display "X / Y"
-  showFeedback = false, // New Prop
-  isCorrect = false, // New Prop
-  feedbackMessage = "", // New Prop
-  correctAnswer = "", // New Prop
+  timerValue,
+  currentQuestionIndex,
+  showFeedback = false,
+  isCorrect = false,
+  feedbackMessage = "",
+  correctAnswer = "",
   children,
 }) {
   const [showTranslation, setShowTranslation] = useState(false);
+  const [isSubmittingResult, setIsSubmittingResult] = useState(false);
+  const [searchParams] = useSearchParams();
+  const { getToken } = useAuth();
+  const hasSubmitted = useRef(false);
+
+  const assignmentId = searchParams.get("assignmentId");
+
+  useEffect(() => {
+    if (isGameOver && assignmentId && !hasSubmitted.current) {
+      const submitResult = async () => {
+        try {
+          hasSubmitted.current = true;
+          setIsSubmittingResult(true);
+          const token = await getToken();
+
+          // Calculate percentage score
+          const percentage = totalQuestions > 0 ? Math.round((score / totalQuestions) * 100) : 0;
+
+          await completeAssignment(assignmentId, percentage, {
+            rawScore: score,
+            total: totalQuestions,
+            type: questionType
+          }, token);
+
+          console.log("✅ Assignment auto-completed:", assignmentId);
+        } catch (error) {
+          console.error("❌ Failed to auto-complete assignment:", error);
+          hasSubmitted.current = false; // Allow retry if it failed?
+        } finally {
+          setIsSubmittingResult(false);
+        }
+      };
+
+      submitResult();
+    }
+  }, [isGameOver, assignmentId, score, totalQuestions, getToken, questionType]);
 
   if (isGameOver) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen p-4 text-center animate-in zoom-in duration-300">
         <div className="w-20 h-20 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center mb-6">
-          <span className="text-4xl">🏆</span>
+          {isSubmittingResult ? (
+            <Loader2 className="w-10 h-10 text-blue-600 animate-spin" />
+          ) : (
+            <span className="text-4xl">🏆</span>
+          )}
         </div>
         <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-          Quiz Complete!
+          {isSubmittingResult ? "Saving Results..." : "Quiz Complete!"}
         </h2>
         <p className="text-xl text-gray-600 dark:text-gray-300 mb-8">
           You scored <span className="font-bold text-blue-600">{score}</span>{" "}
           out of {totalQuestions}
         </p>
 
+        {assignmentId && !isSubmittingResult && (
+          <div className="mb-6 px-4 py-2 bg-green-50 dark:bg-green-900/20 border border-green-100 dark:border-green-900/50 rounded-full text-green-700 dark:text-green-300 text-sm font-medium animate-in fade-in slide-in-from-top-2">
+            Assignment progress saved! ✅
+          </div>
+        )}
+
         <div className="flex gap-4">
-          <Button variant="outline" size="lg" onClick={onExit}>
+          <Button variant="outline" size="lg" onClick={onExit} disabled={isSubmittingResult}>
             Back to Menu
           </Button>
-          <Button onClick={onRestart} size="lg" className="gap-2">
+          <Button onClick={onRestart} size="lg" className="gap-2" disabled={isSubmittingResult}>
             <RotateCcw className="w-4 h-4" />
             Try Again
           </Button>

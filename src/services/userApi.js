@@ -138,3 +138,50 @@ export async function getTeacherProfile(token) {
   }
   return response.json();
 }
+/**
+ * Check if a username is available.
+ */
+export async function checkUsernameAvailability(username, token) {
+  const response = await fetch(
+    `${API_URL}/api/students/check-username?username=${username}`,
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }
+  );
+  if (!response.ok) {
+    throw new Error("Failed to check username availability");
+  }
+  return response.json();
+}
+
+/**
+ * Update student privacy settings.
+ */
+export async function updatePrivacySettings(privacyData, token) {
+  const response = await fetch(`${API_URL}/api/students/me/privacy`, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(privacyData),
+  });
+  if (!response.ok) {
+    throw new Error("Failed to update privacy settings");
+  }
+  return response.json();
+}
+
+/**
+ * Get a public profile by username.
+ */
+export async function getPublicProfile(username) {
+  const response = await fetch(`${API_URL}/api/profiles/${username}`);
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(errorText || "Failed to fetch public profile");
+  }
+  return response.json();
+}

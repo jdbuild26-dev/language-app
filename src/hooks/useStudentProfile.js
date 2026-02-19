@@ -1,6 +1,11 @@
 import { useState, useEffect, useCallback } from "react";
 import { useUser, useAuth } from "@clerk/clerk-react";
-import { checkOnboardingStatus, getStudentProfile } from "../services/userApi";
+import {
+  checkOnboardingStatus,
+  getStudentProfile,
+  updatePrivacySettings,
+  checkUsernameAvailability
+} from "../services/userApi";
 
 /**
  * Hook to manage student profile state and onboarding status.
@@ -53,10 +58,34 @@ export function useStudentProfile() {
     }
   }, [isClerkLoaded, user, checkStatus]);
 
+  const updatePrivacy = async (privacyData) => {
+    try {
+      const token = await getToken();
+      const updatedProfile = await updatePrivacySettings(privacyData, token);
+      setProfile(updatedProfile);
+      return updatedProfile;
+    } catch (error) {
+      console.error("Error updating privacy settings:", error);
+      throw error;
+    }
+  };
+
+  const checkUsername = async (username) => {
+    try {
+      const token = await getToken();
+      return await checkUsernameAvailability(username, token);
+    } catch (error) {
+      console.error("Error checking username:", error);
+      throw error;
+    }
+  };
+
   return {
     needsOnboarding,
     profile,
     isLoading: !isClerkLoaded || isLoading,
     refreshProfile: checkStatus,
+    updatePrivacy,
+    checkUsername,
   };
 }

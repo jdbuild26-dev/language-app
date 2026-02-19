@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useUser } from "@clerk/clerk-react";
 import { useStudentProfile } from "@/hooks/useStudentProfile";
@@ -24,18 +24,86 @@ import {
   UserPlusIcon,
   CreditCardIcon,
   SparklesIcon,
+  GlobeAltIcon,
+  LinkIcon,
+  CheckIcon,
+  FingerPrintIcon,
 } from "@heroicons/react/24/outline";
+import { toast } from "react-hot-toast";
 
 export default function ProfilePage() {
   const { user } = useUser();
   const navigate = useNavigate();
-  const { profile } = useStudentProfile();
+  const { profile, updatePrivacy, checkUsername } = useStudentProfile();
   const {
     profile: teacherProfile,
     needsOnboarding: needsTeacherOnboarding,
     refreshProfile: refreshTeacherProfile,
   } = useTeacherProfile();
+
   const [showTeacherOnboarding, setShowTeacherOnboarding] = useState(false);
+
+  // Privacy State
+  const [isPublic, setIsPublic] = useState(profile?.isPublic || false);
+  const [username, setUsername] = useState(profile?.username || "");
+  const [isCheckingUsername, setIsCheckingUsername] = useState(false);
+  const [usernameStatus, setUsernameStatus] = useState(null); // 'available', 'taken', 'invalid'
+  const [isUpdatingPrivacy, setIsUpdatingPrivacy] = useState(false);
+
+  // Update local state when profile loads
+  useEffect(() => {
+    if (profile) {
+      setIsPublic(profile.isPublic);
+      setUsername(profile.username || "");
+    }
+  }, [profile]);
+
+  const handleUsernameChange = async (e) => {
+    const value = e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, "");
+    setUsername(value);
+
+    if (value.length < 3) {
+      setUsernameStatus(null);
+      return;
+    }
+
+    setIsCheckingUsername(true);
+    try {
+      const res = await checkUsername(value);
+      if (res.available) {
+        setUsernameStatus('available');
+      } else {
+        setUsernameStatus('taken');
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsCheckingUsername(false);
+    }
+  };
+
+  const handleSavePrivacy = async () => {
+    if (isPublic && (!username || username.length < 3)) {
+      toast.error("Please set a valid username for your public profile");
+      return;
+    }
+
+    setIsUpdatingPrivacy(true);
+    try {
+      await updatePrivacy({ isPublic, username });
+      toast.success("Privacy settings updated!");
+    } catch (err) {
+      toast.error("Failed to update privacy settings");
+    } finally {
+      setIsUpdatingPrivacy(false);
+    }
+  };
+
+  const copyProfileLink = () => {
+    const url = `${window.location.origin}/profile/${profile.username}`;
+    navigator.clipboard.writeText(url);
+    toast.success("Profile link copied!");
+  };
 
   return (
     <div className="space-y-8 animate-fade-in">
@@ -206,10 +274,10 @@ export default function ProfilePage() {
               <p className="text-sm font-medium text-gray-700 dark:text-primary-dark">
                 {user?.createdAt
                   ? new Date(user.createdAt).toLocaleDateString(undefined, {
-                      year: "numeric",
-                      month: "long",
-                      day: "numeric",
-                    })
+                    year: "numeric",
+                    month: "long",
+                    day: "numeric",
+                  })
                   : "N/A"}
               </p>
             </div>
@@ -219,6 +287,97 @@ export default function ProfilePage() {
 
       {/* Classroom Connection */}
       <ConnectTeacher />
+
+      {/* Privacy & Sharing Section */}
+      <Card className="border-gray-100 dark:border-subtle-dark shadow-lg bg-white dark:bg-card-dark">
+        <CardHeader>
+          <div className="flex items-center gap-2 mb-1">
+            <GlobeAltIcon className="h-6 w-6 text-brand-blue-1" />
+            <CardTitle className="text-xl font-bold text-gray-900 dark:text-primary-dark">
+              Privacy & Sharing
+            </CardTitle>
+          </div>
+          <CardDescription>
+            Control how others see your progress. Make your profile public to share your achievements.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="flex flex-col md:flex-row gap-8">
+            {/* Toggle Section */}
+            <div className="flex-1 space-y-4">
+              <div className="flex items-center justify-between p-4 rounded-xl bg-gray-50 dark:bg-elevated-2 border border-gray-100 dark:border-subtle-dark">
+                <div className="space-y-0.5">
+                  <p className="text-sm font-semibold text-gray-900 dark:text-primary-dark">Public Profile</p>
+                  <p className="text-xs text-gray-500 dark:text-secondary-dark">Allow anyone with the link to see your stats</p>
+                </div>
+                <button
+                  onClick={() => setIsPublic(!isPublic)}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ring-2 ring-offset-2 ring-transparent ${isPublic ? 'bg-brand-blue-1' : 'bg-gray-200'}`}
+                >
+                  <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${isPublic ? 'translate-x-6' : 'translate-x-1'}`} />
+                </button>
+              </div>
+
+              {isPublic && (
+                <div className="space-y-2 animate-in fade-in slide-in-from-top-2">
+                  <label className="text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-muted-dark">
+                    Your Profile Username
+                  </label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <FingerPrintIcon className="h-4 w-4 text-gray-400" />
+                    </div>
+                    <input
+                      type="text"
+                      value={username}
+                      onChange={handleUsernameChange}
+                      placeholder="choose_a_username"
+                      className={`block w-full pl-10 pr-10 py-2 sm:text-sm border rounded-lg bg-white dark:bg-card-dark focus:ring-brand-blue-1 focus:border-brand-blue-1 ${usernameStatus === 'taken' ? 'border-red-300' :
+                        usernameStatus === 'available' ? 'border-green-300' : 'border-gray-200 dark:border-subtle-dark'
+                        }`}
+                    />
+                    <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
+                      {isCheckingUsername ? (
+                        <div className="h-4 w-4 border-2 border-brand-blue-1 border-t-transparent rounded-full animate-spin" />
+                      ) : usernameStatus === 'available' ? (
+                        <CheckIcon className="h-4 w-4 text-green-500" />
+                      ) : usernameStatus === 'taken' ? (
+                        <span className="text-[10px] text-red-500 font-bold">TAKEN</span>
+                      ) : null}
+                    </div>
+                  </div>
+                  <p className="text-[10px] text-gray-500">Only letters, numbers, and underscores allowed.</p>
+                </div>
+              )}
+            </div>
+
+            {/* Action Section */}
+            <div className="md:w-72 flex flex-col gap-3">
+              <Button
+                onClick={handleSavePrivacy}
+                disabled={isUpdatingPrivacy || (isPublic && usernameStatus === 'taken')}
+                className="w-full bg-brand-blue-1 hover:bg-brand-blue-2 text-white h-11"
+              >
+                {isUpdatingPrivacy ? (
+                  <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                ) : null}
+                Save Settings
+              </Button>
+
+              {profile?.username && profile?.isPublic && (
+                <Button
+                  variant="outline"
+                  onClick={copyProfileLink}
+                  className="w-full h-11 border-brand-blue-1/20 hover:bg-brand-blue-1/5 text-brand-blue-1"
+                >
+                  <LinkIcon className="h-4 w-4 mr-2" />
+                  Copy Profile Link
+                </Button>
+              )}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Quick Actions */}
       <div className="space-y-4">
