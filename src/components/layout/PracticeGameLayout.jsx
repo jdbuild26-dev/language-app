@@ -38,6 +38,7 @@ export default function PracticeGameLayout({
   questionTypeEn, // New: English specific question type heading
   instructionFr,
   instructionEn,
+  localizedInstruction, // New: Prioritized localized instruction
   progress,
   isGameOver,
   score,
@@ -94,11 +95,11 @@ export default function PracticeGameLayout({
           <div className="flex items-center justify-center gap-3">
             <h1 className="text-xl md:text-3xl font-bold text-gray-900 dark:text-white tracking-tight">
               {showTranslation
-                ? instructionEn || instructionFr
-                : instructionFr || instructionEn}
+                ? instructionEn || instructionFr || localizedInstruction
+                : localizedInstruction || instructionFr || instructionEn}
             </h1>
 
-            {instructionFr && instructionEn && (
+            {((instructionFr && instructionEn) || (localizedInstruction && instructionEn)) && (
               <Button
                 variant="ghost"
                 size="icon"

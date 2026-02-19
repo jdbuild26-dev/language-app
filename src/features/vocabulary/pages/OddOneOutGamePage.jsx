@@ -6,10 +6,12 @@ import { Button } from "@/components/ui/button";
 import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
 import { getFeedbackMessage } from "@/utils/feedbackMessages";
 import { fetchPracticeQuestions } from "@/services/vocabularyApi";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 // MOCK DATA for "Odd One Out"
 export default function OddOneOutGamePage() {
   const navigate = useNavigate();
+  const { learningLang, knownLang } = useLanguage();
   const [questions, setQuestions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -39,7 +41,7 @@ export default function OddOneOutGamePage() {
 
   useEffect(() => {
     loadQuestions();
-  }, []);
+  }, [learningLang, knownLang]);
 
   useEffect(() => {
     resetTimer();
@@ -48,9 +50,17 @@ export default function OddOneOutGamePage() {
   const loadQuestions = async () => {
     try {
       setLoading(true);
-
-      const response = await fetchPracticeQuestions("odd_one_out");
+      console.log(
+        `[OddOneOut] 📡 Fetching data from backend (slug: odd_one_out)...`,
+      );
+      const response = await fetchPracticeQuestions("odd_one_out", {
+        learningLang,
+        knownLang
+      });
       if (response && response.data) {
+        console.log(`[OddOneOut] ✅ Loaded ${response.data.length} questions`, {
+          sample: response.data[0],
+        });
         const normalized = response.data
           .filter(
             (item) =>
@@ -73,6 +83,7 @@ export default function OddOneOutGamePage() {
               "",
             instructionFr: item.Instruction_FR || "Trouvez l'intrus",
             instructionEn: item.Instruction_EN || "Select the odd one out",
+            localizedInstruction: item.localizedInstruction || item.Instruction_EN || "Select the odd one out",
             type: "Odd One Out",
           }));
         setQuestions(normalized);
@@ -177,6 +188,7 @@ export default function OddOneOutGamePage() {
         instructionEn={
           currentQuestion.instructionEn || "Select the odd one out"
         }
+        localizedInstruction={currentQuestion.localizedInstruction}
         progress={progress}
         isGameOver={isGameOver}
         score={score}

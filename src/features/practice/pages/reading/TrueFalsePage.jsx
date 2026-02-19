@@ -8,6 +8,8 @@ import { getFeedbackMessage } from "@/utils/feedbackMessages";
 import { loadMockCSV } from "@/utils/csvLoader";
 import { Button } from "@/components/ui/button";
 
+import { useLanguage } from "@/contexts/LanguageContext";
+
 const OPTIONS = [
   { value: "true", label: "Vrai" },
   { value: "false", label: "Faux" },
@@ -16,6 +18,7 @@ const OPTIONS = [
 
 export default function TrueFalsePage() {
   const handleExit = usePracticeExit();
+  const { learningLang, knownLang } = useLanguage();
 
   const [questions, setQuestions] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -29,12 +32,21 @@ export default function TrueFalsePage() {
 
   useEffect(() => {
     const fetchData = async () => {
-      const data = await loadMockCSV("practice/reading/true_false.csv");
-      setQuestions(data);
-      setIsLoading(false);
+      try {
+        setIsLoading(true);
+        const data = await loadMockCSV("practice/reading/true_false.csv", {
+          learningLang,
+          knownLang
+        });
+        setQuestions(data);
+      } catch (error) {
+        console.error("Error loading mock data:", error);
+      } finally {
+        setIsLoading(false);
+      }
     };
     fetchData();
-  }, []);
+  }, [learningLang, knownLang]);
 
 
   const currentQuestion = questions[currentIndex];
@@ -115,8 +127,9 @@ export default function TrueFalsePage() {
     <>
       <PracticeGameLayout
         questionType="Identify Information"
-        instructionFr="L'affirmation est-elle vraie, fausse, ou non mentionnée?"
-        instructionEn="Is the statement true, false, or not mentioned?"
+        localizedInstruction={currentQuestion?.localizedInstruction}
+        instructionFr={currentQuestion?.instructionFr || "L'affirmation est-elle vraie, fausse, ou non mentionnée?"}
+        instructionEn={currentQuestion?.instructionEn || "Is the statement true, false, or not mentioned?"}
         progress={progress}
         isGameOver={isCompleted}
         score={score}

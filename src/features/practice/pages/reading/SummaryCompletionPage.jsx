@@ -7,14 +7,18 @@ import FeedbackBanner from "@/components/ui/FeedbackBanner";
 import { CheckCircle, XCircle, Loader2 } from "lucide-react";
 import { fetchSummaryCompletionData } from "@/services/vocabularyApi";
 
+import { useLanguage } from "@/contexts/LanguageContext";
+
 export default function SummaryCompletionPage() {
   const handleExit = usePracticeExit();
+  const { learningLang, knownLang } = useLanguage();
 
   // State
   const [passageSegments, setPassageSegments] = useState([]);
   const [blanksData, setBlanksData] = useState({});
   const [wordBank, setWordBank] = useState([]);
   const [passageTitle, setPassageTitle] = useState("Summary Completion");
+  const [currentQuestion, setCurrentQuestion] = useState(null);
 
   const [answers, setAnswers] = useState({}); // { 1: "option", 2: "option" }
   const [showFeedback, setShowFeedback] = useState(false);
@@ -28,15 +32,25 @@ export default function SummaryCompletionPage() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const data = await fetchSummaryCompletionData();
+        setLoading(true);
+        const data = await fetchSummaryCompletionData({ learningLang, knownLang });
         if (data) {
           // Handle if data is array or single object
-
+          console.log("[SummaryCompletion] Raw data received:", data);
           const row = Array.isArray(data) ? data[0] : data;
+          setCurrentQuestion(row);
+          console.log("[SummaryCompletion] Processing row:", row);
 
           setPassageSegments(row.passageSegments || []);
           const blanks = row.blanksData || {};
           setBlanksData(blanks);
+
+          console.log(
+            "[SummaryCompletion] State updates -> segments:",
+            row.passageSegments,
+            "blanks:",
+            blanks,
+          );
 
           // Generate word bank from correct answers
           const options = Object.values(blanks).map((b) =>
@@ -45,7 +59,7 @@ export default function SummaryCompletionPage() {
           // Shuffle options (simple shuffle)
           setWordBank(options.sort(() => Math.random() - 0.5));
 
-          if (row.title) setPassageTitle(row.title);
+          if (row.passageTitle || row.title) setPassageTitle(row.passageTitle || row.title);
         }
       } catch (err) {
         console.error("Failed to load summary completion data", err);
@@ -55,7 +69,7 @@ export default function SummaryCompletionPage() {
       }
     };
     fetchData();
-  }, []);
+  }, [learningLang, knownLang]);
 
   // Timer configuration
   const { timerString } = useExerciseTimer({
@@ -158,8 +172,9 @@ export default function SummaryCompletionPage() {
     <>
       <PracticeGameLayout
         questionType="Summary Completion"
-        instructionFr="Complétez le résumé"
-        instructionEn="Complete the summary using the words provided"
+        localizedInstruction={currentQuestion?.localizedInstruction}
+        instructionFr={currentQuestion?.instructionFr || "Complétez le résumé"}
+        instructionEn={currentQuestion?.instructionEn || "Complete the summary using the words provided"}
         progress={progress}
         isGameOver={isCompleted}
         score={score}
@@ -219,11 +234,11 @@ export default function SummaryCompletionPage() {
                                 ? "border-sky-500 text-sky-700 dark:text-sky-300 bg-white dark:bg-slate-800"
                                 : "border-slate-200 dark:border-slate-600 text-slate-500 dark:text-slate-400 min-w-[100px]",
                               showFeedback &&
-                                isCorrectAnswer &&
-                                "border-green-500 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300",
+                              isCorrectAnswer &&
+                              "border-green-500 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300",
                               showFeedback &&
-                                !isCorrectAnswer &&
-                                "border-red-500 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300",
+                              !isCorrectAnswer &&
+                              "border-red-500 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300",
                             )}
                           >
                             <option value="" disabled>

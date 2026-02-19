@@ -80,9 +80,11 @@ export const loadMockCSV = async (fileName, options = {}) => {
 
   if (slug) {
     try {
-      const { level } = options;
+      const { level, learningLang, knownLang } = options;
       const params = new URLSearchParams();
       if (level) params.append("level", level);
+      if (learningLang) params.append("learning_lang", learningLang);
+      if (knownLang) params.append("known_lang", knownLang);
 
       const response = await fetch(
         `${API_URL}/api/practice/${slug}${params.toString() ? `?${params}` : ""}`,
@@ -134,7 +136,7 @@ export const loadMockCSV = async (fileName, options = {}) => {
                 ) {
                   try {
                     newRow[key] = JSON.parse(value);
-                  } catch (e) {}
+                  } catch (e) { }
                 }
               }
             }

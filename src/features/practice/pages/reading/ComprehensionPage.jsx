@@ -8,8 +8,11 @@ import { getFeedbackMessage } from "@/utils/feedbackMessages";
 import { loadMockCSV } from "@/utils/csvLoader";
 import { Button } from "@/components/ui/button";
 
+import { useLanguage } from "@/contexts/LanguageContext";
+
 export default function ComprehensionPage() {
   const handleExit = usePracticeExit();
+  const { learningLang, knownLang } = useLanguage();
 
   const [questions, setQuestions] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -23,12 +26,21 @@ export default function ComprehensionPage() {
 
   useEffect(() => {
     const fetchData = async () => {
-      const data = await loadMockCSV("practice/reading/comprehension.csv");
-      setQuestions(data);
-      setIsLoading(false);
+      try {
+        setIsLoading(true);
+        const data = await loadMockCSV("practice/reading/comprehension.csv", {
+          learningLang,
+          knownLang
+        });
+        setQuestions(data);
+      } catch (error) {
+        console.error("Error loading mock data:", error);
+      } finally {
+        setIsLoading(false);
+      }
     };
     fetchData();
-  }, []);
+  }, [learningLang, knownLang]);
 
 
   const currentQuestion = questions[currentIndex];
@@ -107,8 +119,9 @@ export default function ComprehensionPage() {
     <>
       <PracticeGameLayout
         questionType="Reading Comprehension"
-        instructionFr="Lisez le passage et répondez"
-        instructionEn="Read the passage and answer"
+        localizedInstruction={currentQuestion?.localizedInstruction}
+        instructionFr={currentQuestion?.instructionFr || "Lisez le passage et répondez"}
+        instructionEn={currentQuestion?.instructionEn || "Read the passage and answer"}
         progress={progress}
         isGameOver={isCompleted}
         score={score}

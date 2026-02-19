@@ -65,11 +65,15 @@ export async function fetchVocabulary({
   category,
   subCategory,
   limit,
+  learningLang,
+  knownLang,
 } = {}) {
   const params = new URLSearchParams();
   if (level) params.append("level", level);
   if (category) params.append("category", category);
   if (limit) params.append("limit", limit);
+  if (learningLang) params.append("learning_lang", learningLang);
+  if (knownLang) params.append("known_lang", knownLang);
   // Handle subCategory array
   if (subCategory && Array.isArray(subCategory)) {
     subCategory.forEach((sc) => params.append("sub_category", sc));
@@ -77,9 +81,8 @@ export async function fetchVocabulary({
     params.append("sub_category", subCategory);
   }
 
-  const url = `${API_BASE_URL}/api/vocabulary${
-    params.toString() ? "?" + params : ""
-  }`;
+  const url = `${API_BASE_URL}/api/vocabulary${params.toString() ? "?" + params : ""
+    }`;
   const response = await fetch(url);
 
   if (!response.ok) {
@@ -94,11 +97,13 @@ export async function fetchVocabulary({
  */
 export async function fetchLessonWords(
   lessonId,
-  { level, wordsPerLesson = 10 } = {},
+  { level, wordsPerLesson = 10, learningLang, knownLang } = {},
 ) {
   const params = new URLSearchParams();
   params.append("words_per_lesson", wordsPerLesson);
   if (level) params.append("level", level);
+  if (learningLang) params.append("learning_lang", learningLang);
+  if (knownLang) params.append("known_lang", knownLang);
 
   const response = await fetch(
     `${API_BASE_URL}/api/vocabulary/lesson/${lessonId}?${params}`,
@@ -361,9 +366,11 @@ export async function deleteRelationship(relationshipId, token) {
 /**
  * Fetch practice questions from a specific sheet or slug
  */
-export async function fetchPracticeQuestions(sheetName, limit) {
+export async function fetchPracticeQuestions(sheetName, { limit, learningLang, knownLang } = {}) {
   const params = new URLSearchParams();
   if (limit) params.append("limit", limit);
+  if (learningLang) params.append("learning_lang", learningLang);
+  if (knownLang) params.append("known_lang", knownLang);
 
   const response = await fetch(
     `${API_BASE_URL}/api/practice/${encodeURIComponent(sheetName)}?${params}`,
@@ -537,6 +544,8 @@ export async function fetchLearningQueue({
   dailyLimitNew,
   level,
   category,
+  learningLang,
+  knownLang,
 } = {}) {
   const params = new URLSearchParams();
   if (userId) params.append("user_id", userId);
@@ -545,6 +554,8 @@ export async function fetchLearningQueue({
   if (dailyLimitNew) params.append("daily_limit_new", dailyLimitNew);
   if (level) params.append("level", level);
   if (category) params.append("category", category);
+  if (learningLang) params.append("learning_lang", learningLang);
+  if (knownLang) params.append("known_lang", knownLang);
 
   console.log(
     `[vocabularyApi] Fetching queue with params: ${params.toString()}`,
@@ -563,9 +574,13 @@ export async function fetchLearningQueue({
 /**
  * Fetch specialized Complete Passage data
  */
-export async function fetchCompletePassageData() {
+export async function fetchCompletePassageData({ learningLang, knownLang } = {}) {
+  const params = new URLSearchParams();
+  if (learningLang) params.append("learning_lang", learningLang);
+  if (knownLang) params.append("known_lang", knownLang);
+
   const response = await fetch(
-    `${API_BASE_URL}/api/practice/complete_passage_dropdown`,
+    `${API_BASE_URL}/api/practice/complete_passage_dropdown?${params}`,
   );
   if (!response.ok) throw new Error("Failed to fetch complete passage data");
   const result = await response.json();
@@ -575,9 +590,13 @@ export async function fetchCompletePassageData() {
 /**
  * Fetch specialized Summary Completion data
  */
-export async function fetchSummaryCompletionData() {
+export async function fetchSummaryCompletionData({ learningLang, knownLang } = {}) {
+  const params = new URLSearchParams();
+  if (learningLang) params.append("learning_lang", learningLang);
+  if (knownLang) params.append("known_lang", knownLang);
+
   const response = await fetch(
-    `${API_BASE_URL}/api/practice/summary_completion`,
+    `${API_BASE_URL}/api/practice/summary_completion?${params}`,
   );
   if (!response.ok) throw new Error("Failed to fetch summary completion data");
   const result = await response.json();

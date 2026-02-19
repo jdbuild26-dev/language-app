@@ -8,6 +8,7 @@ import {
   LanguageIcon,
 } from "@heroicons/react/24/outline";
 import { fetchVocabulary } from "../../../services/vocabularyApi";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 // Action button component
 function ActionButton({ icon: Icon, label, onClick }) {
@@ -103,6 +104,7 @@ function VocabularyCard({ word, topic }) {
 
 export default function TopicCategoryPage() {
   const { topic } = useParams();
+  const { learningLang, knownLang } = useLanguage();
   const [words, setWords] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -110,9 +112,9 @@ export default function TopicCategoryPage() {
   // Format topic name for display (convert slug to title case)
   const topicDisplayName = topic
     ? topic
-        .split("-")
-        .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-        .join(" ")
+      .split("-")
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(" ")
     : "";
 
   useEffect(() => {
@@ -120,7 +122,11 @@ export default function TopicCategoryPage() {
       try {
         setIsLoading(true);
         setError(null);
-        const data = await fetchVocabulary({ category: topic });
+        const data = await fetchVocabulary({
+          category: topic,
+          learningLang,
+          knownLang
+        });
         setWords(data.words || []);
       } catch (err) {
         console.error("Failed to fetch vocabulary:", err);
@@ -130,7 +136,7 @@ export default function TopicCategoryPage() {
       }
     }
     loadWords();
-  }, [topic]);
+  }, [topic, learningLang, knownLang]);
 
   // Loading state
   if (isLoading) {

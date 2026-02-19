@@ -5,11 +5,13 @@ import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { fetchPracticeQuestions } from "@/services/vocabularyApi";
 import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { getFeedbackMessage } from "@/utils/feedbackMessages";
 import { cn } from "@/lib/utils";
 
 export default function ChooseOptionGamePage() {
   const navigate = useNavigate();
+  const { learningLang, knownLang } = useLanguage();
   const [questions, setQuestions] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedOption, setSelectedOption] = useState(null);
@@ -30,9 +32,18 @@ export default function ChooseOptionGamePage() {
     const loadGameData = async () => {
       try {
         setLoading(true);
-
-        const response = await fetchPracticeQuestions("choose_options");
+        console.log(
+          `[ChooseOption] 📡 Fetching data from backend (slug: choose_options)...`,
+        );
+        const response = await fetchPracticeQuestions("choose_options", {
+          learningLang,
+          knownLang
+        });
         const practiceData = response.data || [];
+        console.log(
+          `[ChooseOption] ✅ Loaded ${practiceData.length} questions`,
+          { sample: practiceData[0] },
+        );
 
         if (!practiceData || practiceData.length === 0) {
           throw new Error("No practice questions found.");
@@ -67,6 +78,7 @@ export default function ChooseOptionGamePage() {
               item.Instruction_EN ||
               item.instructionEn ||
               "Complete the sentence with the correct word",
+            localizedInstruction: item.localizedInstruction || item.Instruction_EN || "Complete the sentence with the correct word",
             image: item.ImageURL || item.imageUrl,
           };
         });
@@ -81,7 +93,7 @@ export default function ChooseOptionGamePage() {
     };
 
     loadGameData();
-  }, []);
+  }, [learningLang, knownLang]);
 
   const currentQuestion = questions[currentIndex];
   // Timer string handled by layout or internal state?
@@ -189,6 +201,7 @@ export default function ChooseOptionGamePage() {
         questionType={currentQuestion?.questionType}
         instructionFr={currentQuestion?.instructionFr}
         instructionEn={currentQuestion?.instructionEn}
+        localizedInstruction={currentQuestion?.localizedInstruction}
         progress={progress}
         isGameOver={isGameOver}
         score={score}
@@ -229,7 +242,7 @@ export default function ChooseOptionGamePage() {
                     );
                     return parts.map((part, i) =>
                       part.toLowerCase() ===
-                      currentQuestion.correctAnswer.toLowerCase() ? (
+                        currentQuestion.correctAnswer.toLowerCase() ? (
                         <span
                           key={i}
                           className="text-green-600 font-bold bg-green-100 px-1 rounded-md mx-0.5 shadow-sm border border-green-200"
