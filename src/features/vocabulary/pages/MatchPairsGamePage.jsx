@@ -33,13 +33,8 @@ export default function MatchPairsGamePage() {
   useEffect(() => {
     const loadContent = async () => {
       try {
-        console.log(
-          `[MatchPairs] 📡 Fetching data from backend (via practiceFetcher)...`,
-        );
         const data = await fetchMatchPairsData();
-        console.log(`[MatchPairs] ✅ Loaded ${data.length} pairs`, {
-          sample: data[0],
-        });
+
         setExercises(data);
         if (data.length > 0) {
           initializeGame(data);

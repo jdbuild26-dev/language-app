@@ -135,6 +135,7 @@ import SpeakInteractivePage from "@/features/practice/pages/speaking/SpeakIntera
 import MatchDescToImagePage from "@/features/practice/pages/reading/MatchDescToImagePage";
 import ImageLabellingPage from "@/features/practice/pages/reading/ImageLabellingPage";
 import SentenceCompletionPage from "@/features/practice/pages/reading/SentenceCompletionPage";
+import MatchWordsActivityPage from "@/features/vocabulary/pages/MatchWordsActivityPage";
 import SummaryCompletionPage from "@/features/practice/pages/reading/SummaryCompletionPage";
 
 import { LanguageProvider } from "@/contexts/LanguageContext";
@@ -728,6 +729,147 @@ function App() {
             }
           />
 
+        {/* Practice Module Routes - READING */}
+        <Route
+          path="/practice/reading/match-pairs"
+          element={
+            <ProtectedRoute>
+              <FullScreenLayout>
+                <MatchPairsPage />
+              </FullScreenLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/vocabulary/practice/match-words"
+          element={
+            <ProtectedRoute>
+              <FullScreenLayout>
+                <MatchWordsActivityPage />
+              </FullScreenLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/practice/reading/bubble-selection"
+          element={
+            <ProtectedRoute>
+              <FullScreenLayout>
+                <BubbleSelectionPage />
+              </FullScreenLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/practice/reading/highlight"
+          element={
+            <ProtectedRoute>
+              <FullScreenLayout>
+                <HighlightPage />
+              </FullScreenLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/practice/reading/highlight-text"
+          element={
+            <ProtectedRoute>
+              <FullScreenLayout>
+                <HighlightTextPage />
+              </FullScreenLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/practice/reading/image-mcq"
+          element={
+            <ProtectedRoute>
+              <FullScreenLayout>
+                <ImageMCQPage />
+              </FullScreenLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/practice/reading/comprehension"
+          element={
+            <ProtectedRoute>
+              <FullScreenLayout>
+                <ComprehensionPage />
+              </FullScreenLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/practice/reading/fill-blanks-passage"
+          element={
+            <ProtectedRoute>
+              <FullScreenLayout>
+                <CompletePassagePage />
+              </FullScreenLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/practice/reading/reorder"
+          element={
+            <ProtectedRoute>
+              <FullScreenLayout>
+                <ReorderPage />
+              </FullScreenLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/practice/reading/true-false"
+          element={
+            <ProtectedRoute>
+              <FullScreenLayout>
+                <TrueFalsePage />
+              </FullScreenLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/practice/reading/conversation"
+          element={
+            <ProtectedRoute>
+              <FullScreenLayout>
+                <ConversationPage />
+              </FullScreenLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/practice/reading/diagram-labelling"
+          element={
+            <ProtectedRoute>
+              <FullScreenLayout>
+                <DiagramLabellingPage />
+              </FullScreenLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/practice/reading/complete-passage"
+          element={
+            <ProtectedRoute>
+              <FullScreenLayout>
+                <SentenceCompletionPage />
+              </FullScreenLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/practice/reading/summary-completion"
+          element={
+            <ProtectedRoute>
+              <FullScreenLayout>
+                <SummaryCompletionPage />
+              </FullScreenLayout>
+            </ProtectedRoute>
+          }
+        />
           <Route
             path="/practice/listening/order"
             element={

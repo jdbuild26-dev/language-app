@@ -44,14 +44,9 @@ export default function DictationPage() {
   const loadData = async () => {
     try {
       setLoading(true);
-      console.log(
-        `[Dictation] 📡 Fetching data from backend (slug: listen_type)...`,
-      );
+
       const response = await fetchPracticeQuestions("listen_type");
       if (response && response.data) {
-        console.log(`[Dictation] ✅ Loaded ${response.data.length} questions`, {
-          sample: response.data[0],
-        });
         const transformed = response.data.map((item) => ({
           id: item["ExerciseID"] || item["id"],
           fullSentence:

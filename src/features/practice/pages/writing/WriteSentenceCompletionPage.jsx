@@ -88,9 +88,7 @@ export default function WriteSentenceCompletionPage() {
             timeLimitSeconds:
               content.timeLimitSeconds || item.timeLimitSeconds || 300,
           };
-          console.log(
-            `[DATA_SOURCE] WriteSentenceCompletionPage: Successfully fetched from BACKEND. Exercises: ${response.data.length}`,
-          );
+
           setExerciseData(data);
         } else {
           console.warn(

@@ -33,7 +33,6 @@ export default function FillBlanksPage() {
     fetchData();
   }, []);
 
-
   const currentQuestion = questions[currentIndex];
   const timerDuration = currentQuestion?.timeLimitSeconds || 30;
 
@@ -64,45 +63,38 @@ export default function FillBlanksPage() {
 
   const handleSpeak = () => {
     if (currentQuestion) {
-      const fullSentence = currentQuestion.sentenceWithBlank.replace(
-        "______",
-        currentQuestion.correctAnswer,
-      );
-      speak(fullSentence, "fr-FR");
+      // Prefer implicit Sentence or construct from parts
+      const fullSentence =
+        currentQuestion.Sentence ||
+        currentQuestion.completeSentence ||
+        (currentQuestion.sentenceWithBlank
+          ? currentQuestion.sentenceWithBlank.replace(
+              "______",
+              currentQuestion.correctAnswer,
+            )
+          : "");
+
+      if (fullSentence) {
+        speak(fullSentence, "fr-FR");
+      }
     }
   };
 
-  const handleSubmit = () => {
-    if (showFeedback || !selectedWord) return;
-
-    const correct = selectedWord === currentQuestion.correctAnswer;
-    setIsCorrect(correct);
-    setFeedbackMessage(getFeedbackMessage(correct));
-    setShowFeedback(true);
-
-    if (correct) {
-      setScore((prev) => prev + 1);
-    }
-  };
-
-  const handleContinue = () => {
-    setShowFeedback(false);
-
-    if (currentIndex < questions.length - 1) {
-      setCurrentIndex((prev) => prev + 1);
-    } else {
-      setIsCompleted(true);
-    }
-  };
-
-  const progress =
-    questions.length > 0 ? ((currentIndex + 1) / questions.length) * 100 : 0;
+  // ... (lines 74-100 omitted) ...
 
   // Split sentence around blank
-  const sentenceParts = currentQuestion?.sentenceWithBlank?.split("______") || [
-    "",
-    "",
-  ];
+  // If sentenceWithBlank is missing but we have Sentence and correctAnswer,
+  // we might try to infer a blank, or just fail gracefully.
+  // For now, robust fallback to empty arrays to prevent crash.
+  const sentenceParts = (currentQuestion?.sentenceWithBlank || "").split(
+    "______",
+  );
+  if (sentenceParts.length < 2) {
+    // If split failed (no blank found), ensure we have at least 2 parts for the UI to render [0] (blank) [1]
+    // This handles cases where sentenceWithBlank is "" or doesn't contain the delimiter
+    sentenceParts.push("");
+    if (sentenceParts.length < 2) sentenceParts.push("");
+  }
 
   if (loading) {
     return (
@@ -115,8 +107,12 @@ export default function FillBlanksPage() {
   if (questions.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-slate-50 dark:bg-slate-900">
-        <p className="text-xl text-slate-600 dark:text-slate-400">No questions available.</p>
-        <Button onClick={() => handleExit()} variant="outline" className="mt-4">Back</Button>
+        <p className="text-xl text-slate-600 dark:text-slate-400">
+          No questions available.
+        </p>
+        <Button onClick={() => handleExit()} variant="outline" className="mt-4">
+          Back
+        </Button>
       </div>
     );
   }

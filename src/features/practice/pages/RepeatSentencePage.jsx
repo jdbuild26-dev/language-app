@@ -82,7 +82,6 @@ export default function RepeatSentencePage() {
     fetchData();
   }, []);
 
-
   // Timer (Stopwatch mode)
   const { timerString, resetTimer, isPaused } = useExerciseTimer({
     mode: "stopwatch",
@@ -92,9 +91,21 @@ export default function RepeatSentencePage() {
   const currentQuestion = questions[currentIndex];
 
   // Construct full sentence for display
+  // Supports various API response formats (camelCase, PascalCase, with spaces)
   const fullSentence = currentQuestion
-    ? (currentQuestion.completeSentence ||
-      currentQuestion.sentenceWithBlank.replace(/_+/g, currentQuestion.correctAnswer))
+    ? currentQuestion.Sentence ||
+      currentQuestion.sentence ||
+      currentQuestion.completeSentence ||
+      currentQuestion["Complete Sentence"] ||
+      ((currentQuestion.sentenceWithBlank ||
+        currentQuestion["Sentence With Blank"]) &&
+      currentQuestion.correctAnswer
+        ? // Prioritize sentenceWithBlank if available, otherwise "Sentence With Blank"
+          (
+            currentQuestion.sentenceWithBlank ||
+            currentQuestion["Sentence With Blank"]
+          ).replace(/_+/g, currentQuestion.correctAnswer)
+        : "")
     : "";
 
   const handlePlayAudio = () => {
@@ -138,7 +149,6 @@ export default function RepeatSentencePage() {
     if (!correct && currentQuestion.correctAnswer) {
       correct = fuzzyIncludes(spokenText, currentQuestion.correctAnswer, 0.75); // Slightly higher threshold for single word
       if (correct) {
-        console.log(`✨ Full sentence check failed, but fuzzy matched target word: "${currentQuestion.correctAnswer}"`);
       }
     }
 
@@ -196,7 +206,6 @@ export default function RepeatSentencePage() {
     );
   }
 
-
   return (
     <PracticeGameLayout
       title="Repeat Sentence"
@@ -241,9 +250,8 @@ export default function RepeatSentencePage() {
           </div>
         </div>
 
-
         {/* DEBUG: Show Answer for Testing */}
-        <div className="w-full bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-200 dark:border-yellow-800 p-4 text-center">
+        <div className="w-full bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-200 dark:border-yellow-800 p-4 text-center break-words">
           <p className="text-sm text-yellow-800 dark:text-yellow-200 font-mono">
             Hint (Testing): {fullSentence}
           </p>

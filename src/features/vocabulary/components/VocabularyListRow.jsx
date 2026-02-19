@@ -13,7 +13,6 @@ export default function VocabularyListRow({
   const playAudio = (e, text) => {
     e.stopPropagation();
     // Implementation for audio playing would go here
-    console.log("Play audio for:", text);
   };
 
   // Helper to get form by gender

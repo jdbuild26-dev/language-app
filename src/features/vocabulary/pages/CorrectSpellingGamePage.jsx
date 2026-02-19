@@ -69,11 +69,6 @@ export default function CorrectSpellingGamePage() {
       const rawAnswer = currentQuestion?.correctAnswer || "";
       const answer = cleanString(rawAnswer);
 
-      // Debugging log (can be removed later)
-      console.log(
-        `[SpellingGame] Cleaned answer: "${answer}" (len: ${answer.length}) from "${rawAnswer}"`,
-      );
-
       setUserInputs(new Array(answer.length).fill(""));
 
       setTimeout(() => {
@@ -86,15 +81,9 @@ export default function CorrectSpellingGamePage() {
   const loadQuestions = async () => {
     try {
       setLoading(true);
-      console.log(
-        `[CorrectSpelling] 📡 Fetching data from backend (slug: correct_spelling)...`,
-      );
+
       const response = await fetchPracticeQuestions("correct_spelling");
       if (response && response.data && response.data.length > 0) {
-        console.log(
-          `[CorrectSpelling] ✅ Loaded ${response.data.length} questions`,
-          { sample: response.data[0] },
-        );
         const normalized = response.data.map((item) => ({
           id: item.ExerciseID || Math.random(),
           misspelledWord:
