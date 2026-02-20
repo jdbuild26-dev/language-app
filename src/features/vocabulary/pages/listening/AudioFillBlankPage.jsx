@@ -266,7 +266,7 @@ export default function AudioFillBlankPage() {
         timerValue={timerString}
         showFeedback={showFeedback}
         isCorrect={isCorrect}
-        correctAnswer={!isCorrect ? currentQ.answer : null}
+        correctAnswer={!isCorrect && currentQ ? currentQ.answer : null}
         feedbackMessage={feedbackMessage}
       >
         <div className="flex flex-col items-center w-full max-w-2xl px-4">

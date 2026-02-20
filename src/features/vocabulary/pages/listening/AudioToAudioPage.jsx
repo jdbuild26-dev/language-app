@@ -46,7 +46,7 @@ export default function AudioToAudioPage() {
     try {
       setLoading(true);
 
-      const response = await fetchPracticeQuestions("B5_Fill blanks_Audio");
+      const response = await fetchPracticeQuestions("audio_to_audio");
       if (response && response.data && response.data.length > 0) {
         const transformed = response.data.map((q) => {
           const content = q.content || {};
@@ -150,6 +150,22 @@ export default function AudioToAudioPage() {
       </div>
     );
 
+  if (!questions || questions.length === 0) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center gap-4">
+        <h2 className="text-xl font-semibold text-slate-700">
+          No questions found for this exercise.
+        </h2>
+        <button
+          onClick={() => (window.location.href = "/vocabulary/practice")}
+          className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+        >
+          Go Back
+        </button>
+      </div>
+    );
+  }
+
   return (
     <>
       <PracticeGameLayout
@@ -176,7 +192,7 @@ export default function AudioToAudioPage() {
         timerValue={timerString}
         showFeedback={showFeedback}
         isCorrect={isCorrect}
-        correctAnswer={!isCorrect ? currentQ.correctAnswer : null}
+        correctAnswer={!isCorrect ? currentQ?.correctAnswer : null}
         feedbackMessage={feedbackMessage}
       >
         <div className="flex flex-col md:flex-row items-center justify-center w-full max-w-5xl gap-8 md:gap-16 px-4 pb-32">
