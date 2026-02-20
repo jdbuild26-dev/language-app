@@ -1,0 +1,6 @@
+id,words,correctAnswer,reason,instructionFr,instructionEn
+OOO_001,Apple|Banana|Carrot|Dog,Dog,Dog is an animal, others are fruits/vegetables,"Trouvez l'intrus","Select the odd one out"
+OOO_002,Red|Blue|Green|Quickly,Quickly,Quickly is an adverb, others are colors,"Trouvez l'intrus","Select the odd one out"
+OOO_003,Chair|Table|Sofa|Run,Run,Run is a verb, others are furniture,"Trouvez l'intrus","Select the odd one out"
+OOO_004,Paris|London|Berlin|France,France,France is a country, others are cities,"Trouvez l'intrus","Select the odd one out"
+OOO_005,Happy|Sad|Angry|Jump,Jump,Jump is a verb, others are emotions,"Trouvez l'intrus","Select the odd one out"

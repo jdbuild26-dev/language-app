@@ -6,14 +6,14 @@ import { LANGUAGES, EXAM_MAP } from "./onboarding/onboardingData";
 
 // Step components
 import WelcomeNameStep from "./onboarding/steps/WelcomeNameStep";
+import RoleStep from "./onboarding/steps/RoleStep";
 import TargetLanguageStep from "./onboarding/steps/TargetLanguageStep";
 import TranslationLanguageStep from "./onboarding/steps/TranslationLanguageStep";
-import InstructionLanguageStep from "./onboarding/steps/InstructionLanguageStep";
 import MainReasonStep from "./onboarding/steps/MainReasonStep";
-import LearningGoalsStep from "./onboarding/steps/LearningGoalsStep";
 import ExamStep from "./onboarding/steps/ExamStep";
 import InterestsStep from "./onboarding/steps/InterestsStep";
 import ReferralStep from "./onboarding/steps/ReferralStep";
+import PricingStep from "./onboarding/steps/PricingStep";
 import CompletingStep from "./onboarding/steps/CompletingStep";
 
 /**
@@ -22,27 +22,27 @@ import CompletingStep from "./onboarding/steps/CompletingStep";
  */
 const STEP_IDS = {
   WELCOME: "welcome", // Step 1
-  TARGET_LANG: "target_lang", // Step 2
-  TRANSLATION: "translation", // Step 3
-  INSTRUCTION: "instruction", // Step 4
+  ROLE: "role", // Step 2
+  TARGET_LANG: "target_lang", // Step 3
+  TRANSLATION: "translation", // Step 4
   MAIN_REASON: "main_reason", // Step 5
-  LEARNING_GOALS: "goals", // Step 6
-  EXAM: "exam", // Step 7 (dynamic per-language)
-  INTERESTS: "interests", // Step 8
-  REFERRAL: "referral", // Step 9
+  EXAM: "exam", // Step 6 (dynamic per-language)
+  INTERESTS: "interests", // Step 7
+  REFERRAL: "referral", // Step 8
+  PRICING: "pricing", // Step 9
   COMPLETING: "completing", // Step 10
 };
 
 const INITIAL_FORM_DATA = {
   name: "",
+  role: "", // "student" or "teacher"
   targetLanguages: [], // [{ language: string, dialect: string|null }]
   translationLanguage: "",
-  instructionLanguage: "",
   mainReason: "",
-  learningGoals: [],
   examIntents: [], // [{ language, hasExam, examType }]
   interests: [],
   referralSource: "",
+  pricingPlan: "",
 };
 
 export default function StudentOnboardingModal({ onComplete }) {
@@ -69,15 +69,19 @@ export default function StudentOnboardingModal({ onComplete }) {
   const stepSequence = useMemo(() => {
     const base = [
       STEP_IDS.WELCOME,
+      STEP_IDS.ROLE,
       STEP_IDS.TARGET_LANG,
       STEP_IDS.TRANSLATION,
-      STEP_IDS.INSTRUCTION,
       STEP_IDS.MAIN_REASON,
-      STEP_IDS.LEARNING_GOALS,
     ];
     // Insert one exam step per exam-eligible language
     examLanguages.forEach((_, i) => base.push(`exam_${i}`));
-    base.push(STEP_IDS.INTERESTS, STEP_IDS.REFERRAL, STEP_IDS.COMPLETING);
+    base.push(
+      STEP_IDS.INTERESTS,
+      STEP_IDS.REFERRAL,
+      STEP_IDS.PRICING,
+      STEP_IDS.COMPLETING,
+    );
     return base;
   }, [examLanguages]);
 
@@ -108,12 +112,12 @@ export default function StudentOnboardingModal({ onComplete }) {
     if (examLangIndex > 0) {
       setExamLangIndex(examLangIndex - 1);
     } else {
-      // Back before first exam → learning goals
-      setStep(STEP_IDS.LEARNING_GOALS);
+      // Back before first exam → main reason
+      setStep(STEP_IDS.MAIN_REASON);
     }
   };
 
-  const handleAfterGoals = () => {
+  const handleAfterReason = () => {
     if (examLanguages.length > 0) {
       // Initialize exam intents for each exam language
       setFormData((prev) => ({
@@ -153,18 +157,24 @@ export default function StudentOnboardingModal({ onComplete }) {
         targetLanguages: formData.targetLanguages,
         // Legacy fields for backward compatibility with current backend
         targetLanguage: formData.targetLanguages[0]?.language || "",
-        purpose: formData.learningGoals,
-        examIntent: formData.examIntents[0] || { language: "", hasExam: false, examType: null },
+        purpose: [],
+        examIntent: formData.examIntents[0] || {
+          language: "",
+          hasExam: false,
+          examType: null,
+        },
 
         translationLanguage: formData.translationLanguage,
-        instructionLanguage: formData.instructionLanguage,
+        instructionLanguage: "",
         mainReason: formData.mainReason,
-        learningGoals: formData.learningGoals,
+        learningGoals: [],
         examIntents: formData.examIntents,
         interests: formData.interests,
         referralSource: formData.referralSource,
+        pricingPlan: formData.pricingPlan,
         level: "A1",
         levelSource: "beginner",
+        role: formData.role,
       };
       const token = await getToken();
       await createStudentProfile(profileData, token);
@@ -215,6 +225,15 @@ export default function StudentOnboardingModal({ onComplete }) {
                 <WelcomeNameStep
                   formData={formData}
                   setFormData={setFormData}
+                  onContinue={() => setStep(STEP_IDS.ROLE)}
+                />
+              )}
+
+              {step === STEP_IDS.ROLE && (
+                <RoleStep
+                  formData={formData}
+                  setFormData={setFormData}
+                  onBack={() => setStep(STEP_IDS.WELCOME)}
                   onContinue={() => setStep(STEP_IDS.TARGET_LANG)}
                 />
               )}
@@ -223,7 +242,7 @@ export default function StudentOnboardingModal({ onComplete }) {
                 <TargetLanguageStep
                   formData={formData}
                   setFormData={setFormData}
-                  onBack={() => setStep(STEP_IDS.WELCOME)}
+                  onBack={() => setStep(STEP_IDS.ROLE)}
                   onContinue={() => setStep(STEP_IDS.TRANSLATION)}
                 />
               )}
@@ -233,15 +252,6 @@ export default function StudentOnboardingModal({ onComplete }) {
                   formData={formData}
                   setFormData={setFormData}
                   onBack={() => setStep(STEP_IDS.TARGET_LANG)}
-                  onContinue={() => setStep(STEP_IDS.INSTRUCTION)}
-                />
-              )}
-
-              {step === STEP_IDS.INSTRUCTION && (
-                <InstructionLanguageStep
-                  formData={formData}
-                  setFormData={setFormData}
-                  onBack={() => setStep(STEP_IDS.TRANSLATION)}
                   onContinue={() => setStep(STEP_IDS.MAIN_REASON)}
                 />
               )}
@@ -250,17 +260,8 @@ export default function StudentOnboardingModal({ onComplete }) {
                 <MainReasonStep
                   formData={formData}
                   setFormData={setFormData}
-                  onBack={() => setStep(STEP_IDS.INSTRUCTION)}
-                  onContinue={() => setStep(STEP_IDS.LEARNING_GOALS)}
-                />
-              )}
-
-              {step === STEP_IDS.LEARNING_GOALS && (
-                <LearningGoalsStep
-                  formData={formData}
-                  setFormData={setFormData}
-                  onBack={() => setStep(STEP_IDS.MAIN_REASON)}
-                  onContinue={handleAfterGoals}
+                  onBack={() => setStep(STEP_IDS.TRANSLATION)}
+                  onContinue={handleAfterReason}
                 />
               )}
 
@@ -285,7 +286,7 @@ export default function StudentOnboardingModal({ onComplete }) {
                       setExamLangIndex(examLanguages.length - 1);
                       setStep(STEP_IDS.EXAM);
                     } else {
-                      setStep(STEP_IDS.LEARNING_GOALS);
+                      setStep(STEP_IDS.MAIN_REASON);
                     }
                   }}
                   onContinue={() => setStep(STEP_IDS.REFERRAL)}
@@ -297,7 +298,16 @@ export default function StudentOnboardingModal({ onComplete }) {
                   formData={formData}
                   setFormData={setFormData}
                   onBack={() => setStep(STEP_IDS.INTERESTS)}
-                  onComplete={submitProfile}
+                  onComplete={() => setStep(STEP_IDS.PRICING)}
+                />
+              )}
+
+              {step === STEP_IDS.PRICING && (
+                <PricingStep
+                  formData={formData}
+                  setFormData={setFormData}
+                  onBack={() => setStep(STEP_IDS.REFERRAL)}
+                  onContinue={submitProfile}
                 />
               )}
 

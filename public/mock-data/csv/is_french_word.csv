@@ -1,0 +1,6 @@
+﻿ExerciseID,Question,CorrectAnswer,Instruction_FR,Instruction_EN
+FW001,bonjour,Yes,Est-ce un mot français ?,Is this a French word?
+FW002,flurpnax,No,Est-ce un mot français ?,Is this a French word?
+FW003,merci,Yes,Est-ce un mot français ?,Is this a French word?
+FW004,glopster,No,Est-ce un mot français ?,Is this a French word?
+FW005,château,Yes,Est-ce un mot français ?,Is this a French word?

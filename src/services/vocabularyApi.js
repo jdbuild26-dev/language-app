@@ -655,3 +655,129 @@ export async function fetchWriteAnalysisData() {
   const result = await response.json();
   return result.data || result;
 }
+
+/**
+ * --- CLASSES API ---
+ */
+
+/**
+ * Fetch all classes for the authenticated teacher
+ */
+export async function fetchClasses(token) {
+  const response = await fetch(`${API_BASE_URL}/api/teachers/classes`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error("Failed to fetch classes");
+  }
+
+  return response.json();
+}
+
+/**
+ * Create a new class
+ */
+export async function createClass(classData, token) {
+  const response = await fetch(`${API_BASE_URL}/api/teachers/classes`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(classData),
+  });
+
+  if (!response.ok) {
+    throw new Error("Failed to create class");
+  }
+
+  return response.json();
+}
+
+/**
+ * Fetch specific class details
+ */
+export async function fetchClassDetails(classId, token) {
+  const response = await fetch(
+    `${API_BASE_URL}/api/teachers/classes/${classId}`,
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    },
+  );
+
+  if (!response.ok) {
+    throw new Error("Failed to fetch class details");
+  }
+
+  return response.json();
+}
+
+/**
+ * Update a class
+ */
+export async function updateClass(classId, updateData, token) {
+  const response = await fetch(
+    `${API_BASE_URL}/api/teachers/classes/${classId}`,
+    {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(updateData),
+    },
+  );
+
+  if (!response.ok) {
+    throw new Error("Failed to update class");
+  }
+
+  return response.json();
+}
+
+/**
+ * Delete a class
+ */
+export async function deleteClass(classId, token) {
+  const response = await fetch(
+    `${API_BASE_URL}/api/teachers/classes/${classId}`,
+    {
+      method: "DELETE",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    },
+  );
+
+  if (!response.ok) {
+    throw new Error("Failed to delete class");
+  }
+
+  return response.json();
+}
+
+/**
+ * Create an assignment for a class
+ */
+export async function createClassAssignment(assignmentData, classId, token) {
+  const url = `${API_BASE_URL}/api/teachers/assign${classId ? `?class_id=${classId}` : ""}`;
+  const response = await fetch(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(assignmentData),
+  });
+
+  if (!response.ok) {
+    throw new Error("Failed to create class assignment");
+  }
+
+  return response.json();
+}

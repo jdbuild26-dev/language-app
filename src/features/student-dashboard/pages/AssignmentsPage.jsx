@@ -22,6 +22,7 @@ export default function AssignmentsPage() {
   const navigate = useNavigate();
   const { getToken } = useAuth();
   const [filter, setFilter] = useState("all");
+  const [sourceType, setSourceType] = useState("individual"); // "individual" or "class"
   const [assignments, setAssignments] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -30,7 +31,8 @@ export default function AssignmentsPage() {
       try {
         setIsLoading(true);
         const token = await getToken();
-        const data = await getMyAssignments(token);
+        // pass status=null and source=sourceType
+        const data = await getMyAssignments(token, null, sourceType);
         setAssignments(data);
       } catch (error) {
         console.error("Failed to fetch assignments:", error);
@@ -39,7 +41,7 @@ export default function AssignmentsPage() {
       }
     }
     fetchAssignments();
-  }, [getToken]);
+  }, [getToken, sourceType]);
 
   const filteredAssignments = assignments.filter((assignment) => {
     if (filter === "all") return true;
@@ -79,50 +81,50 @@ export default function AssignmentsPage() {
     // 1. Precise Slug to Path Mapping
     const slugMap = {
       // Vocabulary
-      "choose_options": "/vocabulary/practice/choose-options",
-      "highlight_word": "/vocabulary/practice/highlight-word",
-      "odd_one_out": "/vocabulary/practice/odd-one-out",
-      "group_words": "/vocabulary/practice/group-words",
-      "fill_blank_typed": "/vocabulary/practice/fill-in-blank",
-      "correct_spelling": "/vocabulary/practice/correct-spelling",
-      "is_french_word": "/vocabulary/practice/is-french-word",
-      "spell_word": "/vocabulary/practice/correct-spelling",
+      choose_options: "/vocabulary/practice/choose-options",
+      highlight_word: "/vocabulary/practice/highlight-word",
+      odd_one_out: "/vocabulary/practice/odd-one-out",
+      group_words: "/vocabulary/practice/group-words",
+      fill_blank_typed: "/vocabulary/practice/fill-in-blank",
+      correct_spelling: "/vocabulary/practice/correct-spelling",
+      is_french_word: "/vocabulary/practice/is-french-word",
+      spell_word: "/vocabulary/practice/correct-spelling",
 
       // Grammar
-      "four_options": "/grammar/practice/four-options",
-      "three_options": "/grammar/practice/three-options",
-      "two_options": "/grammar/practice/two-options",
-      "fill_blanks_options": "/grammar/practice/fill-blanks-options",
-      "grammar_find_error": "/grammar/practice/find-error",
-      "grammar_reorder": "/grammar/practice/reorder-words",
-      "grammar_transformation": "/grammar/practice/transformation",
-      "grammar_combination": "/grammar/practice/combination",
-      "grammar_rewrite": "/grammar/practice/rewrite",
-      "listen_fill_blanks": "/grammar/practice/fill-blanks",
-      "fill_blanks": "/grammar/practice/fill-blanks",
+      four_options: "/grammar/practice/four-options",
+      three_options: "/grammar/practice/three-options",
+      two_options: "/grammar/practice/two-options",
+      fill_blanks_options: "/grammar/practice/fill-blanks-options",
+      grammar_find_error: "/grammar/practice/find-error",
+      grammar_reorder: "/grammar/practice/reorder-words",
+      grammar_transformation: "/grammar/practice/transformation",
+      grammar_combination: "/grammar/practice/combination",
+      grammar_rewrite: "/grammar/practice/rewrite",
+      listen_fill_blanks: "/grammar/practice/fill-blanks",
+      fill_blanks: "/grammar/practice/fill-blanks",
 
       // Reading Practice
-      "match_pairs": "/practice/reading/match-pairs",
-      "bubble_selection": "/practice/reading/bubble-selection",
-      "highlight_text": "/practice/reading/highlight-text",
-      "passage_mcq": "/practice/reading/comprehension",
-      "complete_passage_dropdown": "/practice/reading/fill-blanks-passage",
-      "sentence_completion": "/practice/reading/sentence-completion",
-      "summary_completion": "/practice/reading/summary-completion",
-      "true_false": "/practice/reading/true-false",
-      "reorder_sentences": "/practice/reading/reorder",
-      "match_sentence_ending": "/practice/reading/complete-passage",
+      match_pairs: "/practice/reading/match-pairs",
+      bubble_selection: "/practice/reading/bubble-selection",
+      highlight_text: "/practice/reading/highlight-text",
+      passage_mcq: "/practice/reading/comprehension",
+      complete_passage_dropdown: "/practice/reading/fill-blanks-passage",
+      sentence_completion: "/practice/reading/sentence-completion",
+      summary_completion: "/practice/reading/summary-completion",
+      true_false: "/practice/reading/true-false",
+      reorder_sentences: "/practice/reading/reorder",
+      match_sentence_ending: "/practice/reading/complete-passage",
 
       // Listening/Speaking Practice
-      "phonetics__what_do_you_hear": "/vocabulary/practice/listening/phonetics",
-      "listen_phonetics": "/vocabulary/practice/listening/phonetics",
-      "type_what_you_hear": "/practice/listening/type",
-      "repeat_word": "/vocabulary/practice/repeat-word",
-      "repeat_sentence": "/vocabulary/practice/repeat-sentence",
-      "what_do_you_see": "/vocabulary/practice/what-do-you-see",
-      "dictation_image": "/vocabulary/practice/dictation-image",
-      "speak_topic": "/practice/speaking/topic",
-      "speak_image": "/practice/speaking/image",
+      phonetics__what_do_you_hear: "/vocabulary/practice/listening/phonetics",
+      listen_phonetics: "/vocabulary/practice/listening/phonetics",
+      type_what_you_hear: "/practice/listening/type",
+      repeat_word: "/vocabulary/practice/repeat-word",
+      repeat_sentence: "/vocabulary/practice/repeat-sentence",
+      what_do_you_see: "/vocabulary/practice/what-do-you-see",
+      dictation_image: "/vocabulary/practice/dictation-image",
+      speak_topic: "/practice/speaking/topic",
+      speak_image: "/practice/speaking/image",
     };
 
     // 2. If we have a direct mapping, use it
@@ -176,20 +178,43 @@ export default function AssignmentsPage() {
           </p>
         </div>
 
-        {/* Filter Tabs */}
-        <div className="flex p-1 bg-[#0f172a] rounded-xl border border-slate-800 shadow-xl">
-          {["all", "pending", "completed", "overdue"].map((status) => (
-            <button
-              key={status}
-              onClick={() => setFilter(status)}
-              className={`px-4 py-1.5 text-xs font-bold rounded-lg capitalize transition-all ${filter === status
-                ? "bg-brand-blue-1 text-white shadow-[0_0_15px_rgba(59,130,246,0.5)]"
-                : "text-slate-500 hover:text-slate-300"
+        <div className="flex flex-col items-end gap-3">
+          {/* Source Tabs (Individual / Class) */}
+          <div className="flex p-1 bg-[#0f172a] rounded-xl border border-slate-800 shadow-xl">
+            {[
+              { id: "individual", label: "Individual" },
+              { id: "class", label: "Class" },
+            ].map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setSourceType(tab.id)}
+                className={`px-4 py-1.5 text-xs font-bold rounded-lg transition-all ${
+                  sourceType === tab.id
+                    ? "bg-slate-700 text-white shadow-[0_0_15px_rgba(255,255,255,0.1)]"
+                    : "text-slate-500 hover:text-slate-300"
                 }`}
-            >
-              {status}
-            </button>
-          ))}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Filter Tabs */}
+          <div className="flex p-1 bg-[#0f172a] rounded-xl border border-slate-800 shadow-xl">
+            {["all", "pending", "completed", "overdue"].map((status) => (
+              <button
+                key={status}
+                onClick={() => setFilter(status)}
+                className={`px-4 py-1.5 text-xs font-bold rounded-lg capitalize transition-all ${
+                  filter === status
+                    ? "bg-brand-blue-1 text-white shadow-[0_0_15px_rgba(59,130,246,0.5)]"
+                    : "text-slate-500 hover:text-slate-300"
+                }`}
+              >
+                {status}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
@@ -214,7 +239,9 @@ export default function AssignmentsPage() {
                         <span className="flex items-center gap-1.5 text-slate-400">
                           <Clock className="w-3.5 h-3.5 text-slate-500" />
                           <span className="font-medium">Due:</span>{" "}
-                          {assignment.dueDate ? new Date(assignment.dueDate).toLocaleDateString() : "No deadline"}
+                          {assignment.dueDate
+                            ? new Date(assignment.dueDate).toLocaleDateString()
+                            : "No deadline"}
                         </span>
                         <span className="px-2 py-0.5 rounded bg-slate-800/50 text-slate-400 border border-slate-700 font-bold uppercase tracking-tighter text-[10px]">
                           {assignment.type}:{assignment.slug.replace(/_/g, " ")}
@@ -237,12 +264,14 @@ export default function AssignmentsPage() {
                       size="sm"
                       className="ml-auto md:ml-0 bg-brand-blue-1 hover:bg-brand-blue-2 text-white font-bold h-10 px-6 rounded-xl shadow-lg shadow-brand-blue-1/20"
                     >
-                      {assignment.status === 'completed' ? 'Review Task' : 'Start Task'}
+                      {assignment.status === "completed"
+                        ? "Review Task"
+                        : "Start Task"}
                     </Button>
                   </div>
                 </div>
                 {/* Result bar for completed tasks */}
-                {assignment.status === 'completed' && assignment.result && (
+                {assignment.status === "completed" && assignment.result && (
                   <div className="h-1 bg-slate-800 w-full">
                     <div
                       className="h-full bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.5)]"
