@@ -1,0 +1,3 @@
+﻿ExerciseID,Theme,CorrectGroup,OtherWords,Instruction_FR,Instruction_EN,Explanation
+GW001,Nourriture,pomme|banane|raisin|cerise,chaise|voiture|livre|soleil,Sélectionnez les 4 mots liés,Select 4 related words,These are all fruits
+GW002,Transport,voiture|bus|train|vélo,pomme|chat|maison|livre,Sélectionnez les 4 mots liés,Select 4 related words,These are all modes of transport
