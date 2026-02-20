@@ -137,15 +137,27 @@ export default function FillInBlankGamePage() {
           ...item,
           id: item.id || item.ExerciseID || Math.random(),
           SentenceWithBlank:
-            item.SentenceWithBlank || item.Sentence || item.Question || "",
-          CorrectAnswer: item.CorrectAnswer || item.Answer || "",
+            item.SentenceWithBlank ||
+            item.content?.SentenceWithBlank ||
+            item.Sentence ||
+            item.Question ||
+            "",
+          CorrectAnswer:
+            item.CorrectAnswer ||
+            item.content?.CorrectAnswer ||
+            item.Answer ||
+            "",
           Instruction_FR:
             item.Instruction_FR || item.instructionFr || "Complétez la phrase",
           Instruction_EN:
             item.Instruction_EN ||
             item.instructionEn ||
             "Complete the sentence",
-          TimeLimitSeconds: item.TimeLimitSeconds || item.timeLimit || 60,
+          TimeLimitSeconds:
+            item.TimeLimitSeconds ||
+            item.config?.TimeLimitSeconds ||
+            item.timeLimit ||
+            60,
         }));
         setQuestions(normalized);
       }

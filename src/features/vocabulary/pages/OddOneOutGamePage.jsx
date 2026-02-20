@@ -55,7 +55,7 @@ export default function OddOneOutGamePage() {
       );
       const response = await fetchPracticeQuestions("odd_one_out", {
         learningLang,
-        knownLang
+        knownLang,
       });
       if (response && response.data) {
         console.log(`[OddOneOut] ✅ Loaded ${response.data.length} questions`, {
@@ -75,7 +75,10 @@ export default function OddOneOutGamePage() {
                 Boolean,
               ),
             correctAnswer:
-              item.correctword || item.CorrectAnswer || item.Answer,
+              item.correctword ||
+              item.CorrectAnswer ||
+              item.Answer ||
+              item.correctAnswer,
             reason:
               item.CorrectExplanation_EN ||
               item.Reason ||
@@ -83,7 +86,10 @@ export default function OddOneOutGamePage() {
               "",
             instructionFr: item.Instruction_FR || "Trouvez l'intrus",
             instructionEn: item.Instruction_EN || "Select the odd one out",
-            localizedInstruction: item.localizedInstruction || item.Instruction_EN || "Select the odd one out",
+            localizedInstruction:
+              item.localizedInstruction ||
+              item.Instruction_EN ||
+              "Select the odd one out",
             type: "Odd One Out",
           }));
         setQuestions(normalized);

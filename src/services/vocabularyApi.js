@@ -58,6 +58,18 @@ const CSV_TRANSFORMERS = {
     },
     evaluation: { correctAnswer: row.CorrectAnswer },
   }),
+  choose_options: (row) => ({
+    external_id: row.ExerciseID || `CO_${Math.random()}`,
+    instruction_en: row.Instruction_EN || "Choose the correct option",
+    instruction_fr: row.Instruction_FR || "Choisissez la bonne option",
+    Question: row.Question,
+    Option1: row.Option1,
+    Option2: row.Option2,
+    Option3: row.Option3,
+    Option4: row.Option4,
+    CorrectAnswer: row.CorrectAnswer,
+    evaluation: { correctAnswer: row.CorrectAnswer },
+  }),
 };
 
 export async function fetchVocabulary({
@@ -81,8 +93,9 @@ export async function fetchVocabulary({
     params.append("sub_category", subCategory);
   }
 
-  const url = `${API_BASE_URL}/api/vocabulary${params.toString() ? "?" + params : ""
-    }`;
+  const url = `${API_BASE_URL}/api/vocabulary${
+    params.toString() ? "?" + params : ""
+  }`;
   const response = await fetch(url);
 
   if (!response.ok) {
@@ -366,15 +379,24 @@ export async function deleteRelationship(relationshipId, token) {
 /**
  * Fetch practice questions from a specific sheet or slug
  */
-export async function fetchPracticeQuestions(sheetName, { limit, learningLang, knownLang } = {}) {
+export async function fetchPracticeQuestions(
+  sheetName,
+  { limit, learningLang, knownLang } = {},
+) {
   const params = new URLSearchParams();
   if (limit) params.append("limit", limit);
   if (learningLang) params.append("learning_lang", learningLang);
   if (knownLang) params.append("known_lang", knownLang);
 
-  const response = await fetch(
-    `${API_BASE_URL}/api/practice/${encodeURIComponent(sheetName)}?${params}`,
-  );
+  const url = `${API_BASE_URL}/api/practice/${encodeURIComponent(sheetName)}?${params}`;
+  console.log(`[vocabularyApi] Fetching Practice Questions:`, {
+    sheetName,
+    url,
+    base: API_BASE_URL,
+    params: params.toString(),
+  });
+
+  const response = await fetch(url);
 
   if (response.status === 404) {
     // Normalizing slug to match file naming convention (e.g., 'B5_Fill blanks_Audio' -> 'b5_fill_blanks_audio')
@@ -419,6 +441,9 @@ export async function fetchPracticeQuestions(sheetName, { limit, learningLang, k
   }
 
   if (!response.ok) {
+    console.error(
+      `[vocabularyApi] API Error for ${sheetName}: Status ${response.status} ${response.statusText}`,
+    );
     throw new Error(`Failed to fetch practice questions for ${sheetName}`);
   }
 
@@ -574,7 +599,10 @@ export async function fetchLearningQueue({
 /**
  * Fetch specialized Complete Passage data
  */
-export async function fetchCompletePassageData({ learningLang, knownLang } = {}) {
+export async function fetchCompletePassageData({
+  learningLang,
+  knownLang,
+} = {}) {
   const params = new URLSearchParams();
   if (learningLang) params.append("learning_lang", learningLang);
   if (knownLang) params.append("known_lang", knownLang);
@@ -590,7 +618,10 @@ export async function fetchCompletePassageData({ learningLang, knownLang } = {})
 /**
  * Fetch specialized Summary Completion data
  */
-export async function fetchSummaryCompletionData({ learningLang, knownLang } = {}) {
+export async function fetchSummaryCompletionData({
+  learningLang,
+  knownLang,
+} = {}) {
   const params = new URLSearchParams();
   if (learningLang) params.append("learning_lang", learningLang);
   if (knownLang) params.append("known_lang", knownLang);
