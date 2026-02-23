@@ -1,4 +1,5 @@
 import { Outlet, Link, useLocation, useNavigate } from "react-router-dom";
+import { useUser } from "@clerk/clerk-react";
 import {
   UserCircleIcon,
   BookOpenIcon,
@@ -33,9 +34,10 @@ function classNames(...classes) {
 export default function StudentLayout() {
   const location = useLocation();
   const navigate = useNavigate();
+  const { user } = useUser();
+  const isTeacherUser = user?.publicMetadata?.is_teacher === true;
 
   return (
-
     <div className="min-h-screen bg-gray-50 dark:bg-body-dark flex flex-col">
       <div className="flex-1 flex flex-col lg:flex-row max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8 gap-8">
         {/* Sidebar Navigation (Desktop) */}
@@ -73,23 +75,24 @@ export default function StudentLayout() {
             })}
           </nav>
 
-          <div className="mt-8 pt-8 border-t border-gray-200 dark:border-gray-700">
-            <button
-              onClick={() => {
-                localStorage.setItem("active_role", "teacher");
-                window.dispatchEvent(new Event("roleChange"));
-                navigate("/teacher-dashboard");
-              }}
-              className="w-full group flex items-center px-3 py-2 text-sm font-medium rounded-md text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-            >
-              <AcademicCapIcon
-                className="flex-shrink-0 -ml-1 mr-3 h-6 w-6 text-gray-400 group-hover:text-gray-500"
-                aria-hidden="true"
-              />
-              <span className="truncate">Teacher Dashboard</span>
-            </button>
-          </div>
-
+          {isTeacherUser && (
+            <div className="mt-8 pt-8 border-t border-gray-200 dark:border-gray-700">
+              <button
+                onClick={() => {
+                  localStorage.setItem("active_role", "teacher");
+                  window.dispatchEvent(new Event("roleChange"));
+                  navigate("/teacher-dashboard");
+                }}
+                className="w-full group flex items-center px-3 py-2 text-sm font-medium rounded-md text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+              >
+                <AcademicCapIcon
+                  className="flex-shrink-0 -ml-1 mr-3 h-6 w-6 text-gray-400 group-hover:text-gray-500"
+                  aria-hidden="true"
+                />
+                <span className="truncate">Teacher Dashboard</span>
+              </button>
+            </div>
+          )}
         </aside>
 
         {/* Mobile Navigation (Tabs) */}
