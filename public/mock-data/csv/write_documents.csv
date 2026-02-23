@@ -1,0 +1,46 @@
+ExerciseID,Instruction_EN,Instruction_FR,Level,LearningLang,KnownLang,subject,minWords,scenario,template,recipient,documentType,eval_sampleAnswer
+write_doc_1,Write the requested document,Rédigez le document demandé,B1,FR,EN,Mon anniversaire,20,Write an email to your friend inviting them to your birthday party.,"Cher/Chère [nom],
+
+Je t'écris pour...
+
+[corps du message]
+
+À bientôt,
+[ton nom]",Ami(e),Email,"Cher Pierre,
+
+Je t'écris pour t'inviter à ma fête d'anniversaire. Elle aura lieu samedi prochain à 18 heures chez moi. Il y aura de la musique et un gâteau au chocolat.
+
+J'espère te voir là-bas !
+
+À bientôt,
+Marie"
+write_doc_2,Write the requested document,Rédigez le document demandé,B1,FR,EN,Remerciement,20,Write a letter to thank someone for a gift.,"Chère Grand-mère,
+
+Je voulais te remercier pour...
+
+[corps du message]
+
+Je t'embrasse,
+[ton nom]",Grand-mère,Letter,"Chère Grand-mère,
+
+Je voulais te remercier pour le magnifique pull que tu m'as offert pour mon anniversaire. La couleur bleue est ma préférée et il me tient très chaud.
+
+Je pense à toi souvent et j'espère te voir bientôt.
+
+Je t'embrasse fort,
+Sophie"
+write_doc_3,Write the requested document,Rédigez le document demandé,B1,FR,EN,Vacances,15,Write a postcard from your vacation.,"Chers tous,
+
+Je suis en vacances à...
+
+[description]
+
+Bisous,
+[ton nom]",Famille,Postcard,"Chers tous,
+
+Je suis en vacances à Nice depuis trois jours. La plage est magnifique et l'eau est chaude. Hier, j'ai visité le vieux Nice et j'ai mangé une délicieuse salade niçoise.
+
+Je rentre dimanche !
+
+Bisous,
+Lucas"

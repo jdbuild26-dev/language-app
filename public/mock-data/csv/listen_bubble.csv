@@ -1,0 +1,6 @@
+ExerciseID,Instruction_EN,Instruction_FR,Level,LearningLang,KnownLang,sentence,audioText,translation
+LA001,Listen and read,Écoutez et lisez,A1,FR,EN,Le chat mange la souris,Le chat mange la souris,The cat eats the mouse
+LA002,Listen and read,Écoutez et lisez,A1,FR,EN,Je vais au marché,Je vais au marché,I am going to the market
+LA003,Listen and read,Écoutez et lisez,A1,FR,EN,Il fait beau aujourd'hui,Il fait beau aujourd'hui,It is nice weather today
+LA004,Listen and read,Écoutez et lisez,A1,FR,EN,Elle lit un livre,Elle lit un livre,She is reading a book
+LA005,Listen and read,Écoutez et lisez,A1,FR,EN,Nous apprenons le français,Nous apprenons le français,We are learning French

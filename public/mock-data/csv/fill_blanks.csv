@@ -1,0 +1,6 @@
+ExerciseID,Instruction_EN,Instruction_FR,Level,LearningLang,KnownLang,wordBank,sentenceWithBlank,englishTranslation,eval_correctAnswer
+5,,,A1,FR,EN,"[""dorment"", ""mangent"", ""jouent"", ""\u00e9tudient""]",Les enfants ______ dans le jardin.,The children play in the garden.,jouent
+1,,,A1,FR,EN,"[""mange"", ""dort"", ""court"", ""joue""]",Le chat ______ sur le canapé.,The cat sleeps on the sofa.,dort
+2,,,A1,FR,EN,"[""chante"", ""danse"", ""joue"", ""\u00e9coute""]",Elle ______ le piano tous les jours.,She plays the piano every day.,joue
+3,,,A1,FR,EN,"[""allons"", ""venons"", ""partons"", ""restons""]",Nous ______ au restaurant ce soir.,We are going to the restaurant tonight.,allons
+4,,,A1,FR,EN,"[""\u00e9crit"", ""lit"", ""parle"", ""comprend""]",Il ______ très bien le français.,He speaks French very well.,parle

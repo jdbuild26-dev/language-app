@@ -1,0 +1,14 @@
+ExerciseID,Instruction_EN,Instruction_FR,Level,LearningLang,KnownLang,Question,ShuffleOptions,sentenceWithBlank,eval_BlankIndex,eval_CorrectAnswer,eval_correctAnswer,eval_CorrectExplanation_EN
+FT001,Complete the sentence with the correct word,Complétez la phrase avec le mot correct,B1,FR,EN,What is the number on the horse’s straddle?,False,None,1,Quatre,Quatre,“Statistically” fits the meaning and grammar of the sentence.
+FT002,Complete the sentence with the correct word,Complétez la phrase avec le mot correct,B1,FR,EN,How likely is it that it will rain tomorrow?,False,None,1,Probablement,Probablement,“Probablement” correctly expresses uncertainty.
+FT003,Complete the sentence with the correct word,Complétez la phrase avec le mot correct,B1,FR,EN,How often do you take the bus to work?,False,None,1,Généralement,Généralement,“Généralement” fits habitual frequency.
+FT004,Complete the sentence with the correct word,Complétez la phrase avec le mot correct,B1,FR,EN,What word shows relief in this situation?,False,None,1,Heureusement,Heureusement,“Heureusement” introduces a positive result.
+FT005,Complete the sentence with the correct word,Complétez la phrase avec le mot correct,B2,FR,EN,Which word introduces a contrast here?,False,None,1,Cependant,Cependant,“Cependant” correctly marks contrast.
+FT006,Complete the sentence with the correct word,Complétez la phrase avec le mot correct,B2,FR,EN,Which word shows that the result cannot be avoided?,False,None,1,Inévitablement,Inévitablement,“Inévitablement” expresses a logical consequence.
+WR_FT001,Complete the sentence with the correct word,Complétez la phrase avec le mot correct,B1,FR,EN,,,"
+______ (Statistacally), notre équipe a de meilleures chances de gagner le match demain compte tenu de nos résultats lors des victoires précédentes.",,,Statistiquement ,
+WR_FT002,Complete the sentence with the correct word,Complétez la phrase avec le mot correct,B1,FR,EN,,,"______ (Generally), il arrive au bureau avant 9 heures.",,,Généralement,
+WR_FT003,Complete the sentence with the correct word,Complétez la phrase avec le mot correct,B1,FR,EN,,,"______ (Fortunately), personne n’a été blessé dans l’accident.",,,Heureusement,
+WR_FT004,Complete the sentence with the correct word,Complétez la phrase avec le mot correct,B2,FR,EN,,,"______ (However), il a continué à travailler malgré la fatigue.",,,Cependant,
+WR_FT005,Complete the sentence with the correct word,Complétez la phrase avec le mot correct,B2,FR,EN,,,"______ (Probably), le train arrivera en retard ce soir.",,,Probablement,
+WR_FT006,Complete the sentence with the correct word,Complétez la phrase avec le mot correct,C1,FR,EN,,,"______ (Inevitably), ces décisions auront un impact à long terme.",,,Inévitablement,

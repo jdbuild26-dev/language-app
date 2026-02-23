@@ -1,6 +1,11 @@
-id,words,correctAnswer,reason,instructionFr,instructionEn
-OOO_001,Apple|Banana|Carrot|Dog,Dog,Dog is an animal, others are fruits/vegetables,"Trouvez l'intrus","Select the odd one out"
-OOO_002,Red|Blue|Green|Quickly,Quickly,Quickly is an adverb, others are colors,"Trouvez l'intrus","Select the odd one out"
-OOO_003,Chair|Table|Sofa|Run,Run,Run is a verb, others are furniture,"Trouvez l'intrus","Select the odd one out"
-OOO_004,Paris|London|Berlin|France,France,France is a country, others are cities,"Trouvez l'intrus","Select the odd one out"
-OOO_005,Happy|Sad|Angry|Jump,Jump,Jump is a verb, others are emotions,"Trouvez l'intrus","Select the odd one out"
+ExerciseID,Instruction_EN,Instruction_FR,Level,LearningLang,KnownLang,words,reason,correctAnswer,eval_reason,eval_correctAnswer,Option1_EN,Option2_EN,Option3_EN,Option4_EN
+OOO_001,Trouvez l'intrus, others are fruits/vegetables,A1,EN,EN,"[""Apple"", ""Banana"", ""Carrot"", ""Dog""]",Dog is an animal,Dog,Dog is an animal,Dog,Pomme,Banane,Carotte,Chien
+OOO_002,Trouvez l'intrus, others are colors,A1,EN,EN,"[""Red"", ""Blue"", ""Green"", ""Quickly""]",Quickly is an adverb,Quickly,Quickly is an adverb,Quickly,Red,Blue,Green,Quickly
+OOO_003,Trouvez l'intrus, others are furniture,A1,EN,EN,"[""Chair"", ""Table"", ""Sofa"", ""Run""]",Run is a verb,Run,Run is a verb,Run,Chair,Table,Sofa,Run
+OOO_004,Trouvez l'intrus, others are cities,A1,EN,EN,"[""Paris"", ""London"", ""Berlin"", ""France""]",France is a country,France,France is a country,France,Paris,London,Berlin,France
+OOO_005,Trouvez l'intrus, others are emotions,A1,EN,EN,"[""Happy"", ""Sad"", ""Angry"", ""Jump""]",Jump is a verb,Jump,Jump is a verb,Jump,Happy,Sad,Angry,Jump
+OOO_FR_001,Trouvez l'intrus, les autres sont des fruits/légumes,A1,FR,EN,"[""Pomme"", ""Banane"", ""Carotte"", ""Chien""]",Chien est un animal,Chien,Chien est un animal,Chien,Apple,Banana,Carrot,Dog
+OOO_FR_002,Trouvez l'intrus, les autres sont des couleurs,A1,FR,EN,"[""Rouge"", ""Bleu"", ""Vert"", ""Vite""]",Vite est un adverbe,Vite,Vite est un adverbe,Vite,Red,Blue,Green,Vite
+OOO_FR_003,Trouvez l'intrus, les autres sont des meubles,A1,FR,EN,"[""Chaise"", ""Table"", ""Canap\u00e9"", ""Courir""]",Courir est un verbe,Courir,Courir est un verbe,Courir,Chair,Table,Canapé,Courir
+OOO_FR_004,Trouvez l'intrus, les autres sont des villes,A1,FR,EN,"[""Paris"", ""Londres"", ""Berlin"", ""France""]",France est un pays,France,France est un pays,France,Paris,Londres,Berlin,France
+OOO_FR_005,Trouvez l'intrus, les autres sont des émotions,A1,FR,EN,"[""Heureux"", ""Triste"", ""F\u00e2ch\u00e9"", ""Sauter""]",Sauter est un verbe,Sauter,Sauter est un verbe,Sauter,Heureux,Triste,Fâché,Sauter

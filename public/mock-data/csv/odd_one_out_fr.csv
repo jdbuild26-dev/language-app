@@ -1,6 +1,6 @@
-id,words,correctAnswer,reason,instructionFr,instructionEn
-OOO_FR_001,Pomme|Banane|Carotte|Chien,Chien,Chien est un animal, les autres sont des fruits/légumes,"Trouvez l'intrus","Select the odd one out"
-OOO_FR_002,Rouge|Bleu|Vert|Vite,Vite,Vite est un adverbe, les autres sont des couleurs,"Trouvez l'intrus","Select the odd one out"
-OOO_FR_003,Chaise|Table|Canapé|Courir,Courir,Courir est un verbe, les autres sont des meubles,"Trouvez l'intrus","Select the odd one out"
-OOO_FR_004,Paris|Londres|Berlin|France,France,France est un pays, les autres sont des villes,"Trouvez l'intrus","Select the odd one out"
-OOO_FR_005,Heureux|Triste|Fâché|Sauter,Sauter,Sauter est un verbe, les autres sont des émotions,"Trouvez l'intrus","Select the odd one out"
+id,words,correctAnswer,reason,instructionFr,instructionEn,words_EN
+OOO_FR_001,Pomme|Banane|Carotte|Chien,Chien,Chien est un animal, les autres sont des fruits/légumes,"Trouvez l'intrus","Select the odd one out",Apple|Banana|Carrot|Dog
+OOO_FR_002,Rouge|Bleu|Vert|Vite,Vite,Vite est un adverbe, les autres sont des couleurs,"Trouvez l'intrus","Select the odd one out",Red|Blue|Green|Fast
+OOO_FR_003,Chaise|Table|Canapé|Courir,Courir,Courir est un verbe, les autres sont des meubles,"Trouvez l'intrus","Select the odd one out",Chair|Table|Sofa|Run
+OOO_FR_004,Paris|Londres|Berlin|France,France,France est un pays, les autres sont des villes,"Trouvez l'intrus","Select the odd one out",Paris|London|Berlin|France
+OOO_FR_005,Heureux|Triste|Fâché|Sauter,Sauter,Sauter est un verbe, les autres sont des émotions,"Trouvez l'intrus","Select the odd one out",Happy|Sad|Angry|Jump

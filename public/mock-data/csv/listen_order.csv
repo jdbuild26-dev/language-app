@@ -1,0 +1,4 @@
+ExerciseID,Instruction_EN,Instruction_FR,Level,LearningLang,KnownLang,correctOrder
+RS102,Reorder the sentences,Remettez les phrases dans le bon ordre,A1,FR,EN,"[""D'abord, m\u00e9langez la farine et le sucre."", ""Puis, ajoutez les \u0153ufs."", ""Ensuite, versez le lait."", ""Enfin, faites cuire au four.""]"
+RS103,Reorder the sentences,Remettez les phrases dans le bon ordre,A1,FR,EN,"[""Nous arrivons \u00e0 l'a\u00e9roport."", ""Nous enregistrons nos bagages."", ""Nous passons la s\u00e9curit\u00e9."", ""Nous embarquons dans l'avion.""]"
+RS101,Reorder the sentences,Remettez les phrases dans le bon ordre,A1,FR,EN,"[""Premier, je me l\u00e8ve."", ""Ensuite, je prends une douche."", ""Apr\u00e8s, je prends le petit d\u00e9jeuner."", ""Finalement, je vais au travail.""]"

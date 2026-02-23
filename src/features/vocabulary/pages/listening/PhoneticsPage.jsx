@@ -56,10 +56,22 @@ export default function PhoneticsPage() {
           instruction: item["Instruction_EN"] || "What do you hear?",
           explanation: item["CorrectExplanation_EN"],
           options: [
-            { text: item["Option1"], translation: item["Option1_Translation"] },
-            { text: item["Option2"], translation: item["Option2_Translation"] },
-            { text: item["Option3"], translation: item["Option3_Translation"] },
-            { text: item["Option4"], translation: item["Option4_Translation"] },
+            {
+              text: item["Option1"],
+              en: item["Option1_EN"] || item["Option1_Translation"],
+            },
+            {
+              text: item["Option2"],
+              en: item["Option2_EN"] || item["Option2_Translation"],
+            },
+            {
+              text: item["Option3"],
+              en: item["Option3_EN"] || item["Option3_Translation"],
+            },
+            {
+              text: item["Option4"],
+              en: item["Option4_EN"] || item["Option4_Translation"],
+            },
           ].filter((opt) => opt.text),
           correctIndex: parseInt(item["CorrectOptionIndex"]) - 1,
         }));
@@ -194,9 +206,9 @@ export default function PhoneticsPage() {
 
                     <div className="flex-1 flex flex-col text-left">
                       <span>{opt.text}</span>
-                      {showFeedback && opt.translation && (
+                      {showFeedback && opt.en && (
                         <span className="text-sm font-normal text-slate-500 dark:text-slate-400">
-                          {opt.translation}
+                          {opt.en}
                         </span>
                       )}
                     </div>

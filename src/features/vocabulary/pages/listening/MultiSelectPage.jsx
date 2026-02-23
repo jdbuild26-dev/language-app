@@ -49,13 +49,13 @@ export default function MultiSelectPage() {
           id: q.ExerciseID || Math.random(),
           instruction: q.Instruction_EN || "Select what you hear",
           options: [
-            q.Option1,
-            q.Option2,
-            q.Option3,
-            q.Option4,
-            q.Option5,
-            q.Option6,
-          ].filter(Boolean),
+            { text: q.Option1, en: q.Option1_EN },
+            { text: q.Option2, en: q.Option2_EN },
+            { text: q.Option3, en: q.Option3_EN },
+            { text: q.Option4, en: q.Option4_EN },
+            { text: q.Option5, en: q.Option5_EN },
+            { text: q.Option6, en: q.Option6_EN },
+          ].filter((o) => o.text),
           correctIndices:
             q.CorrectOptionIndexes || q.CorrectOptions
               ? (q.CorrectOptionIndexes || q.CorrectOptions)
@@ -195,9 +195,16 @@ export default function MultiSelectPage() {
                 key={idx}
                 onClick={() => handleOptionToggle(idx)}
                 disabled={isChecked}
-                className={`py-12 px-4 rounded-2xl text-center text-xl md:text-2xl font-medium transition-all transform active:scale-95 shadow-sm ${style}`}
+                className={`py-8 px-4 rounded-2xl text-center flex flex-col items-center justify-center transition-all transform active:scale-95 shadow-sm ${style}`}
               >
-                {opt}
+                <span className="text-xl md:text-2xl font-medium">
+                  {opt.text}
+                </span>
+                {opt.en && isChecked && (
+                  <span className="text-sm mt-1 opacity-80 font-normal">
+                    {opt.en}
+                  </span>
+                )}
               </button>
             );
           })}

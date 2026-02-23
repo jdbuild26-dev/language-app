@@ -1,0 +1,11 @@
+ExerciseID,Instruction_EN,Instruction_FR,Level,LearningLang,KnownLang,hint,correctText,incorrectText,englishTranslation,eval_errorCount,eval_correctAnswer
+SP001,Correct the spelling,Corrigez l’orthographe,A1,FR,EN,Check the greeting and question words,"Bonjour, comment allez-vous?","Banjour, comant alé-vous?","Hello, how are you?",3,"Bonjour, comment allez-vous?"
+WR_CS001,Correct the spelling,Corrigez l’orthographe,A2,FR,EN,,,,,,
+WR_CS002,Correct the spelling,Corrigez l’orthographe,A2,FR,EN,,,,,,
+WR_CS003,Correct the spelling,Corrigez l’orthographe,A2,FR,EN,,,,,,
+WR_CS004,Correct the spelling,Corrigez l’orthographe,B1,FR,EN,,,,,,
+WR_CS005,Correct the spelling,Corrigez l’orthographe,B1,FR,EN,,,,,,
+SP004,Correct the spelling,Corrigez l’orthographe,A1,FR,EN,"Check the apostrophe, verb, and accent",J'aime apprendre le français.,Jaime aprandre le francais.,I like to learn French.,3,J'aime apprendre le français.
+SP005,Correct the spelling,Corrigez l’orthographe,A1,FR,EN,Check adjective and compound word,Il fait beau aujourd'hui.,Il fai bo ojourdhui.,It's nice weather today.,3,Il fait beau aujourd'hui.
+SP003,Correct the spelling,Corrigez l’orthographe,A1,FR,EN,Check accents and full words,Où est la gare?,Ou es la gar?,Where is the train station?,3,Où est la gare?
+SP002,Correct the spelling,Corrigez l’orthographe,A1,FR,EN,Check the verb conjugation and accents,"Je voudrais un café, s'il vous plaît.","Je voodrai un cafay, sil vous plai.","I would like a coffee, please.",4,"Je voudrais un café, s'il vous plaît."

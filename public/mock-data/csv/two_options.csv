@@ -1,0 +1,6 @@
+ExerciseID,Instruction_EN,Instruction_FR,Level,LearningLang,KnownLang,options,question,sentence,eval_translation,eval_correctIndex
+1,,,A1,FR,EN,"[""suis"", ""es""]",Complete the sentence,Je ___  content de te voir.,I am happy to see you,0
+2,,,A1,FR,EN,"[""va"", ""vais""]",Complete the sentence,Elle ___ à l'école tous les jours.,She goes to school every day,0
+3,,,A1,FR,EN,"[""parle"", ""parlons""]",Complete the sentence,Nous ___ français et anglais.,We speak French and English,1
+4,,,A1,FR,EN,"[""es"", ""est""]",Complete the sentence,Tu ___ fatigué aujourd'hui.,You are tired today,0
+5,,,A1,FR,EN,"[""joue"", ""jouent""]",Complete the sentence,Ils ___ dans le parc.,They play in the park,1

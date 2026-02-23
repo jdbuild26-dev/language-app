@@ -1,0 +1,7 @@
+ExerciseID,Instruction_EN,Instruction_FR,Level,LearningLang,KnownLang,Audio,Option1,Option2,Option3,Option4,CorrectAnswer,CompleteSentence,SentenceWithBlank,eval_correctAnswer
+PH005,What do you hear?,Phonétique – Qu’entendez-vous ?,A1,,,Le chien et le chat jouent dans le jardin toute la journée.,Chat,Chien,Oiseau,Verte,Chat,Le chien et le chat jouent dans le jardin toute la journée.,Le chien et le ____ jouent dans le jardin toute la journée.,Chat
+PH006,What do you hear?,Phonétique – Qu’entendez-vous ?,A1,,,La fille mange une pomme rouge.,pomme,poire,banane,verte,pomme,La fille mange une pomme rouge.,La fille mange une ____ rouge.,pomme
+PH007,What do you hear?,Phonétique – Qu’entendez-vous ?,A1,,,Il va à l’école demain matin.,école,hôpital,maison,bureau,école,Il va à l’école demain matin.,Il va à l’____ demain matin.,école
+PH008,What do you hear?,Phonétique – Qu’entendez-vous ?,A2,,,Nous allons au parc le dimanche.,allons,allons-nous,aller,allez,allons,Nous allons au parc le dimanche.,Nous ____ au parc le dimanche.,allons
+PH009,What do you hear?,Phonétique – Qu’entendez-vous ?,A2,,,Le train arrive à deux heures.,deux,douze,dix,neuf,deux,Le train arrive à deux heures.,Le train arrive à ____ heures.,deux
+PH010,What do you hear?,Phonétique – Qu’entendez-vous ?,B1,,,Elle parle très rapidement aujourd’hui.,rapidement,rarement,lentement,clairement,rapidement,Elle parle très rapidement aujourd’hui.,Elle parle très ____ aujourd’hui.,rapidement

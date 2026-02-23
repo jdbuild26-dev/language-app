@@ -1,0 +1,6 @@
+ExerciseID,Instruction_EN,Instruction_FR,Level,LearningLang,KnownLang,options,question,sentence,eval_translation,eval_correctIndex
+1,,,A1,FR,EN,"[""Dans un café"", ""Dans une librairie"", ""Dans un hôpital"", ""Dans une école""]",Où travaille Marie?,Marie habite à Paris depuis cinq ans. Elle travaille dans une librairie.,Where does Marie work?,1
+2,,,A1,FR,EN,"[""À sept heures"", ""À huit heures"", ""À neuf heures"", ""À dix heures""]",À quelle heure part le train?,Le train part à huit heures du matin.,What time does the train leave?,1
+3,,,A1,FR,EN,"[""Le chocolat"", ""La vanille"", ""La fraise"", ""Le caramel""]",Qu'est-ce qu'il préfère?,"J'aime beaucoup le chocolat, mais je préfère la vanille.",What does he/she prefer?,1
+4,,,A1,FR,EN,"[""Aujourd'hui"", ""Demain"", ""Hier"", ""La semaine prochaine""]",Quand vont-ils à la plage?,Nous allons à la plage demain si il fait beau.,When are they going to the beach?,1
+5,,,A1,FR,EN,"[""Vingt ans"", ""Vingt-cinq ans"", ""Trente ans"", ""Trente-cinq ans""]",Quel âge a la sœur?,Mon frère a vingt-cinq ans et ma sœur a trente ans.,How old is the sister?,2

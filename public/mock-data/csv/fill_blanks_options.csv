@@ -1,0 +1,6 @@
+ExerciseID,Instruction_EN,Instruction_FR,Level,LearningLang,KnownLang,options,sentence,eval_translation,eval_correctIndex
+1,,,A1,FR,EN,"[""parle"", ""parles"", ""parlons"", ""parlent""]",Je ___ français tous les jours,I speak French every day,0
+2,,,A1,FR,EN,"[""allez"", ""va"", ""vont"", ""allons""]",Ils ___ au cinéma ce soir,They are going to the cinema tonight,2
+3,,,A1,FR,EN,"[""est"", ""es"", ""sont"", ""sommes""]",Nous ___ très contents,We are very happy,3
+4,,,A1,FR,EN,"[""lire"", ""lis"", ""lit"", ""lisent""]",Elle ___ un livre intéressant,She reads an interesting book,2
+5,,,A1,FR,EN,"[""range"", ""ranges"", ""rangeons"", ""rangent""]",Tu ___ ta chambre,You tidy your room,1

@@ -1,0 +1,2 @@
+ExerciseID,Instruction_EN,Instruction_FR,Level,LearningLang,KnownLang,options,passage,question,eval_correctIndex
+RC001,Read the passage and answer the question,Lisez le texte et répondez à la question,B1,FR,EN,"[""He enjoyed learning new skills"", ""He wanted to save money"", ""He was an electrician"", ""He had no other choice""]","John decided to fix things around his house himself to save money. He rewired several outlets but kept blowing fuses. After realizing his mistakes, he eventually called a professional electrician.",Why did John try to fix the house himself?,1

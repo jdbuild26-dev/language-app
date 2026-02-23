@@ -1,11 +1,16 @@
-ExerciseID,Instruction_EN,Instruction_FR,Question,Option1,Option2,Option3,Option4,CorrectAnswer
-CO_001,Choose the correct word,Choisissez le mot correct,The cat is ____ on the mat.,sleeping,flying,swimming,reading,sleeping
-CO_002,Choose the correct word,Choisissez le mot correct,I ____ an apple every day.,eat,drink,wear,drive,eat
-CO_003,Choose the correct word,Choisissez le mot correct,She ____ to school by bus.,goes,plays,sings,dances,goes
-CO_004,Choose the correct word,Choisissez le mot correct,The sky is ____.,blue,green,yellow,red,blue
-CO_005,Choose the correct word,Choisissez le mot correct,____ is your name?,What,Where,When,Who,What
-CO_006,Choose the correct word,Choisissez le mot correct,They ____ football on Sundays.,play,cook,sleep,write,play
-CO_007,Choose the correct word,Choisissez le mot correct,My brother ____ tall.,is,am,are,be,is
-CO_008,Choose the correct word,Choisissez le mot correct,We ____ dinner at 7 PM.,have,do,make,take,have
-CO_009,Choose the correct word,Choisissez le mot correct,Can you ____ me the book?,give,take,look,see,give
-CO_010,Choose the correct word,Choisissez le mot correct,The dog ____ loudly.,barks,meows,moos,quacks,barks
+ExerciseID,Instruction_FR,Level,LearningLang,KnownLang,Option1,Option1_EN,Option2,Option2_EN,Option3,Option3_EN,Option4,Option4_EN,options,Question,question,correctAnswer,ShuffleOptions,Complete sentence,CorrectOptionIndex,eval_BlankIndex,eval_CorrectAnswer
+FB001,Complétez la phrase avec le mot correct,A1,FR,EN,Chat,Cat,Chien,Dog,Oiseau,Bird,Verte,Green,"[""Chat"", ""Chien"", ""Oiseau"", ""Verte""]",Le chien et le ____ (Cat) jouent dans le jardin toute la journée.,Le chien et le ____ (Cat) jouent dans le jardin toute la journée.,Chat,True,Le chien et le chat (Cat) jouent dans le jardin toute la journée.,1,1,Chat
+FB002,Complétez la phrase avec le mot correct,A1,FR,EN,La,The,Le,The,Les,The,Un,A,"[""La"", ""Le"", ""Les"", ""Un""]",____ maison est grande.,____ maison est grande.,La,True,La maison est grande.,1,1,La
+FB003,Complétez la phrase avec le mot correct,A1,FR,EN,mangons,eat,mange,eats,mangent,eat,manger,to eat,"[""mangons"", ""mange"", ""mangent"", ""manger""]",Nous ____ une pizza ce soir.,Nous ____ une pizza ce soir.,mangons,True,Nous mangons une pizza ce soir.,1,1,mangons
+FB004,Complétez la phrase avec le mot correct,A1,FR,EN,au,to the,à la,to the,aux,to the,en,in,"[""au"", ""\u00e0 la"", ""aux"", ""en""]",Il va ____ cinéma ce week-end.,Il va ____ cinéma ce week-end.,au,True,Il va au cinéma ce week-end.,1,1,au
+FB005,Complétez la phrase avec le mot correct,A1,FR,EN,Ces,These,Ce,This,Cette,This,Cet,This,"[""Ces"", ""Ce"", ""Cette"", ""Cet""]",____ enfants jouent dehors.,____ enfants jouent dehors.,Ces,True,Ces enfants jouent dehors.,1,1,Ces
+FB001,Complétez la phrase avec le mot correct,A1,FR,EN,Chat,Cat,Chien,Dog,Oiseau,Bird,Verte,Green,"[""Chat"", ""Chien"", ""Oiseau"", ""Verte""]",Le chien et le ____ (Cat) jouent dans le jardin toute la journée.,Le chien et le ____ (Cat) jouent dans le jardin toute la journée.,Chat,True,Le chien et le chat (Cat) jouent dans le jardin toute la journée.,1,1,Chat
+FB002,Complétez la phrase avec le mot correct,A1,FR,EN,La,The,Le,The,Les,The,Un,A,"[""La"", ""Le"", ""Les"", ""Un""]",____ maison est grande.,____ maison est grande.,La,True,La maison est grande.,1,1,La
+FB003,Complétez la phrase avec le mot correct,A1,FR,EN,mangons,eat,mange,eats,mangent,eat,manger,to eat,"[""mangons"", ""mange"", ""mangent"", ""manger""]",Nous ____ une pizza ce soir.,Nous ____ une pizza ce soir.,mangons,True,Nous mangons une pizza ce soir.,1,1,mangons
+FB004,Complétez la phrase avec le mot correct,A1,FR,EN,au,to the,à la,to the,aux,to the,en,in,"[""au"", ""\u00e0 la"", ""aux"", ""en""]",Il va ____ cinéma ce week-end.,Il va ____ cinéma ce week-end.,au,True,Il va au cinéma ce week-end.,1,1,au
+FB005,Complétez la phrase avec le mot correct,A1,FR,EN,Ces,These,Ce,This,Cette,This,Cet,This,"[""Ces"", ""Ce"", ""Cette"", ""Cet""]",____ enfants jouent dehors.,____ enfants jouent dehors.,Ces,True,Ces enfants jouent dehors.,1,1,Ces
+FB_IMG_001,Complétez la phrase avec le mot correct,A1,FR,EN,Chat,Cat,Chien,Dog,Oiseau,Bird,Verte,Green,"[""Chat"", ""Chien"", ""Oiseau"", ""Verte""]",Le chien et le ____ (Cat) jouent dans le jardin toute la journée.,Le chien et le ____ (Cat) jouent dans le jardin toute la journée.,Chat,True,Le chien et le chat (Cat) jouent dans le jardin toute la journée.,1,1,Chat
+FB_IMG_002,Complétez la phrase avec le mot correct,A1,FR,EN,La,The,Le,The,Les,The,Un,A,"[""La"", ""Le"", ""Les"", ""Un""]",____ maison est grande.,____ maison est grande.,La,True,La maison est grande.,1,1,La
+FB_IMG_003,Complétez la phrase avec le mot correct,A1,FR,EN,mangons,eat,mange,eats,mangent,eat,manger,to eat,"[""mangons"", ""mange"", ""mangent"", ""manger""]",Nous ____ une pizza ce soir.,Nous ____ une pizza ce soir.,mangons,True,Nous mangons une pizza ce soir.,1,1,mangons
+FB_IMG_004,Complétez la phrase avec le mot correct,A1,FR,EN,au,to the,à la,to the,aux,to the,en,in,"[""au"", ""\u00e0 la"", ""aux"", ""en""]",Il va ____ cinéma ce week-end.,Il va ____ cinéma ce week-end.,au,True,Il va au cinéma ce week-end.,1,1,au
+FB_IMG_005,Complétez la phrase avec le mot correct,A1,FR,EN,Ces,These,Ce,This,Cette,This,Cet,This,"[""Ces"", ""Ce"", ""Cette"", ""Cet""]",____ enfants jouent dehors.,____ enfants jouent dehors.,Ces,True,Ces enfants jouent dehors.,1,1,Ces

@@ -1,0 +1,14 @@
+ExerciseID,Instruction_EN,Instruction_FR,Level,LearningLang,KnownLang,passage,question,eval_correctWord
+1,Find the word that matches the meaning,Trouvez le mot correspondant,A1,FR,EN,Le chat noir dort sur le canapé confortable. Il rêve de souris.,Find the word that means 'black'.,noir
+2,Find the word that matches the meaning,Trouvez le mot correspondant,A1,FR,EN,Marie va à la boulangerie pour acheter du pain frais chaque matin.,Find the word that means 'bakery'.,boulangerie
+3,Find the word that matches the meaning,Trouvez le mot correspondant,A1,FR,EN,Les enfants jouent dans le jardin ensoleillé pendant l'après-midi.,Find the word that means 'sunny'.,ensoleillé
+4,Find the word that matches the meaning,Trouvez le mot correspondant,A1,FR,EN,Mon frère travaille dans un grand hôpital au centre de la ville.,Find the word that means 'hospital'.,hôpital
+5,Find the word that matches the meaning,Trouvez le mot correspondant,A1,FR,EN,Elle prépare un délicieux gâteau au chocolat pour l'anniversaire.,Find the word that means 'delicious'.,délicieux
+HW001,Highlight the correct word,Soulignez le mot correct,A1,FR,EN,,,chien
+HW002,Highlight the correct word,Soulignez le mot correct,A1,FR,EN,,,parlent
+HW003,Highlight the correct word,Soulignez le mot correct,A2,FR,EN,,,rapide
+HW004,Highlight the correct word,Soulignez le mot correct,A2,FR,EN,,,bibliothèque
+HW001,Highlight the correct word,Soulignez le mot correct,A1,FR,EN,"Le matin, je vais au parc avec mes amis. Nous parlons tranquillement sous les arbres. Un chien court près de nous et joue avec une balle.",Another word for Dog,chien
+HW002,Highlight the correct word,Soulignez le mot correct,A1,FR,EN,"Le soir, ils parlent doucement dans la maison pendant que les enfants dorment.",Word meaning “they speak”,parlent
+HW003,Highlight the correct word,Soulignez le mot correct,A2,FR,EN,Le train rapide arrive à la gare très tôt le matin.,Word meaning “fast”,rapide
+HW004,Highlight the correct word,Soulignez le mot correct,A2,FR,EN,"Après l’école, elle va à la bibliothèque pour étudier calmement.",Word meaning “library”,bibliothèque
