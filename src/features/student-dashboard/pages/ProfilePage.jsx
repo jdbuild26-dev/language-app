@@ -33,6 +33,7 @@ import { toast } from "react-hot-toast";
 
 export default function ProfilePage() {
   const { user } = useUser();
+  const isTeacherUser = user?.publicMetadata?.is_teacher === true;
   const navigate = useNavigate();
   const { profile, updatePrivacy, checkUsername } = useStudentProfile();
   const {
@@ -71,9 +72,9 @@ export default function ProfilePage() {
     try {
       const res = await checkUsername(value);
       if (res.available) {
-        setUsernameStatus('available');
+        setUsernameStatus("available");
       } else {
-        setUsernameStatus('taken');
+        setUsernameStatus("taken");
       }
     } catch (err) {
       console.error(err);
@@ -133,7 +134,7 @@ export default function ProfilePage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-gray-900 dark:text-primary-dark">
-              150
+              {profile?.stats?.tokens ?? 0}
             </div>
             <p className="text-xs text-gray-500 mt-1">
               Available for AI practice
@@ -152,8 +153,10 @@ export default function ProfilePage() {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-gray-900 dark:text-primary-dark">
-              Pro Plan
+            <div className="text-2xl font-bold text-gray-900 dark:text-primary-dark capitalize">
+              {profile?.pricingPlan
+                ? profile.pricingPlan.replace("-", " ")
+                : "Free Plan"}
             </div>
             <p className="text-xs text-green-600 mt-1">
               Active • Expires Mar 2026
@@ -173,7 +176,9 @@ export default function ProfilePage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-gray-900 dark:text-primary-dark">
-              Verified
+              {user?.primaryEmailAddress?.verification?.status === "verified"
+                ? "Verified"
+                : "Unverified"}
             </div>
             <p className="text-xs text-gray-400 dark:text-secondary-dark mt-1">
               Student Account
@@ -274,10 +279,10 @@ export default function ProfilePage() {
               <p className="text-sm font-medium text-gray-700 dark:text-primary-dark">
                 {user?.createdAt
                   ? new Date(user.createdAt).toLocaleDateString(undefined, {
-                    year: "numeric",
-                    month: "long",
-                    day: "numeric",
-                  })
+                      year: "numeric",
+                      month: "long",
+                      day: "numeric",
+                    })
                   : "N/A"}
               </p>
             </div>
@@ -298,7 +303,8 @@ export default function ProfilePage() {
             </CardTitle>
           </div>
           <CardDescription>
-            Control how others see your progress. Make your profile public to share your achievements.
+            Control how others see your progress. Make your profile public to
+            share your achievements.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -307,14 +313,20 @@ export default function ProfilePage() {
             <div className="flex-1 space-y-4">
               <div className="flex items-center justify-between p-4 rounded-xl bg-gray-50 dark:bg-elevated-2 border border-gray-100 dark:border-subtle-dark">
                 <div className="space-y-0.5">
-                  <p className="text-sm font-semibold text-gray-900 dark:text-primary-dark">Public Profile</p>
-                  <p className="text-xs text-gray-500 dark:text-secondary-dark">Allow anyone with the link to see your stats</p>
+                  <p className="text-sm font-semibold text-gray-900 dark:text-primary-dark">
+                    Public Profile
+                  </p>
+                  <p className="text-xs text-gray-500 dark:text-secondary-dark">
+                    Allow anyone with the link to see your stats
+                  </p>
                 </div>
                 <button
                   onClick={() => setIsPublic(!isPublic)}
-                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ring-2 ring-offset-2 ring-transparent ${isPublic ? 'bg-brand-blue-1' : 'bg-gray-200'}`}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ring-2 ring-offset-2 ring-transparent ${isPublic ? "bg-brand-blue-1" : "bg-gray-200"}`}
                 >
-                  <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${isPublic ? 'translate-x-6' : 'translate-x-1'}`} />
+                  <span
+                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${isPublic ? "translate-x-6" : "translate-x-1"}`}
+                  />
                 </button>
               </div>
 
@@ -332,21 +344,29 @@ export default function ProfilePage() {
                       value={username}
                       onChange={handleUsernameChange}
                       placeholder="choose_a_username"
-                      className={`block w-full pl-10 pr-10 py-2 sm:text-sm border rounded-lg bg-white dark:bg-card-dark focus:ring-brand-blue-1 focus:border-brand-blue-1 ${usernameStatus === 'taken' ? 'border-red-300' :
-                        usernameStatus === 'available' ? 'border-green-300' : 'border-gray-200 dark:border-subtle-dark'
-                        }`}
+                      className={`block w-full pl-10 pr-10 py-2 sm:text-sm border rounded-lg bg-white dark:bg-card-dark focus:ring-brand-blue-1 focus:border-brand-blue-1 ${
+                        usernameStatus === "taken"
+                          ? "border-red-300"
+                          : usernameStatus === "available"
+                            ? "border-green-300"
+                            : "border-gray-200 dark:border-subtle-dark"
+                      }`}
                     />
                     <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
                       {isCheckingUsername ? (
                         <div className="h-4 w-4 border-2 border-brand-blue-1 border-t-transparent rounded-full animate-spin" />
-                      ) : usernameStatus === 'available' ? (
+                      ) : usernameStatus === "available" ? (
                         <CheckIcon className="h-4 w-4 text-green-500" />
-                      ) : usernameStatus === 'taken' ? (
-                        <span className="text-[10px] text-red-500 font-bold">TAKEN</span>
+                      ) : usernameStatus === "taken" ? (
+                        <span className="text-[10px] text-red-500 font-bold">
+                          TAKEN
+                        </span>
                       ) : null}
                     </div>
                   </div>
-                  <p className="text-[10px] text-gray-500">Only letters, numbers, and underscores allowed.</p>
+                  <p className="text-[10px] text-gray-500">
+                    Only letters, numbers, and underscores allowed.
+                  </p>
                 </div>
               )}
             </div>
@@ -355,7 +375,9 @@ export default function ProfilePage() {
             <div className="md:w-72 flex flex-col gap-3">
               <Button
                 onClick={handleSavePrivacy}
-                disabled={isUpdatingPrivacy || (isPublic && usernameStatus === 'taken')}
+                disabled={
+                  isUpdatingPrivacy || (isPublic && usernameStatus === "taken")
+                }
                 className="w-full bg-brand-blue-1 hover:bg-brand-blue-2 text-white h-11"
               >
                 {isUpdatingPrivacy ? (
@@ -420,33 +442,35 @@ export default function ProfilePage() {
           </Button>
 
           {/* Teacher Action */}
-          <Button
-            variant="outline"
-            onClick={() => {
-              if (needsTeacherOnboarding) {
-                setShowTeacherOnboarding(true);
-              } else {
-                navigate("/teacher-dashboard");
-              }
-            }}
-            className="h-auto p-6 flex flex-col items-start gap-4 hover:border-brand-blue-1 hover:bg-brand-blue-3/10 transition-all border-dashed dark:border-subtle-dark dark:hover:border-accent-primary"
-          >
-            <div className="p-2 rounded-full bg-green-100 text-green-600 dark:bg-green-900/40 dark:text-green-300">
-              <UserGroupIcon className="h-6 w-6" />
-            </div>
-            <div className="text-left">
-              <h3 className="font-semibold text-gray-900 dark:text-primary-dark">
-                {needsTeacherOnboarding
-                  ? "Become a Teacher"
-                  : "Teacher Dashboard"}
-              </h3>
-              <p className="text-xs text-gray-500 dark:text-secondary-dark mt-1">
-                {needsTeacherOnboarding
-                  ? "Start teaching on platform"
-                  : "Manage your classes"}
-              </p>
-            </div>
-          </Button>
+          {isTeacherUser && (
+            <Button
+              variant="outline"
+              onClick={() => {
+                if (needsTeacherOnboarding) {
+                  setShowTeacherOnboarding(true);
+                } else {
+                  navigate("/teacher-dashboard");
+                }
+              }}
+              className="h-auto p-6 flex flex-col items-start gap-4 hover:border-brand-blue-1 hover:bg-brand-blue-3/10 transition-all border-dashed dark:border-subtle-dark dark:hover:border-accent-primary"
+            >
+              <div className="p-2 rounded-full bg-green-100 text-green-600 dark:bg-green-900/40 dark:text-green-300">
+                <UserGroupIcon className="h-6 w-6" />
+              </div>
+              <div className="text-left">
+                <h3 className="font-semibold text-gray-900 dark:text-primary-dark">
+                  {needsTeacherOnboarding
+                    ? "Become a Teacher"
+                    : "Teacher Dashboard"}
+                </h3>
+                <p className="text-xs text-gray-500 dark:text-secondary-dark mt-1">
+                  {needsTeacherOnboarding
+                    ? "Start teaching on platform"
+                    : "Manage your classes"}
+                </p>
+              </div>
+            </Button>
+          )}
         </div>
       </div>
 

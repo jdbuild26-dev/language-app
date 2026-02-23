@@ -26,6 +26,7 @@ import {
 
 export default function ProgressReportPage() {
   const { user } = useUser();
+  const isTeacherUser = user?.publicMetadata?.is_teacher === true;
   const navigate = useNavigate();
   const { profile } = useStudentProfile();
   const {
@@ -130,7 +131,9 @@ export default function ProgressReportPage() {
                 <div className="flex items-center gap-2 bg-brand-blue-1/10 text-brand-blue-1 px-3 py-1 rounded-full text-sm font-semibold">
                   <span className="uppercase">
                     {profile.targetLanguages?.length > 0
-                      ? profile.targetLanguages.map((tl) => tl.language).join(" & ")
+                      ? profile.targetLanguages
+                          .map((tl) => tl.language)
+                          .join(" & ")
                       : profile.targetLanguage}
                   </span>
                   <span className="text-gray-300">|</span>
@@ -166,14 +169,16 @@ export default function ProgressReportPage() {
                 </div>
                 {profile && (
                   <div className="mt-2 flex flex-wrap gap-2">
-                    {(profile.learningGoals || profile.purpose || []).map((p) => (
-                      <span
-                        key={p}
-                        className="text-xs bg-gray-100 dark:bg-elevated-2 text-gray-600 dark:text-secondary-dark px-2 py-0.5 rounded-md border border-gray-200 dark:border-subtle-dark"
-                      >
-                        {p}
-                      </span>
-                    ))}
+                    {(profile.learningGoals || profile.purpose || []).map(
+                      (p) => (
+                        <span
+                          key={p}
+                          className="text-xs bg-gray-100 dark:bg-elevated-2 text-gray-600 dark:text-secondary-dark px-2 py-0.5 rounded-md border border-gray-200 dark:border-subtle-dark"
+                        >
+                          {p}
+                        </span>
+                      ),
+                    )}
                     {(profile.examIntents?.length > 0
                       ? profile.examIntents.filter((ei) => ei.hasExam)
                       : profile.examIntent?.hasExam
@@ -220,10 +225,10 @@ export default function ProgressReportPage() {
                 <p className="text-sm font-medium text-gray-700 dark:text-primary-dark">
                   {user?.createdAt
                     ? new Date(user.createdAt).toLocaleDateString(undefined, {
-                      year: "numeric",
-                      month: "long",
-                      day: "numeric",
-                    })
+                        year: "numeric",
+                        month: "long",
+                        day: "numeric",
+                      })
                     : "N/A"}
                 </p>
               </div>
@@ -303,33 +308,35 @@ export default function ProgressReportPage() {
             </Button>
 
             {/* Teacher Action */}
-            <Button
-              variant="outline"
-              onClick={() => {
-                if (needsTeacherOnboarding) {
-                  setShowTeacherOnboarding(true);
-                } else {
-                  navigate("/teacher-dashboard");
-                }
-              }}
-              className="h-auto p-6 flex flex-col items-start gap-4 hover:border-brand-blue-1 hover:bg-brand-blue-3/10 transition-all border-dashed dark:border-subtle-dark dark:hover:border-accent-primary"
-            >
-              <div className="p-2 rounded-full bg-green-100 text-green-600 dark:bg-green-900/40 dark:text-green-300">
-                <UserGroupIcon className="h-6 w-6" />
-              </div>
-              <div className="text-left">
-                <h3 className="font-semibold text-gray-900 dark:text-primary-dark">
-                  {needsTeacherOnboarding
-                    ? "Become a Teacher"
-                    : "Teacher Dashboard"}
-                </h3>
-                <p className="text-xs text-gray-500 dark:text-secondary-dark mt-1">
-                  {needsTeacherOnboarding
-                    ? "Start teaching on platform"
-                    : "Manage your classes"}
-                </p>
-              </div>
-            </Button>
+            {isTeacherUser && (
+              <Button
+                variant="outline"
+                onClick={() => {
+                  if (needsTeacherOnboarding) {
+                    setShowTeacherOnboarding(true);
+                  } else {
+                    navigate("/teacher-dashboard");
+                  }
+                }}
+                className="h-auto p-6 flex flex-col items-start gap-4 hover:border-brand-blue-1 hover:bg-brand-blue-3/10 transition-all border-dashed dark:border-subtle-dark dark:hover:border-accent-primary"
+              >
+                <div className="p-2 rounded-full bg-green-100 text-green-600 dark:bg-green-900/40 dark:text-green-300">
+                  <UserGroupIcon className="h-6 w-6" />
+                </div>
+                <div className="text-left">
+                  <h3 className="font-semibold text-gray-900 dark:text-primary-dark">
+                    {needsTeacherOnboarding
+                      ? "Become a Teacher"
+                      : "Teacher Dashboard"}
+                  </h3>
+                  <p className="text-xs text-gray-500 dark:text-secondary-dark mt-1">
+                    {needsTeacherOnboarding
+                      ? "Start teaching on platform"
+                      : "Manage your classes"}
+                  </p>
+                </div>
+              </Button>
+            )}
 
             {/* Find Teacher Action */}
             <Button

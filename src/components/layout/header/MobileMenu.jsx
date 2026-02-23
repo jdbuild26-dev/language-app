@@ -5,7 +5,7 @@ import { useTeacherProfile } from "@/hooks/useTeacherProfile";
 import TeacherOnboardingModal from "@/features/auth/components/TeacherOnboardingModal";
 import { AcademicCapIcon, UserCircleIcon } from "@heroicons/react/24/outline";
 
-import { SignedIn, SignedOut, UserButton } from "@clerk/clerk-react";
+import { SignedIn, SignedOut, UserButton, useUser } from "@clerk/clerk-react";
 import {
   UserGroupIcon,
   XMarkIcon,
@@ -31,8 +31,13 @@ export default function MobileMenu({
 }) {
   const navigate = useNavigate();
   const location = useLocation();
-  const { needsOnboarding: needsTeacherOnboarding, refreshProfile: refreshTeacherProfile } = useTeacherProfile();
+  const {
+    needsOnboarding: needsTeacherOnboarding,
+    refreshProfile: refreshTeacherProfile,
+  } = useTeacherProfile();
   const [showTeacherOnboarding, setShowTeacherOnboarding] = useState(false);
+  const { user } = useUser();
+  const isTeacherUser = user?.publicMetadata?.is_teacher === true;
 
   // Initialize role from localStorage or default to 'learner'
   const [role, setRole] = useState(() => {
@@ -131,82 +136,87 @@ export default function MobileMenu({
                 <SignedIn>
                   <div className="space-y-8">
                     {/* Role Toggle Switch Mobile */}
-                    <div
-                      onClick={(e) => {
-                        e.preventDefault();
-                        toggleRole();
-                      }}
-                      className={cn(
-                        "cursor-pointer relative flex items-center justify-between p-3 rounded-xl transition-colors border select-none",
-                        isTeacher
-                          ? "bg-emerald-50 border-emerald-200 dark:bg-emerald-950/30 dark:border-emerald-900"
-                          : "bg-blue-50 border-blue-200 dark:bg-blue-950/30 dark:border-blue-900"
-                      )}
-                    >
-                      <div className="flex items-center gap-3 px-2">
-                        {isTeacher ? (
-                          <AcademicCapIcon className="h-6 w-6 text-emerald-600 dark:text-emerald-400" />
-                        ) : (
-                          <UserCircleIcon className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+                    {isTeacherUser && (
+                      <div
+                        onClick={(e) => {
+                          e.preventDefault();
+                          toggleRole();
+                        }}
+                        className={cn(
+                          "cursor-pointer relative flex items-center justify-between p-3 rounded-xl transition-colors border select-none",
+                          isTeacher
+                            ? "bg-emerald-50 border-emerald-200 dark:bg-emerald-950/30 dark:border-emerald-900"
+                            : "bg-blue-50 border-blue-200 dark:bg-blue-950/30 dark:border-blue-900",
                         )}
-                        <span
+                      >
+                        <div className="flex items-center gap-3 px-2">
+                          {isTeacher ? (
+                            <AcademicCapIcon className="h-6 w-6 text-emerald-600 dark:text-emerald-400" />
+                          ) : (
+                            <UserCircleIcon className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+                          )}
+                          <span
+                            className={cn(
+                              "text-sm font-bold uppercase tracking-wider",
+                              isTeacher
+                                ? "text-emerald-700 dark:text-emerald-300"
+                                : "text-blue-700 dark:text-blue-300",
+                            )}
+                          >
+                            {isTeacher ? "Teaching Mode" : "Learning Mode"}
+                          </span>
+                        </div>
+
+                        <div
                           className={cn(
-                            "text-sm font-bold uppercase tracking-wider",
-                            isTeacher
-                              ? "text-emerald-700 dark:text-emerald-300"
-                              : "text-blue-700 dark:text-blue-300"
+                            "relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2",
+                            isTeacher ? "bg-emerald-500" : "bg-blue-500",
                           )}
                         >
-                          {isTeacher ? "Teaching Mode" : "Learning Mode"}
-                        </span>
+                          <span
+                            className={cn(
+                              "inline-block h-4 w-4 transform rounded-full bg-white transition duration-200 ease-in-out",
+                              isTeacher ? "translate-x-6" : "translate-x-1",
+                            )}
+                          />
+                        </div>
                       </div>
-
-                      <div
-                        className={cn(
-                          "relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2",
-                          isTeacher ? "bg-emerald-500" : "bg-blue-500"
-                        )}
-                      >
-                        <span
-                          className={cn(
-                            "inline-block h-4 w-4 transform rounded-full bg-white transition duration-200 ease-in-out",
-                            isTeacher ? "translate-x-6" : "translate-x-1"
-                          )}
-                        />
-                      </div>
-                    </div>
+                    )}
 
                     {/* Dashboard Link Mobile */}
-                    <Link
-                      to={isTeacher ? "/teacher-dashboard" : "/dashboard"}
-                      onClick={() => setIsOpen(false)}
-                    >
-                      <Button
-                        variant="ghost"
-                        className="w-full justify-start text-lg font-semibold text-gray-900 dark:text-white hover:bg-gray-50 dark:hover:bg-slate-800"
+                    {isTeacherUser && (
+                      <Link
+                        to={isTeacher ? "/teacher-dashboard" : "/dashboard"}
+                        onClick={() => setIsOpen(false)}
                       >
-                        {isTeacher ? (
-                          <AcademicCapIcon className="mr-3 h-6 w-6 text-emerald-600" />
-                        ) : (
-                          <UserGroupIcon className="mr-3 h-6 w-6 text-brand-blue-1" />
-                        )}
-                        {isTeacher ? "Teacher Dashboard" : "Student Dashboard"}
-                      </Button>
-                    </Link>
-
+                        <Button
+                          variant="ghost"
+                          className="w-full justify-start text-lg font-semibold text-gray-900 dark:text-white hover:bg-gray-50 dark:hover:bg-slate-800"
+                        >
+                          {isTeacher ? (
+                            <AcademicCapIcon className="mr-3 h-6 w-6 text-emerald-600" />
+                          ) : (
+                            <UserGroupIcon className="mr-3 h-6 w-6 text-brand-blue-1" />
+                          )}
+                          {isTeacher
+                            ? "Teacher Dashboard"
+                            : "Student Dashboard"}
+                        </Button>
+                      </Link>
+                    )}
 
                     {/* Streaks Mobile */}
                     <button
                       onClick={() =>
                         setActiveSection(
-                          activeSection === "streak" ? null : "streak"
+                          activeSection === "streak" ? null : "streak",
                         )
                       }
                       className={cn(
                         "w-full flex items-center justify-between rounded-xl p-4 border shadow-sm transition-all",
                         activeSection === "streak"
                           ? "bg-brand-yellow-1 border-brand-yellow-2 ring-2 ring-brand-yellow-2"
-                          : "bg-white dark:bg-slate-800 border-gray-100 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-700"
+                          : "bg-white dark:bg-slate-800 border-gray-100 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-700",
                       )}
                     >
                       <span className="font-semibold text-gray-700 dark:text-slate-200">
@@ -241,14 +251,14 @@ export default function MobileMenu({
                       <button
                         onClick={() =>
                           setActiveSection(
-                            activeSection === "add" ? null : "add"
+                            activeSection === "add" ? null : "add",
                           )
                         }
                         className={cn(
                           "flex flex-col items-center gap-3 rounded-xl border p-4 transition-all",
                           activeSection === "add"
                             ? "bg-brand-blue-3/20 border-brand-blue-2 ring-1 ring-brand-blue-2"
-                            : "border-gray-100 dark:border-slate-700 hover:bg-brand-blue-3/10 hover:border-brand-blue-3 transition-colors"
+                            : "border-gray-100 dark:border-slate-700 hover:bg-brand-blue-3/10 hover:border-brand-blue-3 transition-colors",
                         )}
                       >
                         <div className="rounded-full bg-brand-blue-3/50 p-2 text-brand-blue-1">
@@ -262,14 +272,14 @@ export default function MobileMenu({
                       <button
                         onClick={() =>
                           setActiveSection(
-                            activeSection === "friends" ? null : "friends"
+                            activeSection === "friends" ? null : "friends",
                           )
                         }
                         className={cn(
                           "flex flex-col items-center gap-3 rounded-xl border p-4 transition-all",
                           activeSection === "friends"
                             ? "bg-brand-blue-3/20 border-brand-blue-2 ring-1 ring-brand-blue-2"
-                            : "border-gray-100 hover:bg-brand-blue-3/10 hover:border-brand-blue-3"
+                            : "border-gray-100 hover:bg-brand-blue-3/10 hover:border-brand-blue-3",
                         )}
                       >
                         <div className="rounded-full bg-brand-blue-3/50 p-2 text-brand-blue-1">
@@ -283,14 +293,14 @@ export default function MobileMenu({
                       <button
                         onClick={() =>
                           setActiveSection(
-                            activeSection === "alerts" ? null : "alerts"
+                            activeSection === "alerts" ? null : "alerts",
                           )
                         }
                         className={cn(
                           "flex flex-col items-center gap-3 rounded-xl border p-4 transition-all",
                           activeSection === "alerts"
                             ? "bg-brand-blue-3/20 border-brand-blue-2 ring-1 ring-brand-blue-2"
-                            : "border-gray-100 hover:bg-brand-blue-3/10 hover:border-brand-blue-3"
+                            : "border-gray-100 hover:bg-brand-blue-3/10 hover:border-brand-blue-3",
                         )}
                       >
                         <div className="rounded-full bg-brand-blue-3/50 p-2 text-brand-blue-1">
@@ -348,7 +358,7 @@ export default function MobileMenu({
                                       "absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border-2 border-white",
                                       friend.status === "online"
                                         ? "bg-green-400"
-                                        : "bg-gray-300"
+                                        : "bg-gray-300",
                                     )}
                                   />
                                 </div>
@@ -378,7 +388,7 @@ export default function MobileMenu({
                                 key={notif.id}
                                 className={cn(
                                   "px-4 py-3",
-                                  notif.unread ? "bg-brand-blue-3/5" : ""
+                                  notif.unread ? "bg-brand-blue-3/5" : "",
                                 )}
                               >
                                 <p className="text-sm text-gray-700 dark:text-slate-200">
@@ -456,6 +466,5 @@ export default function MobileMenu({
         />
       )}
     </Transition>
-
   );
 }
