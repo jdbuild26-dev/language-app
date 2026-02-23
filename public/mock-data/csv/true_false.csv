@@ -1,0 +1,2 @@
+ExerciseID,Instruction_EN,Instruction_FR,Level,LearningLang,KnownLang,passage,statement,eval_answer
+TF001,True or false,Vrai ou faux,A1,FR,EN,Paris est la capitale de la France. La ville compte plus de deux millions d'habitants. La Tour Eiffel est le monument le plus visité de la ville.,Paris a plus de deux millions d'habitants.,true

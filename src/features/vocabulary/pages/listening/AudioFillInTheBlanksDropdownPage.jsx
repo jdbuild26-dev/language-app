@@ -24,7 +24,12 @@ export default function AudioFillInTheBlanksDropdownPage() {
       question: "De quoi allons-nous parler aujourd'hui ?",
       before: "Aujourd'hui nous allons parler de",
       answer: "la technologie",
-      options: ["la technologie", "la cuisine", "le sport", "la politique"],
+      options: [
+        { text: "la technologie", en: "technology" },
+        { text: "la cuisine", en: "cooking" },
+        { text: "le sport", en: "sports" },
+        { text: "la politique", en: "politics" },
+      ],
       after: ".",
     },
     {
@@ -32,7 +37,12 @@ export default function AudioFillInTheBlanksDropdownPage() {
       question: "Quel appareil est devenu indispensable ?",
       before: "Les",
       answer: "smartphones",
-      options: ["ordinateurs", "tablettes", "smartphones", "télévisions"],
+      options: [
+        { text: "ordinateurs", en: "computers" },
+        { text: "tablettes", en: "tablets" },
+        { text: "smartphones", en: "smartphones" },
+        { text: "télévisions", en: "televisions" },
+      ],
       after: "sont devenus indispensables.",
     },
     {
@@ -40,7 +50,12 @@ export default function AudioFillInTheBlanksDropdownPage() {
       question: "Que permettent-ils de faire ?",
       before: "Ils nous permettent de rester",
       answer: "connectés",
-      options: ["isolés", "connectés", "occupés", "informés"],
+      options: [
+        { text: "isolés", en: "isolated" },
+        { text: "connectés", en: "connected" },
+        { text: "occupés", en: "busy" },
+        { text: "informés", en: "informed" },
+      ],
       after: "avec nos amis.",
     },
     {
@@ -48,7 +63,12 @@ export default function AudioFillInTheBlanksDropdownPage() {
       question: "Quelle peut être une conséquence négative ?",
       before: "Ils peuvent aussi être une source de",
       answer: "distraction",
-      options: ["joie", "stress", "distraction", "revenu"],
+      options: [
+        { text: "joie", en: "joy" },
+        { text: "stress", en: "stress" },
+        { text: "distraction", en: "distraction" },
+        { text: "revenu", en: "income" },
+      ],
       after: ".",
     },
     {
@@ -56,7 +76,12 @@ export default function AudioFillInTheBlanksDropdownPage() {
       question: "Que faut-il faire ?",
       before: "Il est important de trouver un",
       answer: "équilibre",
-      options: ["travail", "équilibre", "passe-temps", "ami"],
+      options: [
+        { text: "travail", en: "work" },
+        { text: "équilibre", en: "balance" },
+        { text: "passe-temps", en: "hobby" },
+        { text: "ami", en: "friend" },
+      ],
       after: ".",
     },
     {
@@ -64,7 +89,12 @@ export default function AudioFillInTheBlanksDropdownPage() {
       question: "Que sont les smartphones pour beaucoup de gens ?",
       before: "Les smartphones sont",
       answer: "indispensables",
-      options: ["inutiles", "chers", "indispensables", "dangereux"],
+      options: [
+        { text: "inutiles", en: "useless" },
+        { text: "chers", en: "expensive" },
+        { text: "indispensables", en: "indispensable" },
+        { text: "dangereux", en: "dangerous" },
+      ],
       after: "pour beaucoup de gens.",
     },
   ];
@@ -235,8 +265,8 @@ export default function AudioFillInTheBlanksDropdownPage() {
                         Select...
                       </option>
                       {q.options.map((option) => (
-                        <option key={option} value={option}>
-                          {option}
+                        <option key={option.text} value={option.text}>
+                          {option.text} ({option.en})
                         </option>
                       ))}
                     </select>

@@ -1,0 +1,6 @@
+ExerciseID,Instruction_EN,Instruction_FR,Level,LearningLang,KnownLang,options,question,sentence,eval_translation,eval_correctIndex
+1,,,A1,FR,EN,"[""est"", ""sont"", ""sommes""]",Complete the sentence,Le chat ___ sur la table.,The cat is on the table,0
+2,,,A1,FR,EN,"[""mange"", ""manges"", ""mangent""]",Complete the sentence,Mes amis ___ au restaurant.,My friends eat at the restaurant,2
+3,,,A1,FR,EN,"[""veux"", ""veut"", ""voulons""]",Complete the sentence,"Je ___ un café, s'il vous plaît.","I want a coffee, please",0
+4,,,A1,FR,EN,"[""comprend"", ""comprends"", ""comprenons""]",Complete the sentence,Tu ___ très bien le français.,You understand French very well,1
+5,,,A1,FR,EN,"[""écoute"", ""écoutes"", ""écoutent""]",Complete the sentence,Elle ___ de la musique classique.,She listens to classical music,0

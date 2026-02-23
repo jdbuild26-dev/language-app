@@ -1,0 +1,6 @@
+ExerciseID,Instruction_EN,Instruction_FR,Level,LearningLang,KnownLang,Image,Question_EN,Question_FR,CaseSensitive,MaxCharacters,MinCharacters,eval_CorrectAnswer
+WR_IMG005,Spell the word,Épeler le mot,B1,FR,EN,,Object used to tell time,Objet pour indiquer l’heure,False,6,6,montre
+WR_IMG006,Spell the word,Épeler le mot,B2,FR,EN,,Feeling when you are happy,Sentiment quand on est heureux,False,4,4,joie
+WR_IMG002,Spell the word,Épeler le mot,A2,FR,EN,,Color of the apple,Couleur de la pomme,False,5,5,rouge
+WR_IMG003,Spell the word,Épeler le mot,A2,FR,EN,,Place where you read books,Endroit où l’on lit des livres,False,12,12,bibliothèque
+WR_IMG004,Spell the word,Épeler le mot,B1,FR,EN,,Opposite of “lent”,Contraire de « lent »,False,6,6,rapide

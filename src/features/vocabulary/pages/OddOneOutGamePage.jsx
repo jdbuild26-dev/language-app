@@ -67,31 +67,44 @@ export default function OddOneOutGamePage() {
               (item.words || item.Option1) &&
               (item.words || item.Option1) !== "None",
           )
-          .map((item) => ({
-            id: item.id || item.ExerciseID,
-            words:
+          .map((item) => {
+            const wordsArray =
               item.words ||
               [item.Option1, item.Option2, item.Option3, item.Option4].filter(
                 Boolean,
-              ),
-            correctAnswer:
-              item.correctword ||
-              item.CorrectAnswer ||
-              item.Answer ||
-              item.correctAnswer,
-            reason:
-              item.CorrectExplanation_EN ||
-              item.Reason ||
-              item.Explanation ||
-              "",
-            instructionFr: item.Instruction_FR || "Trouvez l'intrus",
-            instructionEn: item.Instruction_EN || "Select the odd one out",
-            localizedInstruction:
-              item.localizedInstruction ||
-              item.Instruction_EN ||
-              "Select the odd one out",
-            type: "Odd One Out",
-          }));
+              );
+            const wordsEnArray = [
+              item.Option1_EN,
+              item.Option2_EN,
+              item.Option3_EN,
+              item.Option4_EN,
+            ];
+
+            return {
+              id: item.id || item.ExerciseID,
+              words: wordsArray.map((text, i) => ({
+                text,
+                en: wordsEnArray[i],
+              })),
+              correctAnswer:
+                item.correctword ||
+                item.CorrectAnswer ||
+                item.Answer ||
+                item.correctAnswer,
+              reason:
+                item.CorrectExplanation_EN ||
+                item.Reason ||
+                item.Explanation ||
+                "",
+              instructionFr: item.Instruction_FR || "Trouvez l'intrus",
+              instructionEn: item.Instruction_EN || "Select the odd one out",
+              localizedInstruction:
+                item.localizedInstruction ||
+                item.Instruction_EN ||
+                "Select the odd one out",
+              type: "Odd One Out",
+            };
+          });
         setQuestions(normalized);
       } else {
         setQuestions([]);
@@ -108,9 +121,9 @@ export default function OddOneOutGamePage() {
   const totalQuestions = questions.length;
   const progress = ((currentIndex + 1) / totalQuestions) * 100;
 
-  const handleWordClick = (word) => {
+  const handleWordClick = (wordObj) => {
     if (isSubmitted) return;
-    setSelectedWord(word);
+    setSelectedWord(wordObj);
   };
 
   const handleSubmit = () => {
@@ -131,7 +144,7 @@ export default function OddOneOutGamePage() {
     if (!selectedWord) return;
     setIsSubmitted(true);
 
-    const correct = selectedWord === currentQuestion.correctAnswer;
+    const correct = selectedWord.text === currentQuestion.correctAnswer;
     setIsCorrect(correct);
     setFeedbackMessage(getFeedbackMessage(correct));
     setShowFeedback(true);
@@ -141,25 +154,29 @@ export default function OddOneOutGamePage() {
     }
   };
 
-  const getWordStyle = (word) => {
+  const getWordStyle = (wordObj) => {
     const baseStyle =
-      "h-32 md:h-40 rounded-2xl border-2 text-lg md:text-xl font-medium transition-all duration-200 flex items-center justify-center relative overflow-hidden min-w-[180px] md:min-w-[240px]";
+      "h-32 md:h-40 rounded-2xl border-2 transition-all duration-200 flex flex-col items-center justify-center relative overflow-hidden min-w-[180px] md:min-w-[240px]";
 
     if (!isSubmitted) {
       // Normal Selection
-      if (word === selectedWord) {
+      if (selectedWord && wordObj.text === selectedWord.text) {
         return `${baseStyle} bg-blue-50 dark:bg-blue-900/20 border-blue-500 text-blue-700 dark:text-blue-300 ring-2 ring-blue-500`;
       }
       return `${baseStyle} bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:border-purple-400 hover:shadow-md cursor-pointer text-gray-700 dark:text-gray-200`;
     }
 
     // Result Logic
-    if (word === currentQuestion.correctAnswer) {
+    if (wordObj.text === currentQuestion.correctAnswer) {
       // Always show correct
       return `${baseStyle} bg-green-50 dark:bg-green-900/30 border-green-500 text-green-700 dark:text-green-300`;
     }
 
-    if (word === selectedWord && word !== currentQuestion.correctAnswer) {
+    if (
+      selectedWord &&
+      wordObj.text === selectedWord.text &&
+      wordObj.text !== currentQuestion.correctAnswer
+    ) {
       // Wrong selection
       return `${baseStyle} bg-red-50 dark:bg-red-900/30 border-red-500 text-red-700 dark:text-red-300 opacity-80`;
     }
@@ -224,22 +241,29 @@ export default function OddOneOutGamePage() {
         <div className="flex-1 flex flex-col items-center justify-center -mt-10">
           {/* Grid */}
           <div className="grid grid-cols-2 gap-6 md:gap-10 w-full max-w-5xl">
-            {currentQuestion.words.map((word, idx) => (
+            {currentQuestion.words.map((wordObj, idx) => (
               <button
                 key={idx}
-                onClick={() => handleWordClick(word)}
+                onClick={() => handleWordClick(wordObj)}
                 disabled={isSubmitted}
-                className={getWordStyle(word)}
+                className={getWordStyle(wordObj)}
               >
-                <span>{word}</span>
-                {isSubmitted && word === currentQuestion.correctAnswer && (
-                  <div className="absolute top-2 right-2">
-                    <CheckCircle className="w-5 h-5 text-green-600" />
-                  </div>
+                <span className="text-lg md:text-xl font-medium">
+                  {wordObj.text}
+                </span>
+                {isSubmitted && wordObj.en && (
+                  <span className="text-sm mt-1 opacity-80">{wordObj.en}</span>
                 )}
                 {isSubmitted &&
-                  word === selectedWord &&
-                  word !== currentQuestion.correctAnswer && (
+                  wordObj.text === currentQuestion.correctAnswer && (
+                    <div className="absolute top-2 right-2">
+                      <CheckCircle className="w-5 h-5 text-green-600" />
+                    </div>
+                  )}
+                {isSubmitted &&
+                  selectedWord &&
+                  wordObj.text === selectedWord.text &&
+                  wordObj.text !== currentQuestion.correctAnswer && (
                     <div className="absolute top-2 right-2">
                       <XCircle className="w-5 h-5 text-red-600" />
                     </div>

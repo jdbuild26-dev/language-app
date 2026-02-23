@@ -53,7 +53,12 @@ export default function WriteFormPage() {
           displaySentence:
             q.SentenceWithBlank || "Je m'appelle _____ et je suis _____.",
           fullSentence: q.CompleteSentence || q.Audio || "", // Text to speak for context
-          options: [q.Option1, q.Option2, q.Option3, q.Option4].filter(Boolean),
+          options: [
+            { text: q.Option1, en: q.Option1_EN },
+            { text: q.Option2, en: q.Option2_EN },
+            { text: q.Option3, en: q.Option3_EN },
+            { text: q.Option4, en: q.Option4_EN },
+          ].filter((o) => o.text),
           correctAnswer: q.CorrectAnswer || q.Option1, // Fallback
         }));
 
@@ -75,12 +80,12 @@ export default function WriteFormPage() {
     }
   };
 
-  const handleOptionSelect = (opt) => {
+  const handleOptionSelect = (optObj) => {
     if (showFeedback) return;
     // Play TTS for the option
-    speak(opt, "fr-FR");
+    speak(optObj.text, "fr-FR");
     // Select it as the answer
-    setSelectedOption(opt);
+    setSelectedOption(optObj.text);
   };
 
   const playSentence = () => {
@@ -208,7 +213,9 @@ export default function WriteFormPage() {
             </h3>
 
             <div className="grid grid-cols-1 gap-3 w-full">
-              {currentQ?.options.map((opt, idx) => {
+              {currentQ?.options.map((optObj, idx) => {
+                const opt = optObj.text;
+                const en = optObj.en;
                 const isSelected = selectedOption === opt;
                 const isCorrect = opt === currentQ?.correctAnswer;
                 const isWrongSelection =
@@ -218,7 +225,7 @@ export default function WriteFormPage() {
                 return (
                   <button
                     key={idx}
-                    onClick={() => handleOptionSelect(opt)}
+                    onClick={() => handleOptionSelect(optObj)}
                     disabled={showFeedback}
                     className={cn(
                       "group relative p-4 rounded-2xl border-[3px] text-left font-medium text-lg md:text-xl transition-all flex items-center gap-4 bg-white dark:bg-slate-800 shadow-sm",
@@ -351,7 +358,14 @@ export default function WriteFormPage() {
                         </svg>
                       ) : (
                         /* Text Reveal (Visible after submit) */
-                        <span className="text-lg font-medium">{opt}</span>
+                        <div className="flex flex-col items-start">
+                          <span className="text-lg font-medium">{opt}</span>
+                          {en && (
+                            <span className="text-sm font-medium text-slate-500 dark:text-slate-400">
+                              {en}
+                            </span>
+                          )}
+                        </div>
                       )}
                     </div>
                   </button>

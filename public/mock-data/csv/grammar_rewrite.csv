@@ -1,0 +1,5 @@
+ExerciseID,Instruction_EN,Instruction_FR,Level,LearningLang,KnownLang,sentence,eval_answer
+1,,,A1,FR,EN,Elle aime le café.,Elle n'aime pas le café.
+2,,,A1,FR,EN,Il court vite.,Est-ce qu'il court vite?|Court-il vite?
+3,,,A1,FR,EN,Ils jouent au football.,Ils ont joué au football.
+4,,,A1,FR,EN,Je mange une pomme.,Je mangerai une pomme.

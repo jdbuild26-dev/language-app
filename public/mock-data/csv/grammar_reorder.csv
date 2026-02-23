@@ -1,0 +1,6 @@
+ExerciseID,Instruction_EN,Instruction_FR,Level,LearningLang,KnownLang,sentence,eval_translation
+1,,,A1,FR,EN,Le chat dort.,The cat sleeps.
+2,,,A1,FR,EN,J'aime les pommes.,I like apples.
+3,,,A1,FR,EN,Il fait beau.,The weather is nice.
+4,,,A1,FR,EN,Je suis content.,I am happy.
+5,,,A1,FR,EN,Nous allons partir.,We are going to leave.

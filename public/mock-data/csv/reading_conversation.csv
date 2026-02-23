@@ -1,0 +1,2 @@
+ExerciseID,Instruction_EN,Instruction_FR,Level,LearningLang,KnownLang,context,options,messages,nextMessage,currentPrompt,eval_correctIndex
+CP_WEEKEND_01,Choose the best response,Choisissez la meilleure réponse,A1,FR,EN,Plan a weekend trip with a friend,[],[],"{""text"": """", ""isBot"": true, ""speaker"": ""A""}",,0

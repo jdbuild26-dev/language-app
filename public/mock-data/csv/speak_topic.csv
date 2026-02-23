@@ -1,0 +1,3 @@
+ExerciseID,Instruction_EN,Instruction_FR,Level,LearningLang,KnownLang,Topic,Prompt
+SPK_TOP_001,Speak about the topic,Parlez du sujet,A1,FR,EN,My daily routine,Parlez de votre routine quotidienne.
+SPK_TOP_002,Speak about the topic,Parlez du sujet,A1,FR,EN,My city,Décrivez votre ville.

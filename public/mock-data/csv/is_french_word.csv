@@ -1,6 +1,6 @@
-﻿ExerciseID,Question,CorrectAnswer,Instruction_FR,Instruction_EN
-FW001,bonjour,Yes,Est-ce un mot français ?,Is this a French word?
-FW002,flurpnax,No,Est-ce un mot français ?,Is this a French word?
-FW003,merci,Yes,Est-ce un mot français ?,Is this a French word?
-FW004,glopster,No,Est-ce un mot français ?,Is this a French word?
-FW005,château,Yes,Est-ce un mot français ?,Is this a French word?
+ExerciseID,Instruction_EN,Instruction_FR,Level,LearningLang,KnownLang,word,isFrench,correctAnswer,eval_correctAnswer
+FW_0,Is this a French word?,Est-ce un mot français ?,A1,FR,EN,bonjour,True,Yes,True
+FW_1,Is this a French word?,Est-ce un mot français ?,A1,FR,EN,flurpnax,False,No,False
+FW_2,Is this a French word?,Est-ce un mot français ?,A1,FR,EN,merci,True,Yes,True
+FW_3,Is this a French word?,Est-ce un mot français ?,A1,FR,EN,glopster,False,No,False
+FW_4,Is this a French word?,Est-ce un mot français ?,A1,FR,EN,château,True,Yes,True

@@ -1,0 +1,19 @@
+ExerciseID,Instruction_EN,Instruction_FR,Level,LearningLang,KnownLang,Audio,audio,Option1,Option2,Option3,Option4,options,question,ShuffleOptions,CorrectOptionIndex,eval_BlankIndex,eval_CorrectAnswer,eval_correctAnswer,eval_Correct Explanation_EN
+PH001,What do you hear?,Phonétique – Qu’entendez-vous ?,A1,FR,EN,Le,Le,Le,La,Lou,Ley,"[""Le"", ""La"", ""Lou"", ""Ley""]",What do you hear?,True,1,0,Le,Le,The audio clearly pronounces “le”.
+PH002,What do you hear?,Phonétique – Qu’entendez-vous ?,A1,FR,EN,La,La,Le,La,Les,Lou,"[""Le"", ""La"", ""Les"", ""Lou""]",What do you hear?,True,2,0,La,La,The vowel sound matches “la”.
+PH003,What do you hear?,Phonétique – Qu’entendez-vous ?,A2,FR,EN,bon,bon,bon,banc,bonne,bancs,"[""bon"", ""banc"", ""bonne"", ""bancs""]",What do you hear?,True,1,0,bon,bon,The nasal sound corresponds to “bon”.
+PH004,What do you hear?,Phonétique – Qu’entendez-vous ?,A2,FR,EN,les,les,le,la,les,lait,"[""le"", ""la"", ""les"", ""lait""]",What do you hear?,True,3,0,les,les,The speaker pronounces the plural form “les”.
+WH005,Listen and select all words you hear,Qu’entendez-vous ?,A1,FR,EN,,audio_WH005,Chat,Chien,Cheval,Hibou,"[""Chat"", ""Chien"", ""Cheval"", ""Hibou""]",Le chien et le chat jouent dans le jardin toute la journée.,True,,,,None,
+WH006,Listen and select all words you hear,Qu’entendez-vous ?,A1,FR,EN,,audio_WH006,Chat,Chien,Oiseau,Cheval,"[""Chat"", ""Chien"", ""Oiseau"", ""Cheval""]",Un oiseau vole au-dessus du parc ce matin.,True,,,,None,
+WH007,Listen and select all words you hear,Qu’entendez-vous ?,A1,FR,EN,,audio_WH007,Chat,Chien,Cheval,Hibou,"[""Chat"", ""Chien"", ""Cheval"", ""Hibou""]",Le chien court pendant que le cheval marche lentement.,True,,,,None,
+WH008,Listen and select all words you hear,Qu’entendez-vous ?,A2,FR,EN,,audio_WH008,Chat,Chien,Cheval,Vache,"[""Chat"", ""Chien"", ""Cheval"", ""Vache""]","Dans la ferme, il y a une vache, un cheval et un chien.",True,,,,None,
+WH009,Listen and select all words you hear,Qu’entendez-vous ?,B1,FR,EN,,audio_WH009,Lion,Oiseau,Cheval,Chien,"[""Lion"", ""Oiseau"", ""Cheval"", ""Chien""]","Au zoo, on peut voir des lions, des oiseaux et des chevaux.",True,,,,None,
+WH010,Listen and select all words you hear,Qu’entendez-vous ?,A2,FR,EN,,audio_WH010,Chien,Chat,Hibou,Oiseau,"[""Chien"", ""Chat"", ""Hibou"", ""Oiseau""]","La nuit, un hibou chante dans la forêt.",True,,,,None,
+PH001,What do you hear?,Phonétique – Qu’entendez-vous ?,A1,FR,EN,Le,Le,Le,La,Lou,Ley,"[""Le"", ""La"", ""Lou"", ""Ley""]",What do you hear?,True,1,0,Le,Le,The audio clearly pronounces “le”.
+PH002,What do you hear?,Phonétique – Qu’entendez-vous ?,A1,FR,EN,La,La,Le,La,Les,Lou,"[""Le"", ""La"", ""Les"", ""Lou""]",What do you hear?,True,2,0,La,La,The vowel sound matches “la”.
+PH003,What do you hear?,Phonétique – Qu’entendez-vous ?,A2,FR,EN,bon,bon,bon,banc,bonne,bancs,"[""bon"", ""banc"", ""bonne"", ""bancs""]",What do you hear?,True,1,0,bon,bon,The nasal sound corresponds to “bon”.
+PH004,What do you hear?,Phonétique – Qu’entendez-vous ?,A2,FR,EN,les,les,le,la,les,lait,"[""le"", ""la"", ""les"", ""lait""]",What do you hear?,True,3,0,les,les,The speaker pronounces the plural form “les”.
+PH001,What do you hear?,Phonétique – Qu’entendez-vous ?,A1,FR,EN,,Le,,,,,"[""Le"", ""La"", ""Lou"", ""Ley""]",What do you hear?,,,,,Le,
+PH002,What do you hear?,Phonétique – Qu’entendez-vous ?,A1,FR,EN,,La,,,,,"[""Le"", ""La"", ""Les"", ""Lou""]",What do you hear?,,,,,La,
+PH003,What do you hear?,Phonétique – Qu’entendez-vous ?,A2,FR,EN,,bon,,,,,"[""bon"", ""banc"", ""bonne"", ""bancs""]",What do you hear?,,,,,bon,
+PH004,What do you hear?,Phonétique – Qu’entendez-vous ?,A2,FR,EN,,les,,,,,"[""le"", ""la"", ""les"", ""lait""]",What do you hear?,,,,,les,

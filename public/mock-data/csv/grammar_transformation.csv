@@ -1,0 +1,6 @@
+ExerciseID,Instruction_EN,Instruction_FR,Level,LearningLang,KnownLang,sentence,eval_answer,eval_translation
+5,,,A1,FR,EN,The child plays.,The children play.,Les enfants jouent.
+1,,,A1,FR,EN,She likes coffee.,She does not like coffee.|She doesn't like coffee.,Elle n'aime pas le café.
+2,,,A1,FR,EN,I eat an apple.,I ate an apple.,J'ai mangé une pomme.
+3,,,A1,FR,EN,The cat chased the mouse.,The mouse was chased by the cat.,La souris a été poursuivie par le chat.
+4,,,A1,FR,EN,He lives in Paris.,Where does he live?,Où habite-t-il ?

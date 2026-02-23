@@ -37,7 +37,7 @@ export default function ChooseOptionGamePage() {
         );
         const response = await fetchPracticeQuestions("choose_options", {
           learningLang,
-          knownLang
+          knownLang,
         });
         const practiceData = response.data || [];
         console.log(
@@ -54,11 +54,11 @@ export default function ChooseOptionGamePage() {
 
         const generatedQuestions = gameQuestionsRaw.map((item) => {
           const options = [
-            item.Option1,
-            item.Option2,
-            item.Option3,
-            item.Option4,
-          ].filter(Boolean);
+            { text: item.Option1, en: item.Option1_EN },
+            { text: item.Option2, en: item.Option2_EN },
+            { text: item.Option3, en: item.Option3_EN },
+            { text: item.Option4, en: item.Option4_EN },
+          ].filter((o) => o.text);
 
           const shuffledOptions = shuffleArray(options);
 
@@ -78,7 +78,10 @@ export default function ChooseOptionGamePage() {
               item.Instruction_EN ||
               item.instructionEn ||
               "Complete the sentence with the correct word",
-            localizedInstruction: item.localizedInstruction || item.Instruction_EN || "Complete the sentence with the correct word",
+            localizedInstruction:
+              item.localizedInstruction ||
+              item.Instruction_EN ||
+              "Complete the sentence with the correct word",
             image: item.ImageURL || item.imageUrl,
           };
         });
@@ -139,7 +142,7 @@ export default function ChooseOptionGamePage() {
   const handleSubmit = () => {
     if (!selectedOption || showFeedback) return;
 
-    const correct = selectedOption === currentQuestion.correctAnswer;
+    const correct = selectedOption.text === currentQuestion.correctAnswer;
     setIsCorrect(correct);
     setFeedbackMessage(getFeedbackMessage(correct));
     setShowFeedback(true);
@@ -242,7 +245,7 @@ export default function ChooseOptionGamePage() {
                     );
                     return parts.map((part, i) =>
                       part.toLowerCase() ===
-                        currentQuestion.correctAnswer.toLowerCase() ? (
+                      currentQuestion.correctAnswer.toLowerCase() ? (
                         <span
                           key={i}
                           className="text-green-600 font-bold bg-green-100 px-1 rounded-md mx-0.5 shadow-sm border border-green-200"
@@ -280,9 +283,9 @@ export default function ChooseOptionGamePage() {
 
             <div className="flex flex-col gap-3 w-full">
               {currentQuestion.options.map((option, idx) => {
-                const isSelected = selectedOption === option;
+                const isSelected = selectedOption?.text === option.text;
                 const isCorrectOption =
-                  option === currentQuestion.correctAnswer;
+                  option.text === currentQuestion.correctAnswer;
 
                 // Determine styles
                 let containerClasses =
@@ -332,18 +335,25 @@ export default function ChooseOptionGamePage() {
                     </div>
 
                     {/* Text */}
-                    <span
-                      className={cn(
-                        "text-lg font-medium text-left",
-                        showFeedback && isCorrectOption
-                          ? "text-green-800 dark:text-green-300"
-                          : showFeedback && isSelected
-                            ? "text-red-800 dark:text-red-300"
-                            : "text-slate-700 dark:text-slate-200",
+                    <div className="flex flex-col items-start justify-center text-left">
+                      <span
+                        className={cn(
+                          "text-lg font-medium",
+                          showFeedback && isCorrectOption
+                            ? "text-green-800 dark:text-green-300"
+                            : showFeedback && isSelected
+                              ? "text-red-800 dark:text-red-300"
+                              : "text-slate-700 dark:text-slate-200",
+                        )}
+                      >
+                        {option.text}
+                      </span>
+                      {showFeedback && option.en && (
+                        <span className="text-sm text-slate-500 dark:text-slate-400">
+                          {option.en}
+                        </span>
                       )}
-                    >
-                      {option}
-                    </span>
+                    </div>
                   </button>
                 );
               })}

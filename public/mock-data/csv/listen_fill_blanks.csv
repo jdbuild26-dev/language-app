@@ -1,0 +1,6 @@
+ExerciseID,Instruction_EN,Instruction_FR,Level,LearningLang,KnownLang,blanks,audioText,displayParts
+LB004,Listen and complete the sentence,Écoutez et complétez la phrase,A1,FR,EN,"[""d\u00e9jeuner"", ""huit""]",Nous prenons le petit déjeuner à huit heures.,"[""Nous prenons le petit "", "" \u00e0 "", "" heures.""]"
+LB003,Listen and complete the sentence,Écoutez et complétez la phrase,A1,FR,EN,"[""h\u00f4pital"", ""m\u00e9decin""]",Mon frère travaille dans un hôpital comme médecin.,"[""Mon fr\u00e8re travaille dans un "", "" comme "", "".""]"
+LB002,Listen and complete the sentence,Écoutez et complétez la phrase,A1,FR,EN,"[""maison"", ""jardin""]",Elle habite dans une grande maison avec un jardin.,"[""Elle habite dans une grande "", "" avec un "", "".""]"
+LB001,Listen and complete the sentence,Écoutez et complétez la phrase,A1,FR,EN,"[""boulangerie"", ""pain""]",Je vais à la boulangerie pour acheter du pain.,"[""Je vais \u00e0 la "", "" pour acheter du "", "".""]"
+LB005,Listen and complete the sentence,Écoutez et complétez la phrase,A1,FR,EN,"[""football"", ""parc""]",Les enfants jouent au football dans le parc.,"[""Les enfants jouent au "", "" dans le "", "".""]"

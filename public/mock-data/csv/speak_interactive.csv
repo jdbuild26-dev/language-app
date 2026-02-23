@@ -1,0 +1,3 @@
+ExerciseID,Instruction_EN,Instruction_FR,Level,LearningLang,KnownLang,Prompt,Context,Description
+SPK_INT_001,Respond to the speaker,Répondez à l’interlocuteur,A1,FR,EN,Le serveur vous demande ce que vous voulez boire.,At a café,Short spoken response
+SPK_INT_002,Respond to the speaker,Répondez à l’interlocuteur,A1,FR,EN,Quelqu’un vous demande où se trouve la gare.,Asking directions,Short spoken response

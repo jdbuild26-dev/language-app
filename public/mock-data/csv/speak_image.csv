@@ -1,0 +1,3 @@
+ExerciseID,Instruction_EN,Instruction_FR,Level,LearningLang,KnownLang,Image,Prompt,Description
+SPK_IMG_001,Describe the image,Décrivez l’image,A1,FR,EN,https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba,Décrivez ce que vous voyez sur l’image.,Free spoken description
+SPK_IMG_002,Describe the image,Décrivez l’image,A1,FR,EN,https://images.unsplash.com/photo-1494790108377-be9c29b29330,Décrivez la personne sur l’image.,Free spoken description

@@ -1,0 +1,5 @@
+ExerciseID,Instruction_EN,Instruction_FR,Level,LearningLang,KnownLang,hint,imageUrl,question,eval_sampleAnswer
+WRITE_IMG_1,Describe the image in French,Décrivez l'image en français,A1,FR,EN,"beach, sun, water, sand",🏖️,A beach with sun and waves,C'est une plage avec du soleil et des vagues. Le sable est doré et l'eau est bleue.
+WRITE_IMG_2,Describe the image in French,Décrivez l'image en français,A1,FR,EN,"table, food, plate, dinner",🍽️,A dinner table with food,Je vois une table avec de la nourriture. Il y a des assiettes et des verres pour le dîner.
+WRITE_IMG_3,Describe the image in French,Décrivez l'image en français,A1,FR,EN,"mountain, snow, nature, sky",🏔️,A mountain with snow,C'est une grande montagne avec de la neige. Le ciel est bleu et le paysage est magnifique.
+WRITE_IMG_4,Describe the image in French,Décrivez l'image en français,A1,FR,EN,"party, celebration, happy, decoration",🎉,A party celebration,C'est une fête. Les gens sont contents et il y a des décorations colorées partout.

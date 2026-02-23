@@ -1,6 +1,9 @@
-Level,English word,Image,Word - French,Audio - French
-A1,Dog,dog.png,Chien,chien.mp3
-A1,Cat,cat.png,Chat,chat.mp3
-A1,Apple,apple.png,Pomme,pomme.mp3
-A1,Car,car.png,Voiture,voiture.mp3
-A1,House,house.png,Maison,maison.mp3
+ExerciseID,Instruction_EN,Instruction_FR,Level,LearningLang,KnownLang,pairs,pairMode
+ROW_0,,,A1,FR,EN,[],word_to_translation
+G2-001,NaN,NaN,A1,FR,EN,"[{""id"":1,""left"":""Dog"",""right"":""Chien""},{""id"":2,""left"":""Cat"",""right"":""Chat""},{""id"":3,""left"":""Bird"",""right"":""Oiseau""},{""id"":4,""left"":""Fish"",""right"":""Poisson""},{""id"":5,""left"":""Horse"",""right"":""Cheval""},{""id"":6,""left"":""Cow"",""right"":""Vache""}]",
+G2-002,NaN,NaN,A1,FR,EN,"[{""id"":1,""left"":""Apple"",""right"":""Pomme""},{""id"":2,""left"":""Bread"",""right"":""Pain""},{""id"":3,""left"":""Water"",""right"":""Eau""},{""id"":4,""left"":""Milk"",""right"":""Lait""},{""id"":5,""left"":""Cheese"",""right"":""Fromage""},{""id"":6,""left"":""Egg"",""right"":""Œuf""}]",
+MP001,Match the pairs,Associez les paires,A1,FR,EN,"[{""id"": 1, ""left"": ""Dog"", ""right"": ""Chien""}, {""id"": 2, ""left"": ""Cat"", ""right"": ""Chat""}, {""id"": 3, ""left"": ""Bird"", ""right"": ""Oiseau""}, {""id"": 4, ""left"": ""Fish"", ""right"": ""Poisson""}, {""id"": 5, ""left"": ""Horse"", ""right"": ""Cheval""}, {""id"": 6, ""left"": ""Cow"", ""right"": ""Vache""}]",word_to_translation
+ROW_1,,,A1,FR,EN,[],word_to_translation
+ROW_2,,,A1,FR,EN,[],word_to_translation
+ROW_3,,,A1,FR,EN,[],word_to_translation
+ROW_4,,,A1,FR,EN,[],word_to_translation

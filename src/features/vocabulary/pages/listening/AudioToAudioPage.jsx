@@ -61,11 +61,23 @@ export default function AudioToAudioPage() {
             fullSentence:
               q.CompleteSentence || content.CompleteSentence || q.Audio || "",
             options: [
-              q.Option1 || content.Option1,
-              q.Option2 || content.Option2,
-              q.Option3 || content.Option3,
-              q.Option4 || content.Option4,
-            ].filter(Boolean),
+              {
+                text: q.Option1 || content.Option1,
+                en: q.Option1_EN || content.Option1_EN,
+              },
+              {
+                text: q.Option2 || content.Option2,
+                en: q.Option2_EN || content.Option2_EN,
+              },
+              {
+                text: q.Option3 || content.Option3,
+                en: q.Option3_EN || content.Option3_EN,
+              },
+              {
+                text: q.Option4 || content.Option4,
+                en: q.Option4_EN || content.Option4_EN,
+              },
+            ].filter((o) => o.text),
             correctAnswer:
               q.CorrectAnswer ||
               content.CorrectAnswer ||
@@ -89,7 +101,7 @@ export default function AudioToAudioPage() {
   const handleOptionSelect = (opt) => {
     if (showFeedback) return;
     // Play TTS for the option
-    speak(opt, "fr-FR");
+    speak(opt.text, "fr-FR");
     // Select it as the answer
     setSelectedOption(opt);
   };
@@ -102,7 +114,7 @@ export default function AudioToAudioPage() {
   const playOption = (e, text) => {
     e.stopPropagation(); // Prevent selecting when clicking play? or maybe playing selects it?
     // Design shows speaker icon inside the button.
-    speak(text, "fr-FR");
+    speak(text.text || text, "fr-FR");
   };
 
   const handleSubmit = () => {
@@ -111,7 +123,7 @@ export default function AudioToAudioPage() {
 
     const q = questions[currentIndex];
     const correct =
-      selectedOption?.toLowerCase() === q.correctAnswer?.toLowerCase();
+      selectedOption?.text?.toLowerCase() === q.correctAnswer?.toLowerCase();
     setIsCorrect(correct);
     setFeedbackMessage(getFeedbackMessage(correct));
     setShowFeedback(true);
@@ -220,10 +232,12 @@ export default function AudioToAudioPage() {
 
             <div className="grid grid-cols-1 gap-3 w-full">
               {currentQ?.options.map((opt, idx) => {
-                const isSelected = selectedOption === opt;
-                const isCorrect = opt === currentQ?.correctAnswer;
+                const isSelected = selectedOption?.text === opt.text;
+                const isCorrect = opt.text === currentQ?.correctAnswer;
                 const isWrongSelection =
-                  showFeedback && isSelected && opt !== currentQ?.correctAnswer;
+                  showFeedback &&
+                  isSelected &&
+                  opt.text !== currentQ?.correctAnswer;
                 const isCorrectHighlight = showFeedback && isCorrect;
 
                 return (
@@ -362,7 +376,16 @@ export default function AudioToAudioPage() {
                         </svg>
                       ) : (
                         /* Text Reveal (Visible after submit) */
-                        <span className="text-lg font-medium">{opt}</span>
+                        <div className="flex flex-col items-start text-left">
+                          <span className="text-lg font-medium">
+                            {opt.text}
+                          </span>
+                          {opt.en && (
+                            <span className="text-sm font-normal text-slate-500 dark:text-slate-400 mt-0.5">
+                              {opt.en}
+                            </span>
+                          )}
+                        </div>
                       )}
                     </div>
                   </button>
