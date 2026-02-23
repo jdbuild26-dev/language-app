@@ -748,6 +748,18 @@ const CSV_TRANSFORMERS = {
           ? JSON.parse(row["correctGroup"])
           : row["correctGroup"]
         : "",
+      correctGroup_EN: row["correctGroup_EN"]
+        ? row["correctGroup_EN"].startsWith("[") ||
+          row["correctGroup_EN"].startsWith("{")
+          ? JSON.parse(row["correctGroup_EN"])
+          : row["correctGroup_EN"]
+        : "",
+      otherWords_EN: row["otherWords_EN"]
+        ? row["otherWords_EN"].startsWith("[") ||
+          row["otherWords_EN"].startsWith("{")
+          ? JSON.parse(row["otherWords_EN"])
+          : row["otherWords_EN"]
+        : "",
     },
     evaluation: {
       correctGroup: row["eval_correctGroup"]

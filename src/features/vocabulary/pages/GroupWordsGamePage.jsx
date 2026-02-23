@@ -66,6 +66,23 @@ export default function GroupWordsGamePage() {
           const others = parseList(
             item.otherWords || item.OtherWords || item.Options,
           );
+
+          const correct_EN = parseList(
+            item.correctGroup_EN || item.CorrectGroup_EN || [],
+          );
+          const others_EN = parseList(
+            item.otherWords_EN || item.OtherWords_EN || [],
+          );
+
+          // Build translation map
+          const translationsMap = {};
+          correct.forEach((word, idx) => {
+            if (correct_EN[idx]) translationsMap[word] = correct_EN[idx];
+          });
+          others.forEach((word, idx) => {
+            if (others_EN[idx]) translationsMap[word] = others_EN[idx];
+          });
+
           const all = [...correct, ...others].sort(() => Math.random() - 0.5);
 
           return {
@@ -76,6 +93,7 @@ export default function GroupWordsGamePage() {
               item.Instruction_EN || "Select 4 words that are related",
             allWords: all,
             correctGroup: correct,
+            translationsMap,
             reason:
               item.Reason ||
               item.Explanation ||
@@ -245,7 +263,14 @@ export default function GroupWordsGamePage() {
                   disabled={isSubmitted}
                   className={cardStyle}
                 >
-                  {word}
+                  <div className="flex flex-col items-center justify-center space-y-1">
+                    <span>{word}</span>
+                    {showFeedback && currentQuestion.translationsMap[word] && (
+                      <span className="text-sm opacity-80 font-normal">
+                        {currentQuestion.translationsMap[word]}
+                      </span>
+                    )}
+                  </div>
                 </button>
               );
             })}
