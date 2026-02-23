@@ -19,8 +19,8 @@ const DevTools = () => {
     window.location.reload();
   };
 
-  // Only show in development if you prefer, but we'll show it based on an env var or unconditionally for this task
-  if (import.meta.env.PROD) {
+  // Show in production only if VITE_SHOW_DEVTOOLS is set to "true"
+  if (import.meta.env.PROD && import.meta.env.VITE_SHOW_DEVTOOLS !== "true") {
     return null;
   }
 
