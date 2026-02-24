@@ -89,6 +89,7 @@ const practiceActivities = [
   {
     id: "G13",
     name: "Match Description to Image",
+    typeSlug: "match_desc_to_image",
     icon: ImageIcon,
     desc: "Match the description to the correct image",
     path: "/practice/reading/match-desc-to-image",
@@ -100,6 +101,7 @@ const practiceActivities = [
   {
     id: "G14",
     name: "Image Labelling",
+    typeSlug: "image_labelling",
     icon: ImageIcon,
     desc: "Label parts of an image",
     path: "/practice/reading/image-labelling",
@@ -135,6 +137,7 @@ const practiceActivities = [
   {
     id: "G7",
     name: "Fill in the Blanks Passage",
+    typeSlug: "fill_blanks_passage",
     icon: FileText,
     desc: "Fill in missing sentences",
     path: "/practice/reading/fill-blanks-passage",
@@ -158,6 +161,7 @@ const practiceActivities = [
   {
     id: "G9",
     name: "Identify Information",
+    typeSlug: "true_false",
     icon: HelpCircle,
     desc: "Evaluate statements from passages",
     path: "/practice/reading/true-false",
@@ -169,6 +173,7 @@ const practiceActivities = [
   {
     id: "G10",
     name: "Running Conversation",
+    typeSlug: "conversation_dialogue",
     icon: MessageSquare,
     desc: "Follow conversations and respond",
     path: "/practice/reading/conversation",
@@ -180,6 +185,7 @@ const practiceActivities = [
   {
     id: "G17",
     name: "Summary Completion",
+    typeSlug: "summary_completion",
     icon: ListTodo,
     desc: "Complete the summary of a passage",
     path: "/practice/reading/summary-completion",
@@ -194,6 +200,7 @@ const practiceActivities = [
   {
     id: "E1",
     name: "Listen and Select",
+    typeSlug: "listen_select",
     icon: Volume2,
     desc: "Choose the correct answer",
     path: "/practice/listening/select",
@@ -217,6 +224,7 @@ const practiceActivities = [
   {
     id: "E3-NEW",
     name: "Audio Fill in the Blanks",
+    typeSlug: "listen_fill_blanks",
     icon: Edit3,
     desc: "Listen deeply and fill blanks",
     path: "/practice/listening/audio-fill-blanks-pro",
@@ -228,6 +236,7 @@ const practiceActivities = [
   {
     id: "E3-NEW-DROPDOWN",
     name: "Audio Fill in the Blanks 2",
+    typeSlug: "listen_fill_blanks_dropdown",
     icon: Edit3,
     desc: "Listen deeply and fill blanks (Dropdown)",
     path: "/practice/listening/audio-fill-blanks-dropdown",
@@ -239,6 +248,7 @@ const practiceActivities = [
   {
     id: "E4-BUBBLE",
     name: "What do you hear?",
+    typeSlug: "listen_bubble",
     icon: Volume2,
     desc: "Listen and build the sentence",
     path: "/practice/listening/bubble",
@@ -250,6 +260,7 @@ const practiceActivities = [
   {
     id: "E5",
     name: "Listen and Order",
+    typeSlug: "listen_order",
     icon: ListTodo,
     desc: "Arrange audio clips in order",
     path: "/practice/listening/order",
@@ -261,6 +272,7 @@ const practiceActivities = [
   {
     id: "E6",
     name: "Passage Questions",
+    typeSlug: "listen_passage",
     icon: BookOpen,
     desc: "Listen to passages and answer",
     path: "/practice/listening/passage",
@@ -272,6 +284,7 @@ const practiceActivities = [
   {
     id: "E7",
     name: "Interactive Listening",
+    typeSlug: "listen_interactive",
     icon: MessageSquare,
     desc: "Follow audio conversations",
     path: "/practice/listening/interactive",
@@ -283,6 +296,7 @@ const practiceActivities = [
   {
     id: "E8",
     name: "Listening Comprehension",
+    typeSlug: "listening_comprehension",
     icon: Volume2,
     desc: "Listen to scenarios and answer",
     path: "/practice/listening/comprehension",
@@ -294,6 +308,7 @@ const practiceActivities = [
   {
     id: "E9",
     name: "Running Conversation",
+    typeSlug: "listening_conversation",
     icon: MessageSquare,
     desc: "Listen and respond to conversations",
     path: "/practice/listening/conversation",
@@ -308,6 +323,7 @@ const practiceActivities = [
   {
     id: "F1",
     name: "Translate the Sentence",
+    typeSlug: "translate_typed",
     icon: Keyboard,
     desc: "Type translations of sentences",
     path: "/practice/writing/translate",
@@ -331,6 +347,7 @@ const practiceActivities = [
   {
     id: "F3",
     name: "Fill in the Blanks",
+    typeSlug: "write_fill_blanks",
     icon: Edit3,
     desc: "Type missing words in passages",
     path: "/practice/writing/fill-blanks",
@@ -342,6 +359,7 @@ const practiceActivities = [
   {
     id: "F4",
     name: "Write About Topic",
+    typeSlug: "write_topic",
     icon: FileText,
     desc: "Write an essay on a topic",
     path: "/practice/writing/topic",
@@ -353,6 +371,7 @@ const practiceActivities = [
   {
     id: "F5",
     name: "Write About Image",
+    typeSlug: "write_image",
     icon: ImageIcon,
     desc: "Describe an image in writing",
     path: "/practice/writing/image",
@@ -364,6 +383,7 @@ const practiceActivities = [
   {
     id: "F6",
     name: "Write Documents",
+    typeSlug: "write_documents",
     icon: Mail,
     desc: "Write letters and emails",
     path: "/practice/writing/documents",
@@ -375,6 +395,7 @@ const practiceActivities = [
   {
     id: "F7",
     name: "Fill the Form",
+    typeSlug: "write_form",
     icon: ClipboardList,
     desc: "Complete form fields correctly",
     path: "/practice/writing/form",
@@ -386,6 +407,7 @@ const practiceActivities = [
   {
     id: "F8",
     name: "Interactive Writing",
+    typeSlug: "write_interactive",
     icon: Bot,
     desc: "AI-assisted writing practice",
     path: "/practice/writing/interactive",
@@ -397,6 +419,7 @@ const practiceActivities = [
   {
     id: "F9",
     name: "Sentence Completion",
+    typeSlug: "sentence_completion",
     icon: Edit3,
     desc: "Complete sentences logically",
     path: "/practice/writing/sentence-completion",
@@ -408,6 +431,7 @@ const practiceActivities = [
   {
     id: "F10",
     name: "Write About Data",
+    typeSlug: "write_analysis",
     icon: TrendingUp,
     desc: "Analyse a graph or table",
     path: "/practice/writing/analysis",
@@ -422,6 +446,7 @@ const practiceActivities = [
   {
     id: "H1",
     name: "Translate by Speaking",
+    typeSlug: "speak_translate",
     icon: Mic,
     desc: "Speak the translation",
     path: "/practice/speaking/translate",
@@ -443,6 +468,7 @@ const practiceActivities = [
   {
     id: "H3",
     name: "Speak About Image",
+    typeSlug: "speak_image",
     icon: ImageIcon,
     desc: "Describe an image by speaking",
     path: "/practice/speaking/image",
@@ -453,6 +479,7 @@ const practiceActivities = [
   {
     id: "H4",
     name: "Interactive Speaking",
+    typeSlug: "speak_interactive",
     icon: Bot,
     desc: "AI conversation practice",
     path: "/practice/speaking/interactive",
@@ -481,7 +508,9 @@ export default function PracticePage() {
       if (activity.typeSlug) {
         const userLevel = profile?.level || "A1";
         const nextPath = encodeURIComponent(activity.path);
-        navigate(`/practice/select-topic?type=${activity.typeSlug}&level=${userLevel}&next=${nextPath}`);
+        navigate(
+          `/practice/select-topic?type=${activity.typeSlug}&level=${userLevel}&next=${nextPath}`,
+        );
       } else {
         // Pass the current category as a query param so we can return to it
         navigate(`${activity.path}?from=${activity.category}`);
@@ -494,8 +523,8 @@ export default function PracticePage() {
     activeTab === "all"
       ? practiceActivities
       : practiceActivities.filter(
-        (activity) => activity.category === activeTab,
-      );
+          (activity) => activity.category === activeTab,
+        );
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-6">
