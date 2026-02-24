@@ -479,7 +479,7 @@ export default function PracticePage() {
   const handleCardClick = (activity) => {
     if (activity.path) {
       if (activity.typeSlug) {
-        const userLevel = profile?.level?.code || "A1";
+        const userLevel = profile?.level || "A1";
         const nextPath = encodeURIComponent(activity.path);
         navigate(`/practice/select-topic?type=${activity.typeSlug}&level=${userLevel}&next=${nextPath}`);
       } else {
