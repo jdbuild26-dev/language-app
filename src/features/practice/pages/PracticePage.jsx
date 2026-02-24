@@ -22,6 +22,7 @@ import {
   Tags,
   TrendingUp,
 } from "lucide-react";
+import { useStudentProfile } from "@/hooks/useStudentProfile";
 
 // Tab configuration
 const tabs = [
@@ -40,6 +41,7 @@ const practiceActivities = [
   {
     id: "G1",
     name: "Translate the Sentence",
+    typeSlug: "translate_bubbles",
     icon: CheckCircle2,
     desc: "Build sentences by selecting word bubbles",
     path: "/practice/reading/bubble-selection",
@@ -48,10 +50,10 @@ const practiceActivities = [
     shadow: "shadow-cyan-200 dark:shadow-cyan-900/20",
     isLive: true,
   },
-
   {
     id: "G11",
     name: "Highlight the Sentence",
+    typeSlug: "highlight_text",
     icon: Highlighter,
     desc: "Highlight specific text in the passage",
     path: "/practice/reading/highlight-text",
@@ -63,6 +65,7 @@ const practiceActivities = [
   {
     id: "G12",
     name: "Diagram Labelling",
+    typeSlug: "diagram_mapping",
     icon: Tags,
     desc: "Label items in the diagram",
     path: "/practice/reading/diagram-labelling",
@@ -74,6 +77,7 @@ const practiceActivities = [
   {
     id: "G4",
     name: "Match Image to Description",
+    typeSlug: "image_mcq",
     icon: ImageIcon,
     desc: "Select the matching description",
     path: "/practice/reading/image-mcq",
@@ -107,6 +111,7 @@ const practiceActivities = [
   {
     id: "G5",
     name: "Reading Comprehension",
+    typeSlug: "passage_mcq",
     icon: BookOpen,
     desc: "Read passages and answer questions",
     path: "/practice/reading/comprehension",
@@ -118,6 +123,7 @@ const practiceActivities = [
   {
     id: "G15",
     name: "Complete the Passage",
+    typeSlug: "complete_passage_dropdown",
     icon: BookOpen,
     desc: "Select the best sentence to complete",
     path: "/practice/reading/complete-passage",
@@ -140,6 +146,7 @@ const practiceActivities = [
   {
     id: "G8",
     name: "Reorder Sentences",
+    typeSlug: "reorder_sentences",
     icon: RotateCcw,
     desc: "Arrange sentences in order",
     path: "/practice/reading/reorder",
@@ -198,6 +205,7 @@ const practiceActivities = [
   {
     id: "E2",
     name: "Listen and Type",
+    typeSlug: "type_what_you_hear",
     icon: Keyboard,
     desc: "Type what you hear",
     path: "/practice/listening/type",
@@ -228,7 +236,6 @@ const practiceActivities = [
     shadow: "shadow-cyan-200 dark:shadow-cyan-900/20",
     isLive: true,
   },
-
   {
     id: "E4-BUBBLE",
     name: "What do you hear?",
@@ -295,7 +302,6 @@ const practiceActivities = [
     shadow: "shadow-indigo-200 dark:shadow-indigo-900/20",
     isLive: true,
   },
-
   // ========================================
   // WRITING Activities (F1-F8)
   // ========================================
@@ -313,6 +319,7 @@ const practiceActivities = [
   {
     id: "F2",
     name: "Fix the Spelling",
+    typeSlug: "correct_spelling",
     icon: CheckCircle2,
     desc: "Correct spelling mistakes",
     path: "/practice/writing/spelling",
@@ -409,7 +416,6 @@ const practiceActivities = [
     shadow: "shadow-rose-200 dark:shadow-rose-900/20",
     isLive: true,
   },
-
   // ========================================
   // SPEAKING Activities (H1-H4)
   // ========================================
@@ -426,6 +432,7 @@ const practiceActivities = [
   {
     id: "H2",
     name: "Speak About Topic",
+    typeSlug: "speak_topic",
     icon: MessageSquare,
     desc: "Speak about a given topic",
     path: "/practice/speaking/topic",
@@ -456,6 +463,7 @@ const practiceActivities = [
 ];
 
 export default function PracticePage() {
+  const { profile } = useStudentProfile();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -470,8 +478,14 @@ export default function PracticePage() {
 
   const handleCardClick = (activity) => {
     if (activity.path) {
-      // Pass the current category as a query param so we can return to it
-      navigate(`${activity.path}?from=${activity.category}`);
+      if (activity.typeSlug) {
+        const userLevel = profile?.level || "A1";
+        const nextPath = encodeURIComponent(activity.path);
+        navigate(`/practice/select-topic?type=${activity.typeSlug}&level=${userLevel}&next=${nextPath}`);
+      } else {
+        // Pass the current category as a query param so we can return to it
+        navigate(`${activity.path}?from=${activity.category}`);
+      }
     }
   };
 
@@ -480,8 +494,8 @@ export default function PracticePage() {
     activeTab === "all"
       ? practiceActivities
       : practiceActivities.filter(
-          (activity) => activity.category === activeTab,
-        );
+        (activity) => activity.category === activeTab,
+      );
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-6">
