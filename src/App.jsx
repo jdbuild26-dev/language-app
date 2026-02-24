@@ -137,6 +137,7 @@ import ImageLabellingPage from "@/features/practice/pages/reading/ImageLabelling
 import SentenceCompletionPage from "@/features/practice/pages/reading/SentenceCompletionPage";
 import MatchWordsActivityPage from "@/features/vocabulary/pages/MatchWordsActivityPage";
 import SummaryCompletionPage from "@/features/practice/pages/reading/SummaryCompletionPage";
+import TagTopicSelectionPage from "@/features/practice/pages/TagTopicSelectionPage";
 
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import { Toaster } from "react-hot-toast";
@@ -228,6 +229,14 @@ function App() {
               element={
                 <ProtectedRoute>
                   <PracticePage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="practice/select-topic"
+              element={
+                <ProtectedRoute>
+                  <TagTopicSelectionPage />
                 </ProtectedRoute>
               }
             />
