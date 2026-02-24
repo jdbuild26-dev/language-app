@@ -19,10 +19,7 @@ const DevTools = () => {
     window.location.reload();
   };
 
-  // Show in production only if VITE_SHOW_DEVTOOLS is set to "true"
-  if (import.meta.env.PROD && import.meta.env.VITE_SHOW_DEVTOOLS !== "true") {
-    return null;
-  }
+  // Removed the environment variable check so the toggle is always visible
 
   return (
     <div className="fixed bottom-4 right-4 z-50">
