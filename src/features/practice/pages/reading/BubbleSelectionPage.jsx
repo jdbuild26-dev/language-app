@@ -8,8 +8,9 @@ import { cn } from "@/lib/utils";
 import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
 import FeedbackBanner from "@/components/ui/FeedbackBanner";
 import { getFeedbackMessage } from "@/utils/feedbackMessages";
-import { loadMockCSV } from "@/utils/csvLoader";
+import { fetchPracticeData } from "@/utils/practiceFetcher";
 import { Button } from "@/components/ui/button";
+import { useSearchParams } from "react-router-dom";
 
 import { useLanguage } from "@/contexts/LanguageContext";
 
@@ -27,6 +28,8 @@ export default function BubbleSelectionPage() {
   const handleExit = usePracticeExit();
   const { speak } = useTextToSpeech();
   const { learningLang, knownLang } = useLanguage();
+  const [searchParams] = useSearchParams();
+  const tag = searchParams.get("tag");
 
   const [questions, setQuestions] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -60,27 +63,30 @@ export default function BubbleSelectionPage() {
     const fetchQuestions = async () => {
       try {
         setIsLoading(true);
-        const data = await loadMockCSV("practice/reading/bubble_selection.csv", {
+        const data = await fetchPracticeData("translate_bubbles", {
           learningLang,
-          knownLang
+          knownLang,
+          tag,
         });
         setQuestions(data);
       } catch (error) {
-        console.error("Error loading mock data:", error);
+        console.error("Error loading practice data:", error);
       } finally {
         setIsLoading(false);
       }
     };
     fetchQuestions();
-  }, [learningLang, knownLang]);
+  }, [learningLang, knownLang, tag]);
 
   // Initialize available words when question changes (shuffled)
   useEffect(() => {
     if (currentQuestion) {
       // Shuffle the word bubbles for randomized display
-      const bubbles = Array.isArray(currentQuestion.wordBubbles)
-        ? currentQuestion.wordBubbles
-        : [];
+      const bubbles = Array.isArray(currentQuestion.bubble_tokens)
+        ? currentQuestion.bubble_tokens
+        : Array.isArray(currentQuestion.wordBubbles)
+          ? currentQuestion.wordBubbles
+          : [];
       setAvailableWords(shuffleArray(bubbles));
       setSelectedWords([]);
       resetTimer();
@@ -125,7 +131,9 @@ export default function BubbleSelectionPage() {
         .trim();
 
     const userAnswer = normalize(selectedWords.join(" "));
-    const correctAnswer = normalize(currentQuestion.correctAnswer);
+    const correctAnswer = normalize(
+      currentQuestion.target_sentence || currentQuestion.correctAnswer || "",
+    );
     const correct = userAnswer === correctAnswer;
 
     setIsCorrect(correct);
@@ -176,8 +184,12 @@ export default function BubbleSelectionPage() {
       <PracticeGameLayout
         questionType="Translate the Sentence"
         localizedInstruction={currentQuestion?.localizedInstruction}
-        instructionFr={currentQuestion?.instructionFr || "Construisez la phrase en français"}
-        instructionEn={currentQuestion?.instructionEn || "Build the sentence in French"}
+        instructionFr={
+          currentQuestion?.instructionFr || "Construisez la phrase en français"
+        }
+        instructionEn={
+          currentQuestion?.instructionEn || "Build the sentence in French"
+        }
         progress={progress}
         isGameOver={isCompleted}
         score={score}
@@ -194,7 +206,7 @@ export default function BubbleSelectionPage() {
           {/* Source Sentence */}
           <div className="w-full bg-gradient-to-r from-blue-500 to-indigo-600 rounded-2xl p-6 mb-6 shadow-lg">
             <p className="text-xl md:text-2xl text-white font-semibold text-center">
-              {currentQuestion?.sourceText}
+              {currentQuestion?.source_sentence || currentQuestion?.sourceText}
             </p>
           </div>
 
@@ -212,7 +224,8 @@ export default function BubbleSelectionPage() {
                   Correct Answer:
                 </p>
                 <p className="text-xl md:text-2xl text-slate-800 dark:text-white font-semibold">
-                  {currentQuestion?.correctAnswer}
+                  {currentQuestion?.target_sentence ||
+                    currentQuestion?.correctAnswer}
                 </p>
               </motion.div>
             )}
@@ -277,7 +290,11 @@ export default function BubbleSelectionPage() {
       {showFeedback && (
         <FeedbackBanner
           isCorrect={isCorrect}
-          correctAnswer={!isCorrect ? currentQuestion.correctAnswer : null}
+          correctAnswer={
+            !isCorrect
+              ? currentQuestion.target_sentence || currentQuestion.correctAnswer
+              : null
+          }
           onContinue={handleContinue}
           message={feedbackMessage}
           continueLabel={
