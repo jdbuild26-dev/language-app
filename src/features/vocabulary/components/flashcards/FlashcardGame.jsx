@@ -1,9 +1,8 @@
 import { useState, useEffect } from "react";
 import { useSpeechSynthesis } from "../../../../hooks/useSpeechSynthesis";
-import { Volume2, X, Check, Star } from "lucide-react";
+import { Volume2, ThumbsDown, ThumbsUp, Star } from "lucide-react";
 import { cn } from "@/lib/utils";
 import LearningCard from "../lesson-learn/LearningCard";
-import { trackEvent } from "../../../../services/eventTrackerApi";
 
 export default function FlashcardGame({
   words,
@@ -12,6 +11,7 @@ export default function FlashcardGame({
   currentIndex,
   total,
   user,
+  settings,
 }) {
   const [isFlipped, setIsFlipped] = useState(false);
   // Generate a transient session ID for this game instance
@@ -26,6 +26,30 @@ export default function FlashcardGame({
     setIsFlipped(false);
   }, [currentWord]);
 
+  // Handle auto-play audio based on settings
+  useEffect(() => {
+    if (!currentWord || !isSupported || !settings?.autoPlayAudio) return;
+
+    // We only want to play audio if we're seeing the French side
+    // (either frontSide is French and not flipped, or frontSide is English and flipped)
+    const isShowingFrench =
+      (settings.frontSide === "French" && !isFlipped) ||
+      (settings.frontSide === "English" && isFlipped);
+
+    if (isShowingFrench) {
+      // Little delay to let the animation happen before speaking
+      const timer = setTimeout(
+        () => {
+          const textToSpeak =
+            currentWord.forms?.[0]?.word || currentWord.french;
+          if (textToSpeak) speak(textToSpeak, "fr-FR");
+        },
+        isFlipped ? 300 : 0,
+      );
+      return () => clearTimeout(timer);
+    }
+  }, [currentWord, isFlipped, settings, isSupported, speak]);
+
   if (!currentWord) return null;
 
   const handleSpeak = (e, text) => {
@@ -39,19 +63,6 @@ export default function FlashcardGame({
     if (e) e.stopPropagation();
     const newFlipState = !isFlipped;
     setIsFlipped(newFlipState);
-
-    if (currentWord?.id) {
-      trackEvent({
-        userId: user?.id,
-        sessionId,
-        itemId: currentWord.id,
-        interactionType: "flip",
-        metadata: {
-          direction: newFlipState ? "front-to-back" : "back-to-front",
-          word: currentWord.english,
-        },
-      });
-    }
   };
 
   // If backface-hidden is not working, we can use conditional z-index or visibility
@@ -75,23 +86,10 @@ export default function FlashcardGame({
             className="absolute w-full h-full backface-hidden bg-white dark:bg-slate-800 rounded-[2rem] shadow-xl border border-slate-100 dark:border-slate-700 flex flex-col items-center justify-center p-8 text-center"
             style={{ backfaceVisibility: "hidden" }}
           >
-            {/* Inline style backup for backface-visibility */}
-
-            {/* Top Bar for Card */}
-            <div className="absolute top-6 right-6">
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  // Placeholder
-                }}
-                className="text-slate-300 hover:text-amber-400 transition-colors"
-              >
-                <Star className="w-6 h-6" />
-              </button>
-            </div>
-
-            <h2 className="text-6xl md:text-7xl font-bold text-slate-800 dark:text-white mb-8">
-              {currentWord.forms?.[0]?.word || currentWord.french}
+            <h2 className="text-6xl md:text-7xl font-bold text-slate-800 dark:text-white mb-8 px-4">
+              {settings?.frontSide === "English"
+                ? currentWord.english
+                : currentWord.forms?.[0]?.word || currentWord.french}
             </h2>
           </div>
 
@@ -133,65 +131,60 @@ export default function FlashcardGame({
       </div>
 
       {/* Controls */}
-      <div className="flex items-center justify-center gap-8 mt-12 w-full max-w-md px-4">
+      <div className="flex items-center justify-center gap-6 mt-12 w-full max-w-md px-4 perspective-1000">
         {/* Wrong / Don't Know */}
-        <button
-          onClick={() => {
-            if (currentWord?.id) {
-              trackEvent({
-                userId: user?.id,
-                sessionId,
-                itemId: currentWord.id,
-                interactionType: "unknown",
-                metadata: { word: currentWord.english },
-              });
-            }
-            onUpdateStats("unknown");
-          }}
-          className="w-16 h-16 rounded-full bg-white dark:bg-slate-800 shadow-xl border-4 border-slate-50 dark:border-slate-700 flex items-center justify-center text-orange-500 hover:bg-orange-50 hover:border-orange-200 hover:scale-110 active:scale-95 transition-all"
-          aria-label="Don't Know"
-        >
-          <X className="w-8 h-8" />
-        </button>
+        <div className="group relative">
+          <button
+            onClick={() => {
+              onUpdateStats("unknown");
+            }}
+            className="w-16 h-16 rounded-full bg-white dark:bg-slate-800 shadow-xl border-4 border-slate-50 dark:border-slate-700 flex items-center justify-center text-red-500 hover:bg-red-50 hover:border-red-200 hover:scale-110 active:scale-95 transition-all"
+            aria-label="Don't recall"
+          >
+            <ThumbsDown className="w-8 h-8 fill-current" />
+          </button>
 
-        {/* Tick / Known */}
-        <button
-          onClick={() => {
-            if (currentWord?.id) {
-              trackEvent({
-                userId: user?.id,
-                sessionId,
-                itemId: currentWord.id,
-                interactionType: "known",
-                metadata: { word: currentWord.english },
-              });
-            }
-            onUpdateStats("know");
-          }}
-          className="w-16 h-16 rounded-full bg-white dark:bg-slate-800 shadow-xl border-4 border-slate-50 dark:border-slate-700 flex items-center justify-center text-emerald-500 hover:bg-emerald-50 hover:border-emerald-200 hover:scale-110 active:scale-95 transition-all"
-          aria-label="Know"
-        >
-          <Check className="w-8 h-8" />
-        </button>
+          {/* Tooltip */}
+          <div className="absolute -bottom-10 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 whitespace-nowrap bg-slate-800 text-white text-xs font-bold py-1.5 px-3 rounded shadow-lg">
+            Don't recall
+          </div>
+        </div>
 
-        {/* Mastered Button */}
-        <button
-          onClick={() => {
-            if (currentWord?.id) {
-              trackEvent({
-                userId: user?.id,
-                sessionId,
-                itemId: currentWord.id,
-                interactionType: "mastered",
-                metadata: { word: currentWord.english },
-              });
-            }
-            onUpdateStats("mastered");
-          }}
-          className="h-16 px-6 rounded-2xl bg-emerald-500 shadow-lg shadow-emerald-200 dark:shadow-emerald-900/20 flex items-center justify-center text-white font-bold text-lg hover:bg-emerald-600 transition-all hover:-translate-y-1 active:scale-95"
-        >
-          Mastered
-        </button>
+        {/* Need to see more (Middle Button) */}
+        <div className="group relative">
+          <button
+            onClick={() => {
+              onUpdateStats("know");
+            }}
+            className="w-16 h-16 rounded-full bg-white dark:bg-slate-800 shadow-xl border-4 border-slate-50 dark:border-slate-700 flex items-center justify-center text-amber-500 hover:bg-amber-50 hover:border-amber-200 hover:scale-110 active:scale-95 transition-all"
+            aria-label="Need to see more"
+          >
+            <ThumbsUp className="w-8 h-8 fill-current" />
+          </button>
+
+          {/* Tooltip */}
+          <div className="absolute -bottom-10 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 whitespace-nowrap bg-slate-800 text-white text-xs font-bold py-1.5 px-3 rounded shadow-lg">
+            Need to see more
+          </div>
+        </div>
+
+        {/* Confident Button */}
+        <div className="group relative">
+          <button
+            onClick={() => {
+              onUpdateStats("mastered");
+            }}
+            className="w-16 h-16 rounded-full bg-white dark:bg-slate-800 shadow-xl border-4 border-slate-50 dark:border-slate-700 flex items-center justify-center text-emerald-500 hover:bg-emerald-50 hover:border-emerald-200 hover:scale-110 active:scale-95 transition-all"
+            aria-label="Confident"
+          >
+            <ThumbsUp className="w-8 h-8 fill-current" />
+          </button>
+
+          {/* Tooltip */}
+          <div className="absolute -bottom-10 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 whitespace-nowrap bg-slate-800 text-white text-xs font-bold py-1.5 px-3 rounded shadow-lg">
+            Confident
+          </div>
+        </div>
       </div>
     </div>
   );
