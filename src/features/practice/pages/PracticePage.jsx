@@ -1,4 +1,7 @@
 import { useNavigate, useSearchParams } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { fetchAvailableQuestionTypes } from "@/services/vocabularyApi";
 import { cn } from "@/lib/utils";
 import {
   BookOpen,
@@ -33,6 +36,15 @@ const tabs = [
   { id: "listening", label: "LISTENING" },
 ];
 
+// Level filter buttons
+const levelFilters = [
+  { id: "all", label: "ALL" },
+  { id: "a1", label: "A1" },
+  { id: "a2", label: "A2" },
+  { id: "b1", label: "B1" },
+  { id: "b2", label: "B2" },
+];
+
 // Practice activities with category mapping and styling
 const practiceActivities = [
   // ========================================
@@ -48,6 +60,18 @@ const practiceActivities = [
     category: "reading",
     color: "from-cyan-400 to-blue-500",
     shadow: "shadow-cyan-200 dark:shadow-cyan-900/20",
+    isLive: true,
+  },
+  {
+    id: "G1B",
+    name: "Match Pairs",
+    typeSlug: "match_pairs",
+    icon: ListTodo,
+    desc: "Match corresponding words together",
+    path: "/practice/reading/match-pairs",
+    category: "reading",
+    color: "from-indigo-400 to-violet-500",
+    shadow: "shadow-indigo-200 dark:shadow-indigo-900/20",
     isLive: true,
   },
   {
@@ -499,6 +523,32 @@ export default function PracticePage() {
   const activeTab =
     tabFromUrl && tabs.some((t) => t.id === tabFromUrl) ? tabFromUrl : "all";
 
+  // Level filter state + backend-driven slug availability
+  const [activeLevel, setActiveLevel] = useState("all");
+  const [availableSlugs, setAvailableSlugs] = useState(null); // null = show all
+  const [loadingSlugs, setLoadingSlugs] = useState(false);
+  const { learningLang } = useLanguage();
+
+  // Whenever level or learningLang changes, fetch available types from backend
+  useEffect(() => {
+    if (activeLevel === "all") {
+      setAvailableSlugs(null);
+      return;
+    }
+    let cancelled = false;
+    setLoadingSlugs(true);
+    fetchAvailableQuestionTypes(activeLevel, learningLang || "fr")
+      .then((slugs) => {
+        if (!cancelled) setAvailableSlugs(slugs);
+      })
+      .finally(() => {
+        if (!cancelled) setLoadingSlugs(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [activeLevel, learningLang]);
+
   const handleTabChange = (tabId) => {
     setSearchParams({ tab: tabId });
   };
@@ -518,22 +568,40 @@ export default function PracticePage() {
     }
   };
 
-  // Filter activities based on active tab
-  const filteredActivities =
-    activeTab === "all"
-      ? practiceActivities
-      : practiceActivities.filter(
-          (activity) => activity.category === activeTab,
-        );
+  // Filter activities: by skill tab AND by available slugs from backend
+  const filteredActivities = practiceActivities.filter((activity) => {
+    const matchesTab = activeTab === "all" || activity.category === activeTab;
+    const matchesLevel =
+      availableSlugs === null || availableSlugs.includes(activity.typeSlug);
+    return matchesTab && matchesLevel;
+  });
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-6">
       <div className="space-y-8 pb-10">
         {/* Header */}
-        <div className="space-y-2">
+        <div className="space-y-4">
           <h2 className="text-3xl font-bold text-slate-900 dark:text-white">
             Practice skills
           </h2>
+
+          {/* Level filter buttons */}
+          <div className="flex flex-wrap gap-2">
+            {levelFilters.map((lf) => (
+              <button
+                key={lf.id}
+                onClick={() => setActiveLevel(lf.id)}
+                className={cn(
+                  "px-4 py-1.5 rounded-full text-sm font-semibold border transition-all duration-200",
+                  activeLevel === lf.id
+                    ? "bg-blue-600 text-white border-blue-600 shadow-sm"
+                    : "bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-blue-400 hover:text-blue-600 dark:hover:text-blue-400",
+                )}
+              >
+                {lf.label}
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* Tabs */}
@@ -559,8 +627,12 @@ export default function PracticePage() {
           </div>
         </div>
 
-        {/* Activity Cards Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Activity Cards Grid — dimmed while fetching slugs */}
+        <div
+          className={`grid grid-cols-1 md:grid-cols-2 gap-4 transition-opacity duration-200 ${
+            loadingSlugs ? "opacity-40 pointer-events-none" : "opacity-100"
+          }`}
+        >
           {filteredActivities.map((activity) => (
             <div
               key={activity.id}

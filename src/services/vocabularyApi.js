@@ -2929,3 +2929,22 @@ export async function createClassAssignment(assignmentData, classId, token) {
 
   return response.json();
 }
+
+/**
+ * Fetch available question type slugs for a given CEFR level and learning language.
+ * Returns null if level is "all" (show everything) or if the request fails.
+ */
+export async function fetchAvailableQuestionTypes(level, language) {
+  if (!level || level === "all") return null;
+  try {
+    const res = await fetch(
+      `${API_BASE_URL}/api/tag-topics/available-types?level=${level}&language=${language}`,
+    );
+    if (!res.ok) return null;
+    const data = await res.json();
+    return Array.isArray(data.slugs) ? data.slugs : null;
+  } catch (err) {
+    console.error("fetchAvailableQuestionTypes error:", err);
+    return null;
+  }
+}
