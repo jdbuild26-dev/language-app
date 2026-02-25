@@ -80,31 +80,6 @@ export default function LessonHeader({
             </button>
           </div>
         </div>
-
-        {/* Bottom Row: Pills */}
-        <div className="flex items-center gap-2 overflow-x-auto hide-scrollbar pb-4">
-          {words.map((word, idx) => {
-            const isActive = idx === currentIndex;
-            return (
-              <button
-                key={word.id}
-                className={`
-                  px-4 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors
-                  ${
-                    isActive
-                      ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 ring-1 ring-green-200 dark:ring-green-800"
-                      : "bg-gray-50 text-gray-500 dark:bg-slate-800 dark:text-slate-400 hover:bg-gray-100"
-                  }
-                `}
-              >
-                {idx + 1}- {word.english.toLowerCase()}
-              </button>
-            );
-          })}
-          <button className="px-4 py-1.5 rounded-full text-xs font-medium whitespace-nowrap border border-gray-200 text-gray-400 hover:bg-gray-50">
-            lesson summary
-          </button>
-        </div>
       </div>
     </div>
   );

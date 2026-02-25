@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 import { useUser, useAuth } from "@clerk/clerk-react";
-import { ChevronLeftIcon } from "@heroicons/react/24/outline";
+import { ChevronLeftIcon, ChevronRightIcon } from "@heroicons/react/24/outline";
 
 import {
   LearningCard,
@@ -36,11 +36,6 @@ export default function SrsLearnPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isProcessing, setIsProcessing] = useState(false); // Processing a grade
   const [error, setError] = useState(null);
-  const [showButtons, setShowButtons] = useState(false); // Show grading buttons after flip
-
-  // Determine current stats if needed
-  const reviewsCount = queue.filter((w) => w.isReview).length;
-  const newCount = queue.filter((w) => !w.isReview).length;
 
   const loadQueue = useCallback(async () => {
     if (!user) return;
@@ -77,29 +72,22 @@ export default function SrsLearnPage() {
     loadQueue();
   }, [loadQueue]);
 
-  const handleGrade = async (rating) => {
-    // rating: 'unknown' (Again), 'hard', 'known' (Good), 'mastered' (Easy)
+  const handleNext = async () => {
     if (isProcessing) return;
     setIsProcessing(true);
 
     const currentItem = queue[currentIndex];
 
     try {
-      // Optimistic UI: Move to next card immediately?
-      // Or wait for API? Better to wait for API to ensure sync, or at least fire and forget?
-      // Let's fire and forget for speed, but handle errors silently or retry?
-      // For SRS, data integrity is important. Let's await.
-
       await trackEvent({
         userId: user.id,
         itemId: currentItem.id, // Ensure this maps to 'Unique ID' or backend ID
-        interactionType: rating,
+        interactionType: "known", // default to known
         type: "vocab",
       });
 
       if (currentIndex < queue.length - 1) {
         setCurrentIndex((prev) => prev + 1);
-        setShowButtons(false); // Reset UI for next card
       } else {
         setIsCompleted(true);
       }
@@ -108,6 +96,12 @@ export default function SrsLearnPage() {
       // Maybe show toast? For now just log.
     } finally {
       setIsProcessing(false);
+    }
+  };
+
+  const handlePrev = () => {
+    if (currentIndex > 0) {
+      setCurrentIndex((prev) => prev - 1);
     }
   };
 
@@ -214,74 +208,28 @@ export default function SrsLearnPage() {
         words={queue}
       />
 
-      <main className="flex-1 flex flex-col items-center justify-center p-4 pb-32 relative">
-        <div className="w-full max-w-[90rem] flex flex-col items-center gap-8">
-          {/* Card */}
-          <div onClick={() => setShowButtons(true)}>
-            {/* We wrap it to detect click/interaction for showing buttons? 
-                 Or simply show buttons always? 
-                 Let's Show "Show Answer" button first if not shown. */}
-            <LearningCard word={currentWord} />
+      <main className="flex-1 flex flex-col items-center justify-center p-4 pb-12 relative">
+        <div className="w-full max-w-[90rem] relative">
+          <LearningCard word={currentWord} />
+
+          {/* Navigation Buttons - Anchored to card edges */}
+          <div className="absolute top-1/2 -translate-y-1/2 -left-3 md:-left-6 z-20">
+            <button
+              onClick={handlePrev}
+              disabled={currentIndex === 0 || isProcessing}
+              className="w-10 h-10 md:w-12 md:h-12 bg-white dark:bg-slate-800 rounded-full shadow-lg border border-gray-100 dark:border-slate-700 flex items-center justify-center text-gray-500 disabled:opacity-50 disabled:cursor-not-allowed hover:text-sky-500 hover:border-sky-100 transition-all hover:scale-105"
+            >
+              <ChevronLeftIcon className="w-5 h-5 md:w-6 md:h-6" />
+            </button>
           </div>
-
-          {/* Grading Controls */}
-          <div className="w-full max-w-2xl bg-white dark:bg-slate-800 p-4 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-700 flex flex-col gap-4 items-center">
-            {!showButtons ? (
-              <button
-                onClick={() => setShowButtons(true)}
-                className="w-full py-4 bg-sky-500 text-white font-semibold rounded-xl hover:bg-sky-600 transition-colors shadow-sm text-lg"
-              >
-                Show Answer
-              </button>
-            ) : (
-              <div className="grid grid-cols-4 gap-2 w-full">
-                {/* Again (1) */}
-                <button
-                  onClick={() => handleGrade("unknown")}
-                  disabled={isProcessing}
-                  className="flex flex-col items-center py-3 px-2 bg-red-50 text-red-600 rounded-xl hover:bg-red-100 transition-colors border border-red-100"
-                >
-                  <span className="font-bold text-sm md:text-base">Again</span>
-                  <span className="text-xs opacity-70">1m</span>
-                </button>
-
-                {/* Hard (2) */}
-                <button
-                  onClick={() => handleGrade("hard")}
-                  disabled={isProcessing}
-                  className="flex flex-col items-center py-3 px-2 bg-orange-50 text-orange-600 rounded-xl hover:bg-orange-100 transition-colors border border-orange-100"
-                >
-                  <span className="font-bold text-sm md:text-base">Hard</span>
-                  <span className="text-xs opacity-70">2d</span>
-                </button>
-
-                {/* Good (3) */}
-                <button
-                  onClick={() => handleGrade("known")}
-                  disabled={isProcessing}
-                  className="flex flex-col items-center py-3 px-2 bg-green-50 text-green-600 rounded-xl hover:bg-green-100 transition-colors border border-green-100"
-                >
-                  <span className="font-bold text-sm md:text-base">Good</span>
-                  <span className="text-xs opacity-70">4d</span>
-                </button>
-
-                {/* Easy (4) */}
-                <button
-                  onClick={() => handleGrade("mastered")}
-                  disabled={isProcessing}
-                  className="flex flex-col items-center py-3 px-2 bg-blue-50 text-blue-600 rounded-xl hover:bg-blue-100 transition-colors border border-blue-100"
-                >
-                  <span className="font-bold text-sm md:text-base">Easy</span>
-                  <span className="text-xs opacity-70">7d</span>
-                </button>
-              </div>
-            )}
-
-            {/* Stats */}
-            <div className="flex gap-4 text-xs text-gray-400">
-              <span>NEW: {newCount}</span>
-              <span>REVIEW: {reviewsCount}</span>
-            </div>
+          <div className="absolute top-1/2 -translate-y-1/2 -right-3 md:-right-6 z-20">
+            <button
+              onClick={handleNext}
+              disabled={isProcessing}
+              className="w-10 h-10 md:w-12 md:h-12 bg-white dark:bg-slate-800 rounded-full shadow-lg border border-gray-100 dark:border-slate-700 flex items-center justify-center text-gray-500 disabled:opacity-50 disabled:cursor-not-allowed hover:text-sky-500 hover:border-sky-100 transition-all hover:scale-105"
+            >
+              <ChevronRightIcon className="w-5 h-5 md:w-6 md:h-6" />
+            </button>
           </div>
         </div>
       </main>
