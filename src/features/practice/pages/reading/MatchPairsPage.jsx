@@ -1,17 +1,21 @@
 import React, { useState, useEffect } from "react";
 import { useExerciseTimer } from "@/hooks/useExerciseTimer";
-import { Loader2, Volume2 } from "lucide-react";
+import { Loader2, Volume2, AlertCircle } from "lucide-react";
 import { usePracticeExit } from "@/hooks/usePracticeExit";
 import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
-import { loadMockCSV } from "@/utils/csvLoader";
+import { fetchPracticeQuestions } from "@/services/vocabularyApi";
 import { useTextToSpeech } from "@/hooks/useTextToSpeech";
-
-// MATCH_PAIRS_DATA import removed - migrated to CSV
-
+import { useSearchParams, useNavigate } from "react-router-dom";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { Button } from "@/components/ui/button";
 
 export default function MatchPairsPage() {
   const handleExit = usePracticeExit();
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const tag = searchParams.get("tag");
+  const level = searchParams.get("level");
+
   const { speak } = useTextToSpeech();
   const { learningLang, knownLang } = useLanguage();
 
@@ -31,25 +35,47 @@ export default function MatchPairsPage() {
   const [score, setScore] = useState(0);
   const [currentExercise, setCurrentExercise] = useState(null);
 
+  const [errorMsg, setErrorMsg] = useState("");
+
   const PAIRS_PER_ROUND = 6;
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        const data = await loadMockCSV("practice/reading/match_pairs.csv", {
+        setErrorMsg("");
+
+        // Pass the tag to the API if available
+        const searchConfig = {
           learningLang,
-          knownLang
-        });
-        setExercises(data);
+          knownLang,
+          limit: 10, // Grab multiple to give some variety
+        };
+
+        // Optional filters from TagTopicSelectionPage
+        if (tag) searchConfig.tag = tag;
+
+        const response = await fetchPracticeQuestions(
+          "match_pairs",
+          searchConfig,
+        );
+
+        if (response && response.data && response.data.length > 0) {
+          setExercises(response.data);
+        } else {
+          console.error("No valid questions received from backend");
+          setExercises([]);
+          setErrorMsg("No match pairs found for the selected topic/level.");
+        }
       } catch (error) {
         console.error("Error loading match pairs data:", error);
+        setErrorMsg("Failed to load exercises. Please try again.");
       } finally {
         setLoading(false);
       }
     };
     fetchData();
-  }, [learningLang, knownLang]);
+  }, [learningLang, knownLang, tag, level]);
 
   useEffect(() => {
     if (exercises.length > 0) {
@@ -73,23 +99,52 @@ export default function MatchPairsPage() {
     const exercise = exercises[randomIndex];
     setCurrentExercise(exercise);
 
-    // Get pairs from the exercise
-    const pairs = exercise.pairs.slice(0, PAIRS_PER_ROUND);
+    // Try to handle API structure which might use "pairs" list or single items
+    let pairs = [];
+    if (exercise.pairs && Array.isArray(exercise.pairs)) {
+      pairs = exercise.pairs;
+    } else {
+      // Handle generic fallback if format is different
+      console.warn(
+        "Match pair did not have 'pairs' array in content",
+        exercise,
+      );
+      // Sometimes backend formats them as individual pairs
+      if (exercise.completeSentence || exercise.correctAnswer) {
+        pairs = [
+          {
+            id: exercise.id,
+            left: exercise.question || exercise.sourceText || "Q",
+            right: exercise.correctAnswer || "A",
+          },
+        ];
+      }
+    }
 
-    const top = pairs
+    if (pairs.length === 0) {
+      setErrorMsg("Exercise format invalid. No pairs found.");
+      return;
+    }
+
+    // Pick pairs up to PAIRS_PER_ROUND
+    const selectedPairs = pairs
+      .sort(() => 0.5 - Math.random())
+      .slice(0, PAIRS_PER_ROUND);
+
+    const top = selectedPairs
       .map((p) => ({
-        id: `left-${p.id}`,
+        id: `left-${p.id || Math.random()}`,
         pairId: p.id,
-        content: p.left,
+        content: p.left || p.English || p.english || p.word_en,
         type: "top",
       }))
       .sort(() => 0.5 - Math.random());
 
-    const bottom = pairs
+    const bottom = selectedPairs
       .map((p) => ({
-        id: `right-${p.id}`,
+        id: `right-${p.id || Math.random()}`,
         pairId: p.id,
-        content: p.right,
+        content: p.right || p.Word || p.french || p.word_fr,
         type: "bottom",
       }))
       .sort(() => 0.5 - Math.random());
@@ -202,11 +257,21 @@ export default function MatchPairsPage() {
       </div>
     );
 
-  if (!currentExercise && !loading) {
+  if (errorMsg || (!currentExercise && !loading)) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-slate-50 dark:bg-slate-900">
-        <p className="text-xl text-slate-600 dark:text-slate-400">No content available.</p>
-        <Button onClick={() => handleExit()} variant="outline" className="mt-4">Back</Button>
+        <AlertCircle className="w-12 h-12 text-blue-500 mb-4 opacity-50" />
+        <p className="text-xl text-slate-600 dark:text-slate-400 max-w-md text-center">
+          {errorMsg ||
+            "No match pairs available for this topic or difficulty level."}
+        </p>
+        <Button
+          onClick={() => navigate("/practice")}
+          variant="outline"
+          className="mt-6"
+        >
+          Back to Practice
+        </Button>
       </div>
     );
   }
