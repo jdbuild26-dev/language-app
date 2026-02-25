@@ -26,6 +26,7 @@ import SignUpPage from "@/features/auth/pages/SignUpPage";
 // Learning features
 import VocabularyPage from "@/features/vocabulary/pages/VocabularyPage";
 import FlashcardsPage from "@/features/vocabulary/pages/FlashcardsPage";
+import FlashcardsActivityGamePage from "@/features/vocabulary/pages/FlashcardsActivityGamePage";
 import SrsLearnPage from "@/features/vocabulary/pages/SrsLearnPage";
 import GrammarPage from "@/features/grammar/pages/GrammarPage";
 import GrammarNotePage from "@/features/grammar/pages/GrammarNotePage";
@@ -303,6 +304,17 @@ function App() {
           </Route>
 
           {/* Full Screen Practice Routes (Outside Main Layout) */}
+
+          <Route
+            path="/vocabulary/lessons/activities/flashcards/game"
+            element={
+              <ProtectedRoute>
+                <FullScreenLayout>
+                  <FlashcardsActivityGamePage />
+                </FullScreenLayout>
+              </ProtectedRoute>
+            }
+          />
 
           <Route
             path="/vocabulary/practice/choose-options"

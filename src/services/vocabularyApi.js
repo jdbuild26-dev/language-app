@@ -2303,39 +2303,6 @@ export async function saveUserProgress(progressData, token) {
 }
 
 /**
- * Fetch user progress stats
- */
-export async function fetchUserProgressStats({
-  userId,
-  level,
-  category,
-  subCategory,
-  token,
-} = {}) {
-  const params = new URLSearchParams();
-  // removed user_id param
-  if (level) params.append("level", level);
-  if (category) params.append("category", category);
-  if (subCategory && Array.isArray(subCategory)) {
-    subCategory.forEach((sc) => params.append("sub_category", sc));
-  } else if (subCategory) {
-    params.append("sub_category", subCategory);
-  }
-
-  const response = await fetch(`${API_BASE_URL}/api/progress/stats?${params}`, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  });
-
-  if (!response.ok) {
-    throw new Error("Failed to fetch progress stats");
-  }
-
-  return response.json();
-}
-
-/**
  * Fetch all teachers
  */
 export async function fetchTeachers({ limit = 20, skip = 0 } = {}) {
@@ -2684,27 +2651,6 @@ export async function fetchWhatDoYouSeeData() {
 export async function fetchDictationImageData() {
   const response = await fetch(`${API_BASE_URL}/api/practice/dictation-image`);
   if (!response.ok) throw new Error("Failed to fetch dictation image");
-  return response.json();
-}
-
-/**
- * Track user event (SRS)
- */
-export async function trackEvent(eventData) {
-  console.log("[vocabularyApi] Tracking Event:", eventData);
-  // Use /api/event-tracker endpoint which we updated to handle SRS
-  const response = await fetch(`${API_BASE_URL}/api/event_tracker`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(eventData),
-  });
-
-  if (!response.ok) {
-    throw new Error("Failed to track event");
-  }
-
   return response.json();
 }
 

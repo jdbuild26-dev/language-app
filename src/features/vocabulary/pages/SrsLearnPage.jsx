@@ -9,7 +9,7 @@ import {
   LessonHeader,
   CompletionScreen,
 } from "../components/lesson-learn";
-import { fetchLearningQueue, trackEvent } from "@/services/vocabularyApi";
+import { fetchLearningQueue } from "@/services/vocabularyApi";
 import { useLanguage } from "@/contexts/LanguageContext";
 
 export default function SrsLearnPage() {
@@ -79,21 +79,13 @@ export default function SrsLearnPage() {
     const currentItem = queue[currentIndex];
 
     try {
-      await trackEvent({
-        userId: user.id,
-        itemId: currentItem.id, // Ensure this maps to 'Unique ID' or backend ID
-        interactionType: "known", // default to known
-        type: "vocab",
-      });
-
       if (currentIndex < queue.length - 1) {
         setCurrentIndex((prev) => prev + 1);
       } else {
         setIsCompleted(true);
       }
     } catch (err) {
-      console.error("[SrsLearnPage] Failed to track event:", err);
-      // Maybe show toast? For now just log.
+      console.error("[SrsLearnPage] Failed to process next item:", err);
     } finally {
       setIsProcessing(false);
     }

@@ -97,10 +97,6 @@ export default function VocabularyPage() {
           element={<FlashcardsSetupPage />}
         />
         <Route
-          path="lessons/activities/flashcards/game"
-          element={<FlashcardsActivityGamePage />}
-        />
-        <Route
           path="lessons/activities/typing-fill-blanks"
           element={<TypingFillInBlankPage />}
         />

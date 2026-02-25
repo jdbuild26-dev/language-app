@@ -14,7 +14,6 @@ import {
   removeFromReview,
   checkIsBookmarked,
 } from "../../../../services/reviewCardsApi";
-import { trackEvent } from "../../../../services/eventTrackerApi";
 
 // Placeholder image for words without images
 const PLACEHOLDER_IMAGE =
@@ -65,17 +64,6 @@ export default function LearningCard({ word, sessionId }) {
         await addToReview(token, word);
         setIsBookmarked(true);
       }
-
-      // Track bookmark event
-      trackEvent({
-        sessionId,
-        itemId: word.id,
-        interactionType: "bookmark",
-        metadata: {
-          action: !isBookmarked ? "add" : "remove",
-          word: word.english,
-        },
-      });
     } catch (error) {
       console.error("Failed to toggle bookmark:", error);
     } finally {
@@ -90,14 +78,6 @@ export default function LearningCard({ word, sessionId }) {
     }
     setSpeakingId(id);
     speak(text, "fr-FR");
-
-    // Track speak event
-    trackEvent({
-      sessionId,
-      itemId: word.id,
-      interactionType: "speak",
-      metadata: { text, context: id },
-    });
   };
 
   // Mock frequency if not provided
