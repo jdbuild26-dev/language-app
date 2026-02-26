@@ -2177,9 +2177,8 @@ export async function fetchVocabulary({
     params.append("sub_category", subCategory);
   }
 
-  const url = `${API_BASE_URL}/api/vocabulary${
-    params.toString() ? "?" + params : ""
-  }`;
+  const url = `${API_BASE_URL}/api/vocabulary${params.toString() ? "?" + params : ""
+    }`;
   const response = await fetch(url);
 
   if (!response.ok) {
@@ -2318,23 +2317,65 @@ export async function fetchTeachers({ limit = 20, skip = 0 } = {}) {
 }
 
 /**
- * Link a student to a teacher (sends request)
+ * Request a connection (Friend, Teacher, etc.)
  */
-export async function linkStudentToTeacher(studentId, teacherId, token) {
+export async function requestConnection(data, token) {
   const response = await fetch(`${API_BASE_URL}/api/relationships/link`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${token}`,
     },
-    body: JSON.stringify({ studentId, teacherId }),
+    body: JSON.stringify(data), // { studentId, teacherId, type, language }
   });
 
   if (!response.ok) {
-    throw new Error("Failed to send connection request");
+    const errData = await response.json();
+    throw new Error(errData.detail || "Failed to send connection request");
   }
 
   return response.json();
+}
+
+/**
+ * Search for users to connect with
+ */
+export async function searchProfiles(query, token) {
+  const response = await fetch(`${API_BASE_URL}/api/profiles/search?q=${encodeURIComponent(query)}`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error("Search failed");
+  }
+
+  return response.json();
+}
+
+/**
+ * Get accepted friends
+ */
+export async function fetchFriends(token) {
+  const response = await fetch(`${API_BASE_URL}/api/relationships/friends`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error("Failed to fetch friends");
+  }
+
+  return response.json();
+}
+
+/**
+ * Link a student to a teacher (legacy wrapper)
+ */
+export async function linkStudentToTeacher(studentId, teacherId, token) {
+  return requestConnection({ studentId, teacherId, type: "teacher" }, token);
 }
 
 /**
@@ -2361,6 +2402,26 @@ export async function fetchTeacherStudents(teacherId, status, token) {
 }
 
 /**
+ * Update connection status (accept/reject)
+ */
+export async function updateRelationshipStatus(relationshipId, status, token) {
+  const response = await fetch(`${API_BASE_URL}/api/relationships/${relationshipId}/status`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ status }),
+  });
+
+  if (!response.ok) {
+    throw new Error("Failed to update status");
+  }
+
+  return response.json();
+}
+
+/**
  * Fetch teachers for a student (optional status filter)
  */
 export async function fetchStudentTeachers(studentId, status, token) {
@@ -2378,29 +2439,6 @@ export async function fetchStudentTeachers(studentId, status, token) {
 
   if (!response.ok) {
     throw new Error("Failed to fetch teachers");
-  }
-
-  return response.json();
-}
-
-/**
- * Update relationship status (approve/reject)
- */
-export async function updateRelationshipStatus(relationshipId, status, token) {
-  const response = await fetch(
-    `${API_BASE_URL}/api/relationships/${relationshipId}/status`,
-    {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({ status }),
-    },
-  );
-
-  if (!response.ok) {
-    throw new Error("Failed to update relationship status");
   }
 
   return response.json();
@@ -2472,7 +2510,7 @@ export async function fetchPracticeQuestions(
                   ) {
                     try {
                       newRow[key] = JSON.parse(newRow[key]);
-                    } catch (e) {}
+                    } catch (e) { }
                   }
                 }
                 return newRow;
@@ -2535,7 +2573,7 @@ export async function fetchPracticeQuestions(
                     ) {
                       try {
                         newRow[key] = JSON.parse(newRow[key]);
-                      } catch (e) {}
+                      } catch (e) { }
                     }
                   }
                   return newRow;
@@ -2766,6 +2804,23 @@ export async function fetchClasses(token) {
 
   if (!response.ok) {
     throw new Error("Failed to fetch classes");
+  }
+
+  return response.json();
+}
+
+/**
+ * Fetch classes for a student
+ */
+export async function fetchStudentClasses(studentId, token) {
+  const response = await fetch(`${API_BASE_URL}/api/students/classes?student_id=${studentId}`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error("Failed to fetch student classes");
   }
 
   return response.json();

@@ -8,7 +8,7 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
 /**
  * Save progress - batch save learned cards
  */
-export async function saveProgress(userId, level, category, cards, token) {
+export async function saveProgress(userId, langCode, level, category, cards, token) {
   const response = await fetch(`${API_BASE_URL}/api/progress/save`, {
     method: "POST",
     headers: {
@@ -17,6 +17,7 @@ export async function saveProgress(userId, level, category, cards, token) {
     },
     body: JSON.stringify({
       userId,
+      langCode,
       level: level.toUpperCase(),
       category,
       cards: cards.map((card) => ({
@@ -46,8 +47,9 @@ export async function saveProgress(userId, level, category, cards, token) {
 /**
  * Get lesson progress for resume
  */
-export async function getLessonProgress(token, level, category) {
+export async function getLessonProgress(token, langCode, level, category) {
   const params = new URLSearchParams();
+  params.append("langCode", langCode);
   params.append("level", level.toUpperCase());
   params.append("category", category);
 
@@ -70,8 +72,9 @@ export async function getLessonProgress(token, level, category) {
 /**
  * Get all learned cards for wordlist (paginated)
  */
-export async function getWordlist(token, { limit = 50, cursor = null } = {}) {
+export async function getWordlist(token, langCode, { limit = 50, cursor = null } = {}) {
   const params = new URLSearchParams();
+  params.append("langCode", langCode);
   params.append("limit", limit);
   if (cursor) params.append("cursor", cursor);
 
@@ -94,8 +97,9 @@ export async function getWordlist(token, { limit = 50, cursor = null } = {}) {
 /**
  * Reset progress for a specific lesson
  */
-export async function resetLessonProgress(token, level, category) {
+export async function resetLessonProgress(token, langCode, level, category) {
   const params = new URLSearchParams();
+  params.append("langCode", langCode);
   params.append("level", level.toUpperCase());
   params.append("category", category);
 
@@ -143,8 +147,10 @@ export async function deleteLearnedCard(token, cardId) {
 /**
  * Get total learned cards count
  */
-export async function getTotalLearnedCount(token) {
-  const response = await fetch(`${API_BASE_URL}/api/progress/count`, {
+export async function getTotalLearnedCount(token, langCode) {
+  const params = new URLSearchParams();
+  if (langCode) params.append("langCode", langCode);
+  const response = await fetch(`${API_BASE_URL}/api/progress/count?${params.toString()}`, {
     headers: {
       Authorization: `Bearer ${token}`,
     },

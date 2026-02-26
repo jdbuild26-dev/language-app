@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { useUser } from "@clerk/clerk-react";
+import { useUser, useAuth } from "@clerk/clerk-react";
+import { useLanguage } from "../../../contexts/LanguageContext";
 import { ChevronLeftIcon, ChevronRightIcon } from "@heroicons/react/24/outline";
 import { Loader2, ArrowLeft } from "lucide-react";
 
@@ -10,6 +11,8 @@ import { getWordlist } from "../../../services/progressApi";
 export default function LearnedCardsSessionPage() {
   const navigate = useNavigate();
   const { user, isLoaded } = useUser();
+  const { getToken } = useAuth();
+  const { learningLang } = useLanguage();
   const [cards, setCards] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
@@ -23,7 +26,8 @@ export default function LearnedCardsSessionPage() {
       setIsLoading(true);
       setError(null);
 
-      const data = await getWordlist(user.id, { limit: 100 });
+      const token = await getToken();
+      const data = await getWordlist(token, learningLang, { limit: 100 });
 
       // Transform to flashcard format
       const transformedCards = data.cards.map((card) => ({

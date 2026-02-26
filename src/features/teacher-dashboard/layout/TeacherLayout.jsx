@@ -6,6 +6,7 @@ import {
   ClipboardDocumentCheckIcon,
   ChartBarIcon,
 } from "@heroicons/react/24/outline";
+import { useProfile } from "@/contexts/ProfileContext";
 
 const navigation = [
   { name: "Overview", href: "/teacher-dashboard", icon: HomeIcon },
@@ -35,7 +36,7 @@ function classNames(...classes) {
 export default function TeacherLayout() {
   const location = useLocation();
   const navigate = useNavigate();
-
+  const { profiles, activeProfile, switchProfile } = useProfile();
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-body-dark flex flex-col">
@@ -75,9 +76,13 @@ export default function TeacherLayout() {
           <div className="mt-8 pt-8 border-t border-gray-200 dark:border-gray-700">
             <button
               onClick={() => {
-                localStorage.setItem("active_role", "learner");
-                window.dispatchEvent(new Event("roleChange"));
-                navigate("/dashboard");
+                const studentProfile = profiles.find(p => p.role === "student" && p.language === activeProfile.language);
+                if (studentProfile) {
+                  switchProfile(studentProfile);
+                  navigate("/dashboard");
+                } else {
+                  navigate(`/onboarding/new-profile?role=student&lang=${activeProfile.language}`);
+                }
               }}
               className="w-full group flex items-center px-3 py-2 text-sm font-medium rounded-md text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
             >

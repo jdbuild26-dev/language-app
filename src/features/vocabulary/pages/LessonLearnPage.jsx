@@ -11,11 +11,13 @@ import {
 } from "../components/lesson-learn";
 import { fetchVocabulary } from "../../../services/vocabularyApi";
 import { saveProgress, getLessonProgress } from "../../../services/progressApi";
+import { useLanguage } from "../../../contexts/LanguageContext";
 
 export default function LessonLearnPage() {
   const navigate = useNavigate();
   const { user } = useUser();
   const { getToken } = useAuth();
+  const { learningLang } = useLanguage();
   const { level, category, topic } = useParams();
   const [words, setWords] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -28,9 +30,9 @@ export default function LessonLearnPage() {
   const categoryToUse = category || topic;
   const displayName = categoryToUse
     ? categoryToUse
-        .split("-")
-        .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-        .join(" ")
+      .split("-")
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(" ")
     : "";
 
   // Load words and check for resume position
@@ -52,7 +54,7 @@ export default function LessonLearnPage() {
       if (user && level && categoryToUse && fetchedWords.length > 0) {
         try {
           const token = await getToken();
-          const progress = await getLessonProgress(token, level, categoryToUse);
+          const progress = await getLessonProgress(token, learningLang, level, categoryToUse);
 
           if (
             progress.learnedCount > 0 &&
@@ -111,6 +113,7 @@ export default function LessonLearnPage() {
 
       await saveProgress(
         user.id,
+        learningLang,
         level || "A1",
         categoryToUse,
         cardsToSave,

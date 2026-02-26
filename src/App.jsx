@@ -66,6 +66,8 @@ import AssignmentsPage from "@/features/student-dashboard/pages/AssignmentsPage"
 import StudentProgressPage from "@/features/student-dashboard/pages/StudentProgressPage";
 import ReferralPage from "@/features/student-dashboard/pages/ReferralPage";
 import PublicProfilePage from "@/features/student-dashboard/pages/PublicProfilePage";
+import MyTeachersPage from "@/features/student-dashboard/pages/MyTeachersPage";
+import FriendsPage from "@/features/student-dashboard/pages/FriendsPage";
 
 // Practice Games
 import ChooseOptionGamePage from "@/features/vocabulary/pages/ChooseOptionGamePage";
@@ -139,1051 +141,1060 @@ import SentenceCompletionPage from "@/features/practice/pages/reading/SentenceCo
 import MatchWordsActivityPage from "@/features/vocabulary/pages/MatchWordsActivityPage";
 import SummaryCompletionPage from "@/features/practice/pages/reading/SummaryCompletionPage";
 import TagTopicSelectionPage from "@/features/practice/pages/TagTopicSelectionPage";
+import TeacherOnboardingPage from "@/features/auth/pages/TeacherOnboardingPage";
+import StudentOnboardingPage from "@/features/auth/pages/StudentOnboardingPage";
+import NewProfileOnboardingPage from "@/features/auth/pages/NewProfileOnboardingPage";
 
+import { ProfileProvider } from "@/contexts/ProfileContext";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import { Toaster } from "react-hot-toast";
-import DevTools from "@/components/shared/DevTools";
 
 function App() {
   return (
     <Router>
-      <LanguageProvider>
-        <Toaster position="top-center" reverseOrder={false} />
-        <DevTools />
-        <Routes>
-          {/* Public routes */}
-          <Route path="/" element={<Layout />}>
-            <Route index element={<Home />} />
-            <Route path="sign-in/*" element={<SignInPage />} />
-            <Route path="sign-up/*" element={<SignUpPage />} />
-            <Route path="privacy-policy" element={<PrivacyPolicy />} />
-            <Route path="refund-policy" element={<RefundPolicy />} />
-            <Route path="terms-conditions" element={<TermsConditions />} />
-            <Route path="profile/:username" element={<PublicProfilePage />} />
+      <ProfileProvider>
+        <LanguageProvider>
+          <Toaster position="top-center" reverseOrder={false} />
+          <Routes>
+            {/* Public routes */}
+            <Route path="/" element={<Layout />}>
+              <Route index element={<Home />} />
+              <Route path="/onboarding/teacher" element={<TeacherOnboardingPage />} />
+              <Route path="/onboarding/student" element={<StudentOnboardingPage />} />
+              <Route path="/onboarding/new-profile" element={<NewProfileOnboardingPage />} />
+              <Route path="sign-in/*" element={<SignInPage />} />
+              <Route path="sign-up/*" element={<SignUpPage />} />
+              <Route path="privacy-policy" element={<PrivacyPolicy />} />
+              <Route path="refund-policy" element={<RefundPolicy />} />
+              <Route path="terms-conditions" element={<TermsConditions />} />
+              <Route path="profile/:username" element={<PublicProfilePage />} />
 
-            {/* Protected routes */}
-            <Route
-              path="dashboard"
-              element={
-                <ProtectedRoute>
-                  <StudentLayout />
-                </ProtectedRoute>
-              }
-            >
-              <Route index element={<ProfilePage />} />
-              <Route path="assignments" element={<AssignmentsPage />} />
-              <Route path="progress" element={<StudentProgressPage />} />
-              <Route path="referral" element={<ReferralPage />} />
+              {/* Protected routes */}
+              <Route
+                path="dashboard"
+                element={
+                  <ProtectedRoute>
+                    <StudentLayout />
+                  </ProtectedRoute>
+                }
+              >
+                <Route index element={<ProfilePage />} />
+                <Route path="teachers" element={<MyTeachersPage />} />
+                <Route path="friends" element={<FriendsPage />} />
+                <Route path="assignments" element={<AssignmentsPage />} />
+                <Route path="progress" element={<StudentProgressPage />} />
+                <Route path="referral" element={<ReferralPage />} />
+              </Route>
+
+              {/* Learning Feature Routes (Protected) */}
+              <Route
+                path="vocabulary/flashcards/:level/:category"
+                element={
+                  <ProtectedRoute>
+                    <FlashcardsPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="vocabulary/learn"
+                element={
+                  <ProtectedRoute>
+                    <SrsLearnPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="vocabulary/*"
+                element={
+                  <ProtectedRoute>
+                    <VocabularyPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="grammar/*"
+                element={
+                  <ProtectedRoute>
+                    <GrammarPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="stories/*"
+                element={
+                  <ProtectedRoute>
+                    <StoriesPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="stories/:storyId"
+                element={
+                  <ProtectedRoute>
+                    <StoryPlayerPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="practice"
+                element={
+                  <ProtectedRoute>
+                    <PracticePage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="practice/select-topic"
+                element={
+                  <ProtectedRoute>
+                    <TagTopicSelectionPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="practice/fill-in-blank"
+                element={
+                  <ProtectedRoute>
+                    <FillInBlankGamePage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="practice/correct-spelling"
+                element={
+                  <ProtectedRoute>
+                    <CorrectSpellingGamePage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="blogs"
+                element={
+                  <ProtectedRoute>
+                    <BlogsPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="ai-practice/*"
+                element={
+                  <ProtectedRoute>
+                    <AIPracticePage />
+                  </ProtectedRoute>
+                }
+              />
+
+              <Route
+                path="find-teacher"
+                element={
+                  <ProtectedRoute>
+                    <FindTeacherPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="teacher-dashboard"
+                element={
+                  <ProtectedRoute>
+                    <TeacherLayout />
+                  </ProtectedRoute>
+                }
+              >
+                <Route index element={<OverviewPage />} />
+                <Route path="students" element={<MyStudentsPage />} />
+                <Route path="classes" element={<ClassesPage />} />
+                <Route path="profile" element={<TeacherProfilePage />} />
+                <Route path="calendar" element={<CalendarPage />} />
+                <Route path="assignments" element={<TeacherAssignmentsPage />} />
+                <Route path="referral" element={<TeacherReferralPage />} />
+              </Route>
+
+              <Route path="404" element={<NotFound />} />
+              <Route path="*" element={<Navigate to="/404" replace />} />
             </Route>
 
-            {/* Learning Feature Routes (Protected) */}
+            {/* Full Screen Practice Routes (Outside Main Layout) */}
+
             <Route
-              path="vocabulary/flashcards/:level/:category"
+              path="/vocabulary/lessons/activities/flashcards/game"
               element={
                 <ProtectedRoute>
-                  <FlashcardsPage />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="vocabulary/learn"
-              element={
-                <ProtectedRoute>
-                  <SrsLearnPage />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="vocabulary/*"
-              element={
-                <ProtectedRoute>
-                  <VocabularyPage />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="grammar/*"
-              element={
-                <ProtectedRoute>
-                  <GrammarPage />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="stories/*"
-              element={
-                <ProtectedRoute>
-                  <StoriesPage />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="stories/:storyId"
-              element={
-                <ProtectedRoute>
-                  <StoryPlayerPage />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="practice"
-              element={
-                <ProtectedRoute>
-                  <PracticePage />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="practice/select-topic"
-              element={
-                <ProtectedRoute>
-                  <TagTopicSelectionPage />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="practice/fill-in-blank"
-              element={
-                <ProtectedRoute>
-                  <FillInBlankGamePage />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="practice/correct-spelling"
-              element={
-                <ProtectedRoute>
-                  <CorrectSpellingGamePage />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="blogs"
-              element={
-                <ProtectedRoute>
-                  <BlogsPage />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="ai-practice/*"
-              element={
-                <ProtectedRoute>
-                  <AIPracticePage />
+                  <FullScreenLayout>
+                    <FlashcardsActivityGamePage />
+                  </FullScreenLayout>
                 </ProtectedRoute>
               }
             />
 
             <Route
-              path="find-teacher"
+              path="/vocabulary/practice/choose-options"
               element={
                 <ProtectedRoute>
-                  <FindTeacherPage />
+                  <FullScreenLayout>
+                    <ChooseOptionGamePage />
+                  </FullScreenLayout>
                 </ProtectedRoute>
               }
             />
             <Route
-              path="teacher-dashboard"
+              path="/vocabulary/practice/highlight-word"
               element={
                 <ProtectedRoute>
-                  <TeacherLayout />
+                  <FullScreenLayout>
+                    <HighlightWordGamePage />
+                  </FullScreenLayout>
                 </ProtectedRoute>
               }
-            >
-              <Route index element={<OverviewPage />} />
-              <Route path="students" element={<MyStudentsPage />} />
-              <Route path="classes" element={<ClassesPage />} />
-              <Route path="profile" element={<TeacherProfilePage />} />
-              <Route path="calendar" element={<CalendarPage />} />
-              <Route path="assignments" element={<TeacherAssignmentsPage />} />
-              <Route path="referral" element={<TeacherReferralPage />} />
-            </Route>
+            />
+            <Route
+              path="/vocabulary/practice/odd-one-out"
+              element={
+                <ProtectedRoute>
+                  <FullScreenLayout>
+                    <OddOneOutGamePage />
+                  </FullScreenLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/vocabulary/practice/group-words"
+              element={
+                <ProtectedRoute>
+                  <FullScreenLayout>
+                    <GroupWordsGamePage />
+                  </FullScreenLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/vocabulary/practice/fill-in-blank"
+              element={
+                <ProtectedRoute>
+                  <FullScreenLayout>
+                    <FillInBlankGamePage />
+                  </FullScreenLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/vocabulary/practice/correct-spelling"
+              element={
+                <ProtectedRoute>
+                  <FullScreenLayout>
+                    <CorrectSpellingGamePage />
+                  </FullScreenLayout>
+                </ProtectedRoute>
+              }
+            />
 
-            <Route path="404" element={<NotFound />} />
-            <Route path="*" element={<Navigate to="/404" replace />} />
-          </Route>
+            <Route
+              path="/vocabulary/practice/is-french-word"
+              element={
+                <ProtectedRoute>
+                  <FullScreenLayout>
+                    <IsThisFrenchWordPage />
+                  </FullScreenLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/vocabulary/practice/reading/diagram-labelling"
+              element={
+                <ProtectedRoute>
+                  <FullScreenLayout>
+                    <DiagramLabellingPage />
+                  </FullScreenLayout>
+                </ProtectedRoute>
+              }
+            />
 
-          {/* Full Screen Practice Routes (Outside Main Layout) */}
+            <Route
+              path="/vocabulary/practice/reading/diagram-labelling"
+              element={
+                <ProtectedRoute>
+                  <FullScreenLayout>
+                    <DiagramLabellingPage />
+                  </FullScreenLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/practice/reading/match-desc-to-image"
+              element={
+                <ProtectedRoute>
+                  <FullScreenLayout>
+                    <MatchDescToImagePage />
+                  </FullScreenLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/practice/reading/image-labelling"
+              element={
+                <ProtectedRoute>
+                  <FullScreenLayout>
+                    <ImageLabellingPage />
+                  </FullScreenLayout>
+                </ProtectedRoute>
+              }
+            />
 
-          <Route
-            path="/vocabulary/lessons/activities/flashcards/game"
-            element={
-              <ProtectedRoute>
-                <FullScreenLayout>
-                  <FlashcardsActivityGamePage />
-                </FullScreenLayout>
-              </ProtectedRoute>
-            }
-          />
+            {/* Listening Practice Routes */}
 
-          <Route
-            path="/vocabulary/practice/choose-options"
-            element={
-              <ProtectedRoute>
-                <FullScreenLayout>
-                  <ChooseOptionGamePage />
-                </FullScreenLayout>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/vocabulary/practice/highlight-word"
-            element={
-              <ProtectedRoute>
-                <FullScreenLayout>
-                  <HighlightWordGamePage />
-                </FullScreenLayout>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/vocabulary/practice/odd-one-out"
-            element={
-              <ProtectedRoute>
-                <FullScreenLayout>
-                  <OddOneOutGamePage />
-                </FullScreenLayout>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/vocabulary/practice/group-words"
-            element={
-              <ProtectedRoute>
-                <FullScreenLayout>
-                  <GroupWordsGamePage />
-                </FullScreenLayout>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/vocabulary/practice/fill-in-blank"
-            element={
-              <ProtectedRoute>
-                <FullScreenLayout>
-                  <FillInBlankGamePage />
-                </FullScreenLayout>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/vocabulary/practice/correct-spelling"
-            element={
-              <ProtectedRoute>
-                <FullScreenLayout>
-                  <CorrectSpellingGamePage />
-                </FullScreenLayout>
-              </ProtectedRoute>
-            }
-          />
+            <Route
+              path="/vocabulary/practice/listening/phonetics"
+              element={
+                <ProtectedRoute>
+                  <FullScreenLayout>
+                    <PhoneticsPage />
+                  </FullScreenLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/vocabulary/practice/listening/multi-select"
+              element={
+                <ProtectedRoute>
+                  <FullScreenLayout>
+                    <MultiSelectPage />
+                  </FullScreenLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/vocabulary/practice/listening/audio-match"
+              element={
+                <ProtectedRoute>
+                  <FullScreenLayout>
+                    <AudioToAudioPage />
+                  </FullScreenLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/vocabulary/practice/listening/fill-in-blank"
+              element={
+                <ProtectedRoute>
+                  <FullScreenLayout>
+                    <AudioFillBlankPage />
+                  </FullScreenLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/vocabulary/practice/listening/fill-blanks"
+              element={
+                <ProtectedRoute>
+                  <FullScreenLayout>
+                    <ListenFillBlanksPage />
+                  </FullScreenLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/vocabulary/practice/listening/dictation"
+              element={
+                <ProtectedRoute>
+                  <FullScreenLayout>
+                    <DictationPage />
+                  </FullScreenLayout>
+                </ProtectedRoute>
+              }
+            />
 
-          <Route
-            path="/vocabulary/practice/is-french-word"
-            element={
-              <ProtectedRoute>
-                <FullScreenLayout>
-                  <IsThisFrenchWordPage />
-                </FullScreenLayout>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/vocabulary/practice/reading/diagram-labelling"
-            element={
-              <ProtectedRoute>
-                <FullScreenLayout>
-                  <DiagramLabellingPage />
-                </FullScreenLayout>
-              </ProtectedRoute>
-            }
-          />
+            {/* Practice Module Routes - READING */}
+            <Route
+              path="/practice/reading/match-pairs"
+              element={
+                <ProtectedRoute>
+                  <FullScreenLayout>
+                    <MatchPairsPage />
+                  </FullScreenLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/practice/reading/bubble-selection"
+              element={
+                <ProtectedRoute>
+                  <FullScreenLayout>
+                    <BubbleSelectionPage />
+                  </FullScreenLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/practice/reading/highlight"
+              element={
+                <ProtectedRoute>
+                  <FullScreenLayout>
+                    <HighlightPage />
+                  </FullScreenLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/practice/reading/highlight-text"
+              element={
+                <ProtectedRoute>
+                  <FullScreenLayout>
+                    <HighlightTextPage />
+                  </FullScreenLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/practice/reading/image-mcq"
+              element={
+                <ProtectedRoute>
+                  <FullScreenLayout>
+                    <ImageMCQPage />
+                  </FullScreenLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/practice/reading/comprehension"
+              element={
+                <ProtectedRoute>
+                  <FullScreenLayout>
+                    <ComprehensionPage />
+                  </FullScreenLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/practice/reading/fill-blanks-passage"
+              element={
+                <ProtectedRoute>
+                  <FullScreenLayout>
+                    <CompletePassagePage />
+                  </FullScreenLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/practice/reading/reorder"
+              element={
+                <ProtectedRoute>
+                  <FullScreenLayout>
+                    <ReorderPage />
+                  </FullScreenLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/practice/reading/true-false"
+              element={
+                <ProtectedRoute>
+                  <FullScreenLayout>
+                    <TrueFalsePage />
+                  </FullScreenLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/practice/reading/conversation"
+              element={
+                <ProtectedRoute>
+                  <FullScreenLayout>
+                    <ConversationPage />
+                  </FullScreenLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/practice/reading/diagram-labelling"
+              element={
+                <ProtectedRoute>
+                  <FullScreenLayout>
+                    <DiagramLabellingPage />
+                  </FullScreenLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/practice/reading/complete-passage"
+              element={
+                <ProtectedRoute>
+                  <FullScreenLayout>
+                    <SentenceCompletionPage />
+                  </FullScreenLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/practice/reading/summary-completion"
+              element={
+                <ProtectedRoute>
+                  <FullScreenLayout>
+                    <SummaryCompletionPage />
+                  </FullScreenLayout>
+                </ProtectedRoute>
+              }
+            />
 
-          <Route
-            path="/vocabulary/practice/reading/diagram-labelling"
-            element={
-              <ProtectedRoute>
+            <Route
+              path="grammar/practice/fill-blanks"
+              element={
                 <FullScreenLayout>
-                  <DiagramLabellingPage />
+                  <FillBlanksGroupPage type="simple" />
                 </FullScreenLayout>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/practice/reading/match-desc-to-image"
-            element={
-              <ProtectedRoute>
+              }
+            />
+            <Route
+              path="grammar/practice/fill-blanks-question"
+              element={
                 <FullScreenLayout>
-                  <MatchDescToImagePage />
+                  <FillBlanksGroupPage type="question" />
                 </FullScreenLayout>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/practice/reading/image-labelling"
-            element={
-              <ProtectedRoute>
+              }
+            />
+            <Route
+              path="grammar/practice/reorder-words"
+              element={
                 <FullScreenLayout>
-                  <ImageLabellingPage />
+                  <ReorderWordsPage />
                 </FullScreenLayout>
-              </ProtectedRoute>
-            }
-          />
+              }
+            />
+            <Route
+              path="grammar/practice/transformation"
+              element={
+                <FullScreenLayout>
+                  <RewriteSentencePage mode="transformation" />
+                </FullScreenLayout>
+              }
+            />
+            <Route
+              path="grammar/practice/rewrite"
+              element={
+                <FullScreenLayout>
+                  <RewriteSentencePage mode="rewrite" />
+                </FullScreenLayout>
+              }
+            />
+            <Route
+              path="grammar/practice/combination"
+              element={
+                <FullScreenLayout>
+                  <RewriteSentencePage mode="combination" />
+                </FullScreenLayout>
+              }
+            />
+            <Route
+              path="grammar/practice/find-error"
+              element={
+                <FullScreenLayout>
+                  <FindErrorPage />
+                </FullScreenLayout>
+              }
+            />
 
-          {/* Listening Practice Routes */}
+            <Route
+              path="grammar/practice/ai-check"
+              element={
+                <FullScreenLayout>
+                  <GrammarAICheckPage />
+                </FullScreenLayout>
+              }
+            />
 
-          <Route
-            path="/vocabulary/practice/listening/phonetics"
-            element={
-              <ProtectedRoute>
-                <FullScreenLayout>
-                  <PhoneticsPage />
-                </FullScreenLayout>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/vocabulary/practice/listening/multi-select"
-            element={
-              <ProtectedRoute>
-                <FullScreenLayout>
-                  <MultiSelectPage />
-                </FullScreenLayout>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/vocabulary/practice/listening/audio-match"
-            element={
-              <ProtectedRoute>
-                <FullScreenLayout>
-                  <AudioToAudioPage />
-                </FullScreenLayout>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/vocabulary/practice/listening/fill-in-blank"
-            element={
-              <ProtectedRoute>
-                <FullScreenLayout>
-                  <AudioFillBlankPage />
-                </FullScreenLayout>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/vocabulary/practice/listening/fill-blanks"
-            element={
-              <ProtectedRoute>
-                <FullScreenLayout>
-                  <ListenFillBlanksPage />
-                </FullScreenLayout>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/vocabulary/practice/listening/dictation"
-            element={
-              <ProtectedRoute>
-                <FullScreenLayout>
-                  <DictationPage />
-                </FullScreenLayout>
-              </ProtectedRoute>
-            }
-          />
+            {/* Practice Module Routes - LISTENING */}
+            <Route
+              path="/practice/listening/select"
+              element={
+                <ProtectedRoute>
+                  <FullScreenLayout>
+                    <ListenSelectPage />
+                  </FullScreenLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/practice/listening/type"
+              element={
+                <ProtectedRoute>
+                  <FullScreenLayout>
+                    <ListenTypePage />
+                  </FullScreenLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/practice/listening/fill-blanks"
+              element={
+                <ProtectedRoute>
+                  <FullScreenLayout>
+                    <ListenFillBlanksPage />
+                  </FullScreenLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/practice/listening/audio-fill-blanks-pro"
+              element={
+                <ProtectedRoute>
+                  <FullScreenLayout>
+                    <AudioFillInTheBlanksProPage />
+                  </FullScreenLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/practice/listening/audio-fill-blanks-dropdown"
+              element={
+                <ProtectedRoute>
+                  <FullScreenLayout>
+                    <AudioFillInTheBlanksDropdownPage />
+                  </FullScreenLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/practice/listening/bubble"
+              element={
+                <ProtectedRoute>
+                  <FullScreenLayout>
+                    <ListenBubblePage />
+                  </FullScreenLayout>
+                </ProtectedRoute>
+              }
+            />
 
-          {/* Practice Module Routes - READING */}
-          <Route
-            path="/practice/reading/match-pairs"
-            element={
-              <ProtectedRoute>
-                <FullScreenLayout>
-                  <MatchPairsPage />
-                </FullScreenLayout>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/practice/reading/bubble-selection"
-            element={
-              <ProtectedRoute>
-                <FullScreenLayout>
-                  <BubbleSelectionPage />
-                </FullScreenLayout>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/practice/reading/highlight"
-            element={
-              <ProtectedRoute>
-                <FullScreenLayout>
-                  <HighlightPage />
-                </FullScreenLayout>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/practice/reading/highlight-text"
-            element={
-              <ProtectedRoute>
-                <FullScreenLayout>
-                  <HighlightTextPage />
-                </FullScreenLayout>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/practice/reading/image-mcq"
-            element={
-              <ProtectedRoute>
-                <FullScreenLayout>
-                  <ImageMCQPage />
-                </FullScreenLayout>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/practice/reading/comprehension"
-            element={
-              <ProtectedRoute>
-                <FullScreenLayout>
-                  <ComprehensionPage />
-                </FullScreenLayout>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/practice/reading/fill-blanks-passage"
-            element={
-              <ProtectedRoute>
-                <FullScreenLayout>
-                  <CompletePassagePage />
-                </FullScreenLayout>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/practice/reading/reorder"
-            element={
-              <ProtectedRoute>
-                <FullScreenLayout>
-                  <ReorderPage />
-                </FullScreenLayout>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/practice/reading/true-false"
-            element={
-              <ProtectedRoute>
-                <FullScreenLayout>
-                  <TrueFalsePage />
-                </FullScreenLayout>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/practice/reading/conversation"
-            element={
-              <ProtectedRoute>
-                <FullScreenLayout>
-                  <ConversationPage />
-                </FullScreenLayout>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/practice/reading/diagram-labelling"
-            element={
-              <ProtectedRoute>
-                <FullScreenLayout>
-                  <DiagramLabellingPage />
-                </FullScreenLayout>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/practice/reading/complete-passage"
-            element={
-              <ProtectedRoute>
-                <FullScreenLayout>
-                  <SentenceCompletionPage />
-                </FullScreenLayout>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/practice/reading/summary-completion"
-            element={
-              <ProtectedRoute>
-                <FullScreenLayout>
-                  <SummaryCompletionPage />
-                </FullScreenLayout>
-              </ProtectedRoute>
-            }
-          />
+            {/* Practice Module Routes - READING */}
+            <Route
+              path="/practice/reading/match-pairs"
+              element={
+                <ProtectedRoute>
+                  <FullScreenLayout>
+                    <MatchPairsPage />
+                  </FullScreenLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/vocabulary/practice/match-words"
+              element={
+                <ProtectedRoute>
+                  <FullScreenLayout>
+                    <MatchWordsActivityPage />
+                  </FullScreenLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/practice/reading/bubble-selection"
+              element={
+                <ProtectedRoute>
+                  <FullScreenLayout>
+                    <BubbleSelectionPage />
+                  </FullScreenLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/practice/reading/highlight"
+              element={
+                <ProtectedRoute>
+                  <FullScreenLayout>
+                    <HighlightPage />
+                  </FullScreenLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/practice/reading/highlight-text"
+              element={
+                <ProtectedRoute>
+                  <FullScreenLayout>
+                    <HighlightTextPage />
+                  </FullScreenLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/practice/reading/image-mcq"
+              element={
+                <ProtectedRoute>
+                  <FullScreenLayout>
+                    <ImageMCQPage />
+                  </FullScreenLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/practice/reading/comprehension"
+              element={
+                <ProtectedRoute>
+                  <FullScreenLayout>
+                    <ComprehensionPage />
+                  </FullScreenLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/practice/reading/fill-blanks-passage"
+              element={
+                <ProtectedRoute>
+                  <FullScreenLayout>
+                    <CompletePassagePage />
+                  </FullScreenLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/practice/reading/reorder"
+              element={
+                <ProtectedRoute>
+                  <FullScreenLayout>
+                    <ReorderPage />
+                  </FullScreenLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/practice/reading/true-false"
+              element={
+                <ProtectedRoute>
+                  <FullScreenLayout>
+                    <TrueFalsePage />
+                  </FullScreenLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/practice/reading/conversation"
+              element={
+                <ProtectedRoute>
+                  <FullScreenLayout>
+                    <ConversationPage />
+                  </FullScreenLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/practice/reading/diagram-labelling"
+              element={
+                <ProtectedRoute>
+                  <FullScreenLayout>
+                    <DiagramLabellingPage />
+                  </FullScreenLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/practice/reading/complete-passage"
+              element={
+                <ProtectedRoute>
+                  <FullScreenLayout>
+                    <SentenceCompletionPage />
+                  </FullScreenLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/practice/reading/summary-completion"
+              element={
+                <ProtectedRoute>
+                  <FullScreenLayout>
+                    <SummaryCompletionPage />
+                  </FullScreenLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/practice/listening/order"
+              element={
+                <ProtectedRoute>
+                  <FullScreenLayout>
+                    <ListenOrderPage />
+                  </FullScreenLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/practice/listening/passage"
+              element={
+                <ProtectedRoute>
+                  <FullScreenLayout>
+                    <ListenPassagePage />
+                  </FullScreenLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/practice/listening/interactive"
+              element={
+                <ProtectedRoute>
+                  <FullScreenLayout>
+                    <ListenInteractivePage />
+                  </FullScreenLayout>
+                </ProtectedRoute>
+              }
+            />
 
-          <Route
-            path="grammar/practice/fill-blanks"
-            element={
-              <FullScreenLayout>
-                <FillBlanksGroupPage type="simple" />
-              </FullScreenLayout>
-            }
-          />
-          <Route
-            path="grammar/practice/fill-blanks-question"
-            element={
-              <FullScreenLayout>
-                <FillBlanksGroupPage type="question" />
-              </FullScreenLayout>
-            }
-          />
-          <Route
-            path="grammar/practice/reorder-words"
-            element={
-              <FullScreenLayout>
-                <ReorderWordsPage />
-              </FullScreenLayout>
-            }
-          />
-          <Route
-            path="grammar/practice/transformation"
-            element={
-              <FullScreenLayout>
-                <RewriteSentencePage mode="transformation" />
-              </FullScreenLayout>
-            }
-          />
-          <Route
-            path="grammar/practice/rewrite"
-            element={
-              <FullScreenLayout>
-                <RewriteSentencePage mode="rewrite" />
-              </FullScreenLayout>
-            }
-          />
-          <Route
-            path="grammar/practice/combination"
-            element={
-              <FullScreenLayout>
-                <RewriteSentencePage mode="combination" />
-              </FullScreenLayout>
-            }
-          />
-          <Route
-            path="grammar/practice/find-error"
-            element={
-              <FullScreenLayout>
-                <FindErrorPage />
-              </FullScreenLayout>
-            }
-          />
+            <Route
+              path="/practice/listening/comprehension"
+              element={
+                <ProtectedRoute>
+                  <FullScreenLayout>
+                    <ListeningComprehensionPage />
+                  </FullScreenLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/practice/listening/conversation"
+              element={
+                <ProtectedRoute>
+                  <FullScreenLayout>
+                    <ListeningConversationPage />
+                  </FullScreenLayout>
+                </ProtectedRoute>
+              }
+            />
 
-          <Route
-            path="grammar/practice/ai-check"
-            element={
-              <FullScreenLayout>
-                <GrammarAICheckPage />
-              </FullScreenLayout>
-            }
-          />
+            {/* Practice Module Routes - WRITING */}
+            <Route
+              path="/practice/writing/translate"
+              element={
+                <ProtectedRoute>
+                  <FullScreenLayout>
+                    <TranslateTypedPage />
+                  </FullScreenLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/practice/writing/spelling"
+              element={
+                <ProtectedRoute>
+                  <FullScreenLayout>
+                    <SpellingPage />
+                  </FullScreenLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/practice/writing/fill-blanks"
+              element={
+                <ProtectedRoute>
+                  <FullScreenLayout>
+                    <WriteFillBlanksPage />
+                  </FullScreenLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/practice/writing/topic"
+              element={
+                <ProtectedRoute>
+                  <FullScreenLayout>
+                    <WriteTopicPage />
+                  </FullScreenLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/practice/writing/image"
+              element={
+                <ProtectedRoute>
+                  <FullScreenLayout>
+                    <WriteImagePage />
+                  </FullScreenLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/practice/writing/documents"
+              element={
+                <ProtectedRoute>
+                  <FullScreenLayout>
+                    <WriteDocumentsPage />
+                  </FullScreenLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/practice/writing/form"
+              element={
+                <ProtectedRoute>
+                  <FullScreenLayout>
+                    <WriteFormPage />
+                  </FullScreenLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/practice/writing/interactive"
+              element={
+                <ProtectedRoute>
+                  <FullScreenLayout>
+                    <WriteInteractivePage />
+                  </FullScreenLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/practice/writing/analysis"
+              element={
+                <ProtectedRoute>
+                  <FullScreenLayout>
+                    <WriteAnalysisPage />
+                  </FullScreenLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/practice/writing/sentence-completion"
+              element={
+                <ProtectedRoute>
+                  <FullScreenLayout>
+                    <WriteSentenceCompletionPage />
+                  </FullScreenLayout>
+                </ProtectedRoute>
+              }
+            />
 
-          {/* Practice Module Routes - LISTENING */}
-          <Route
-            path="/practice/listening/select"
-            element={
-              <ProtectedRoute>
-                <FullScreenLayout>
-                  <ListenSelectPage />
-                </FullScreenLayout>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/practice/listening/type"
-            element={
-              <ProtectedRoute>
-                <FullScreenLayout>
-                  <ListenTypePage />
-                </FullScreenLayout>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/practice/listening/fill-blanks"
-            element={
-              <ProtectedRoute>
-                <FullScreenLayout>
-                  <ListenFillBlanksPage />
-                </FullScreenLayout>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/practice/listening/audio-fill-blanks-pro"
-            element={
-              <ProtectedRoute>
-                <FullScreenLayout>
-                  <AudioFillInTheBlanksProPage />
-                </FullScreenLayout>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/practice/listening/audio-fill-blanks-dropdown"
-            element={
-              <ProtectedRoute>
-                <FullScreenLayout>
-                  <AudioFillInTheBlanksDropdownPage />
-                </FullScreenLayout>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/practice/listening/bubble"
-            element={
-              <ProtectedRoute>
-                <FullScreenLayout>
-                  <ListenBubblePage />
-                </FullScreenLayout>
-              </ProtectedRoute>
-            }
-          />
+            {/* Practice Module Routes - SPEAKING */}
+            <Route
+              path="/practice/speaking/translate"
+              element={
+                <ProtectedRoute>
+                  <FullScreenLayout>
+                    <SpeakTranslatePage />
+                  </FullScreenLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/practice/speaking/topic"
+              element={
+                <ProtectedRoute>
+                  <FullScreenLayout>
+                    <SpeakTopicPage />
+                  </FullScreenLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/practice/speaking/image"
+              element={
+                <ProtectedRoute>
+                  <FullScreenLayout>
+                    <SpeakImagePage />
+                  </FullScreenLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/practice/speaking/interactive"
+              element={
+                <ProtectedRoute>
+                  <FullScreenLayout>
+                    <SpeakInteractivePage />
+                  </FullScreenLayout>
+                </ProtectedRoute>
+              }
+            />
 
-          {/* Practice Module Routes - READING */}
-          <Route
-            path="/practice/reading/match-pairs"
-            element={
-              <ProtectedRoute>
-                <FullScreenLayout>
-                  <MatchPairsPage />
-                </FullScreenLayout>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/vocabulary/practice/match-words"
-            element={
-              <ProtectedRoute>
-                <FullScreenLayout>
-                  <MatchWordsActivityPage />
-                </FullScreenLayout>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/practice/reading/bubble-selection"
-            element={
-              <ProtectedRoute>
-                <FullScreenLayout>
-                  <BubbleSelectionPage />
-                </FullScreenLayout>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/practice/reading/highlight"
-            element={
-              <ProtectedRoute>
-                <FullScreenLayout>
-                  <HighlightPage />
-                </FullScreenLayout>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/practice/reading/highlight-text"
-            element={
-              <ProtectedRoute>
-                <FullScreenLayout>
-                  <HighlightTextPage />
-                </FullScreenLayout>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/practice/reading/image-mcq"
-            element={
-              <ProtectedRoute>
-                <FullScreenLayout>
-                  <ImageMCQPage />
-                </FullScreenLayout>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/practice/reading/comprehension"
-            element={
-              <ProtectedRoute>
-                <FullScreenLayout>
-                  <ComprehensionPage />
-                </FullScreenLayout>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/practice/reading/fill-blanks-passage"
-            element={
-              <ProtectedRoute>
-                <FullScreenLayout>
-                  <CompletePassagePage />
-                </FullScreenLayout>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/practice/reading/reorder"
-            element={
-              <ProtectedRoute>
-                <FullScreenLayout>
-                  <ReorderPage />
-                </FullScreenLayout>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/practice/reading/true-false"
-            element={
-              <ProtectedRoute>
-                <FullScreenLayout>
-                  <TrueFalsePage />
-                </FullScreenLayout>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/practice/reading/conversation"
-            element={
-              <ProtectedRoute>
-                <FullScreenLayout>
-                  <ConversationPage />
-                </FullScreenLayout>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/practice/reading/diagram-labelling"
-            element={
-              <ProtectedRoute>
-                <FullScreenLayout>
-                  <DiagramLabellingPage />
-                </FullScreenLayout>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/practice/reading/complete-passage"
-            element={
-              <ProtectedRoute>
-                <FullScreenLayout>
-                  <SentenceCompletionPage />
-                </FullScreenLayout>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/practice/reading/summary-completion"
-            element={
-              <ProtectedRoute>
-                <FullScreenLayout>
-                  <SummaryCompletionPage />
-                </FullScreenLayout>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/practice/listening/order"
-            element={
-              <ProtectedRoute>
-                <FullScreenLayout>
-                  <ListenOrderPage />
-                </FullScreenLayout>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/practice/listening/passage"
-            element={
-              <ProtectedRoute>
-                <FullScreenLayout>
-                  <ListenPassagePage />
-                </FullScreenLayout>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/practice/listening/interactive"
-            element={
-              <ProtectedRoute>
-                <FullScreenLayout>
-                  <ListenInteractivePage />
-                </FullScreenLayout>
-              </ProtectedRoute>
-            }
-          />
+            {/* Grammar Practice Routes */}
+            <Route
+              path="/grammar/practice/fill-blanks-options"
+              element={
+                <ProtectedRoute>
+                  <FullScreenLayout>
+                    <FillBlanksOptionsPage />
+                  </FullScreenLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/grammar/practice/four-options"
+              element={
+                <ProtectedRoute>
+                  <FullScreenLayout>
+                    <FourOptionsPage />
+                  </FullScreenLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/grammar/practice/two-options"
+              element={
+                <ProtectedRoute>
+                  <FullScreenLayout>
+                    <TwoOptionsPage />
+                  </FullScreenLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/grammar/practice/three-options"
+              element={
+                <ProtectedRoute>
+                  <FullScreenLayout>
+                    <ThreeOptionsPage />
+                  </FullScreenLayout>
+                </ProtectedRoute>
+              }
+            />
 
-          <Route
-            path="/practice/listening/comprehension"
-            element={
-              <ProtectedRoute>
-                <FullScreenLayout>
-                  <ListeningComprehensionPage />
-                </FullScreenLayout>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/practice/listening/conversation"
-            element={
-              <ProtectedRoute>
-                <FullScreenLayout>
-                  <ListeningConversationPage />
-                </FullScreenLayout>
-              </ProtectedRoute>
-            }
-          />
-
-          {/* Practice Module Routes - WRITING */}
-          <Route
-            path="/practice/writing/translate"
-            element={
-              <ProtectedRoute>
-                <FullScreenLayout>
-                  <TranslateTypedPage />
-                </FullScreenLayout>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/practice/writing/spelling"
-            element={
-              <ProtectedRoute>
-                <FullScreenLayout>
-                  <SpellingPage />
-                </FullScreenLayout>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/practice/writing/fill-blanks"
-            element={
-              <ProtectedRoute>
-                <FullScreenLayout>
-                  <WriteFillBlanksPage />
-                </FullScreenLayout>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/practice/writing/topic"
-            element={
-              <ProtectedRoute>
-                <FullScreenLayout>
-                  <WriteTopicPage />
-                </FullScreenLayout>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/practice/writing/image"
-            element={
-              <ProtectedRoute>
-                <FullScreenLayout>
-                  <WriteImagePage />
-                </FullScreenLayout>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/practice/writing/documents"
-            element={
-              <ProtectedRoute>
-                <FullScreenLayout>
-                  <WriteDocumentsPage />
-                </FullScreenLayout>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/practice/writing/form"
-            element={
-              <ProtectedRoute>
-                <FullScreenLayout>
-                  <WriteFormPage />
-                </FullScreenLayout>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/practice/writing/interactive"
-            element={
-              <ProtectedRoute>
-                <FullScreenLayout>
-                  <WriteInteractivePage />
-                </FullScreenLayout>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/practice/writing/analysis"
-            element={
-              <ProtectedRoute>
-                <FullScreenLayout>
-                  <WriteAnalysisPage />
-                </FullScreenLayout>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/practice/writing/sentence-completion"
-            element={
-              <ProtectedRoute>
-                <FullScreenLayout>
-                  <WriteSentenceCompletionPage />
-                </FullScreenLayout>
-              </ProtectedRoute>
-            }
-          />
-
-          {/* Practice Module Routes - SPEAKING */}
-          <Route
-            path="/practice/speaking/translate"
-            element={
-              <ProtectedRoute>
-                <FullScreenLayout>
-                  <SpeakTranslatePage />
-                </FullScreenLayout>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/practice/speaking/topic"
-            element={
-              <ProtectedRoute>
-                <FullScreenLayout>
-                  <SpeakTopicPage />
-                </FullScreenLayout>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/practice/speaking/image"
-            element={
-              <ProtectedRoute>
-                <FullScreenLayout>
-                  <SpeakImagePage />
-                </FullScreenLayout>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/practice/speaking/interactive"
-            element={
-              <ProtectedRoute>
-                <FullScreenLayout>
-                  <SpeakInteractivePage />
-                </FullScreenLayout>
-              </ProtectedRoute>
-            }
-          />
-
-          {/* Grammar Practice Routes */}
-          <Route
-            path="/grammar/practice/fill-blanks-options"
-            element={
-              <ProtectedRoute>
-                <FullScreenLayout>
-                  <FillBlanksOptionsPage />
-                </FullScreenLayout>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/grammar/practice/four-options"
-            element={
-              <ProtectedRoute>
-                <FullScreenLayout>
-                  <FourOptionsPage />
-                </FullScreenLayout>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/grammar/practice/two-options"
-            element={
-              <ProtectedRoute>
-                <FullScreenLayout>
-                  <TwoOptionsPage />
-                </FullScreenLayout>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/grammar/practice/three-options"
-            element={
-              <ProtectedRoute>
-                <FullScreenLayout>
-                  <ThreeOptionsPage />
-                </FullScreenLayout>
-              </ProtectedRoute>
-            }
-          />
-
-          {/* Speaking Practice Routes */}
-          <Route
-            path="/vocabulary/practice/repeat-word"
-            element={
-              <ProtectedRoute>
-                <FullScreenLayout>
-                  <RepeatWordPage />
-                </FullScreenLayout>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/vocabulary/practice/repeat-sentence"
-            element={
-              <ProtectedRoute>
-                <FullScreenLayout>
-                  <RepeatSentencePage />
-                </FullScreenLayout>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/vocabulary/practice/repeat-word"
-            element={
-              <ProtectedRoute>
-                <FullScreenLayout>
-                  <RepeatWordPage />
-                </FullScreenLayout>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/vocabulary/practice/what-do-you-see"
-            element={
-              <ProtectedRoute>
-                <FullScreenLayout>
-                  <WhatDoYouSeePage />
-                </FullScreenLayout>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/vocabulary/practice/dictation-image"
-            element={
-              <ProtectedRoute>
-                <FullScreenLayout>
-                  <DictationImagePage />
-                </FullScreenLayout>
-              </ProtectedRoute>
-            }
-          />
-        </Routes>
-      </LanguageProvider>
+            {/* Speaking Practice Routes */}
+            <Route
+              path="/vocabulary/practice/repeat-word"
+              element={
+                <ProtectedRoute>
+                  <FullScreenLayout>
+                    <RepeatWordPage />
+                  </FullScreenLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/vocabulary/practice/repeat-sentence"
+              element={
+                <ProtectedRoute>
+                  <FullScreenLayout>
+                    <RepeatSentencePage />
+                  </FullScreenLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/vocabulary/practice/repeat-word"
+              element={
+                <ProtectedRoute>
+                  <FullScreenLayout>
+                    <RepeatWordPage />
+                  </FullScreenLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/vocabulary/practice/what-do-you-see"
+              element={
+                <ProtectedRoute>
+                  <FullScreenLayout>
+                    <WhatDoYouSeePage />
+                  </FullScreenLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/vocabulary/practice/dictation-image"
+              element={
+                <ProtectedRoute>
+                  <FullScreenLayout>
+                    <DictationImagePage />
+                  </FullScreenLayout>
+                </ProtectedRoute>
+              }
+            />
+          </Routes>
+        </LanguageProvider>
+      </ProfileProvider>
     </Router>
   );
 }

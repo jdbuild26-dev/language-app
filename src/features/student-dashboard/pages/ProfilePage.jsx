@@ -268,7 +268,7 @@ export default function ProfilePage() {
                   Student ID
                 </p>
                 <p className="font-mono text-xs bg-gray-50 dark:bg-elevated-2 p-2 rounded-md text-gray-600 dark:text-secondary-dark break-all border border-gray-100 dark:border-subtle-dark">
-                  {profile?.studentId || "N/A"}
+                  {profile?.profileId || "N/A"}
                 </p>
               </div>
             </div>
@@ -279,10 +279,10 @@ export default function ProfilePage() {
               <p className="text-sm font-medium text-gray-700 dark:text-primary-dark">
                 {user?.createdAt
                   ? new Date(user.createdAt).toLocaleDateString(undefined, {
-                      year: "numeric",
-                      month: "long",
-                      day: "numeric",
-                    })
+                    year: "numeric",
+                    month: "long",
+                    day: "numeric",
+                  })
                   : "N/A"}
               </p>
             </div>
@@ -344,13 +344,12 @@ export default function ProfilePage() {
                       value={username}
                       onChange={handleUsernameChange}
                       placeholder="choose_a_username"
-                      className={`block w-full pl-10 pr-10 py-2 sm:text-sm border rounded-lg bg-white dark:bg-card-dark focus:ring-brand-blue-1 focus:border-brand-blue-1 ${
-                        usernameStatus === "taken"
+                      className={`block w-full pl-10 pr-10 py-2 sm:text-sm border rounded-lg bg-white dark:bg-card-dark focus:ring-brand-blue-1 focus:border-brand-blue-1 ${usernameStatus === "taken"
                           ? "border-red-300"
                           : usernameStatus === "available"
                             ? "border-green-300"
                             : "border-gray-200 dark:border-subtle-dark"
-                      }`}
+                        }`}
                     />
                     <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
                       {isCheckingUsername ? (

@@ -1,24 +1,23 @@
 import { Fragment, useState, useEffect } from "react";
 import { Dialog, Transition } from "@headlessui/react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
-import { useTeacherProfile } from "@/hooks/useTeacherProfile";
-import TeacherOnboardingModal from "@/features/auth/components/TeacherOnboardingModal";
-import { AcademicCapIcon, UserCircleIcon } from "@heroicons/react/24/outline";
-
 import { SignedIn, SignedOut, UserButton, useUser } from "@clerk/clerk-react";
 import {
-  UserGroupIcon,
   XMarkIcon,
   BellIcon,
   UserPlusIcon,
   UsersIcon,
   FireIcon,
   MagnifyingGlassIcon,
+  AcademicCapIcon,
+  UserCircleIcon,
+  UserGroupIcon
 } from "@heroicons/react/24/outline";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { LogoSVG, FlagUKSVG, FlagSpainSVG } from "./NavbarIcons";
+import { useProfile } from "@/contexts/ProfileContext";
 
 export default function MobileMenu({
   isOpen,
@@ -31,61 +30,34 @@ export default function MobileMenu({
 }) {
   const navigate = useNavigate();
   const location = useLocation();
-  const {
-    needsOnboarding: needsTeacherOnboarding,
-    refreshProfile: refreshTeacherProfile,
-  } = useTeacherProfile();
-  const [showTeacherOnboarding, setShowTeacherOnboarding] = useState(false);
+  const { profiles, activeProfile, switchProfile } = useProfile();
   const { user } = useUser();
-  const isTeacherUser = user?.publicMetadata?.is_teacher === true;
+  const isTeacherUser = profiles.some(p => p.role === "teacher");
 
-  // Initialize role from localStorage or default to 'learner'
-  const [role, setRole] = useState(() => {
-    if (typeof window !== "undefined") {
-      return localStorage.getItem("active_role") || "learner";
-    }
-    return "learner";
-  });
-
-  // Persist role changes
-  useEffect(() => {
-    localStorage.setItem("active_role", role);
-    window.dispatchEvent(new Event("roleChange"));
-  }, [role]);
-
-  // Listen for external role changes
-  useEffect(() => {
-    const handleRoleChange = () => {
-      const newRole = localStorage.getItem("active_role") || "learner";
-      if (newRole !== role) {
-        setRole(newRole);
-      }
-    };
-    window.addEventListener("roleChange", handleRoleChange);
-    return () => window.removeEventListener("roleChange", handleRoleChange);
-  }, [role]);
-
-  const isTeacher = role === "teacher";
+  const isTeacher = activeProfile?.role === "teacher";
 
   const toggleRole = () => {
-    if (role === "learner") {
-      if (needsTeacherOnboarding) {
-        setShowTeacherOnboarding(true);
-        return;
-      }
-      const newRole = "teacher";
-      setRole(newRole);
-      if (location.pathname.startsWith("/dashboard")) {
-        navigate("/teacher-dashboard");
-        setIsOpen(false);
+    const otherRole = isTeacher ? "student" : "teacher";
+    const targetProfile = profiles.find(p => p.role === otherRole && p.language === activeProfile.language);
+
+    if (targetProfile) {
+      switchProfile(targetProfile);
+      if (otherRole === "teacher") {
+        if (location.pathname.startsWith("/dashboard")) {
+          navigate("/teacher-dashboard");
+          setIsOpen(false);
+        }
+      } else {
+        if (location.pathname.startsWith("/teacher-dashboard")) {
+          navigate("/dashboard");
+          setIsOpen(false);
+        }
       }
     } else {
-      const newRole = "learner";
-      setRole(newRole);
-      if (location.pathname.startsWith("/teacher-dashboard")) {
-        navigate("/dashboard");
-        setIsOpen(false);
-      }
+      // If they don't have the other profile for this language, maybe they need to create one?
+      // For now, redirect to new profile onboarding
+      navigate(`/onboarding/new-profile?role=${otherRole}&lang=${activeProfile.language}`);
+      setIsOpen(false);
     }
   };
 
@@ -454,17 +426,6 @@ export default function MobileMenu({
           </Transition.Child>
         </div>
       </Dialog>
-      {showTeacherOnboarding && (
-        <TeacherOnboardingModal
-          onComplete={() => {
-            setShowTeacherOnboarding(false);
-            refreshTeacherProfile();
-            setRole("teacher");
-            navigate("/teacher-dashboard");
-            setIsOpen(false);
-          }}
-        />
-      )}
     </Transition>
   );
 }
