@@ -7,13 +7,13 @@ export function useTeacherStudents(status) {
   const { profile } = useTeacherProfile();
   const { getToken } = useAuth();
 
-  // We only fetch if we have a profile and specifically a teacherId
+  // We only fetch if we have a profile and specifically a profileId
   return useQuery({
-    queryKey: ["teacher-students", profile?.teacherId, status],
+    queryKey: ["teacher-students", profile?.profileId, status],
     queryFn: async () => {
       const token = await getToken();
-      return fetchTeacherStudents(profile?.teacherId, status, token);
+      return fetchTeacherStudents(profile?.profileId, status, token);
     },
-    enabled: !!profile?.teacherId,
+    enabled: !!profile?.profileId,
   });
 }

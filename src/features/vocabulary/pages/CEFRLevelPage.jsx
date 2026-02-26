@@ -9,11 +9,9 @@ import {
   LanguageIcon,
 } from "@heroicons/react/24/outline";
 import { BookmarkIcon as BookmarkSolidIcon } from "@heroicons/react/24/solid";
-import {
-  fetchCategoriesByLevel,
-  fetchVocabulary,
-} from "../../../services/vocabularyApi";
+import { fetchCategoriesByLevel, fetchVocabulary } from "../../../services/vocabularyApi";
 import { getLessonProgress } from "../../../services/progressApi";
+import { useLanguage } from "../../../contexts/LanguageContext";
 import {
   bulkAddToReview,
   bulkRemoveFromReview,
@@ -128,11 +126,10 @@ function CategoryCard({
         {/* Bookmark */}
         <button
           onClick={handleBookmarkClick}
-          className={`absolute top-2 right-2 p-1.5 rounded-lg transition-colors ${
-            isBookmarked
+          className={`absolute top-2 right-2 p-1.5 rounded-lg transition-colors ${isBookmarked
               ? "bg-sky-500 hover:bg-sky-600"
               : "bg-white/80 dark:bg-slate-700/80 hover:bg-white dark:hover:bg-slate-700"
-          }`}
+            }`}
           title={isBookmarked ? "Remove from wordlist" : "Add to wordlist"}
         >
           {isBookmarked ? (
@@ -204,6 +201,7 @@ export default function CEFRLevelPage() {
   const { level } = useParams();
   const { user } = useUser();
   const { getToken } = useAuth();
+  const { learningLang } = useLanguage();
   const [categories, setCategories] = useState([]);
   const [progressMap, setProgressMap] = useState({});
   const [bookmarkMap, setBookmarkMap] = useState({});
@@ -242,7 +240,7 @@ export default function CEFRLevelPage() {
       const progressPromises = categories.map(async (category) => {
         try {
           const token = await getToken();
-          const progress = await getLessonProgress(token, level, category.slug);
+          const progress = await getLessonProgress(token, learningLang, level, category.slug);
           return { slug: category.slug, count: progress.learnedCount };
         } catch {
           return { slug: category.slug, count: 0 };
@@ -417,12 +415,10 @@ export default function CEFRLevelPage() {
         title={isRemoveAction ? "Remove from Wordlist" : "Add to Wordlist"}
         message={
           isRemoveAction
-            ? `Are you sure you want to remove all ${
-                selectedCategory?.wordCount || 0
-              } words from "${selectedCategory?.name}" from your wordlist?`
-            : `Add all ${selectedCategory?.wordCount || 0} words from "${
-                selectedCategory?.name
-              }" to your wordlist for practice?`
+            ? `Are you sure you want to remove all ${selectedCategory?.wordCount || 0
+            } words from "${selectedCategory?.name}" from your wordlist?`
+            : `Add all ${selectedCategory?.wordCount || 0} words from "${selectedCategory?.name
+            }" to your wordlist for practice?`
         }
         confirmLabel={isRemoveAction ? "Remove All" : "Add All"}
         variant={isRemoveAction ? "danger" : "primary"}
