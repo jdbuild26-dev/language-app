@@ -1,7 +1,12 @@
 import { useState, useEffect, useRef } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, Settings, X, Volume2, VolumeX } from "lucide-react";
-import { fetchVocabulary, saveUserProgress } from "@/services/vocabularyApi";
+import {
+  fetchVocabulary,
+  saveUserProgress,
+  rateSrsCard,
+  fetchSrsDue,
+} from "@/services/vocabularyApi";
 import FlashcardGame from "../components/flashcards/FlashcardGame";
 import { useUser, useAuth } from "@clerk/clerk-react";
 import { AnimatePresence, motion } from "framer-motion";
@@ -23,6 +28,7 @@ export default function FlashcardsActivityGamePage() {
   const [words, setWords] = useState([]);
   const [queue, setQueue] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
 
   // Settings & Filters
   const [selectedLevelFilter, setSelectedLevelFilter] = useState("All");
@@ -49,7 +55,7 @@ export default function FlashcardsActivityGamePage() {
     async function loadWords() {
       setIsLoading(true);
       try {
-        // Fetch words with all filters
+        // 1. Fetch vocabulary words
         const data = await fetchVocabulary({
           level: level === "All" ? undefined : level,
           category,
@@ -59,14 +65,26 @@ export default function FlashcardsActivityGamePage() {
         if (data && data.words) {
           let loadedWords = data.words;
 
-          // Apply 'Limit' (Count) if strictly needed, though API has limit param.
-          // The API 'limit' is simple slicing. If we want random sampling, we might need client side shuffle then slice.
-          // For now, let's just slice if count is set (assuming API returned all matching)
+          // Apply count limit if set
           if (count && count !== "All") {
             const limitNum = parseInt(count, 10);
             if (!isNaN(limitNum)) {
               loadedWords = loadedWords.slice(0, limitNum);
             }
+          }
+
+          // 2. Fetch SRS due IDs and sort due cards to the front
+          try {
+            const token = await getToken();
+            const dueIds = await fetchSrsDue({ category, level }, token);
+            if (dueIds && dueIds.length > 0) {
+              const dueSet = new Set(dueIds);
+              const dueCards = loadedWords.filter((w) => dueSet.has(w.id));
+              const newCards = loadedWords.filter((w) => !dueSet.has(w.id));
+              loadedWords = [...dueCards, ...newCards];
+            }
+          } catch (srsErr) {
+            console.warn("SRS due fetch failed (non-critical):", srsErr);
           }
 
           setWords(loadedWords);
@@ -75,6 +93,7 @@ export default function FlashcardsActivityGamePage() {
         }
       } catch (error) {
         console.error("Failed to load vocabulary", error);
+        setLoadError(true);
       } finally {
         setIsLoading(false);
       }
@@ -105,14 +124,17 @@ export default function FlashcardsActivityGamePage() {
     if (type === "unknown") status = "unknown";
     if (type === "mastered") status = "mastered";
 
-    // Save progress to backend (fire and forget for UI snappiness, or await if critical)
+    // Map swipe type to FSRS rating
+    const srsRating = type === "unknown" ? 1 : type === "mastered" ? 4 : 3;
+
     if (user && currentCard) {
       getToken()
         .then((token) => {
+          // Fire-and-forget: save progress
           saveUserProgress(
             {
               userId: user.id,
-              level: currentCard.level || level || "A1", // Fallback if card missing level
+              level: currentCard.level || level || "A1",
               category: currentCard.category || category || "General",
               cards: [
                 {
@@ -124,6 +146,12 @@ export default function FlashcardsActivityGamePage() {
             },
             token,
           ).catch((err) => console.error("Background save failed", err));
+
+          // Fire-and-forget: update SRS schedule
+          rateSrsCard(
+            { vocabId: currentCard.id, rating: srsRating },
+            token,
+          ).catch((err) => console.error("SRS rate failed", err));
         })
         .catch((err) => console.error("Failed to get token", err));
     }
@@ -145,6 +173,36 @@ export default function FlashcardsActivityGamePage() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-900">
         <div className="w-12 h-12 border-4 border-sky-500 border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    );
+  }
+
+  if (loadError || (!isLoading && words.length === 0 && queue.length === 0)) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 dark:bg-slate-900 p-4">
+        <div className="bg-white dark:bg-slate-800 p-8 rounded-3xl shadow-xl border border-slate-100 dark:border-slate-700 text-center max-w-md w-full">
+          <div className="text-5xl mb-4">{loadError ? "⚠️" : "📭"}</div>
+          <h2 className="text-2xl font-bold text-slate-800 dark:text-white mb-2">
+            {loadError ? "Failed to load words" : "No words found"}
+          </h2>
+          <p className="text-slate-500 text-sm mb-6">
+            {loadError
+              ? "Could not connect to the server. Make sure the backend is running."
+              : `No vocabulary found for the selected category${category ? ` "${category}"` : ""}.`}
+          </p>
+          <button
+            onClick={() => window.location.reload()}
+            className="w-full py-3 bg-sky-500 text-white rounded-xl font-bold hover:bg-sky-600 transition-colors mb-3"
+          >
+            Try Again
+          </button>
+          <button
+            onClick={handleBack}
+            className="w-full py-3 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-xl font-bold hover:bg-slate-200 transition-colors"
+          >
+            Back to Setup
+          </button>
+        </div>
       </div>
     );
   }

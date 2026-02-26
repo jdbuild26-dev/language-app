@@ -2894,3 +2894,52 @@ export async function fetchAvailableQuestionTypes(level, language) {
     return null;
   }
 }
+
+// ─── SRS (Spaced Repetition) ──────────────────────────────────────────────────
+
+/**
+ * Send a flashcard rating to the FSRS backend.
+ * rating: 1=Again/DontKnow, 3=Good/Know, 4=Easy/Mastered
+ */
+export async function rateSrsCard({ vocabId, rating }, token) {
+  if (!vocabId || !token) return null;
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/srs/rate`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ vocabId, rating }),
+    });
+    if (!res.ok) return null;
+    return res.json();
+  } catch (err) {
+    console.error("rateSrsCard error:", err);
+    return null;
+  }
+}
+
+/**
+ * Fetch vocab IDs that are due for review for the current user.
+ * Returns an array of vocabId strings.
+ */
+export async function fetchSrsDue({ category, level } = {}, token) {
+  if (!token) return [];
+  try {
+    const params = new URLSearchParams();
+    if (category) params.append("category", category);
+    if (level && level !== "All") params.append("level", level);
+
+    const res = await fetch(
+      `${API_BASE_URL}/api/srs/due${params.toString() ? "?" + params : ""}`,
+      { headers: { Authorization: `Bearer ${token}` } },
+    );
+    if (!res.ok) return [];
+    const data = await res.json();
+    return data.dueIds || [];
+  } catch (err) {
+    console.error("fetchSrsDue error:", err);
+    return [];
+  }
+}
