@@ -46,6 +46,7 @@ import StoryPlayerPage from "@/features/stories/pages/StoryPlayerPage";
 import PracticePage from "@/features/practice/pages/PracticePage";
 import FillInBlankGamePage from "@/features/vocabulary/pages/FillInBlankGamePage";
 import CorrectSpellingGamePage from "@/features/vocabulary/pages/CorrectSpellingGamePage";
+import SrsSpellingActivityPage from "@/features/vocabulary/pages/SrsSpellingActivityPage";
 import BlogsPage from "@/features/blogs/pages/BlogsPage";
 import AIPracticePage from "@/features/ai-practice/pages/AIPracticePage";
 import ProgressReportPage from "@/features/progress-report/pages/ProgressReportPage";
@@ -69,6 +70,7 @@ import PublicProfilePage from "@/features/student-dashboard/pages/PublicProfileP
 
 // Practice Games
 import ChooseOptionGamePage from "@/features/vocabulary/pages/ChooseOptionGamePage";
+import NumberPracticePage from "@/features/vocabulary/pages/NumberPracticePage";
 import HighlightWordGamePage from "@/features/vocabulary/pages/HighlightWordGamePage";
 import OddOneOutGamePage from "@/features/vocabulary/pages/OddOneOutGamePage";
 import GroupWordsGamePage from "@/features/vocabulary/pages/GroupWordsGamePage";
@@ -132,6 +134,7 @@ import SpeakTranslatePage from "@/features/practice/pages/speaking/SpeakTranslat
 import SpeakTopicPage from "@/features/practice/pages/speaking/SpeakTopicPage";
 import SpeakImagePage from "@/features/practice/pages/speaking/SpeakImagePage";
 import SpeakInteractivePage from "@/features/practice/pages/speaking/SpeakInteractivePage";
+import PronunciationPage from "@/features/vocabulary/pages/speaking/PronunciationPage";
 
 import MatchDescToImagePage from "@/features/practice/pages/reading/MatchDescToImagePage";
 import ImageLabellingPage from "@/features/practice/pages/reading/ImageLabellingPage";
@@ -139,6 +142,11 @@ import SentenceCompletionPage from "@/features/practice/pages/reading/SentenceCo
 import MatchWordsActivityPage from "@/features/vocabulary/pages/MatchWordsActivityPage";
 import SummaryCompletionPage from "@/features/practice/pages/reading/SummaryCompletionPage";
 import TagTopicSelectionPage from "@/features/practice/pages/TagTopicSelectionPage";
+
+import FlashcardsSetupPage from "@/features/vocabulary/pages/FlashcardsSetupPage";
+import TypingFillInBlankPage from "@/features/vocabulary/pages/TypingFillInBlankPage";
+import CorrectSpellingPage from "@/features/vocabulary/pages/CorrectSpellingPage";
+import GenderIdentifierPage from "@/features/vocabulary/pages/GenderIdentifierPage";
 
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import { Toaster } from "react-hot-toast";
@@ -306,11 +314,83 @@ function App() {
           {/* Full Screen Practice Routes (Outside Main Layout) */}
 
           <Route
+            path="/vocabulary/lessons/activities/flashcards"
+            element={
+              <ProtectedRoute>
+                <FullScreenLayout>
+                  <FlashcardsSetupPage />
+                </FullScreenLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/vocabulary/lessons/activities/typing-fill-blanks"
+            element={
+              <ProtectedRoute>
+                <FullScreenLayout>
+                  <TypingFillInBlankPage />
+                </FullScreenLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/vocabulary/lessons/activities/match-words"
+            element={
+              <ProtectedRoute>
+                <FullScreenLayout>
+                  <MatchWordsActivityPage mode="text" />
+                </FullScreenLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/vocabulary/lessons/activities/match-images"
+            element={
+              <ProtectedRoute>
+                <FullScreenLayout>
+                  <MatchWordsActivityPage mode="image" />
+                </FullScreenLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/vocabulary/lessons/activities/correct-spelling"
+            element={
+              <ProtectedRoute>
+                <FullScreenLayout>
+                  <CorrectSpellingPage />
+                </FullScreenLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/vocabulary/lessons/activities/gender-identifier"
+            element={
+              <ProtectedRoute>
+                <FullScreenLayout>
+                  <GenderIdentifierPage />
+                </FullScreenLayout>
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
             path="/vocabulary/lessons/activities/flashcards/game"
             element={
               <ProtectedRoute>
                 <FullScreenLayout>
                   <FlashcardsActivityGamePage />
+                </FullScreenLayout>
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/vocabulary/practice/numbers"
+            element={
+              <ProtectedRoute>
+                <FullScreenLayout>
+                  <NumberPracticePage />
                 </FullScreenLayout>
               </ProtectedRoute>
             }
@@ -372,6 +452,16 @@ function App() {
               <ProtectedRoute>
                 <FullScreenLayout>
                   <CorrectSpellingGamePage />
+                </FullScreenLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/vocabulary/practice/srs-spelling"
+            element={
+              <ProtectedRoute>
+                <FullScreenLayout>
+                  <SrsSpellingActivityPage />
                 </FullScreenLayout>
               </ProtectedRoute>
             }
@@ -849,6 +939,16 @@ function App() {
               <ProtectedRoute>
                 <FullScreenLayout>
                   <TrueFalsePage />
+                </FullScreenLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/vocabulary/lessons/activities/pronunciation"
+            element={
+              <ProtectedRoute>
+                <FullScreenLayout>
+                  <PronunciationPage />
                 </FullScreenLayout>
               </ProtectedRoute>
             }

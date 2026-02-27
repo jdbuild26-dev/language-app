@@ -21,11 +21,7 @@ import LearnedCardsSessionPage from "./LearnedCardsSessionPage";
 import TopicsPage from "./TopicsPage";
 import TopicCategoryPage from "./TopicCategoryPage";
 import ActivitiesPage from "./ActivitiesPage";
-import FlashcardsSetupPage from "./FlashcardsSetupPage";
-import FlashcardsActivityGamePage from "./FlashcardsActivityGamePage";
-import TypingFillInBlankPage from "./TypingFillInBlankPage";
-import MatchWordsActivityPage from "./MatchWordsActivityPage";
-import CorrectSpellingPage from "./CorrectSpellingPage";
+
 // Tab configuration
 const vocabularyTabs = [
   {
@@ -90,28 +86,6 @@ export default function VocabularyPage() {
         {/* Topics routes */}
         <Route path="lessons/learn/topics" element={<TopicsPage />} />
         <Route path="lessons/learn/topic/:topic" element={<SrsLearnPage />} />
-
-        {/* Activity Routes */}
-        <Route
-          path="lessons/activities/flashcards"
-          element={<FlashcardsSetupPage />}
-        />
-        <Route
-          path="lessons/activities/typing-fill-blanks"
-          element={<TypingFillInBlankPage />}
-        />
-        <Route
-          path="lessons/activities/match-words"
-          element={<MatchWordsActivityPage mode="text" />}
-        />
-        <Route
-          path="lessons/activities/match-images"
-          element={<MatchWordsActivityPage mode="image" />}
-        />
-        <Route
-          path="lessons/activities/correct-spelling"
-          element={<CorrectSpellingPage />}
-        />
 
         <Route
           path="*"

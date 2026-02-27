@@ -8,6 +8,7 @@ import {
   Clock,
   Sparkles,
   Image as ImageIcon,
+  Mic,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { cn } from "@/lib/utils";
@@ -50,13 +51,22 @@ const activities = [
     path: "/vocabulary/lessons/activities/correct-spelling",
   },
   {
+    id: "srs-spelling",
+    title: "Targeted Spelling (SRS)",
+    description: "Progressive spelling practice tailored to your level",
+    icon: Keyboard,
+    color: "from-violet-400 to-purple-500",
+    shadow: "shadow-violet-200 dark:shadow-violet-900/20",
+    path: "/vocabulary/practice/srs-spelling",
+  },
+  {
     id: "gender",
     title: "Gender Identifier",
     description: "Practice masculine and feminine forms",
     icon: HelpCircle,
     color: "from-yellow-400 to-amber-500",
     shadow: "shadow-yellow-200 dark:shadow-yellow-900/20",
-    path: "#",
+    path: "/vocabulary/lessons/activities/gender-identifier",
   },
   {
     id: "numbers",
@@ -65,7 +75,7 @@ const activities = [
     icon: Hash,
     color: "from-rose-400 to-red-500",
     shadow: "shadow-rose-200 dark:shadow-rose-900/20",
-    path: "#",
+    path: "/vocabulary/practice/numbers",
   },
   {
     id: "clock",
@@ -75,6 +85,15 @@ const activities = [
     color: "from-sky-400 to-indigo-500",
     shadow: "shadow-sky-200 dark:shadow-sky-900/20",
     path: "#",
+  },
+  {
+    id: "pronunciation",
+    title: "Pronunciation Practice",
+    description: "Practice your speaking and pronunciation",
+    icon: Mic,
+    color: "from-fuchsia-400 to-purple-500",
+    shadow: "shadow-fuchsia-200 dark:shadow-fuchsia-900/20",
+    path: "/vocabulary/lessons/activities/pronunciation",
   },
 ];
 
