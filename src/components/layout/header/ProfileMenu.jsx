@@ -13,7 +13,7 @@ import {
 } from "@heroicons/react/24/outline";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
-import { useTeacherProfile } from "@/hooks/useTeacherProfile";
+import { useProfile } from "@/contexts/ProfileContext";
 import TeacherOnboardingModal from "@/features/auth/components/TeacherOnboardingModal";
 
 
@@ -22,56 +22,26 @@ export default function ProfileMenu() {
     const { signOut, openUserProfile } = useClerk();
     const location = useLocation();
     const navigate = useNavigate();
-    const { needsOnboarding: needsTeacherOnboarding, refreshProfile: refreshTeacherProfile } = useTeacherProfile();
+    const { profiles, activeProfile, switchProfile, isLoading } = useProfile();
     const [showTeacherOnboarding, setShowTeacherOnboarding] = useState(false);
 
+    const isTeacher = activeProfile?.role === "teacher";
 
-    // Initialize role from localStorage or default to 'learner'
-    const [role, setRole] = useState(() => {
-        if (typeof window !== "undefined") {
-            return localStorage.getItem("active_role") || "learner";
-        }
-        return "learner";
-    });
+    // Group profiles by language
+    const groupedProfiles = profiles.reduce((acc, p) => {
+        const lang = p.language || "Unknown";
+        if (!acc[lang]) acc[lang] = [];
+        acc[lang].push(p);
+        return acc;
+    }, {});
 
-    // Persist role changes
-    useEffect(() => {
-        localStorage.setItem("active_role", role);
-        // Dispatch a custom event so other components can listen for role changes
-        window.dispatchEvent(new Event("roleChange"));
-    }, [role]);
-
-    // Listen for external role changes
-    useEffect(() => {
-        const handleRoleChange = () => {
-            const newRole = localStorage.getItem("active_role") || "learner";
-            if (newRole !== role) {
-                setRole(newRole);
-            }
-        };
-        window.addEventListener("roleChange", handleRoleChange);
-        return () => window.removeEventListener("roleChange", handleRoleChange);
-    }, [role]);
-
-
-    const isTeacher = role === "teacher";
-
-    const toggleRole = () => {
-        if (role === "learner") {
-            if (needsTeacherOnboarding) {
-                setShowTeacherOnboarding(true);
-                return;
-            }
-            const newRole = "teacher";
-            setRole(newRole);
-            // Requirement 2: Redirect from any dashboard page to teacher dashboard
+    const handleProfileSwitch = (profile) => {
+        switchProfile(profile);
+        if (profile.role === "teacher") {
             if (location.pathname.startsWith("/dashboard")) {
                 navigate("/teacher-dashboard");
             }
         } else {
-            const newRole = "learner";
-            setRole(newRole);
-            // Requirement 2: Redirect from any teacher dashboard page to student dashboard
             if (location.pathname.startsWith("/teacher-dashboard")) {
                 navigate("/dashboard");
             }
@@ -141,45 +111,52 @@ export default function ProfileMenu() {
                                 </div>
                             </div>
 
-                            {/* Role Toggle Switch */}
-                            <div
-                                onClick={(e) => {
-                                    e.preventDefault();
-                                    toggleRole();
-                                }}
-                                className={cn(
-                                    "cursor-pointer relative flex items-center justify-between p-1 rounded-lg transition-colors border select-none",
-                                    isTeacher
-                                        ? "bg-emerald-50 border-emerald-200 dark:bg-emerald-950/30 dark:border-emerald-900"
-                                        : "bg-blue-50 border-blue-200 dark:bg-blue-950/30 dark:border-blue-900"
-                                )}
-                            >
-                                <div className="flex items-center gap-2 px-2">
-                                    {isTeacher ? (
-                                        <AcademicCapIcon className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
-                                    ) : (
-                                        <UserCircleIcon className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                                    )}
-                                    <span className={cn(
-                                        "text-xs font-bold uppercase tracking-wider",
-                                        isTeacher ? "text-emerald-700 dark:text-emerald-300" : "text-blue-700 dark:text-blue-300"
-                                    )}>
-                                        {isTeacher ? "Teaching Mode" : "Learning Mode"}
-                                    </span>
-                                </div>
+                            {/* Multi-Language Profile Selector */}
+                            <div className="space-y-2 max-h-[300px] overflow-y-auto pr-1 custom-scrollbar">
+                                {Object.entries(groupedProfiles).map(([lang, langProfiles]) => (
+                                    <div key={lang} className="border rounded-lg overflow-hidden border-gray-100 dark:border-slate-800">
+                                        <div className="bg-gray-50 dark:bg-slate-800/50 px-3 py-1.5 border-b border-gray-100 dark:border-slate-800">
+                                            <span className="text-[10px] font-bold uppercase tracking-widest text-gray-500 dark:text-slate-400">
+                                                {lang}
+                                            </span>
+                                        </div>
+                                        <div className="divide-y divide-gray-50 dark:divide-slate-800">
+                                            {langProfiles.map((p) => (
+                                                <button
+                                                    key={p.id}
+                                                    onClick={() => handleProfileSwitch(p)}
+                                                    className={cn(
+                                                        "w-full flex items-center justify-between px-3 py-2 transition-colors hover:bg-gray-50 dark:hover:bg-slate-800",
+                                                        activeProfile?.id === p.id ? "bg-blue-50/50 dark:bg-blue-900/10" : ""
+                                                    )}
+                                                >
+                                                    <div className="flex items-center gap-2">
+                                                        <div className={cn(
+                                                            "h-2 w-2 rounded-full",
+                                                            p.role === "teacher" ? "bg-emerald-500" : "bg-blue-500"
+                                                        )} />
+                                                        <span className={cn(
+                                                            "text-sm font-medium capitalize",
+                                                            activeProfile?.id === p.id ? "text-blue-600 dark:text-blue-400" : "text-gray-700 dark:text-slate-300"
+                                                        )}>
+                                                            {p.role} Profile {p.role === "teacher" ? `(${p.profileId})` : ""}
+                                                        </span>
+                                                    </div>
+                                                    {activeProfile?.id === p.id && (
+                                                        <div className="h-1.5 w-1.5 rounded-full bg-blue-600 dark:bg-blue-400" />
+                                                    )}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                ))}
 
-                                {/* Toggle Visual */}
-                                <div className={cn(
-                                    "relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2",
-                                    isTeacher ? "bg-emerald-500" : "bg-blue-500"
-                                )}>
-                                    <span
-                                        className={cn(
-                                            "inline-block h-3 w-3 transform rounded-full bg-white transition duration-200 ease-in-out",
-                                            isTeacher ? "translate-x-5" : "translate-x-1"
-                                        )}
-                                    />
-                                </div>
+                                <button
+                                    onClick={() => navigate("/onboarding/new-profile")}
+                                    className="w-full flex items-center justify-center gap-2 py-2 border-2 border-dashed border-gray-200 dark:border-slate-800 rounded-lg text-xs font-bold text-gray-500 dark:text-slate-400 hover:border-blue-400 hover:text-blue-500 transition-all active:scale-[0.98]"
+                                >
+                                    <span>+ Add New Profile</span>
+                                </button>
                             </div>
                         </div>
 

@@ -6,10 +6,22 @@ import {
   ChartBarIcon,
   GiftIcon,
   AcademicCapIcon,
+  UserGroupIcon,
 } from "@heroicons/react/24/outline";
+import { useProfile } from "@/contexts/ProfileContext";
 
 const navigation = [
   { name: "Profile", href: "/dashboard", icon: UserCircleIcon, end: true },
+  {
+    name: "My Teachers",
+    href: "/dashboard/teachers",
+    icon: AcademicCapIcon,
+  },
+  {
+    name: "Friends",
+    href: "/dashboard/friends",
+    icon: UserGroupIcon,
+  },
   {
     name: "Assignments",
     href: "/dashboard/assignments",
@@ -27,6 +39,7 @@ const navigation = [
   },
 ];
 
+
 function classNames(...classes) {
   return classes.filter(Boolean).join(" ");
 }
@@ -35,7 +48,8 @@ export default function StudentLayout() {
   const location = useLocation();
   const navigate = useNavigate();
   const { user } = useUser();
-  const isTeacherUser = user?.publicMetadata?.is_teacher === true;
+  const { profiles, switchProfile, activeProfile } = useProfile();
+  const isTeacherUser = profiles.some(p => p.role === "teacher");
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-body-dark flex flex-col">
@@ -79,9 +93,13 @@ export default function StudentLayout() {
             <div className="mt-8 pt-8 border-t border-gray-200 dark:border-gray-700">
               <button
                 onClick={() => {
-                  localStorage.setItem("active_role", "teacher");
-                  window.dispatchEvent(new Event("roleChange"));
-                  navigate("/teacher-dashboard");
+                  const teacherProfile = profiles.find(p => p.role === "teacher" && p.language === activeProfile.language);
+                  if (teacherProfile) {
+                    switchProfile(teacherProfile);
+                    navigate("/teacher-dashboard");
+                  } else {
+                    navigate(`/onboarding/new-profile?role=teacher&lang=${activeProfile.language}`);
+                  }
                 }}
                 className="w-full group flex items-center px-3 py-2 text-sm font-medium rounded-md text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
               >

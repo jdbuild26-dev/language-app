@@ -11,9 +11,10 @@ import {
   Bars3Icon,
   XMarkIcon,
 } from "@heroicons/react/24/outline";
+import { useProfile } from "@/contexts/ProfileContext";
 
-const navItems = [
-  { name: "Dashboard", path: "/dashboard", icon: ChartBarIcon },
+const getNavItems = (isTeacher) => [
+  { name: "Dashboard", path: isTeacher ? "/teacher-dashboard" : "/dashboard", icon: ChartBarIcon },
   { name: "Vocabulary", path: "/vocabulary", icon: BookOpenIcon },
   { name: "Grammar", path: "/grammar", icon: AcademicCapIcon },
   { name: "Stories", path: "/stories", icon: BookmarkIcon },
@@ -23,6 +24,10 @@ const navItems = [
 ];
 
 export default function SecondaryNavbar() {
+  const { activeProfile } = useProfile();
+  const isTeacher = activeProfile?.role === "teacher";
+  const navItems = getNavItems(isTeacher);
+
   const location = useLocation();
   const navRef = useRef(null);
   const itemRefs = useRef([]);
@@ -102,10 +107,9 @@ export default function SecondaryNavbar() {
                 ref={(el) => (itemRefs.current[index] = el)}
                 onMouseEnter={() => handleMouseEnter(index)}
                 className={`relative z-10 flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-colors duration-150
-                  ${
-                    isActive
-                      ? "text-sky-600 dark:text-sky-400"
-                      : "text-gray-600 dark:text-slate-300 hover:text-sky-600 dark:hover:text-sky-400"
+                  ${isActive
+                    ? "text-sky-600 dark:text-sky-400"
+                    : "text-gray-600 dark:text-slate-300 hover:text-sky-600 dark:hover:text-sky-400"
                   }
                 `}
               >
@@ -149,10 +153,9 @@ export default function SecondaryNavbar() {
                     to={item.path}
                     onClick={() => setIsMobileMenuOpen(false)}
                     className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors
-                      ${
-                        isActive
-                          ? "bg-sky-100 dark:bg-sky-900/40 text-sky-600 dark:text-sky-400"
-                          : "text-gray-600 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-800"
+                      ${isActive
+                        ? "bg-sky-100 dark:bg-sky-900/40 text-sky-600 dark:text-sky-400"
+                        : "text-gray-600 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-800"
                       }
                     `}
                   >

@@ -1,0 +1,224 @@
+{
+    "questionnaire_title": "Teacher Onboarding Questionnaire",
+    "total_questions": 30,
+    "questions": [
+        {
+            "id": 1,
+            "type": "text",
+            "question": "What is your full name?"
+        },
+        {
+            "id": 2,
+            "type": "email",
+            "question": "What is your primary email address?"
+        },
+        {
+            "id": 3,
+            "type": "text",
+            "question": "What country and city are you currently based in?"
+        },
+        {
+            "id": 4,
+            "type": "text",
+            "question": "What subjects or skills do you want to teach on this platform?"
+        },
+        {
+            "id": 5,
+            "type": "number",
+            "question": "How many years of teaching or industry experience do you have?"
+        },
+        {
+            "id": 6,
+            "type": "multiple_choice",
+            "question": "What best describes your background?",
+            "options": [
+                "Academic Teacher",
+                "Industry Professional",
+                "Researcher",
+                "Freelance Educator",
+                "Other"
+            ]
+        },
+        {
+            "id": 7,
+            "type": "text",
+            "question": "What academic degrees or certifications do you hold?"
+        },
+        {
+            "id": 8,
+            "type": "long_text",
+            "question": "Briefly describe your teaching or professional journey."
+        },
+        {
+            "id": 9,
+            "type": "multiple_choice",
+            "question": "Which age group are you most comfortable teaching?",
+            "options": [
+                "Kids (6–12)",
+                "Teens (13–18)",
+                "College Students",
+                "Working Professionals",
+                "All Ages"
+            ]
+        },
+        {
+            "id": 10,
+            "type": "multiple_choice",
+            "question": "What teaching format do you prefer?",
+            "options": [
+                "Live 1-on-1",
+                "Live Group Classes",
+                "Recorded Courses",
+                "Hybrid"
+            ]
+        },
+        {
+            "id": 11,
+            "type": "multiple_choice",
+            "question": "How would you describe your teaching style?",
+            "options": [
+                "Structured",
+                "Interactive",
+                "Project-Based",
+                "Discussion-Oriented",
+                "Flexible"
+            ]
+        },
+        {
+            "id": 12,
+            "type": "long_text",
+            "question": "How do you ensure students stay engaged during your sessions?"
+        },
+        {
+            "id": 13,
+            "type": "scale",
+            "question": "How comfortable are you with online teaching tools (Zoom, Meet, LMS, whiteboards)?",
+            "scale_min": 1,
+            "scale_max": 5
+        },
+        {
+            "id": 14,
+            "type": "multiple_choice",
+            "question": "Which tools have you used before for teaching?",
+            "options": [
+                "Zoom",
+                "Google Meet",
+                "Microsoft Teams",
+                "LMS (Moodle, Canvas, etc.)",
+                "None"
+            ]
+        },
+        {
+            "id": 15,
+            "type": "boolean",
+            "question": "Do you have a stable internet connection suitable for live teaching?"
+        },
+        {
+            "id": 16,
+            "type": "multiple_choice",
+            "question": "How many hours per week can you commit to teaching?",
+            "options": [
+                "1–5",
+                "6–10",
+                "11–20",
+                "20+"
+            ]
+        },
+        {
+            "id": 17,
+            "type": "multiple_choice",
+            "question": "When are you usually available to teach?",
+            "options": [
+                "Weekdays",
+                "Weekends",
+                "Evenings",
+                "Flexible"
+            ]
+        },
+        {
+            "id": 18,
+            "type": "long_text",
+            "question": "What motivates you to teach on this platform?"
+        },
+        {
+            "id": 19,
+            "type": "multiple_choice",
+            "question": "What languages can you teach in?",
+            "options": [
+                "English",
+                "Hindi",
+                "Regional Language",
+                "Multiple Languages"
+            ]
+        },
+        {
+            "id": 20,
+            "type": "scale",
+            "question": "How comfortable are you adapting your teaching to different learning speeds?",
+            "scale_min": 1,
+            "scale_max": 5
+        },
+        {
+            "id": 21,
+            "type": "long_text",
+            "question": "How do you handle students who are struggling with the material?"
+        },
+        {
+            "id": 22,
+            "type": "multiple_choice",
+            "question": "What is your preferred class size?",
+            "options": [
+                "1-on-1",
+                "2–5 students",
+                "6–15 students",
+                "No Preference"
+            ]
+        },
+        {
+            "id": 23,
+            "type": "boolean",
+            "question": "Are you open to receiving feedback and improving based on student reviews?"
+        },
+        {
+            "id": 24,
+            "type": "long_text",
+            "question": "What makes you a good teacher compared to others?"
+        },
+        {
+            "id": 25,
+            "type": "boolean",
+            "question": "Are you willing to follow platform teaching guidelines and quality standards?"
+        },
+        {
+            "id": 26,
+            "type": "multiple_choice",
+            "question": "What is your expected compensation model?",
+            "options": [
+                "Hourly",
+                "Per Course",
+                "Revenue Share",
+                "Flexible"
+            ]
+        },
+        {
+            "id": 27,
+            "type": "boolean",
+            "question": "Do you have any prior experience teaching online?"
+        },
+        {
+            "id": 28,
+            "type": "long_text",
+            "question": "Please share a link to your portfolio, LinkedIn, or sample teaching material (if any)."
+        },
+        {
+            "id": 29,
+            "type": "long_text",
+            "question": "Is there anything else you would like us to know about you?"
+        },
+        {
+            "id": 30,
+            "type": "boolean",
+            "question": "Do you confirm that all the information provided above is accurate?"
+        }
+    ]
+}

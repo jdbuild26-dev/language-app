@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { useUser } from "@clerk/clerk-react";
+import { useUser, useAuth } from "@clerk/clerk-react";
+import { useLanguage } from "../../../contexts/LanguageContext";
 import {
   ArrowLeft,
   BookOpen,
@@ -20,6 +21,8 @@ import VocabularyListRow from "../components/VocabularyListRow";
 export default function MyWordlistsPage() {
   const navigate = useNavigate();
   const { user, isLoaded } = useUser();
+  const { getToken } = useAuth();
+  const { learningLang } = useLanguage();
   const [cards, setCards] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -63,7 +66,8 @@ export default function MyWordlistsPage() {
         }
         setError(null);
 
-        const data = await getWordlist(user.id, { limit: 50, cursor });
+        const token = await getToken();
+        const data = await getWordlist(token, learningLang, { limit: 50, cursor });
 
         if (cursor) {
           setCards((prev) => [...prev, ...data.cards]);
@@ -145,7 +149,8 @@ export default function MyWordlistsPage() {
 
     setDeletingId(cardId);
     try {
-      await deleteLearnedCard(user.id, cardId);
+      const token = await getToken();
+      await deleteLearnedCard(token, cardId);
       setCards((prev) => prev.filter((c) => (c.cardId || c.id) !== cardId));
     } catch (err) {
       console.error("Failed to delete learned card:", err);
@@ -309,11 +314,10 @@ export default function MyWordlistsPage() {
                             handleBookmark(card);
                           }}
                           disabled={isActionLoading}
-                          className={`p-2 rounded-lg transition-colors disabled:opacity-50 ${
-                            isBookmarked
+                          className={`p-2 rounded-lg transition-colors disabled:opacity-50 ${isBookmarked
                               ? "text-sky-500 bg-sky-50 dark:bg-sky-900/20"
                               : "text-gray-400 hover:text-sky-500 hover:bg-sky-50 dark:hover:bg-sky-900/20"
-                          }`}
+                            }`}
                           title={
                             isBookmarked
                               ? "Remove from Review"

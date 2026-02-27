@@ -138,6 +138,35 @@ export async function getTeacherProfile(token) {
   }
   return response.json();
 }
+
+/**
+ * Update the current teacher's profile.
+ * @param {Object} updates - The fields to update
+ * @param {string} token - Auth token
+ * @param {string} language - Optional language filter
+ */
+export async function updateTeacherProfile(updates, token, language = null) {
+  let url = `${API_URL}/api/teachers/me`;
+  if (language) {
+    url += `?language=${encodeURIComponent(language)}`;
+  }
+
+  const response = await fetch(url, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(updates),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`Failed to update teacher profile: ${errorText}`);
+  }
+  return response.json();
+}
+
 /**
  * Check if a username is available.
  */

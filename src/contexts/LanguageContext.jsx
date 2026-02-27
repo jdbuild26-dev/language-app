@@ -1,10 +1,10 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
-import { useStudentProfile } from "../hooks/useStudentProfile";
+import { useProfile } from "./ProfileContext";
 
 const LanguageContext = createContext();
 
 export const LanguageProvider = ({ children }) => {
-    const { profile } = useStudentProfile();
+    const { activeProfile } = useProfile();
 
     // Default values
     const [learningLang, setLearningLang] = useState(
@@ -14,20 +14,14 @@ export const LanguageProvider = ({ children }) => {
         localStorage.getItem("known_lang") || "en"
     );
 
-    // Sync with profile if available
+    // Sync with active profile if available
     useEffect(() => {
-        if (profile) {
-            if (profile.targetLanguage) {
-                // Map common names to ISO codes if necessary, or use as is
-                const code = profile.targetLanguage.toLowerCase().substring(0, 2);
-                setLearningLang(code);
-            }
-            if (profile.instructionLanguage) {
-                const code = profile.instructionLanguage.toLowerCase().substring(0, 2);
-                setKnownLang(code);
-            }
+        if (activeProfile && activeProfile.language) {
+            // Map common names to ISO codes if necessary, or use as is
+            const code = activeProfile.language.toLowerCase().substring(0, 2);
+            setLearningLang(code);
         }
-    }, [profile]);
+    }, [activeProfile]);
 
     // Persistent storage
     useEffect(() => {

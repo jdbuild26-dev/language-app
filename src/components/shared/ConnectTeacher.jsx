@@ -43,7 +43,7 @@ export default function ConnectTeacher() {
   const mutation = useMutation({
     mutationFn: async () => {
       const token = await getToken();
-      return linkStudentToTeacher(profile.studentId, teacherId, token);
+      return linkStudentToTeacher(profile.profileId, teacherId, token);
     },
     onSuccess: () => {
       setStatus("success");
@@ -59,7 +59,7 @@ export default function ConnectTeacher() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!teacherId || !profile?.studentId) return;
+    if (!teacherId || !profile?.profileId) return;
     setStatus("loading");
     mutation.mutate();
   };

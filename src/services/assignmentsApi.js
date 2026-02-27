@@ -24,11 +24,12 @@ export async function createAssignments(assignmentData, token) {
  * @param {string} status - Optional status filter (pending, completed, etc).
  * @param {string} source - Optional source filter ('individual' or 'class').
  */
-export async function getMyAssignments(token, status = null, source = null) {
+export async function getMyAssignments(token, status = null, source = null, classId = null) {
   let url = `${API_URL}/api/students/me/assignments`;
   const params = new URLSearchParams();
   if (status) params.append("status", status);
   if (source) params.append("source", source);
+  if (classId) params.append("class_id", classId);
 
   if (params.toString()) {
     url += `?${params.toString()}`;
