@@ -21,6 +21,7 @@ export default function SegmentedInput({
   onChange,
   onKeyDown,
   onPaste,
+  onFocus,
   disabled = false,
   hints = [],
   showFeedback = false,
@@ -71,6 +72,7 @@ export default function SegmentedInput({
             onChange={(e) => onChange(index, e.target.value)}
             onKeyDown={(e) => onKeyDown(index, e)}
             onPaste={(e) => onPaste && onPaste(index, e)}
+            onFocus={() => onFocus && onFocus(index)}
             disabled={disabled || isHint}
             readOnly={isHint}
             className={cn(

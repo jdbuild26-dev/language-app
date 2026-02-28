@@ -6,8 +6,8 @@ import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
 import FeedbackBanner from "@/components/ui/FeedbackBanner";
 import { getFeedbackMessage } from "@/utils/feedbackMessages";
 import { Languages } from "lucide-react";
-
 import { loadMockCSV } from "@/utils/csvLoader";
+import AccentKeyboard from "@/components/ui/AccentKeyboard";
 
 export default function WriteFillBlanksPage() {
   const handleExit = usePracticeExit();
@@ -20,6 +20,7 @@ export default function WriteFillBlanksPage() {
   const [isCorrect, setIsCorrect] = useState(false);
   const [score, setScore] = useState(0);
   const [showTranslation, setShowTranslation] = useState(false);
+  const [focusedKey, setFocusedKey] = useState(null); // e.g. "2_1"
   const inputRefs = useRef({});
 
   useEffect(() => {
@@ -239,6 +240,7 @@ export default function WriteFillBlanksPage() {
                               )
                             }
                             onKeyDown={(e) => handleKeyDown(e, wIdx, cIdx)}
+                            onFocus={() => setFocusedKey(key)}
                             disabled={showFeedback}
                             className={cn(
                               "w-7 h-9 lg:w-9 lg:h-11 rounded-lg border-2 text-center text-lg lg:text-xl transition-all focus:scale-110 focus:z-10",
@@ -258,6 +260,29 @@ export default function WriteFillBlanksPage() {
                 );
               })}
             </div>
+            {/* Accent Keyboard */}
+            {!showFeedback && (
+              <div className="mt-4">
+                <AccentKeyboard
+                  disabled={showFeedback}
+                  onAccentClick={(char) => {
+                    if (!focusedKey) return;
+                    const [wIdxStr, cIdxStr] = focusedKey.split("_");
+                    const wIdx = parseInt(wIdxStr);
+                    const cIdx = parseInt(cIdxStr);
+                    // Find the blankCount for this word
+                    const word = processedWords[wIdx];
+                    if (!word) return;
+                    const keepCount = Math.floor(word.clean.length / 2);
+                    const blankCount = word.clean.length - keepCount;
+                    handleCharInput(wIdx, cIdx, char, blankCount);
+                    requestAnimationFrame(() => {
+                      inputRefs.current[focusedKey]?.focus();
+                    });
+                  }}
+                />
+              </div>
+            )}
           </div>
         </div>
       </PracticeGameLayout>

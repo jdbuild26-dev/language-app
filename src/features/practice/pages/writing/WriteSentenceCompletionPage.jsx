@@ -13,6 +13,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { fetchPracticeQuestions } from "@/services/vocabularyApi";
+import AccentKeyboard from "@/components/ui/AccentKeyboard";
 
 // Fallback mock data for Write Sentence Completion (Passage-based)
 const MOCK_DATA = {
@@ -59,6 +60,7 @@ export default function WriteSentenceCompletionPage() {
   const [score, setScore] = useState(0);
   const [isCompleted, setIsCompleted] = useState(false);
   const [isPassageOpen, setIsPassageOpen] = useState(false);
+  const [focusedQuestionId, setFocusedQuestionId] = useState(null);
 
   // Fetch data from backend, fallback to mock
   useEffect(() => {
@@ -261,6 +263,7 @@ export default function WriteSentenceCompletionPage() {
                             onChange={(e) =>
                               handleInputChange(q.id, e.target.value)
                             }
+                            onFocus={() => setFocusedQuestionId(q.id)}
                             disabled={showFeedback}
                             placeholder="Complete the sentence..."
                             className={cn(
@@ -298,6 +301,26 @@ export default function WriteSentenceCompletionPage() {
                   );
                 })}
               </div>
+
+              {/* Accent Keyboard */}
+              {!showFeedback && (
+                <div className="mt-6 pt-4 border-t border-slate-100 dark:border-slate-800">
+                  <p className="text-xs text-slate-400 dark:text-slate-500 mb-2 text-center">
+                    Click an accent to insert it into the focused answer
+                  </p>
+                  <AccentKeyboard
+                    disabled={showFeedback || !focusedQuestionId}
+                    onAccentClick={(char) => {
+                      if (!focusedQuestionId) return;
+                      setUserInputs((prev) => ({
+                        ...prev,
+                        [focusedQuestionId]:
+                          (prev[focusedQuestionId] || "") + char,
+                      }));
+                    }}
+                  />
+                </div>
+              )}
 
               {/* Mobile Only: Floating See Passage Button */}
               {!showFeedback && !isPassageOpen && (

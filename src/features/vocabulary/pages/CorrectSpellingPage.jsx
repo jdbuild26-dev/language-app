@@ -5,8 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { fetchVocabulary } from "@/services/vocabularyApi";
 import { Button } from "@/components/ui/button";
-
-const ACCENTS = ["é", "è", "ê", "à", "ç", "â", "î", "ô", "û", "ë", "ï", "ü"];
+import AccentKeyboard from "@/components/ui/AccentKeyboard";
 
 export default function CorrectSpellingPage() {
   const [words, setWords] = useState([]);
@@ -211,18 +210,8 @@ export default function CorrectSpellingPage() {
           />
         </div>
 
-        {/* Action Buttons: Accents */}
-        <div className="flex flex-wrap justify-center gap-2">
-          {ACCENTS.map((char) => (
-            <button
-              key={char}
-              onClick={() => handleKeyClick(char)}
-              className="w-10 h-10 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-900 dark:text-white font-medium transition-colors border border-slate-200 dark:border-slate-700 shadow-sm"
-            >
-              {char}
-            </button>
-          ))}
-        </div>
+        {/* Accent Keyboard */}
+        <AccentKeyboard onAccentClick={handleKeyClick} />
 
         {/* Controls: Hint, Reveal */}
         <div className="flex justify-center gap-4">
