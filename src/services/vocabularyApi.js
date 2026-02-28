@@ -2154,6 +2154,17 @@ const CSV_TRANSFORMERS = {
         : "",
     },
   }),
+  highlight_word: (row) => ({
+    external_id: row.ExerciseID || `highlight_word_${Math.random()}`,
+    instruction_en: row.Instruction_EN || "",
+    instruction_fr: row.Instruction_FR || "",
+    level: row.Level || "",
+    content: {
+      passage: row["passage"] || row["sentence"] || "",
+      question: row["question"] || "",
+      eval_correctWord: row["eval_correctWord"] || "",
+    },
+  }),
 };
 
 export async function fetchVocabulary({
@@ -2177,8 +2188,9 @@ export async function fetchVocabulary({
     params.append("sub_category", subCategory);
   }
 
-  const url = `${API_BASE_URL}/api/vocabulary${params.toString() ? "?" + params : ""
-    }`;
+  const url = `${API_BASE_URL}/api/vocabulary${
+    params.toString() ? "?" + params : ""
+  }`;
   const response = await fetch(url);
 
   if (!response.ok) {
@@ -2341,11 +2353,14 @@ export async function requestConnection(data, token) {
  * Search for users to connect with
  */
 export async function searchProfiles(query, token) {
-  const response = await fetch(`${API_BASE_URL}/api/profiles/search?q=${encodeURIComponent(query)}`, {
-    headers: {
-      Authorization: `Bearer ${token}`,
+  const response = await fetch(
+    `${API_BASE_URL}/api/profiles/search?q=${encodeURIComponent(query)}`,
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
     },
-  });
+  );
 
   if (!response.ok) {
     throw new Error("Search failed");
@@ -2405,14 +2420,17 @@ export async function fetchTeacherStudents(teacherId, status, token) {
  * Update connection status (accept/reject)
  */
 export async function updateRelationshipStatus(relationshipId, status, token) {
-  const response = await fetch(`${API_BASE_URL}/api/relationships/${relationshipId}/status`, {
-    method: "PUT",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
+  const response = await fetch(
+    `${API_BASE_URL}/api/relationships/${relationshipId}/status`,
+    {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ status }),
     },
-    body: JSON.stringify({ status }),
-  });
+  );
 
   if (!response.ok) {
     throw new Error("Failed to update status");
@@ -2510,7 +2528,7 @@ export async function fetchPracticeQuestions(
                   ) {
                     try {
                       newRow[key] = JSON.parse(newRow[key]);
-                    } catch (e) { }
+                    } catch (e) {}
                   }
                 }
                 return newRow;
@@ -2573,7 +2591,7 @@ export async function fetchPracticeQuestions(
                     ) {
                       try {
                         newRow[key] = JSON.parse(newRow[key]);
-                      } catch (e) { }
+                      } catch (e) {}
                     }
                   }
                   return newRow;
@@ -2813,11 +2831,14 @@ export async function fetchClasses(token) {
  * Fetch classes for a student
  */
 export async function fetchStudentClasses(studentId, token) {
-  const response = await fetch(`${API_BASE_URL}/api/students/classes?student_id=${studentId}`, {
-    headers: {
-      Authorization: `Bearer ${token}`,
+  const response = await fetch(
+    `${API_BASE_URL}/api/students/classes?student_id=${studentId}`,
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
     },
-  });
+  );
 
   if (!response.ok) {
     throw new Error("Failed to fetch student classes");

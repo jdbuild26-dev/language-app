@@ -7,12 +7,15 @@ import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
 import FeedbackBanner from "@/components/ui/FeedbackBanner";
 import { getFeedbackMessage } from "@/utils/feedbackMessages";
 import { useTextToSpeech } from "@/hooks/useTextToSpeech";
-import { loadMockCSV } from "@/utils/csvLoader";
+import { useSearchParams } from "react-router-dom";
+import { fetchPracticeData } from "@/utils/practiceFetcher";
 import { Button } from "@/components/ui/button";
 
 export default function ListenSelectPage() {
   const handleExit = usePracticeExit();
   const { speak, isSpeaking, cancel } = useTextToSpeech();
+  const [searchParams] = useSearchParams();
+  const tag = searchParams.get("tag");
 
   const [questions, setQuestions] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -44,7 +47,8 @@ export default function ListenSelectPage() {
   useEffect(() => {
     const fetchAndTransformQuestions = async () => {
       try {
-        const data = await loadMockCSV("practice/listening/listen_select.csv");
+        setIsLoading(true);
+        const data = await fetchPracticeData("listen_select", { tag });
 
         if (!data || data.length === 0) {
           setQuestions([]);
@@ -67,7 +71,7 @@ export default function ListenSelectPage() {
         };
 
         // Transform data:
-        // New: English Text (from Correct Option) -> French Audio Options (Correct + 3 Distractors)
+        // English Text (from Correct Option) -> French Audio Options (Correct + 3 Distractors)
         // Each option now needs { french, english }
 
         const transformed = data.map((item, index, allItems) => {
@@ -113,13 +117,14 @@ export default function ListenSelectPage() {
 
         setQuestions(transformed);
       } catch (error) {
-        console.error("Error loading mock data:", error);
+        console.error("Error loading listen select data:", error);
+        setQuestions([]);
       } finally {
         setIsLoading(false);
       }
     };
     fetchAndTransformQuestions();
-  }, []);
+  }, [tag]);
 
   // Reset state on question change
   useEffect(() => {
