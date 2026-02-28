@@ -126,7 +126,7 @@ export default function LearnContent() {
       <CarouselSection
         title="Explore by Topic"
         description="Expand your vocabulary with curated wordlists for every situation, from daily life to professional environments."
-        className="bg-sky-50 dark:bg-slate-800/50 border-sky-100 dark:border-slate-700"
+        className="bg-sky-50 dark:bg-slate-800 border-sky-100 dark:border-slate-700"
         action={
           <Link
             to="/vocabulary/lessons/learn/topics"

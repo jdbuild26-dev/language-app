@@ -235,8 +235,8 @@ export default function PracticeContent() {
     activeTab === "all"
       ? practiceActivities
       : practiceActivities.filter(
-          (activity) => activity.category === activeTab,
-        );
+        (activity) => activity.category === activeTab,
+      );
 
   return (
     <div className="space-y-8 pb-10">
@@ -288,7 +288,7 @@ export default function PracticeContent() {
 
             <div
               className={cn(
-                "relative h-full overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-950/50 p-5 backdrop-blur-sm transition-all duration-300",
+                "relative h-full overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 p-5 transition-all duration-300",
                 "hover:-translate-y-1 hover:shadow-lg",
                 activity.shadow,
               )}

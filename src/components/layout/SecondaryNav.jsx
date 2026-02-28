@@ -77,7 +77,7 @@ export default function SecondaryNavbar() {
   };
 
   return (
-    <nav className="sticky top-[72px] z-40 w-full bg-white/95 dark:bg-slate-900/95 backdrop-blur-sm border-b border-gray-100 dark:border-slate-700 transition-colors">
+    <nav className="sticky top-[72px] z-40 w-full bg-white dark:bg-slate-900 border-b border-gray-100 dark:border-slate-700 transition-colors">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         {/* Desktop Navigation */}
         <div

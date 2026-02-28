@@ -22,7 +22,7 @@ export default function Header() {
   const [activeMobileSection, setActiveMobileSection] = useState(null);
 
   return (
-    <nav className="sticky top-0 z-50 h-[72px] w-full bg-gradient-to-r from-cyan-500 to-blue-600 dark:from-slate-900 dark:to-slate-900 backdrop-blur-sm shadow-md dark:shadow-slate-950 border-b border-white/10 dark:border-slate-700 transition-all">
+    <nav className="sticky top-0 z-50 h-[72px] w-full bg-gradient-to-r from-cyan-500 to-blue-600 dark:from-slate-900 dark:to-slate-900 shadow-md dark:shadow-slate-950 border-b border-white/10 dark:border-slate-700 transition-all">
       <div className="mx-auto flex h-full max-w-7xl items-center justify-between px-6 sm:px-8 lg:px-10">
         {/* Left: Logo + Brand */}
         <div className="flex items-center pl-2">
