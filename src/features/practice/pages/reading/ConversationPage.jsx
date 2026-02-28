@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { usePracticeExit } from "@/hooks/usePracticeExit";
 import { useExerciseTimer } from "@/hooks/useExerciseTimer";
-import { MessageSquare, User, Volume2 } from "lucide-react";
+import { MessageSquare, User, Volume2, XCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
 import FeedbackBanner from "@/components/ui/FeedbackBanner";
@@ -30,6 +30,9 @@ export default function ConversationPage() {
 
   // Conversation history: array of {speakerText, userText, isRevealed}
   const [conversationHistory, setConversationHistory] = useState([]);
+
+  // Mistakes history
+  const [mistakes, setMistakes] = useState([]);
 
   // Feedback states
   const [showFeedback, setShowFeedback] = useState(false);
@@ -94,6 +97,9 @@ export default function ConversationPage() {
     const selectedOptionObj = currentExchange.options.find(
       (opt) => opt.id === selectedOption,
     );
+    const correctOptionObj = currentExchange.options.find(
+      (opt) => opt.id === currentExchange.correctOptionId,
+    );
     const correct = selectedOption === currentExchange.correctOptionId;
 
     setIsCorrect(correct);
@@ -103,6 +109,15 @@ export default function ConversationPage() {
 
     if (correct) {
       setScore((prev) => prev + 1);
+    } else {
+      setMistakes((prev) => [
+        ...prev,
+        {
+          question: currentExchange.speakerText,
+          expected: correctOptionObj.text,
+          actual: selectedOptionObj.text,
+        },
+      ]);
     }
 
     // Add to conversation history
@@ -110,7 +125,7 @@ export default function ConversationPage() {
       ...prev,
       {
         speakerText: currentExchange.speakerText,
-        userText: selectedOptionObj.text,
+        userText: correctOptionObj.text,
         userOptionId: selectedOption,
         wasCorrect: correct,
       },
@@ -151,6 +166,48 @@ export default function ConversationPage() {
   const progress =
     totalExchanges > 0 ? ((currentTurnIndex + 1) / totalExchanges) * 100 : 0;
 
+  const customEndGameContent =
+    mistakes.length > 0 ? (
+      <div className="w-full max-w-2xl text-left bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm border border-slate-100 dark:border-slate-700 mt-4 max-h-[400px] overflow-y-auto mx-auto mb-8 relative z-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
+        <h3 className="text-lg font-bold text-red-600 dark:text-red-400 mb-6 flex items-center gap-2 pb-3 border-b border-slate-100 dark:border-slate-700">
+          <XCircle className="w-6 h-6" /> Let's review your mistakes
+        </h3>
+        <div className="space-y-6">
+          {mistakes.map((m, i) => (
+            <div
+              key={i}
+              className="pb-6 border-b last:border-0 border-slate-100 dark:border-slate-700 last:pb-0"
+            >
+              <p className="font-medium text-slate-800 dark:text-slate-200 mb-3 flex items-start gap-3">
+                <span className="w-8 h-8 rounded-full bg-indigo-100 dark:bg-indigo-900 flex items-center justify-center shrink-0 mt-0.5">
+                  <User className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                </span>
+                <span className="pt-1">{m.question}</span>
+              </p>
+              <div className="ml-11 space-y-3 bg-slate-50 dark:bg-slate-900 p-4 rounded-xl border border-slate-100 dark:border-slate-800">
+                <div className="flex items-start gap-3">
+                  <span className="text-sm font-bold text-red-600 dark:text-red-400 w-16 shrink-0 mt-0.5">
+                    You Said:
+                  </span>
+                  <span className="text-sm text-red-600 dark:text-red-400 line-through opacity-80">
+                    {m.actual}
+                  </span>
+                </div>
+                <div className="flex items-start gap-3">
+                  <span className="text-sm font-bold text-green-600 dark:text-green-400 w-16 shrink-0 mt-0.5">
+                    Correct:
+                  </span>
+                  <span className="text-sm text-green-600 dark:text-green-400">
+                    {m.expected}
+                  </span>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    ) : null;
+
   return (
     <PracticeGameLayout
       questionType="Running Conversation"
@@ -167,6 +224,7 @@ export default function ConversationPage() {
       showSubmitButton={!showFeedback && !hasAnswered}
       submitLabel="Send"
       timerValue={timerString}
+      customEndGameContent={customEndGameContent}
     >
       <div className="flex flex-col items-center w-full max-w-6xl mx-auto px-4 py-4">
         {/* Two-column layout */}
