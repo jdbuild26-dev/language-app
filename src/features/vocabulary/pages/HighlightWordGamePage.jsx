@@ -1,7 +1,11 @@
 import React, { useState, useEffect } from "react";
+
+// Normalize curly/typographic apostrophes so comparisons are quote-agnostic
+const normalizeApostrophe = (str) =>
+  str.replace(/[\u2018\u2019\u201A\u201B\u02BC\u02C8`]/g, "'");
 import { useExerciseTimer } from "@/hooks/useExerciseTimer";
-import { Loader2, XCircle } from "lucide-react";
-import { Link, useNavigate } from "react-router-dom";
+import { Loader2 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
 import { fetchPracticeQuestions } from "@/services/vocabularyApi";
@@ -11,7 +15,13 @@ export default function HighlightWordGamePage() {
   const navigate = useNavigate();
   const [questions, setQuestions] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
+
+  // Single-select state
   const [selectedWordIndex, setSelectedWordIndex] = useState(null);
+
+  // Multi-select state
+  const [selectedWordIndices, setSelectedWordIndices] = useState(new Set());
+
   const [isAnswered, setIsAnswered] = useState(false);
   const [score, setScore] = useState(0);
   const [isGameOver, setIsGameOver] = useState(false);
@@ -20,8 +30,6 @@ export default function HighlightWordGamePage() {
   const [isCorrect, setIsCorrect] = useState(false);
   const [feedbackMessage, setFeedbackMessage] = useState("");
 
-  // Timer State Replaced
-
   useEffect(() => {
     loadQuestions();
   }, []);
@@ -29,43 +37,52 @@ export default function HighlightWordGamePage() {
   const loadQuestions = async () => {
     try {
       setLoading(true);
-
       const response = await fetchPracticeQuestions("highlight_word");
       if (response && response.data && response.data.length > 0) {
-        // Map API response keys to component state keys
         const formattedQuestions = response.data
           .filter(
             (q) =>
               (q.passage || q.sentence || q.Sentence) &&
               (q.passage || q.sentence || q.Sentence) !== "None",
           )
-          .map((q) => ({
-            ...q,
-            sentence:
-              q.passage ||
-              q.sentence ||
-              q.Sentence ||
-              q["Complete sentence"] ||
-              "",
-            correctWord:
+          .map((q) => {
+            const rawAnswer =
               q.correctWord ||
               q.correctAnswer ||
               q.CorrectAnswer ||
               q.Answer ||
-              "",
-            prompt: (
-              q.question ||
-              q.instructionEn ||
-              q.Instruction_EN ||
-              q.Question_EN ||
-              ""
-            )?.trim(),
-          }));
+              q.eval_correctWord ||
+              "";
+
+            // Support pipe-separated multi-answers: "chat|chien|l'oiseau|lapin"
+            const correctWords = rawAnswer
+              .split("|")
+              .map((w) => normalizeApostrophe(w.trim().toLowerCase()))
+              .filter(Boolean);
+
+            return {
+              ...q,
+              sentence:
+                q.passage ||
+                q.sentence ||
+                q.Sentence ||
+                q["Complete sentence"] ||
+                "",
+              correctWord: correctWords[0] ?? "",
+              correctWords, // array, length > 1 means multi-select
+              isMultiSelect: correctWords.length > 1,
+              prompt: (
+                q.question ||
+                q.instructionEn ||
+                q.Instruction_EN ||
+                q.Question_EN ||
+                ""
+              )?.trim(),
+            };
+          });
         setQuestions(formattedQuestions);
       } else {
-        console.error(
-          "[HighlightWord] ❌ No valid questions received from backend",
-        );
+        console.error("[HighlightWord] ❌ No valid questions received");
         setQuestions([]);
       }
     } catch (error) {
@@ -75,20 +92,16 @@ export default function HighlightWordGamePage() {
       setLoading(false);
     }
   };
-  const { timerString, resetTimer, isPaused } = useExerciseTimer({
-    duration: 20,
+
+  const { timerString, resetTimer } = useExerciseTimer({
+    duration: 30,
     mode: "timer",
     onExpire: () => {
-      // Auto-submit if not answered
       if (!isAnswered && !isGameOver && !showFeedback) {
-        // If auto-submitting without selection, it's incorrect or we just trigger check
-        // But check requires selectedWordIndex.
-        // If nothing selected, just mark incorrect or force answer?
-        // Existing handleCheck checks if selectedWordIndex is null.
-        // If null, we might want to fail the question?
-        // Let's modify handleCheck or just force a failure here.
-        if (selectedWordIndex === null) {
-          // Time's up, no selection
+        const hasSelection = currentItem?.isMultiSelect
+          ? selectedWordIndices.size > 0
+          : selectedWordIndex !== null;
+        if (!hasSelection) {
           setIsAnswered(true);
           setIsCorrect(false);
           setFeedbackMessage("Time's up!");
@@ -101,42 +114,75 @@ export default function HighlightWordGamePage() {
     isPaused: loading || isGameOver || isAnswered || showFeedback,
   });
 
-  // Reset timer on new question
   useEffect(() => {
-    resetTimer(); // We should probably pass dependency?
-    // In hook, resetTimer depends on duration.
+    resetTimer();
   }, [currentIndex, resetTimer]);
-  // Removed old timer effect
 
   const currentItem = questions[currentIndex];
-
   const words = currentItem ? currentItem.sentence.split(" ") : [];
 
-  const handleWordClick = (index, word) => {
+  // ── Single-select handler ──────────────────────────────────────────────
+  const handleWordClick = (index) => {
     if (isAnswered) return;
-
-    // Simple sanitization for comparison
-    const cleanWord = word.replace(/[.,!?;:]/g, "").toLowerCase();
-    const cleanTarget = currentItem.correctWord.toLowerCase();
-
-    setSelectedWordIndex(index);
+    if (currentItem.isMultiSelect) {
+      // Toggle in multi-select set
+      setSelectedWordIndices((prev) => {
+        const next = new Set(prev);
+        if (next.has(index)) {
+          next.delete(index);
+        } else {
+          next.add(index);
+        }
+        return next;
+      });
+    } else {
+      setSelectedWordIndex(index);
+    }
   };
 
+  // ── Check answer ───────────────────────────────────────────────────────
   const handleCheck = () => {
-    if (selectedWordIndex === null) return;
-    setIsAnswered(true);
+    if (currentItem.isMultiSelect) {
+      if (selectedWordIndices.size === 0) return;
 
-    const selectedWord = words[selectedWordIndex];
-    const cleanWord = selectedWord.replace(/[.,!?;:]/g, "").toLowerCase();
-    const cleanTarget = currentItem.correctWord.toLowerCase();
+      setIsAnswered(true);
 
-    const correct = cleanWord === cleanTarget;
-    setIsCorrect(correct);
-    setFeedbackMessage(getFeedbackMessage(correct));
-    setShowFeedback(true);
+      // Collect the clean text of every selected word (normalize apostrophes + strip punctuation)
+      const cleanWord = (w) =>
+        normalizeApostrophe(w)
+          .replace(/[.,!?;:]/g, "")
+          .toLowerCase();
+      const selectedClean = [...selectedWordIndices].map((i) =>
+        cleanWord(words[i]),
+      );
 
-    if (correct) {
-      setScore((prev) => prev + 1);
+      // Every correct word must be selected, and no extra words
+      const targets = currentItem.correctWords; // already normalized during load
+      const allFound = targets.every((t) => selectedClean.includes(t));
+      const noExtras = selectedClean.every((s) => targets.includes(s));
+      const correct = allFound && noExtras;
+
+      setIsCorrect(correct);
+      setFeedbackMessage(getFeedbackMessage(correct));
+      setShowFeedback(true);
+      if (correct) setScore((prev) => prev + 1);
+    } else {
+      if (selectedWordIndex === null) return;
+      setIsAnswered(true);
+
+      const selectedWord = words[selectedWordIndex];
+      const cleanWord = normalizeApostrophe(selectedWord)
+        .replace(/[.,!?;:]/g, "")
+        .toLowerCase();
+      const cleanTarget = normalizeApostrophe(
+        currentItem.correctWord,
+      ).toLowerCase();
+
+      const correct = cleanWord === cleanTarget;
+      setIsCorrect(correct);
+      setFeedbackMessage(getFeedbackMessage(correct));
+      setShowFeedback(true);
+      if (correct) setScore((prev) => prev + 1);
     }
   };
 
@@ -145,23 +191,32 @@ export default function HighlightWordGamePage() {
       handleCheck();
       return;
     }
-
     setShowFeedback(false);
-
-    // Move to next
     if (currentIndex < questions.length - 1) {
       setCurrentIndex((prev) => prev + 1);
       setSelectedWordIndex(null);
+      setSelectedWordIndices(new Set());
       setIsAnswered(false);
-      resetTimer(); // Reset timer
+      resetTimer();
     } else {
       setIsGameOver(true);
     }
   };
 
-  // Progress
   const progress =
     questions.length > 0 ? ((currentIndex + 1) / questions.length) * 100 : 0;
+
+  // ── Submit enabled guard ───────────────────────────────────────────────
+  const isSubmitEnabled = currentItem?.isMultiSelect
+    ? selectedWordIndices.size > 0
+    : selectedWordIndex !== null;
+
+  // ── Correct answer display string ──────────────────────────────────────
+  const correctAnswerDisplay = !isCorrect
+    ? currentItem?.isMultiSelect
+      ? currentItem.correctWords.join(" • ")
+      : currentItem?.correctWord
+    : null;
 
   if (loading) {
     return (
@@ -198,9 +253,9 @@ export default function HighlightWordGamePage() {
         score={score}
         totalQuestions={questions.length}
         onExit={() => navigate("/vocabulary/practice")}
-        onNext={showFeedback ? handleNext : handleNext}
+        onNext={handleNext}
         onRestart={() => window.location.reload()}
-        isSubmitEnabled={selectedWordIndex !== null}
+        isSubmitEnabled={isSubmitEnabled}
         showSubmitButton={true}
         submitLabel={
           showFeedback
@@ -214,50 +269,73 @@ export default function HighlightWordGamePage() {
         timerValue={timerString}
         showFeedback={showFeedback}
         isCorrect={isCorrect}
-        correctAnswer={!isCorrect ? currentItem.correctWord : null}
+        correctAnswer={correctAnswerDisplay}
         feedbackMessage={feedbackMessage}
       >
         <div className="flex flex-col items-center justify-center w-full max-w-5xl">
-          {/* Specific Prompt Instruction */}
+          {/* Prompt */}
           <div className="mb-6 text-center w-full">
             <h3 className="text-xl md:text-2xl font-bold text-gray-800 dark:text-gray-100 mb-2">
               {currentItem?.prompt}
             </h3>
+            {currentItem?.isMultiSelect && (
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                Select all {currentItem.correctWords.length} correct words
+                {selectedWordIndices.size > 0 && (
+                  <span className="ml-2 font-semibold text-blue-500">
+                    ({selectedWordIndices.size} selected)
+                  </span>
+                )}
+              </p>
+            )}
           </div>
 
+          {/* Word tokens */}
           <div className="flex flex-wrap justify-center gap-3 text-lg md:text-xl font-medium leading-relaxed max-w-4xl mx-auto">
             {words.map((word, index) => {
+              const cleanWord = normalizeApostrophe(word)
+                .replace(/[.,!?;:]/g, "")
+                .toLowerCase();
+
               let styles =
                 "bg-transparent text-gray-800 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg px-2 py-1 cursor-pointer transition-all border border-transparent";
 
-              const cleanWord = word.replace(/[.,!?;:]/g, "").toLowerCase();
-              const cleanTarget = currentItem.correctWord.toLowerCase();
-
-              // If answered, logic for coloring
               if (isAnswered) {
-                if (cleanWord === cleanTarget) {
-                  // This is the correct word -> GREEN
+                const isTarget = currentItem.isMultiSelect
+                  ? currentItem.correctWords.includes(cleanWord)
+                  : cleanWord ===
+                    normalizeApostrophe(currentItem.correctWord).toLowerCase();
+
+                const wasSelected = currentItem.isMultiSelect
+                  ? selectedWordIndices.has(index)
+                  : selectedWordIndex === index;
+
+                if (isTarget) {
                   styles =
                     "bg-green-100 text-green-800 ring-2 ring-green-400 rounded-lg px-2 py-1 shadow-sm";
-                } else if (selectedWordIndex === index) {
-                  // This was selected but is wrong -> RED
+                } else if (wasSelected) {
                   styles =
                     "bg-red-100 text-red-800 ring-2 ring-red-400 rounded-lg px-2 py-1 opacity-80";
                 } else {
-                  // Other unrelated words -> Faded
                   styles =
                     "text-gray-400 dark:text-gray-600 rounded-lg px-2 py-1 opacity-50";
                 }
-              } else if (selectedWordIndex === index) {
-                // Currently selected (not checked yet) -> BLUE
-                styles =
-                  "bg-blue-100 text-blue-800 ring-2 ring-blue-300 rounded-lg px-2 py-1 shadow-sm";
+              } else {
+                // Pre-answer selection highlights
+                const isSelected = currentItem?.isMultiSelect
+                  ? selectedWordIndices.has(index)
+                  : selectedWordIndex === index;
+
+                if (isSelected) {
+                  styles =
+                    "bg-blue-100 text-blue-800 ring-2 ring-blue-300 rounded-lg px-2 py-1 shadow-sm";
+                }
               }
 
               return (
                 <span
                   key={index}
-                  onClick={() => handleWordClick(index, word)}
+                  onClick={() => handleWordClick(index)}
                   className={styles}
                 >
                   {word}
