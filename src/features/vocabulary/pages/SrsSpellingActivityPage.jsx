@@ -6,6 +6,7 @@ import { fetchPracticeQuestions } from "../../../services/vocabularyApi";
 import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
 import SegmentedInput from "../components/ui/SegmentedInput";
 import { getFeedbackMessage } from "@/utils/feedbackMessages";
+import AccentKeyboard from "@/components/ui/AccentKeyboard";
 
 // Using local storage to keep track of consecutive correct spellings
 const getSrsProgress = (word) => {
@@ -98,6 +99,9 @@ export default function SrsSpellingActivityPage() {
   const [isCorrect, setIsCorrect] = useState(false);
   const [feedbackMessage, setFeedbackMessage] = useState("");
   const [score, setScore] = useState(0);
+
+  // Accent keyboard focus tracking
+  const [focusedIndex, setFocusedIndex] = useState(null);
 
   // Timer Hook
   const currentQuestion = questions[currentIndex];
@@ -522,12 +526,13 @@ export default function SrsSpellingActivityPage() {
           </div>
 
           {/* Input Boxes */}
-          <div className="flex flex-nowrap justify-center gap-1 md:gap-2 mb-8 max-w-full overflow-x-auto pb-4 px-2 scrollbar-hide">
+          <div className="flex flex-nowrap justify-center gap-1 md:gap-2 mb-4 max-w-full overflow-x-auto pb-4 px-2 scrollbar-hide">
             <SegmentedInput
               values={userInputs}
               onChange={(idx, val) => handleInputChange(idx, val)}
               onKeyDown={(idx, e) => handleKeyDown(idx, e)}
               onPaste={(idx, e) => handlePaste(idx, e)}
+              onFocus={(idx) => setFocusedIndex(idx)}
               disabled={showFeedback}
               hints={currentHints}
               showFeedback={showFeedback}
@@ -535,6 +540,22 @@ export default function SrsSpellingActivityPage() {
               inputRefs={inputsRef}
             />
           </div>
+
+          {/* Accent Keyboard */}
+          {!showFeedback && (
+            <AccentKeyboard
+              disabled={showFeedback}
+              onAccentClick={(char) => {
+                const idx =
+                  focusedIndex ?? userInputs.findIndex((v) => v === "");
+                if (idx === -1 || idx === null) return;
+                handleInputChange(idx, char);
+                requestAnimationFrame(() => {
+                  inputsRef.current[idx]?.focus();
+                });
+              }}
+            />
+          )}
         </div>
       </PracticeGameLayout>
     </>

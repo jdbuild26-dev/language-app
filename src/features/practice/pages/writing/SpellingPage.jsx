@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { usePracticeExit } from "@/hooks/usePracticeExit";
 import { useExerciseTimer } from "@/hooks/useExerciseTimer";
 import { Volume2, AlertCircle } from "lucide-react";
@@ -10,10 +10,12 @@ import { useTextToSpeech } from "@/hooks/useTextToSpeech";
 import { loadMockCSV } from "@/utils/csvLoader";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import AccentKeyboard from "@/components/ui/AccentKeyboard";
 
 export default function SpellingPage() {
   const handleExit = usePracticeExit();
   const { speak, isSpeaking } = useTextToSpeech();
+  const textareaRef = useRef(null);
 
   const [questions, setQuestions] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -204,8 +206,9 @@ export default function SpellingPage() {
             </div>
 
             {/* Answer Box Side */}
-            <div className="flex flex-col h-full">
+            <div className="flex flex-col h-full gap-2">
               <textarea
+                ref={textareaRef}
                 value={userInput}
                 onChange={(e) => setUserInput(e.target.value)}
                 placeholder="Type the correct version here..."
@@ -224,6 +227,22 @@ export default function SpellingPage() {
                     !isCorrect &&
                     "border-red-500 bg-red-50 dark:bg-red-900/10",
                 )}
+              />
+              <AccentKeyboard
+                disabled={showFeedback}
+                onAccentClick={(char) => {
+                  const el = textareaRef.current;
+                  if (!el) return;
+                  const start = el.selectionStart;
+                  const end = el.selectionEnd;
+                  const newVal =
+                    userInput.slice(0, start) + char + userInput.slice(end);
+                  setUserInput(newVal);
+                  requestAnimationFrame(() => {
+                    el.focus();
+                    el.setSelectionRange(start + 1, start + 1);
+                  });
+                }}
               />
             </div>
           </div>

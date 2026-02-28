@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { usePracticeExit } from "@/hooks/usePracticeExit";
 import { useExerciseTimer } from "@/hooks/useExerciseTimer";
 import { cn } from "@/lib/utils";
@@ -7,9 +7,11 @@ import FeedbackBanner from "@/components/ui/FeedbackBanner";
 import { getFeedbackMessage } from "@/utils/feedbackMessages";
 import { loadMockCSV } from "@/utils/csvLoader";
 import { Button } from "@/components/ui/button";
+import AccentKeyboard from "@/components/ui/AccentKeyboard";
 
 export default function TranslateTypedPage() {
   const handleExit = usePracticeExit();
+  const textareaRef = useRef(null);
 
   const [questions, setQuestions] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -150,8 +152,9 @@ export default function TranslateTypedPage() {
             </div>
 
             {/* User Input Column */}
-            <div className="flex flex-col h-full">
+            <div className="flex flex-col h-full gap-2">
               <textarea
+                ref={textareaRef}
                 value={userInput}
                 onChange={(e) => setUserInput(e.target.value)}
                 onKeyDown={handleKeyDown}
@@ -172,6 +175,22 @@ export default function TranslateTypedPage() {
                     !isCorrect &&
                     "border-red-500 bg-red-50 dark:bg-red-900/10",
                 )}
+              />
+              <AccentKeyboard
+                disabled={showFeedback}
+                onAccentClick={(char) => {
+                  const el = textareaRef.current;
+                  if (!el) return;
+                  const start = el.selectionStart;
+                  const end = el.selectionEnd;
+                  const newVal =
+                    userInput.slice(0, start) + char + userInput.slice(end);
+                  setUserInput(newVal);
+                  requestAnimationFrame(() => {
+                    el.focus();
+                    el.setSelectionRange(start + 1, start + 1);
+                  });
+                }}
               />
             </div>
           </div>
