@@ -54,9 +54,9 @@ export default function HighlightWordGamePage() {
               q.eval_correctWord ||
               "";
 
-            // Support pipe-separated multi-answers: "chat|chien|l'oiseau|lapin"
+            // Support pipe-separated or space-separated multi-answers: "chat|chien" or "une pomme"
             const correctWords = rawAnswer
-              .split("|")
+              .split(/[| ]+/)
               .map((w) => normalizeApostrophe(w.trim().toLowerCase()))
               .filter(Boolean);
 
@@ -131,7 +131,10 @@ export default function HighlightWordGamePage() {
         if (next.has(index)) {
           next.delete(index);
         } else {
-          next.add(index);
+          // Restrict to max number of correct words
+          if (next.size < currentItem.correctWords.length) {
+            next.add(index);
+          }
         }
         return next;
       });
