@@ -5,7 +5,7 @@ import {
   Languages,
   CheckCircle,
   XCircle,
-  Loader2
+  Loader2,
 } from "lucide-react";
 import { Link, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -40,6 +40,7 @@ export default function PracticeGameLayout({
   isCorrect = false,
   feedbackMessage = "",
   correctAnswer = "",
+  customEndGameContent = null,
   children,
 }) {
   const [showTranslation, setShowTranslation] = useState(false);
@@ -59,13 +60,19 @@ export default function PracticeGameLayout({
           const token = await getToken();
 
           // Calculate percentage score
-          const percentage = totalQuestions > 0 ? Math.round((score / totalQuestions) * 100) : 0;
+          const percentage =
+            totalQuestions > 0 ? Math.round((score / totalQuestions) * 100) : 0;
 
-          await completeAssignment(assignmentId, percentage, {
-            rawScore: score,
-            total: totalQuestions,
-            type: questionType
-          }, token);
+          await completeAssignment(
+            assignmentId,
+            percentage,
+            {
+              rawScore: score,
+              total: totalQuestions,
+              type: questionType,
+            },
+            token,
+          );
 
           console.log("✅ Assignment auto-completed:", assignmentId);
         } catch (error) {
@@ -98,6 +105,8 @@ export default function PracticeGameLayout({
           out of {totalQuestions}
         </p>
 
+        {customEndGameContent}
+
         {assignmentId && !isSubmittingResult && (
           <div className="mb-6 px-4 py-2 bg-green-50 dark:bg-green-900/20 border border-green-100 dark:border-green-900/50 rounded-full text-green-700 dark:text-green-300 text-sm font-medium animate-in fade-in slide-in-from-top-2">
             Assignment progress saved! ✅
@@ -105,10 +114,20 @@ export default function PracticeGameLayout({
         )}
 
         <div className="flex gap-4">
-          <Button variant="outline" size="lg" onClick={onExit} disabled={isSubmittingResult}>
+          <Button
+            variant="outline"
+            size="lg"
+            onClick={onExit}
+            disabled={isSubmittingResult}
+          >
             Back to Menu
           </Button>
-          <Button onClick={onRestart} size="lg" className="gap-2" disabled={isSubmittingResult}>
+          <Button
+            onClick={onRestart}
+            size="lg"
+            className="gap-2"
+            disabled={isSubmittingResult}
+          >
             <RotateCcw className="w-4 h-4" />
             Try Again
           </Button>
@@ -130,7 +149,8 @@ export default function PracticeGameLayout({
                 : localizedInstruction || instructionFr || instructionEn}
             </h1>
 
-            {((instructionFr && instructionEn) || (localizedInstruction && instructionEn)) && (
+            {((instructionFr && instructionEn) ||
+              (localizedInstruction && instructionEn)) && (
               <Button
                 variant="ghost"
                 size="icon"

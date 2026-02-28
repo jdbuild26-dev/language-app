@@ -4,11 +4,8 @@ import { useExerciseTimer } from "@/hooks/useExerciseTimer";
 import { MessageSquare, User, MessageCircle, Send } from "lucide-react";
 import { cn } from "@/lib/utils";
 import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
-import FeedbackBanner from "@/components/ui/FeedbackBanner";
-import { getFeedbackMessage } from "@/utils/feedbackMessages";
 import { useTextToSpeech } from "@/hooks/useTextToSpeech";
 import { useWritingEvaluation } from "../../hooks/useWritingEvaluation";
-import WritingFeedbackResult from "../../components/WritingFeedbackResult";
 import { loadMockCSV } from "@/utils/csvLoader";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -38,21 +35,20 @@ export default function WriteInteractivePage() {
   // Conversation history: array of {speakerText, userText, wasCorrect}
   const [conversationHistory, setConversationHistory] = useState([]);
 
-  // Feedback states
-  const [showFeedback, setShowFeedback] = useState(false);
-  const [isCorrect, setIsCorrect] = useState(false);
-  const [feedbackMessage, setFeedbackMessage] = useState("");
-
   // Score tracking
   const [score, setScore] = useState(0);
 
   // Overall completion
   const [isCompleted, setIsCompleted] = useState(false);
 
+  // Final Analysis state
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [finalAnalysis, setFinalAnalysis] = useState(null);
+
   // Audio playback state
   const [hasPlayedAudio, setHasPlayedAudio] = useState(false);
 
-  const { evaluation, isSubmitting, evaluate, resetEvaluation } =
+  const { isSubmitting, evaluate, analyzeConversation } =
     useWritingEvaluation();
 
   const currentExchange = conversation?.exchanges[currentTurnIndex];
@@ -68,13 +64,15 @@ export default function WriteInteractivePage() {
     duration: timerDuration,
     mode: "timer",
     onExpire: () => {
-      if (!isCompleted && !showFeedback && !hasAnswered) {
-        setIsCorrect(false);
-        setFeedbackMessage("Time's up!");
-        setShowFeedback(true);
+      if (!isCompleted && !hasAnswered) {
+        if (currentTurnIndex < totalExchanges - 1) {
+          setCurrentTurnIndex((prev) => prev + 1);
+        } else {
+          setIsCompleted(true);
+        }
       }
     },
-    isPaused: isCompleted || showFeedback || isLoading,
+    isPaused: isCompleted || isLoading,
   });
 
   // Load conversation data from CSV
@@ -152,9 +150,30 @@ export default function WriteInteractivePage() {
   useEffect(() => {
     setUserInput("");
     setHasAnswered(false);
-    setShowFeedback(false);
     resetTimer();
   }, [currentTurnIndex, resetTimer]);
+
+  // Handle conversation completion analysis
+  useEffect(() => {
+    if (
+      isCompleted &&
+      conversationHistory.length > 0 &&
+      !finalAnalysis &&
+      !isAnalyzing
+    ) {
+      setIsAnalyzing(true);
+      analyzeConversation(conversationHistory).then((res) => {
+        setFinalAnalysis(res);
+        setIsAnalyzing(false);
+      });
+    }
+  }, [
+    isCompleted,
+    conversationHistory,
+    finalAnalysis,
+    isAnalyzing,
+    analyzeConversation,
+  ]);
 
   // Auto-scroll to bottom
   useEffect(() => {
@@ -171,7 +190,6 @@ export default function WriteInteractivePage() {
   const handleSubmit = async (e) => {
     if (e) e.preventDefault();
     if (
-      showFeedback ||
       !currentExchange?.isQuestion ||
       !userInput.trim() ||
       isSubmitting ||
@@ -179,52 +197,62 @@ export default function WriteInteractivePage() {
     )
       return;
 
+    const submittedText = userInput.trim();
+    setUserInput("");
+    setHasAnswered(true);
+
+    // Initial user history entry
+    setConversationHistory((prev) => [
+      ...prev,
+      {
+        speakerText: null,
+        userText: submittedText,
+        isEvaluating: true,
+      },
+    ]);
+
     try {
       const result = await evaluate({
         task_type: "interactive",
-        user_text: userInput,
+        user_text: submittedText,
         topic: conversation.scenario,
         reference: currentExchange.sampleAnswer,
         context: `Prompt: ${currentExchange.prompt}`,
       });
 
       if (result) {
-        setIsCorrect(result.score >= 70);
-        setFeedbackMessage(result.feedback);
-        setShowFeedback(true);
-        setHasAnswered(true);
-
-        // Add user's response to conversation history
-        setConversationHistory((prev) => [
-          ...prev,
-          {
-            speakerText: null,
-            userText: userInput,
-            wasCorrect: result.score >= 70,
-          },
-        ]);
-
         if (result.score >= 70) {
           setScore((prev) => prev + 1);
         }
+
+        // Update history with evaluation
+        setConversationHistory((prev) => {
+          const newHistory = [...prev];
+          const lastEntry = newHistory[newHistory.length - 1];
+          lastEntry.isEvaluating = false;
+          lastEntry.wasCorrect = result.score >= 70;
+          lastEntry.evaluation = result;
+          return newHistory;
+        });
+
+        // Delay before moving to next bot prompt so user can read the inline feedback
+        setTimeout(() => {
+          if (currentTurnIndex < totalExchanges - 1) {
+            setCurrentTurnIndex((prev) => prev + 1);
+          } else {
+            setIsCompleted(true);
+          }
+        }, 3000);
       } else {
         alert("Failed to get evaluation. Please try again.");
+        setHasAnswered(false);
+        setConversationHistory((prev) => prev.slice(0, prev.length - 1));
       }
     } catch (err) {
       console.error("Submission error:", err);
       alert("An unexpected error occurred. Please try again.");
-    }
-  };
-
-  const handleContinue = () => {
-    setShowFeedback(false);
-    setUserInput("");
-    resetEvaluation();
-
-    if (currentTurnIndex < totalExchanges - 1) {
-      setCurrentTurnIndex((prev) => prev + 1);
-    } else {
-      setIsCompleted(true);
+      setHasAnswered(false);
+      setConversationHistory((prev) => prev.slice(0, prev.length - 1));
     }
   };
 
@@ -267,11 +295,10 @@ export default function WriteInteractivePage() {
         onRestart={() => window.location.reload()}
         isSubmitEnabled={
           userInput.trim().length >= 2 &&
-          !showFeedback &&
           !hasAnswered &&
           currentExchange?.isQuestion
         }
-        showSubmitButton={currentExchange?.isQuestion && !showFeedback}
+        showSubmitButton={currentExchange?.isQuestion && !hasAnswered}
         submitLabel="Submit"
         timerValue={timerString}
       >
@@ -320,12 +347,45 @@ export default function WriteInteractivePage() {
                       </div>
                     )}
 
-                    {/* User's response */}
+                    {/* User's response and inline evaluation */}
                     {turn.userText && (
-                      <div className="flex justify-end">
+                      <div className="flex flex-col items-end gap-1">
                         <div className="bg-emerald-500 text-white px-4 py-2 rounded-2xl rounded-br-md shadow-sm max-w-[85%]">
                           <p className="text-sm">{turn.userText}</p>
                         </div>
+                        {turn.isEvaluating && (
+                          <div className="flex items-center gap-2 text-xs text-slate-400 italic mr-2 mt-1">
+                            <Loader2 className="w-3 h-3 animate-spin" />{" "}
+                            Evaluating...
+                          </div>
+                        )}
+                        {turn.evaluation && (
+                          <div
+                            className={cn(
+                              "max-w-[85%] px-4 py-3 rounded-2xl rounded-br-md shadow-sm text-sm border mt-1",
+                              turn.wasCorrect
+                                ? "bg-emerald-50 dark:bg-emerald-900/20 text-emerald-800 dark:text-emerald-200 border-emerald-200 dark:border-emerald-800/50"
+                                : "bg-red-50 dark:bg-red-900/20 text-red-800 dark:text-red-200 border-red-200 dark:border-red-800/50",
+                            )}
+                          >
+                            <p className="font-semibold mb-1 text-xs uppercase tracking-wider opacity-80">
+                              {turn.wasCorrect
+                                ? "Great job!"
+                                : "Needs Improvement"}
+                            </p>
+                            <p className="text-sm mb-2 opacity-90">
+                              {turn.evaluation.feedback}
+                            </p>
+                            <div className="bg-white/50 dark:bg-black/20 p-2 rounded-lg mt-2">
+                              <p className="text-xs font-semibold mb-1 opacity-80">
+                                Suggested way to say it:
+                              </p>
+                              <p className="text-sm italic">
+                                {turn.evaluation.improved_version}
+                              </p>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
@@ -367,7 +427,7 @@ export default function WriteInteractivePage() {
                 Your Response
               </h3>
 
-              {currentExchange?.isQuestion && !hasAnswered && !showFeedback && (
+              {currentExchange?.isQuestion && !hasAnswered && (
                 <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 space-y-4">
                   {/* Prompt Card */}
                   <div className="w-full bg-emerald-50 dark:bg-emerald-900/20 rounded-2xl p-4 border border-emerald-100 dark:border-emerald-800/50">
@@ -411,34 +471,121 @@ export default function WriteInteractivePage() {
               )}
 
               {/* Placeholder when waiting for user's turn */}
-              {!currentExchange?.isQuestion &&
-                !showFeedback &&
-                !isCompleted && (
-                  <div className="flex items-center justify-center h-[300px] text-slate-400 dark:text-slate-600 text-sm italic">
-                    <p>Wait for your turn to respond...</p>
-                  </div>
-                )}
+              {!currentExchange?.isQuestion && !isCompleted && (
+                <div className="flex items-center justify-center h-[300px] text-slate-400 dark:text-slate-600 text-sm italic">
+                  <p>Wait for your turn to respond...</p>
+                </div>
+              )}
             </div>
           </div>
         </div>
       </PracticeGameLayout>
 
-      {/* Feedback Banner */}
-      {showFeedback && (
-        <FeedbackBanner
-          isCorrect={isCorrect}
-          onContinue={handleContinue}
-          message={feedbackMessage}
-          continueLabel={
-            currentTurnIndex === totalExchanges - 1 ? "FINISH" : "CONTINUE"
-          }
-        >
-          {evaluation && (
-            <div className="max-w-xl mx-auto mt-4 px-4 overflow-y-auto max-h-[40vh] custom-scrollbar">
-              <WritingFeedbackResult evaluation={evaluation} />
-            </div>
-          )}
-        </FeedbackBanner>
+      {/* Final Summary Overlay */}
+      {isCompleted && (
+        <div className="fixed inset-0 z-[100] bg-slate-50 dark:bg-slate-900 flex flex-col items-center p-6 overflow-y-auto">
+          <div className="w-full max-w-2xl bg-white dark:bg-slate-800 rounded-2xl shadow-xl p-8 mt-10 space-y-6 mb-10">
+            <h2 className="text-2xl font-bold text-center text-slate-800 dark:text-white">
+              Conversation Complete!
+            </h2>
+
+            {isAnalyzing ? (
+              <div className="flex flex-col items-center justify-center py-10 space-y-4">
+                <Loader2 className="w-10 h-10 animate-spin text-emerald-500" />
+                <p className="text-slate-500 dark:text-slate-400 text-center animate-pulse">
+                  Analyzing your entire conversation...
+                </p>
+              </div>
+            ) : finalAnalysis ? (
+              <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                <div className="flex flex-col items-center justify-center bg-slate-50 dark:bg-slate-900/50 rounded-xl p-6 border border-slate-100 dark:border-slate-700/50">
+                  <span className="text-sm uppercase tracking-wider text-slate-500 dark:text-slate-400 font-semibold mb-2">
+                    Overall Score
+                  </span>
+                  <div className="w-24 h-24 rounded-full flex items-center justify-center border-4 border-emerald-500 bg-white dark:bg-slate-800 shadow-sm relative overflow-hidden">
+                    <span className="text-3xl font-bold text-emerald-600 dark:text-emerald-400 z-10">
+                      {finalAnalysis.score}%
+                    </span>
+                    <div
+                      className="absolute bottom-0 left-0 right-0 bg-emerald-100 dark:bg-emerald-900/30"
+                      style={{ height: `${finalAnalysis.score}%` }}
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <h3 className="font-semibold text-slate-700 dark:text-slate-200 flex items-center gap-2">
+                    <MessageSquare className="w-4 h-4 text-sky-500" />
+                    Overall Feedback
+                  </h3>
+                  <p className="text-slate-600 dark:text-slate-300 bg-sky-50 dark:bg-sky-900/10 p-4 rounded-xl border border-sky-100 dark:border-sky-800/30">
+                    {finalAnalysis.overall_feedback}
+                  </p>
+                </div>
+
+                {finalAnalysis.key_mistakes?.length > 0 && (
+                  <div className="space-y-3 mt-6">
+                    <h3 className="font-semibold text-slate-700 dark:text-slate-200 flex items-center gap-2">
+                      <MessageCircle className="w-4 h-4 text-red-500" />
+                      Key Mistakes to Review
+                    </h3>
+                    <div className="space-y-3">
+                      {finalAnalysis.key_mistakes.map((mistake, i) => (
+                        <div
+                          key={i}
+                          className="bg-red-50 dark:bg-red-900/5 p-4 rounded-xl border border-red-100 dark:border-red-900/20"
+                        >
+                          <p className="text-sm text-red-800 dark:text-red-300 mb-2">
+                            <span className="font-semibold text-red-900 dark:text-red-200">
+                              Mistake:
+                            </span>{" "}
+                            {mistake.mistake}
+                          </p>
+                          <div className="bg-white dark:bg-slate-800 p-2 rounded-lg border border-emerald-100 dark:border-emerald-800/30 flex items-start gap-2">
+                            <span className="text-xs font-semibold text-emerald-700 dark:text-emerald-400 uppercase tracking-widest mt-0.5">
+                              Correction:
+                            </span>
+                            <span className="text-sm text-emerald-800 dark:text-emerald-300">
+                              {mistake.correction}
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {finalAnalysis.suggestions?.length > 0 && (
+                  <div className="space-y-3 mt-6">
+                    <h3 className="font-semibold text-slate-700 dark:text-slate-200 flex items-center gap-2">
+                      <Send className="w-4 h-4 text-purple-500" />
+                      Suggestions for Improvement
+                    </h3>
+                    <ul className="space-y-2 bg-purple-50 dark:bg-purple-900/5 p-4 rounded-xl border border-purple-100 dark:border-purple-900/20">
+                      {finalAnalysis.suggestions.map((sug, i) => (
+                        <li
+                          key={i}
+                          className="text-sm text-purple-800 dark:text-purple-300 flex items-start gap-2"
+                        >
+                          <span className="text-purple-400 mt-1">•</span>
+                          {sug}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                <Button
+                  onClick={handleExit}
+                  className="w-full mt-6 py-6 text-lg rounded-xl"
+                  size="lg"
+                >
+                  Return to Dashboard
+                </Button>
+              </div>
+            ) : null}
+          </div>
+        </div>
       )}
     </>
   );
