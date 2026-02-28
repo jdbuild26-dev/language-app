@@ -556,7 +556,8 @@ export default function PracticePage() {
   const handleCardClick = (activity) => {
     if (activity.path) {
       if (activity.typeSlug) {
-        const userLevel = profile?.level || "A1";
+        const userLevel =
+          activeLevel !== "all" ? activeLevel.toUpperCase() : profile?.level || "A1";
         const nextPath = encodeURIComponent(activity.path);
         navigate(
           `/practice/select-topic?type=${activity.typeSlug}&level=${userLevel}&next=${nextPath}`,
@@ -629,9 +630,8 @@ export default function PracticePage() {
 
         {/* Activity Cards Grid — dimmed while fetching slugs */}
         <div
-          className={`grid grid-cols-1 md:grid-cols-2 gap-4 transition-opacity duration-200 ${
-            loadingSlugs ? "opacity-40 pointer-events-none" : "opacity-100"
-          }`}
+          className={`grid grid-cols-1 md:grid-cols-2 gap-4 transition-opacity duration-200 ${loadingSlugs ? "opacity-40 pointer-events-none" : "opacity-100"
+            }`}
         >
           {filteredActivities.map((activity) => (
             <div
