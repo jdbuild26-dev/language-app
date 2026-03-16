@@ -1,0 +1,16 @@
+{
+  "headers": {
+    "x-nextjs-stale-time": "300",
+    "x-nextjs-prerender": "1",
+    "x-next-cache-tags": "_N_T_/layout,_N_T_/onboarding/layout,_N_T_/onboarding/teacher/layout,_N_T_/onboarding/teacher/page,_N_T_/onboarding/teacher"
+  },
+  "segmentPaths": [
+    "/_tree",
+    "/_full",
+    "/onboarding/teacher/__PAGE__",
+    "/onboarding/teacher",
+    "/onboarding",
+    "/_index",
+    "/_head"
+  ]
+}

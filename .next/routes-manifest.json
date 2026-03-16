@@ -1,0 +1,455 @@
+{
+  "version": 3,
+  "pages404": true,
+  "appType": "hybrid",
+  "caseSensitive": false,
+  "basePath": "",
+  "redirects": [
+    {
+      "source": "/:path+/",
+      "destination": "/:path+",
+      "internal": true,
+      "priority": true,
+      "statusCode": 308,
+      "regex": "^(?:/((?:[^/]+?)(?:/(?:[^/]+?))*))/$"
+    }
+  ],
+  "headers": [],
+  "rewrites": {
+    "beforeFiles": [],
+    "afterFiles": [],
+    "fallback": []
+  },
+  "dynamicRoutes": [
+    {
+      "page": "/ai-practice/scenarios/chats/[topicSlug]/chat",
+      "regex": "^/ai\\-practice/scenarios/chats/([^/]+?)/chat(?:/)?$",
+      "routeKeys": {
+        "nxtPtopicSlug": "nxtPtopicSlug"
+      },
+      "namedRegex": "^/ai\\-practice/scenarios/chats/(?<nxtPtopicSlug>[^/]+?)/chat(?:/)?$"
+    },
+    {
+      "page": "/grammar/lessons/[noteId]",
+      "regex": "^/grammar/lessons/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPnoteId": "nxtPnoteId"
+      },
+      "namedRegex": "^/grammar/lessons/(?<nxtPnoteId>[^/]+?)(?:/)?$"
+    },
+    {
+      "page": "/profile/[username]",
+      "regex": "^/profile/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPusername": "nxtPusername"
+      },
+      "namedRegex": "^/profile/(?<nxtPusername>[^/]+?)(?:/)?$"
+    },
+    {
+      "page": "/sign-in/[[...sign-in]]",
+      "regex": "^/sign\\-in(?:/(.+?))?(?:/)?$",
+      "routeKeys": {
+        "nxtPsignin": "nxtPsign-in"
+      },
+      "namedRegex": "^/sign\\-in(?:/(?<nxtPsignin>.+?))?(?:/)?$"
+    },
+    {
+      "page": "/sign-up/[[...sign-up]]",
+      "regex": "^/sign\\-up(?:/(.+?))?(?:/)?$",
+      "routeKeys": {
+        "nxtPsignup": "nxtPsign-up"
+      },
+      "namedRegex": "^/sign\\-up(?:/(?<nxtPsignup>.+?))?(?:/)?$"
+    },
+    {
+      "page": "/stories/learn/by-grammar/[topic]",
+      "regex": "^/stories/learn/by\\-grammar/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPtopic": "nxtPtopic"
+      },
+      "namedRegex": "^/stories/learn/by\\-grammar/(?<nxtPtopic>[^/]+?)(?:/)?$"
+    },
+    {
+      "page": "/stories/learn/by-level/[level]",
+      "regex": "^/stories/learn/by\\-level/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPlevel": "nxtPlevel"
+      },
+      "namedRegex": "^/stories/learn/by\\-level/(?<nxtPlevel>[^/]+?)(?:/)?$"
+    },
+    {
+      "page": "/stories/learn/by-theme/[theme]",
+      "regex": "^/stories/learn/by\\-theme/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPtheme": "nxtPtheme"
+      },
+      "namedRegex": "^/stories/learn/by\\-theme/(?<nxtPtheme>[^/]+?)(?:/)?$"
+    },
+    {
+      "page": "/stories/[storyId]",
+      "regex": "^/stories/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPstoryId": "nxtPstoryId"
+      },
+      "namedRegex": "^/stories/(?<nxtPstoryId>[^/]+?)(?:/)?$"
+    },
+    {
+      "page": "/vocabulary/flashcards/[level]/[category]",
+      "regex": "^/vocabulary/flashcards/([^/]+?)/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPlevel": "nxtPlevel",
+        "nxtPcategory": "nxtPcategory"
+      },
+      "namedRegex": "^/vocabulary/flashcards/(?<nxtPlevel>[^/]+?)/(?<nxtPcategory>[^/]+?)(?:/)?$"
+    },
+    {
+      "page": "/vocabulary/lessons/learn/[level]",
+      "regex": "^/vocabulary/lessons/learn/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPlevel": "nxtPlevel"
+      },
+      "namedRegex": "^/vocabulary/lessons/learn/(?<nxtPlevel>[^/]+?)(?:/)?$"
+    },
+    {
+      "page": "/vocabulary/lessons/learn/[level]/[category]",
+      "regex": "^/vocabulary/lessons/learn/([^/]+?)/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPlevel": "nxtPlevel",
+        "nxtPcategory": "nxtPcategory"
+      },
+      "namedRegex": "^/vocabulary/lessons/learn/(?<nxtPlevel>[^/]+?)/(?<nxtPcategory>[^/]+?)(?:/)?$"
+    }
+  ],
+  "staticRoutes": [
+    {
+      "page": "/",
+      "regex": "^/(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/(?:/)?$"
+    },
+    {
+      "page": "/_global-error",
+      "regex": "^/_global\\-error(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/_global\\-error(?:/)?$"
+    },
+    {
+      "page": "/_not-found",
+      "regex": "^/_not\\-found(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/_not\\-found(?:/)?$"
+    },
+    {
+      "page": "/404",
+      "regex": "^/404(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/404(?:/)?$"
+    },
+    {
+      "page": "/ai-practice",
+      "regex": "^/ai\\-practice(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/ai\\-practice(?:/)?$"
+    },
+    {
+      "page": "/ai-practice/general",
+      "regex": "^/ai\\-practice/general(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/ai\\-practice/general(?:/)?$"
+    },
+    {
+      "page": "/ai-practice/scenarios/chats",
+      "regex": "^/ai\\-practice/scenarios/chats(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/ai\\-practice/scenarios/chats(?:/)?$"
+    },
+    {
+      "page": "/ai-practice/scenarios/missions",
+      "regex": "^/ai\\-practice/scenarios/missions(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/ai\\-practice/scenarios/missions(?:/)?$"
+    },
+    {
+      "page": "/ai-practice/scenarios/profession",
+      "regex": "^/ai\\-practice/scenarios/profession(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/ai\\-practice/scenarios/profession(?:/)?$"
+    },
+    {
+      "page": "/blogs",
+      "regex": "^/blogs(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/blogs(?:/)?$"
+    },
+    {
+      "page": "/dashboard",
+      "regex": "^/dashboard(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/dashboard(?:/)?$"
+    },
+    {
+      "page": "/dashboard/assignments",
+      "regex": "^/dashboard/assignments(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/dashboard/assignments(?:/)?$"
+    },
+    {
+      "page": "/dashboard/friends",
+      "regex": "^/dashboard/friends(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/dashboard/friends(?:/)?$"
+    },
+    {
+      "page": "/dashboard/progress",
+      "regex": "^/dashboard/progress(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/dashboard/progress(?:/)?$"
+    },
+    {
+      "page": "/dashboard/referral",
+      "regex": "^/dashboard/referral(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/dashboard/referral(?:/)?$"
+    },
+    {
+      "page": "/dashboard/teachers",
+      "regex": "^/dashboard/teachers(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/dashboard/teachers(?:/)?$"
+    },
+    {
+      "page": "/find-teacher",
+      "regex": "^/find\\-teacher(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/find\\-teacher(?:/)?$"
+    },
+    {
+      "page": "/grammar",
+      "regex": "^/grammar(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/grammar(?:/)?$"
+    },
+    {
+      "page": "/grammar/lessons",
+      "regex": "^/grammar/lessons(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/grammar/lessons(?:/)?$"
+    },
+    {
+      "page": "/grammar/practice",
+      "regex": "^/grammar/practice(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/grammar/practice(?:/)?$"
+    },
+    {
+      "page": "/onboarding/new-profile",
+      "regex": "^/onboarding/new\\-profile(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/onboarding/new\\-profile(?:/)?$"
+    },
+    {
+      "page": "/onboarding/student",
+      "regex": "^/onboarding/student(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/onboarding/student(?:/)?$"
+    },
+    {
+      "page": "/onboarding/teacher",
+      "regex": "^/onboarding/teacher(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/onboarding/teacher(?:/)?$"
+    },
+    {
+      "page": "/practice",
+      "regex": "^/practice(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/practice(?:/)?$"
+    },
+    {
+      "page": "/practice/correct-spelling",
+      "regex": "^/practice/correct\\-spelling(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/practice/correct\\-spelling(?:/)?$"
+    },
+    {
+      "page": "/practice/fill-in-blank",
+      "regex": "^/practice/fill\\-in\\-blank(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/practice/fill\\-in\\-blank(?:/)?$"
+    },
+    {
+      "page": "/practice/select-topic",
+      "regex": "^/practice/select\\-topic(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/practice/select\\-topic(?:/)?$"
+    },
+    {
+      "page": "/privacy-policy",
+      "regex": "^/privacy\\-policy(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/privacy\\-policy(?:/)?$"
+    },
+    {
+      "page": "/refund-policy",
+      "regex": "^/refund\\-policy(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/refund\\-policy(?:/)?$"
+    },
+    {
+      "page": "/stories",
+      "regex": "^/stories(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/stories(?:/)?$"
+    },
+    {
+      "page": "/stories/learn",
+      "regex": "^/stories/learn(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/stories/learn(?:/)?$"
+    },
+    {
+      "page": "/stories/learn/by-grammar",
+      "regex": "^/stories/learn/by\\-grammar(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/stories/learn/by\\-grammar(?:/)?$"
+    },
+    {
+      "page": "/stories/learn/by-level",
+      "regex": "^/stories/learn/by\\-level(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/stories/learn/by\\-level(?:/)?$"
+    },
+    {
+      "page": "/stories/learn/by-theme",
+      "regex": "^/stories/learn/by\\-theme(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/stories/learn/by\\-theme(?:/)?$"
+    },
+    {
+      "page": "/teacher-dashboard",
+      "regex": "^/teacher\\-dashboard(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/teacher\\-dashboard(?:/)?$"
+    },
+    {
+      "page": "/teacher-dashboard/assignments",
+      "regex": "^/teacher\\-dashboard/assignments(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/teacher\\-dashboard/assignments(?:/)?$"
+    },
+    {
+      "page": "/teacher-dashboard/calendar",
+      "regex": "^/teacher\\-dashboard/calendar(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/teacher\\-dashboard/calendar(?:/)?$"
+    },
+    {
+      "page": "/teacher-dashboard/classes",
+      "regex": "^/teacher\\-dashboard/classes(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/teacher\\-dashboard/classes(?:/)?$"
+    },
+    {
+      "page": "/teacher-dashboard/profile",
+      "regex": "^/teacher\\-dashboard/profile(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/teacher\\-dashboard/profile(?:/)?$"
+    },
+    {
+      "page": "/teacher-dashboard/referral",
+      "regex": "^/teacher\\-dashboard/referral(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/teacher\\-dashboard/referral(?:/)?$"
+    },
+    {
+      "page": "/teacher-dashboard/students",
+      "regex": "^/teacher\\-dashboard/students(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/teacher\\-dashboard/students(?:/)?$"
+    },
+    {
+      "page": "/terms-conditions",
+      "regex": "^/terms\\-conditions(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/terms\\-conditions(?:/)?$"
+    },
+    {
+      "page": "/vocabulary",
+      "regex": "^/vocabulary(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/vocabulary(?:/)?$"
+    },
+    {
+      "page": "/vocabulary/learn",
+      "regex": "^/vocabulary/learn(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/vocabulary/learn(?:/)?$"
+    },
+    {
+      "page": "/vocabulary/lessons/activities",
+      "regex": "^/vocabulary/lessons/activities(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/vocabulary/lessons/activities(?:/)?$"
+    },
+    {
+      "page": "/vocabulary/lessons/learn",
+      "regex": "^/vocabulary/lessons/learn(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/vocabulary/lessons/learn(?:/)?$"
+    },
+    {
+      "page": "/vocabulary/lessons/review",
+      "regex": "^/vocabulary/lessons/review(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/vocabulary/lessons/review(?:/)?$"
+    },
+    {
+      "page": "/vocabulary/lessons/review/wordlists",
+      "regex": "^/vocabulary/lessons/review/wordlists(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/vocabulary/lessons/review/wordlists(?:/)?$"
+    },
+    {
+      "page": "/vocabulary/lessons/review/wordlists/session",
+      "regex": "^/vocabulary/lessons/review/wordlists/session(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/vocabulary/lessons/review/wordlists/session(?:/)?$"
+    },
+    {
+      "page": "/vocabulary/lessons/review/words",
+      "regex": "^/vocabulary/lessons/review/words(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/vocabulary/lessons/review/words(?:/)?$"
+    },
+    {
+      "page": "/vocabulary/lessons/review/words/session",
+      "regex": "^/vocabulary/lessons/review/words/session(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/vocabulary/lessons/review/words/session(?:/)?$"
+    },
+    {
+      "page": "/vocabulary/practice",
+      "regex": "^/vocabulary/practice(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/vocabulary/practice(?:/)?$"
+    }
+  ],
+  "dataRoutes": [],
+  "rsc": {
+    "header": "rsc",
+    "varyHeader": "rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch",
+    "prefetchHeader": "next-router-prefetch",
+    "didPostponeHeader": "x-nextjs-postponed",
+    "contentTypeHeader": "text/x-component",
+    "suffix": ".rsc",
+    "prefetchSegmentHeader": "next-router-segment-prefetch",
+    "prefetchSegmentSuffix": ".segment.rsc",
+    "prefetchSegmentDirSuffix": ".segments",
+    "clientParamParsing": false,
+    "dynamicRSCPrerender": false
+  },
+  "rewriteHeaders": {
+    "pathHeader": "x-nextjs-rewritten-path",
+    "queryHeader": "x-nextjs-rewritten-query"
+  }
+}

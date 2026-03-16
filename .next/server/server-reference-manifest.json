@@ -1,0 +1,1802 @@
+{
+  "node": {
+    "00d877867770cd652d6c52e02d90a97ed5f3ee7033": {
+      "workers": {
+        "app/404/page": {
+          "moduleId": 79816,
+          "async": false,
+          "exportedName": "invalidateCacheAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
+        },
+        "app/_not-found/page": {
+          "moduleId": 9101,
+          "async": false,
+          "exportedName": "invalidateCacheAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
+        },
+        "app/ai-practice/general/page": {
+          "moduleId": 16737,
+          "async": false,
+          "exportedName": "invalidateCacheAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
+        },
+        "app/ai-practice/page": {
+          "moduleId": 83590,
+          "async": false,
+          "exportedName": "invalidateCacheAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
+        },
+        "app/ai-practice/scenarios/chats/[topicSlug]/chat/page": {
+          "moduleId": 22516,
+          "async": false,
+          "exportedName": "invalidateCacheAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
+        },
+        "app/ai-practice/scenarios/chats/page": {
+          "moduleId": 53057,
+          "async": false,
+          "exportedName": "invalidateCacheAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
+        },
+        "app/ai-practice/scenarios/missions/page": {
+          "moduleId": 16306,
+          "async": false,
+          "exportedName": "invalidateCacheAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
+        },
+        "app/ai-practice/scenarios/profession/page": {
+          "moduleId": 42736,
+          "async": false,
+          "exportedName": "invalidateCacheAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
+        },
+        "app/blogs/page": {
+          "moduleId": 98821,
+          "async": false,
+          "exportedName": "invalidateCacheAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
+        },
+        "app/dashboard/assignments/page": {
+          "moduleId": 6298,
+          "async": false,
+          "exportedName": "invalidateCacheAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
+        },
+        "app/dashboard/friends/page": {
+          "moduleId": 90369,
+          "async": false,
+          "exportedName": "invalidateCacheAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
+        },
+        "app/dashboard/page": {
+          "moduleId": 40520,
+          "async": false,
+          "exportedName": "invalidateCacheAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
+        },
+        "app/dashboard/progress/page": {
+          "moduleId": 50683,
+          "async": false,
+          "exportedName": "invalidateCacheAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
+        },
+        "app/dashboard/referral/page": {
+          "moduleId": 51056,
+          "async": false,
+          "exportedName": "invalidateCacheAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
+        },
+        "app/dashboard/teachers/page": {
+          "moduleId": 99581,
+          "async": false,
+          "exportedName": "invalidateCacheAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
+        },
+        "app/find-teacher/page": {
+          "moduleId": 97106,
+          "async": false,
+          "exportedName": "invalidateCacheAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
+        },
+        "app/grammar/lessons/[noteId]/page": {
+          "moduleId": 1116,
+          "async": false,
+          "exportedName": "invalidateCacheAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
+        },
+        "app/grammar/lessons/page": {
+          "moduleId": 38195,
+          "async": false,
+          "exportedName": "invalidateCacheAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
+        },
+        "app/grammar/page": {
+          "moduleId": 89139,
+          "async": false,
+          "exportedName": "invalidateCacheAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
+        },
+        "app/grammar/practice/page": {
+          "moduleId": 39914,
+          "async": false,
+          "exportedName": "invalidateCacheAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
+        },
+        "app/onboarding/new-profile/page": {
+          "moduleId": 57357,
+          "async": false,
+          "exportedName": "invalidateCacheAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
+        },
+        "app/onboarding/student/page": {
+          "moduleId": 14169,
+          "async": false,
+          "exportedName": "invalidateCacheAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
+        },
+        "app/onboarding/teacher/page": {
+          "moduleId": 55966,
+          "async": false,
+          "exportedName": "invalidateCacheAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
+        },
+        "app/page": {
+          "moduleId": 63731,
+          "async": false,
+          "exportedName": "invalidateCacheAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
+        },
+        "app/practice/correct-spelling/page": {
+          "moduleId": 25222,
+          "async": false,
+          "exportedName": "invalidateCacheAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
+        },
+        "app/practice/fill-in-blank/page": {
+          "moduleId": 44768,
+          "async": false,
+          "exportedName": "invalidateCacheAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
+        },
+        "app/practice/page": {
+          "moduleId": 96501,
+          "async": false,
+          "exportedName": "invalidateCacheAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
+        },
+        "app/practice/select-topic/page": {
+          "moduleId": 25873,
+          "async": false,
+          "exportedName": "invalidateCacheAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
+        },
+        "app/privacy-policy/page": {
+          "moduleId": 44862,
+          "async": false,
+          "exportedName": "invalidateCacheAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
+        },
+        "app/profile/[username]/page": {
+          "moduleId": 82668,
+          "async": false,
+          "exportedName": "invalidateCacheAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
+        },
+        "app/refund-policy/page": {
+          "moduleId": 38934,
+          "async": false,
+          "exportedName": "invalidateCacheAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
+        },
+        "app/sign-in/[[...sign-in]]/page": {
+          "moduleId": 68459,
+          "async": false,
+          "exportedName": "invalidateCacheAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
+        },
+        "app/sign-up/[[...sign-up]]/page": {
+          "moduleId": 91415,
+          "async": false,
+          "exportedName": "invalidateCacheAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
+        },
+        "app/stories/[storyId]/page": {
+          "moduleId": 36616,
+          "async": false,
+          "exportedName": "invalidateCacheAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
+        },
+        "app/stories/learn/by-grammar/[topic]/page": {
+          "moduleId": 59342,
+          "async": false,
+          "exportedName": "invalidateCacheAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
+        },
+        "app/stories/learn/by-grammar/page": {
+          "moduleId": 61163,
+          "async": false,
+          "exportedName": "invalidateCacheAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
+        },
+        "app/stories/learn/by-level/[level]/page": {
+          "moduleId": 90844,
+          "async": false,
+          "exportedName": "invalidateCacheAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
+        },
+        "app/stories/learn/by-level/page": {
+          "moduleId": 71298,
+          "async": false,
+          "exportedName": "invalidateCacheAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
+        },
+        "app/stories/learn/by-theme/[theme]/page": {
+          "moduleId": 83293,
+          "async": false,
+          "exportedName": "invalidateCacheAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
+        },
+        "app/stories/learn/by-theme/page": {
+          "moduleId": 23048,
+          "async": false,
+          "exportedName": "invalidateCacheAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
+        },
+        "app/stories/learn/page": {
+          "moduleId": 56101,
+          "async": false,
+          "exportedName": "invalidateCacheAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
+        },
+        "app/stories/page": {
+          "moduleId": 43261,
+          "async": false,
+          "exportedName": "invalidateCacheAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
+        },
+        "app/teacher-dashboard/assignments/page": {
+          "moduleId": 96986,
+          "async": false,
+          "exportedName": "invalidateCacheAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
+        },
+        "app/teacher-dashboard/calendar/page": {
+          "moduleId": 80824,
+          "async": false,
+          "exportedName": "invalidateCacheAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
+        },
+        "app/teacher-dashboard/classes/page": {
+          "moduleId": 54550,
+          "async": false,
+          "exportedName": "invalidateCacheAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
+        },
+        "app/teacher-dashboard/page": {
+          "moduleId": 9394,
+          "async": false,
+          "exportedName": "invalidateCacheAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
+        },
+        "app/teacher-dashboard/profile/page": {
+          "moduleId": 28131,
+          "async": false,
+          "exportedName": "invalidateCacheAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
+        },
+        "app/teacher-dashboard/referral/page": {
+          "moduleId": 10003,
+          "async": false,
+          "exportedName": "invalidateCacheAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
+        },
+        "app/teacher-dashboard/students/page": {
+          "moduleId": 45751,
+          "async": false,
+          "exportedName": "invalidateCacheAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
+        },
+        "app/terms-conditions/page": {
+          "moduleId": 32597,
+          "async": false,
+          "exportedName": "invalidateCacheAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
+        },
+        "app/vocabulary/flashcards/[level]/[category]/page": {
+          "moduleId": 48082,
+          "async": false,
+          "exportedName": "invalidateCacheAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
+        },
+        "app/vocabulary/learn/page": {
+          "moduleId": 36266,
+          "async": false,
+          "exportedName": "invalidateCacheAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
+        },
+        "app/vocabulary/lessons/activities/page": {
+          "moduleId": 68924,
+          "async": false,
+          "exportedName": "invalidateCacheAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
+        },
+        "app/vocabulary/lessons/learn/[level]/[category]/page": {
+          "moduleId": 49431,
+          "async": false,
+          "exportedName": "invalidateCacheAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
+        },
+        "app/vocabulary/lessons/learn/[level]/page": {
+          "moduleId": 76944,
+          "async": false,
+          "exportedName": "invalidateCacheAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
+        },
+        "app/vocabulary/lessons/learn/page": {
+          "moduleId": 59727,
+          "async": false,
+          "exportedName": "invalidateCacheAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
+        },
+        "app/vocabulary/lessons/review/page": {
+          "moduleId": 39077,
+          "async": false,
+          "exportedName": "invalidateCacheAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
+        },
+        "app/vocabulary/lessons/review/wordlists/page": {
+          "moduleId": 78897,
+          "async": false,
+          "exportedName": "invalidateCacheAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
+        },
+        "app/vocabulary/lessons/review/wordlists/session/page": {
+          "moduleId": 97420,
+          "async": false,
+          "exportedName": "invalidateCacheAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
+        },
+        "app/vocabulary/lessons/review/words/page": {
+          "moduleId": 18817,
+          "async": false,
+          "exportedName": "invalidateCacheAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
+        },
+        "app/vocabulary/lessons/review/words/session/page": {
+          "moduleId": 14494,
+          "async": false,
+          "exportedName": "invalidateCacheAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
+        },
+        "app/vocabulary/page": {
+          "moduleId": 34103,
+          "async": false,
+          "exportedName": "invalidateCacheAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
+        },
+        "app/vocabulary/practice/page": {
+          "moduleId": 15786,
+          "async": false,
+          "exportedName": "invalidateCacheAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
+        }
+      },
+      "layer": {
+        "app/404/page": "action-browser",
+        "app/_not-found/page": "action-browser",
+        "app/ai-practice/general/page": "action-browser",
+        "app/ai-practice/page": "action-browser",
+        "app/ai-practice/scenarios/chats/[topicSlug]/chat/page": "action-browser",
+        "app/ai-practice/scenarios/chats/page": "action-browser",
+        "app/ai-practice/scenarios/missions/page": "action-browser",
+        "app/ai-practice/scenarios/profession/page": "action-browser",
+        "app/blogs/page": "action-browser",
+        "app/dashboard/assignments/page": "action-browser",
+        "app/dashboard/friends/page": "action-browser",
+        "app/dashboard/page": "action-browser",
+        "app/dashboard/progress/page": "action-browser",
+        "app/dashboard/referral/page": "action-browser",
+        "app/dashboard/teachers/page": "action-browser",
+        "app/find-teacher/page": "action-browser",
+        "app/grammar/lessons/[noteId]/page": "action-browser",
+        "app/grammar/lessons/page": "action-browser",
+        "app/grammar/page": "action-browser",
+        "app/grammar/practice/page": "action-browser",
+        "app/onboarding/new-profile/page": "action-browser",
+        "app/onboarding/student/page": "action-browser",
+        "app/onboarding/teacher/page": "action-browser",
+        "app/page": "action-browser",
+        "app/practice/correct-spelling/page": "action-browser",
+        "app/practice/fill-in-blank/page": "action-browser",
+        "app/practice/page": "action-browser",
+        "app/practice/select-topic/page": "action-browser",
+        "app/privacy-policy/page": "action-browser",
+        "app/profile/[username]/page": "action-browser",
+        "app/refund-policy/page": "action-browser",
+        "app/sign-in/[[...sign-in]]/page": "action-browser",
+        "app/sign-up/[[...sign-up]]/page": "action-browser",
+        "app/stories/[storyId]/page": "action-browser",
+        "app/stories/learn/by-grammar/[topic]/page": "action-browser",
+        "app/stories/learn/by-grammar/page": "action-browser",
+        "app/stories/learn/by-level/[level]/page": "action-browser",
+        "app/stories/learn/by-level/page": "action-browser",
+        "app/stories/learn/by-theme/[theme]/page": "action-browser",
+        "app/stories/learn/by-theme/page": "action-browser",
+        "app/stories/learn/page": "action-browser",
+        "app/stories/page": "action-browser",
+        "app/teacher-dashboard/assignments/page": "action-browser",
+        "app/teacher-dashboard/calendar/page": "action-browser",
+        "app/teacher-dashboard/classes/page": "action-browser",
+        "app/teacher-dashboard/page": "action-browser",
+        "app/teacher-dashboard/profile/page": "action-browser",
+        "app/teacher-dashboard/referral/page": "action-browser",
+        "app/teacher-dashboard/students/page": "action-browser",
+        "app/terms-conditions/page": "action-browser",
+        "app/vocabulary/flashcards/[level]/[category]/page": "action-browser",
+        "app/vocabulary/learn/page": "action-browser",
+        "app/vocabulary/lessons/activities/page": "action-browser",
+        "app/vocabulary/lessons/learn/[level]/[category]/page": "action-browser",
+        "app/vocabulary/lessons/learn/[level]/page": "action-browser",
+        "app/vocabulary/lessons/learn/page": "action-browser",
+        "app/vocabulary/lessons/review/page": "action-browser",
+        "app/vocabulary/lessons/review/wordlists/page": "action-browser",
+        "app/vocabulary/lessons/review/wordlists/session/page": "action-browser",
+        "app/vocabulary/lessons/review/words/page": "action-browser",
+        "app/vocabulary/lessons/review/words/session/page": "action-browser",
+        "app/vocabulary/page": "action-browser",
+        "app/vocabulary/practice/page": "action-browser"
+      },
+      "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js",
+      "exportedName": "invalidateCacheAction"
+    },
+    "00861522cb046b5ffe1b34dff9d752ea1e972cab65": {
+      "workers": {
+        "app/404/page": {
+          "moduleId": 79816,
+          "async": false,
+          "exportedName": "createOrReadKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/_not-found/page": {
+          "moduleId": 9101,
+          "async": false,
+          "exportedName": "createOrReadKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/ai-practice/general/page": {
+          "moduleId": 16737,
+          "async": false,
+          "exportedName": "createOrReadKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/ai-practice/page": {
+          "moduleId": 83590,
+          "async": false,
+          "exportedName": "createOrReadKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/ai-practice/scenarios/chats/[topicSlug]/chat/page": {
+          "moduleId": 22516,
+          "async": false,
+          "exportedName": "createOrReadKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/ai-practice/scenarios/chats/page": {
+          "moduleId": 53057,
+          "async": false,
+          "exportedName": "createOrReadKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/ai-practice/scenarios/missions/page": {
+          "moduleId": 16306,
+          "async": false,
+          "exportedName": "createOrReadKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/ai-practice/scenarios/profession/page": {
+          "moduleId": 42736,
+          "async": false,
+          "exportedName": "createOrReadKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/blogs/page": {
+          "moduleId": 98821,
+          "async": false,
+          "exportedName": "createOrReadKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/dashboard/assignments/page": {
+          "moduleId": 6298,
+          "async": false,
+          "exportedName": "createOrReadKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/dashboard/friends/page": {
+          "moduleId": 90369,
+          "async": false,
+          "exportedName": "createOrReadKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/dashboard/page": {
+          "moduleId": 40520,
+          "async": false,
+          "exportedName": "createOrReadKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/dashboard/progress/page": {
+          "moduleId": 50683,
+          "async": false,
+          "exportedName": "createOrReadKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/dashboard/referral/page": {
+          "moduleId": 51056,
+          "async": false,
+          "exportedName": "createOrReadKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/dashboard/teachers/page": {
+          "moduleId": 99581,
+          "async": false,
+          "exportedName": "createOrReadKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/find-teacher/page": {
+          "moduleId": 97106,
+          "async": false,
+          "exportedName": "createOrReadKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/grammar/lessons/[noteId]/page": {
+          "moduleId": 1116,
+          "async": false,
+          "exportedName": "createOrReadKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/grammar/lessons/page": {
+          "moduleId": 38195,
+          "async": false,
+          "exportedName": "createOrReadKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/grammar/page": {
+          "moduleId": 89139,
+          "async": false,
+          "exportedName": "createOrReadKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/grammar/practice/page": {
+          "moduleId": 39914,
+          "async": false,
+          "exportedName": "createOrReadKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/onboarding/new-profile/page": {
+          "moduleId": 57357,
+          "async": false,
+          "exportedName": "createOrReadKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/onboarding/student/page": {
+          "moduleId": 14169,
+          "async": false,
+          "exportedName": "createOrReadKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/onboarding/teacher/page": {
+          "moduleId": 55966,
+          "async": false,
+          "exportedName": "createOrReadKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/page": {
+          "moduleId": 63731,
+          "async": false,
+          "exportedName": "createOrReadKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/practice/correct-spelling/page": {
+          "moduleId": 25222,
+          "async": false,
+          "exportedName": "createOrReadKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/practice/fill-in-blank/page": {
+          "moduleId": 44768,
+          "async": false,
+          "exportedName": "createOrReadKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/practice/page": {
+          "moduleId": 96501,
+          "async": false,
+          "exportedName": "createOrReadKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/practice/select-topic/page": {
+          "moduleId": 25873,
+          "async": false,
+          "exportedName": "createOrReadKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/privacy-policy/page": {
+          "moduleId": 44862,
+          "async": false,
+          "exportedName": "createOrReadKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/profile/[username]/page": {
+          "moduleId": 82668,
+          "async": false,
+          "exportedName": "createOrReadKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/refund-policy/page": {
+          "moduleId": 38934,
+          "async": false,
+          "exportedName": "createOrReadKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/sign-in/[[...sign-in]]/page": {
+          "moduleId": 68459,
+          "async": false,
+          "exportedName": "createOrReadKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/sign-up/[[...sign-up]]/page": {
+          "moduleId": 91415,
+          "async": false,
+          "exportedName": "createOrReadKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/stories/[storyId]/page": {
+          "moduleId": 36616,
+          "async": false,
+          "exportedName": "createOrReadKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/stories/learn/by-grammar/[topic]/page": {
+          "moduleId": 59342,
+          "async": false,
+          "exportedName": "createOrReadKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/stories/learn/by-grammar/page": {
+          "moduleId": 61163,
+          "async": false,
+          "exportedName": "createOrReadKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/stories/learn/by-level/[level]/page": {
+          "moduleId": 90844,
+          "async": false,
+          "exportedName": "createOrReadKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/stories/learn/by-level/page": {
+          "moduleId": 71298,
+          "async": false,
+          "exportedName": "createOrReadKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/stories/learn/by-theme/[theme]/page": {
+          "moduleId": 83293,
+          "async": false,
+          "exportedName": "createOrReadKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/stories/learn/by-theme/page": {
+          "moduleId": 23048,
+          "async": false,
+          "exportedName": "createOrReadKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/stories/learn/page": {
+          "moduleId": 56101,
+          "async": false,
+          "exportedName": "createOrReadKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/stories/page": {
+          "moduleId": 43261,
+          "async": false,
+          "exportedName": "createOrReadKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/teacher-dashboard/assignments/page": {
+          "moduleId": 96986,
+          "async": false,
+          "exportedName": "createOrReadKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/teacher-dashboard/calendar/page": {
+          "moduleId": 80824,
+          "async": false,
+          "exportedName": "createOrReadKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/teacher-dashboard/classes/page": {
+          "moduleId": 54550,
+          "async": false,
+          "exportedName": "createOrReadKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/teacher-dashboard/page": {
+          "moduleId": 9394,
+          "async": false,
+          "exportedName": "createOrReadKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/teacher-dashboard/profile/page": {
+          "moduleId": 28131,
+          "async": false,
+          "exportedName": "createOrReadKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/teacher-dashboard/referral/page": {
+          "moduleId": 10003,
+          "async": false,
+          "exportedName": "createOrReadKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/teacher-dashboard/students/page": {
+          "moduleId": 45751,
+          "async": false,
+          "exportedName": "createOrReadKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/terms-conditions/page": {
+          "moduleId": 32597,
+          "async": false,
+          "exportedName": "createOrReadKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/vocabulary/flashcards/[level]/[category]/page": {
+          "moduleId": 48082,
+          "async": false,
+          "exportedName": "createOrReadKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/vocabulary/learn/page": {
+          "moduleId": 36266,
+          "async": false,
+          "exportedName": "createOrReadKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/vocabulary/lessons/activities/page": {
+          "moduleId": 68924,
+          "async": false,
+          "exportedName": "createOrReadKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/vocabulary/lessons/learn/[level]/[category]/page": {
+          "moduleId": 49431,
+          "async": false,
+          "exportedName": "createOrReadKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/vocabulary/lessons/learn/[level]/page": {
+          "moduleId": 76944,
+          "async": false,
+          "exportedName": "createOrReadKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/vocabulary/lessons/learn/page": {
+          "moduleId": 59727,
+          "async": false,
+          "exportedName": "createOrReadKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/vocabulary/lessons/review/page": {
+          "moduleId": 39077,
+          "async": false,
+          "exportedName": "createOrReadKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/vocabulary/lessons/review/wordlists/page": {
+          "moduleId": 78897,
+          "async": false,
+          "exportedName": "createOrReadKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/vocabulary/lessons/review/wordlists/session/page": {
+          "moduleId": 97420,
+          "async": false,
+          "exportedName": "createOrReadKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/vocabulary/lessons/review/words/page": {
+          "moduleId": 18817,
+          "async": false,
+          "exportedName": "createOrReadKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/vocabulary/lessons/review/words/session/page": {
+          "moduleId": 14494,
+          "async": false,
+          "exportedName": "createOrReadKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/vocabulary/page": {
+          "moduleId": 34103,
+          "async": false,
+          "exportedName": "createOrReadKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/vocabulary/practice/page": {
+          "moduleId": 15786,
+          "async": false,
+          "exportedName": "createOrReadKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        }
+      },
+      "layer": {
+        "app/404/page": "rsc",
+        "app/_not-found/page": "rsc",
+        "app/ai-practice/general/page": "rsc",
+        "app/ai-practice/page": "rsc",
+        "app/ai-practice/scenarios/chats/[topicSlug]/chat/page": "rsc",
+        "app/ai-practice/scenarios/chats/page": "rsc",
+        "app/ai-practice/scenarios/missions/page": "rsc",
+        "app/ai-practice/scenarios/profession/page": "rsc",
+        "app/blogs/page": "rsc",
+        "app/dashboard/assignments/page": "rsc",
+        "app/dashboard/friends/page": "rsc",
+        "app/dashboard/page": "rsc",
+        "app/dashboard/progress/page": "rsc",
+        "app/dashboard/referral/page": "rsc",
+        "app/dashboard/teachers/page": "rsc",
+        "app/find-teacher/page": "rsc",
+        "app/grammar/lessons/[noteId]/page": "rsc",
+        "app/grammar/lessons/page": "rsc",
+        "app/grammar/page": "rsc",
+        "app/grammar/practice/page": "rsc",
+        "app/onboarding/new-profile/page": "rsc",
+        "app/onboarding/student/page": "rsc",
+        "app/onboarding/teacher/page": "rsc",
+        "app/page": "rsc",
+        "app/practice/correct-spelling/page": "rsc",
+        "app/practice/fill-in-blank/page": "rsc",
+        "app/practice/page": "rsc",
+        "app/practice/select-topic/page": "rsc",
+        "app/privacy-policy/page": "rsc",
+        "app/profile/[username]/page": "rsc",
+        "app/refund-policy/page": "rsc",
+        "app/sign-in/[[...sign-in]]/page": "rsc",
+        "app/sign-up/[[...sign-up]]/page": "rsc",
+        "app/stories/[storyId]/page": "rsc",
+        "app/stories/learn/by-grammar/[topic]/page": "rsc",
+        "app/stories/learn/by-grammar/page": "rsc",
+        "app/stories/learn/by-level/[level]/page": "rsc",
+        "app/stories/learn/by-level/page": "rsc",
+        "app/stories/learn/by-theme/[theme]/page": "rsc",
+        "app/stories/learn/by-theme/page": "rsc",
+        "app/stories/learn/page": "rsc",
+        "app/stories/page": "rsc",
+        "app/teacher-dashboard/assignments/page": "rsc",
+        "app/teacher-dashboard/calendar/page": "rsc",
+        "app/teacher-dashboard/classes/page": "rsc",
+        "app/teacher-dashboard/page": "rsc",
+        "app/teacher-dashboard/profile/page": "rsc",
+        "app/teacher-dashboard/referral/page": "rsc",
+        "app/teacher-dashboard/students/page": "rsc",
+        "app/terms-conditions/page": "rsc",
+        "app/vocabulary/flashcards/[level]/[category]/page": "rsc",
+        "app/vocabulary/learn/page": "rsc",
+        "app/vocabulary/lessons/activities/page": "rsc",
+        "app/vocabulary/lessons/learn/[level]/[category]/page": "rsc",
+        "app/vocabulary/lessons/learn/[level]/page": "rsc",
+        "app/vocabulary/lessons/learn/page": "rsc",
+        "app/vocabulary/lessons/review/page": "rsc",
+        "app/vocabulary/lessons/review/wordlists/page": "rsc",
+        "app/vocabulary/lessons/review/wordlists/session/page": "rsc",
+        "app/vocabulary/lessons/review/words/page": "rsc",
+        "app/vocabulary/lessons/review/words/session/page": "rsc",
+        "app/vocabulary/page": "rsc",
+        "app/vocabulary/practice/page": "rsc"
+      },
+      "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js",
+      "exportedName": "createOrReadKeylessAction"
+    },
+    "009277e87c110946f79a5861b959cf98661fb3a765": {
+      "workers": {
+        "app/404/page": {
+          "moduleId": 79816,
+          "async": false,
+          "exportedName": "deleteKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/_not-found/page": {
+          "moduleId": 9101,
+          "async": false,
+          "exportedName": "deleteKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/ai-practice/general/page": {
+          "moduleId": 16737,
+          "async": false,
+          "exportedName": "deleteKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/ai-practice/page": {
+          "moduleId": 83590,
+          "async": false,
+          "exportedName": "deleteKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/ai-practice/scenarios/chats/[topicSlug]/chat/page": {
+          "moduleId": 22516,
+          "async": false,
+          "exportedName": "deleteKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/ai-practice/scenarios/chats/page": {
+          "moduleId": 53057,
+          "async": false,
+          "exportedName": "deleteKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/ai-practice/scenarios/missions/page": {
+          "moduleId": 16306,
+          "async": false,
+          "exportedName": "deleteKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/ai-practice/scenarios/profession/page": {
+          "moduleId": 42736,
+          "async": false,
+          "exportedName": "deleteKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/blogs/page": {
+          "moduleId": 98821,
+          "async": false,
+          "exportedName": "deleteKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/dashboard/assignments/page": {
+          "moduleId": 6298,
+          "async": false,
+          "exportedName": "deleteKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/dashboard/friends/page": {
+          "moduleId": 90369,
+          "async": false,
+          "exportedName": "deleteKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/dashboard/page": {
+          "moduleId": 40520,
+          "async": false,
+          "exportedName": "deleteKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/dashboard/progress/page": {
+          "moduleId": 50683,
+          "async": false,
+          "exportedName": "deleteKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/dashboard/referral/page": {
+          "moduleId": 51056,
+          "async": false,
+          "exportedName": "deleteKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/dashboard/teachers/page": {
+          "moduleId": 99581,
+          "async": false,
+          "exportedName": "deleteKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/find-teacher/page": {
+          "moduleId": 97106,
+          "async": false,
+          "exportedName": "deleteKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/grammar/lessons/[noteId]/page": {
+          "moduleId": 1116,
+          "async": false,
+          "exportedName": "deleteKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/grammar/lessons/page": {
+          "moduleId": 38195,
+          "async": false,
+          "exportedName": "deleteKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/grammar/page": {
+          "moduleId": 89139,
+          "async": false,
+          "exportedName": "deleteKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/grammar/practice/page": {
+          "moduleId": 39914,
+          "async": false,
+          "exportedName": "deleteKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/onboarding/new-profile/page": {
+          "moduleId": 57357,
+          "async": false,
+          "exportedName": "deleteKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/onboarding/student/page": {
+          "moduleId": 14169,
+          "async": false,
+          "exportedName": "deleteKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/onboarding/teacher/page": {
+          "moduleId": 55966,
+          "async": false,
+          "exportedName": "deleteKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/page": {
+          "moduleId": 63731,
+          "async": false,
+          "exportedName": "deleteKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/practice/correct-spelling/page": {
+          "moduleId": 25222,
+          "async": false,
+          "exportedName": "deleteKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/practice/fill-in-blank/page": {
+          "moduleId": 44768,
+          "async": false,
+          "exportedName": "deleteKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/practice/page": {
+          "moduleId": 96501,
+          "async": false,
+          "exportedName": "deleteKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/practice/select-topic/page": {
+          "moduleId": 25873,
+          "async": false,
+          "exportedName": "deleteKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/privacy-policy/page": {
+          "moduleId": 44862,
+          "async": false,
+          "exportedName": "deleteKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/profile/[username]/page": {
+          "moduleId": 82668,
+          "async": false,
+          "exportedName": "deleteKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/refund-policy/page": {
+          "moduleId": 38934,
+          "async": false,
+          "exportedName": "deleteKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/sign-in/[[...sign-in]]/page": {
+          "moduleId": 68459,
+          "async": false,
+          "exportedName": "deleteKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/sign-up/[[...sign-up]]/page": {
+          "moduleId": 91415,
+          "async": false,
+          "exportedName": "deleteKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/stories/[storyId]/page": {
+          "moduleId": 36616,
+          "async": false,
+          "exportedName": "deleteKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/stories/learn/by-grammar/[topic]/page": {
+          "moduleId": 59342,
+          "async": false,
+          "exportedName": "deleteKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/stories/learn/by-grammar/page": {
+          "moduleId": 61163,
+          "async": false,
+          "exportedName": "deleteKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/stories/learn/by-level/[level]/page": {
+          "moduleId": 90844,
+          "async": false,
+          "exportedName": "deleteKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/stories/learn/by-level/page": {
+          "moduleId": 71298,
+          "async": false,
+          "exportedName": "deleteKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/stories/learn/by-theme/[theme]/page": {
+          "moduleId": 83293,
+          "async": false,
+          "exportedName": "deleteKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/stories/learn/by-theme/page": {
+          "moduleId": 23048,
+          "async": false,
+          "exportedName": "deleteKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/stories/learn/page": {
+          "moduleId": 56101,
+          "async": false,
+          "exportedName": "deleteKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/stories/page": {
+          "moduleId": 43261,
+          "async": false,
+          "exportedName": "deleteKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/teacher-dashboard/assignments/page": {
+          "moduleId": 96986,
+          "async": false,
+          "exportedName": "deleteKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/teacher-dashboard/calendar/page": {
+          "moduleId": 80824,
+          "async": false,
+          "exportedName": "deleteKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/teacher-dashboard/classes/page": {
+          "moduleId": 54550,
+          "async": false,
+          "exportedName": "deleteKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/teacher-dashboard/page": {
+          "moduleId": 9394,
+          "async": false,
+          "exportedName": "deleteKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/teacher-dashboard/profile/page": {
+          "moduleId": 28131,
+          "async": false,
+          "exportedName": "deleteKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/teacher-dashboard/referral/page": {
+          "moduleId": 10003,
+          "async": false,
+          "exportedName": "deleteKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/teacher-dashboard/students/page": {
+          "moduleId": 45751,
+          "async": false,
+          "exportedName": "deleteKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/terms-conditions/page": {
+          "moduleId": 32597,
+          "async": false,
+          "exportedName": "deleteKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/vocabulary/flashcards/[level]/[category]/page": {
+          "moduleId": 48082,
+          "async": false,
+          "exportedName": "deleteKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/vocabulary/learn/page": {
+          "moduleId": 36266,
+          "async": false,
+          "exportedName": "deleteKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/vocabulary/lessons/activities/page": {
+          "moduleId": 68924,
+          "async": false,
+          "exportedName": "deleteKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/vocabulary/lessons/learn/[level]/[category]/page": {
+          "moduleId": 49431,
+          "async": false,
+          "exportedName": "deleteKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/vocabulary/lessons/learn/[level]/page": {
+          "moduleId": 76944,
+          "async": false,
+          "exportedName": "deleteKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/vocabulary/lessons/learn/page": {
+          "moduleId": 59727,
+          "async": false,
+          "exportedName": "deleteKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/vocabulary/lessons/review/page": {
+          "moduleId": 39077,
+          "async": false,
+          "exportedName": "deleteKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/vocabulary/lessons/review/wordlists/page": {
+          "moduleId": 78897,
+          "async": false,
+          "exportedName": "deleteKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/vocabulary/lessons/review/wordlists/session/page": {
+          "moduleId": 97420,
+          "async": false,
+          "exportedName": "deleteKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/vocabulary/lessons/review/words/page": {
+          "moduleId": 18817,
+          "async": false,
+          "exportedName": "deleteKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/vocabulary/lessons/review/words/session/page": {
+          "moduleId": 14494,
+          "async": false,
+          "exportedName": "deleteKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/vocabulary/page": {
+          "moduleId": 34103,
+          "async": false,
+          "exportedName": "deleteKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/vocabulary/practice/page": {
+          "moduleId": 15786,
+          "async": false,
+          "exportedName": "deleteKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        }
+      },
+      "layer": {
+        "app/404/page": "action-browser",
+        "app/_not-found/page": "action-browser",
+        "app/ai-practice/general/page": "action-browser",
+        "app/ai-practice/page": "action-browser",
+        "app/ai-practice/scenarios/chats/[topicSlug]/chat/page": "action-browser",
+        "app/ai-practice/scenarios/chats/page": "action-browser",
+        "app/ai-practice/scenarios/missions/page": "action-browser",
+        "app/ai-practice/scenarios/profession/page": "action-browser",
+        "app/blogs/page": "action-browser",
+        "app/dashboard/assignments/page": "action-browser",
+        "app/dashboard/friends/page": "action-browser",
+        "app/dashboard/page": "action-browser",
+        "app/dashboard/progress/page": "action-browser",
+        "app/dashboard/referral/page": "action-browser",
+        "app/dashboard/teachers/page": "action-browser",
+        "app/find-teacher/page": "action-browser",
+        "app/grammar/lessons/[noteId]/page": "action-browser",
+        "app/grammar/lessons/page": "action-browser",
+        "app/grammar/page": "action-browser",
+        "app/grammar/practice/page": "action-browser",
+        "app/onboarding/new-profile/page": "action-browser",
+        "app/onboarding/student/page": "action-browser",
+        "app/onboarding/teacher/page": "action-browser",
+        "app/page": "action-browser",
+        "app/practice/correct-spelling/page": "action-browser",
+        "app/practice/fill-in-blank/page": "action-browser",
+        "app/practice/page": "action-browser",
+        "app/practice/select-topic/page": "action-browser",
+        "app/privacy-policy/page": "action-browser",
+        "app/profile/[username]/page": "action-browser",
+        "app/refund-policy/page": "action-browser",
+        "app/sign-in/[[...sign-in]]/page": "action-browser",
+        "app/sign-up/[[...sign-up]]/page": "action-browser",
+        "app/stories/[storyId]/page": "action-browser",
+        "app/stories/learn/by-grammar/[topic]/page": "action-browser",
+        "app/stories/learn/by-grammar/page": "action-browser",
+        "app/stories/learn/by-level/[level]/page": "action-browser",
+        "app/stories/learn/by-level/page": "action-browser",
+        "app/stories/learn/by-theme/[theme]/page": "action-browser",
+        "app/stories/learn/by-theme/page": "action-browser",
+        "app/stories/learn/page": "action-browser",
+        "app/stories/page": "action-browser",
+        "app/teacher-dashboard/assignments/page": "action-browser",
+        "app/teacher-dashboard/calendar/page": "action-browser",
+        "app/teacher-dashboard/classes/page": "action-browser",
+        "app/teacher-dashboard/page": "action-browser",
+        "app/teacher-dashboard/profile/page": "action-browser",
+        "app/teacher-dashboard/referral/page": "action-browser",
+        "app/teacher-dashboard/students/page": "action-browser",
+        "app/terms-conditions/page": "action-browser",
+        "app/vocabulary/flashcards/[level]/[category]/page": "action-browser",
+        "app/vocabulary/learn/page": "action-browser",
+        "app/vocabulary/lessons/activities/page": "action-browser",
+        "app/vocabulary/lessons/learn/[level]/[category]/page": "action-browser",
+        "app/vocabulary/lessons/learn/[level]/page": "action-browser",
+        "app/vocabulary/lessons/learn/page": "action-browser",
+        "app/vocabulary/lessons/review/page": "action-browser",
+        "app/vocabulary/lessons/review/wordlists/page": "action-browser",
+        "app/vocabulary/lessons/review/wordlists/session/page": "action-browser",
+        "app/vocabulary/lessons/review/words/page": "action-browser",
+        "app/vocabulary/lessons/review/words/session/page": "action-browser",
+        "app/vocabulary/page": "action-browser",
+        "app/vocabulary/practice/page": "action-browser"
+      },
+      "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js",
+      "exportedName": "deleteKeylessAction"
+    },
+    "408738f080daa3882da930161fff5aafe2877466c9": {
+      "workers": {
+        "app/404/page": {
+          "moduleId": 79816,
+          "async": false,
+          "exportedName": "syncKeylessConfigAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/_not-found/page": {
+          "moduleId": 9101,
+          "async": false,
+          "exportedName": "syncKeylessConfigAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/ai-practice/general/page": {
+          "moduleId": 16737,
+          "async": false,
+          "exportedName": "syncKeylessConfigAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/ai-practice/page": {
+          "moduleId": 83590,
+          "async": false,
+          "exportedName": "syncKeylessConfigAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/ai-practice/scenarios/chats/[topicSlug]/chat/page": {
+          "moduleId": 22516,
+          "async": false,
+          "exportedName": "syncKeylessConfigAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/ai-practice/scenarios/chats/page": {
+          "moduleId": 53057,
+          "async": false,
+          "exportedName": "syncKeylessConfigAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/ai-practice/scenarios/missions/page": {
+          "moduleId": 16306,
+          "async": false,
+          "exportedName": "syncKeylessConfigAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/ai-practice/scenarios/profession/page": {
+          "moduleId": 42736,
+          "async": false,
+          "exportedName": "syncKeylessConfigAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/blogs/page": {
+          "moduleId": 98821,
+          "async": false,
+          "exportedName": "syncKeylessConfigAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/dashboard/assignments/page": {
+          "moduleId": 6298,
+          "async": false,
+          "exportedName": "syncKeylessConfigAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/dashboard/friends/page": {
+          "moduleId": 90369,
+          "async": false,
+          "exportedName": "syncKeylessConfigAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/dashboard/page": {
+          "moduleId": 40520,
+          "async": false,
+          "exportedName": "syncKeylessConfigAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/dashboard/progress/page": {
+          "moduleId": 50683,
+          "async": false,
+          "exportedName": "syncKeylessConfigAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/dashboard/referral/page": {
+          "moduleId": 51056,
+          "async": false,
+          "exportedName": "syncKeylessConfigAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/dashboard/teachers/page": {
+          "moduleId": 99581,
+          "async": false,
+          "exportedName": "syncKeylessConfigAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/find-teacher/page": {
+          "moduleId": 97106,
+          "async": false,
+          "exportedName": "syncKeylessConfigAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/grammar/lessons/[noteId]/page": {
+          "moduleId": 1116,
+          "async": false,
+          "exportedName": "syncKeylessConfigAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/grammar/lessons/page": {
+          "moduleId": 38195,
+          "async": false,
+          "exportedName": "syncKeylessConfigAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/grammar/page": {
+          "moduleId": 89139,
+          "async": false,
+          "exportedName": "syncKeylessConfigAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/grammar/practice/page": {
+          "moduleId": 39914,
+          "async": false,
+          "exportedName": "syncKeylessConfigAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/onboarding/new-profile/page": {
+          "moduleId": 57357,
+          "async": false,
+          "exportedName": "syncKeylessConfigAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/onboarding/student/page": {
+          "moduleId": 14169,
+          "async": false,
+          "exportedName": "syncKeylessConfigAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/onboarding/teacher/page": {
+          "moduleId": 55966,
+          "async": false,
+          "exportedName": "syncKeylessConfigAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/page": {
+          "moduleId": 63731,
+          "async": false,
+          "exportedName": "syncKeylessConfigAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/practice/correct-spelling/page": {
+          "moduleId": 25222,
+          "async": false,
+          "exportedName": "syncKeylessConfigAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/practice/fill-in-blank/page": {
+          "moduleId": 44768,
+          "async": false,
+          "exportedName": "syncKeylessConfigAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/practice/page": {
+          "moduleId": 96501,
+          "async": false,
+          "exportedName": "syncKeylessConfigAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/practice/select-topic/page": {
+          "moduleId": 25873,
+          "async": false,
+          "exportedName": "syncKeylessConfigAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/privacy-policy/page": {
+          "moduleId": 44862,
+          "async": false,
+          "exportedName": "syncKeylessConfigAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/profile/[username]/page": {
+          "moduleId": 82668,
+          "async": false,
+          "exportedName": "syncKeylessConfigAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/refund-policy/page": {
+          "moduleId": 38934,
+          "async": false,
+          "exportedName": "syncKeylessConfigAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/sign-in/[[...sign-in]]/page": {
+          "moduleId": 68459,
+          "async": false,
+          "exportedName": "syncKeylessConfigAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/sign-up/[[...sign-up]]/page": {
+          "moduleId": 91415,
+          "async": false,
+          "exportedName": "syncKeylessConfigAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/stories/[storyId]/page": {
+          "moduleId": 36616,
+          "async": false,
+          "exportedName": "syncKeylessConfigAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/stories/learn/by-grammar/[topic]/page": {
+          "moduleId": 59342,
+          "async": false,
+          "exportedName": "syncKeylessConfigAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/stories/learn/by-grammar/page": {
+          "moduleId": 61163,
+          "async": false,
+          "exportedName": "syncKeylessConfigAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/stories/learn/by-level/[level]/page": {
+          "moduleId": 90844,
+          "async": false,
+          "exportedName": "syncKeylessConfigAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/stories/learn/by-level/page": {
+          "moduleId": 71298,
+          "async": false,
+          "exportedName": "syncKeylessConfigAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/stories/learn/by-theme/[theme]/page": {
+          "moduleId": 83293,
+          "async": false,
+          "exportedName": "syncKeylessConfigAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/stories/learn/by-theme/page": {
+          "moduleId": 23048,
+          "async": false,
+          "exportedName": "syncKeylessConfigAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/stories/learn/page": {
+          "moduleId": 56101,
+          "async": false,
+          "exportedName": "syncKeylessConfigAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/stories/page": {
+          "moduleId": 43261,
+          "async": false,
+          "exportedName": "syncKeylessConfigAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/teacher-dashboard/assignments/page": {
+          "moduleId": 96986,
+          "async": false,
+          "exportedName": "syncKeylessConfigAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/teacher-dashboard/calendar/page": {
+          "moduleId": 80824,
+          "async": false,
+          "exportedName": "syncKeylessConfigAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/teacher-dashboard/classes/page": {
+          "moduleId": 54550,
+          "async": false,
+          "exportedName": "syncKeylessConfigAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/teacher-dashboard/page": {
+          "moduleId": 9394,
+          "async": false,
+          "exportedName": "syncKeylessConfigAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/teacher-dashboard/profile/page": {
+          "moduleId": 28131,
+          "async": false,
+          "exportedName": "syncKeylessConfigAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/teacher-dashboard/referral/page": {
+          "moduleId": 10003,
+          "async": false,
+          "exportedName": "syncKeylessConfigAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/teacher-dashboard/students/page": {
+          "moduleId": 45751,
+          "async": false,
+          "exportedName": "syncKeylessConfigAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/terms-conditions/page": {
+          "moduleId": 32597,
+          "async": false,
+          "exportedName": "syncKeylessConfigAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/vocabulary/flashcards/[level]/[category]/page": {
+          "moduleId": 48082,
+          "async": false,
+          "exportedName": "syncKeylessConfigAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/vocabulary/learn/page": {
+          "moduleId": 36266,
+          "async": false,
+          "exportedName": "syncKeylessConfigAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/vocabulary/lessons/activities/page": {
+          "moduleId": 68924,
+          "async": false,
+          "exportedName": "syncKeylessConfigAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/vocabulary/lessons/learn/[level]/[category]/page": {
+          "moduleId": 49431,
+          "async": false,
+          "exportedName": "syncKeylessConfigAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/vocabulary/lessons/learn/[level]/page": {
+          "moduleId": 76944,
+          "async": false,
+          "exportedName": "syncKeylessConfigAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/vocabulary/lessons/learn/page": {
+          "moduleId": 59727,
+          "async": false,
+          "exportedName": "syncKeylessConfigAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/vocabulary/lessons/review/page": {
+          "moduleId": 39077,
+          "async": false,
+          "exportedName": "syncKeylessConfigAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/vocabulary/lessons/review/wordlists/page": {
+          "moduleId": 78897,
+          "async": false,
+          "exportedName": "syncKeylessConfigAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/vocabulary/lessons/review/wordlists/session/page": {
+          "moduleId": 97420,
+          "async": false,
+          "exportedName": "syncKeylessConfigAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/vocabulary/lessons/review/words/page": {
+          "moduleId": 18817,
+          "async": false,
+          "exportedName": "syncKeylessConfigAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/vocabulary/lessons/review/words/session/page": {
+          "moduleId": 14494,
+          "async": false,
+          "exportedName": "syncKeylessConfigAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/vocabulary/page": {
+          "moduleId": 34103,
+          "async": false,
+          "exportedName": "syncKeylessConfigAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/vocabulary/practice/page": {
+          "moduleId": 15786,
+          "async": false,
+          "exportedName": "syncKeylessConfigAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        }
+      },
+      "layer": {
+        "app/404/page": "action-browser",
+        "app/_not-found/page": "action-browser",
+        "app/ai-practice/general/page": "action-browser",
+        "app/ai-practice/page": "action-browser",
+        "app/ai-practice/scenarios/chats/[topicSlug]/chat/page": "action-browser",
+        "app/ai-practice/scenarios/chats/page": "action-browser",
+        "app/ai-practice/scenarios/missions/page": "action-browser",
+        "app/ai-practice/scenarios/profession/page": "action-browser",
+        "app/blogs/page": "action-browser",
+        "app/dashboard/assignments/page": "action-browser",
+        "app/dashboard/friends/page": "action-browser",
+        "app/dashboard/page": "action-browser",
+        "app/dashboard/progress/page": "action-browser",
+        "app/dashboard/referral/page": "action-browser",
+        "app/dashboard/teachers/page": "action-browser",
+        "app/find-teacher/page": "action-browser",
+        "app/grammar/lessons/[noteId]/page": "action-browser",
+        "app/grammar/lessons/page": "action-browser",
+        "app/grammar/page": "action-browser",
+        "app/grammar/practice/page": "action-browser",
+        "app/onboarding/new-profile/page": "action-browser",
+        "app/onboarding/student/page": "action-browser",
+        "app/onboarding/teacher/page": "action-browser",
+        "app/page": "action-browser",
+        "app/practice/correct-spelling/page": "action-browser",
+        "app/practice/fill-in-blank/page": "action-browser",
+        "app/practice/page": "action-browser",
+        "app/practice/select-topic/page": "action-browser",
+        "app/privacy-policy/page": "action-browser",
+        "app/profile/[username]/page": "action-browser",
+        "app/refund-policy/page": "action-browser",
+        "app/sign-in/[[...sign-in]]/page": "action-browser",
+        "app/sign-up/[[...sign-up]]/page": "action-browser",
+        "app/stories/[storyId]/page": "action-browser",
+        "app/stories/learn/by-grammar/[topic]/page": "action-browser",
+        "app/stories/learn/by-grammar/page": "action-browser",
+        "app/stories/learn/by-level/[level]/page": "action-browser",
+        "app/stories/learn/by-level/page": "action-browser",
+        "app/stories/learn/by-theme/[theme]/page": "action-browser",
+        "app/stories/learn/by-theme/page": "action-browser",
+        "app/stories/learn/page": "action-browser",
+        "app/stories/page": "action-browser",
+        "app/teacher-dashboard/assignments/page": "action-browser",
+        "app/teacher-dashboard/calendar/page": "action-browser",
+        "app/teacher-dashboard/classes/page": "action-browser",
+        "app/teacher-dashboard/page": "action-browser",
+        "app/teacher-dashboard/profile/page": "action-browser",
+        "app/teacher-dashboard/referral/page": "action-browser",
+        "app/teacher-dashboard/students/page": "action-browser",
+        "app/terms-conditions/page": "action-browser",
+        "app/vocabulary/flashcards/[level]/[category]/page": "action-browser",
+        "app/vocabulary/learn/page": "action-browser",
+        "app/vocabulary/lessons/activities/page": "action-browser",
+        "app/vocabulary/lessons/learn/[level]/[category]/page": "action-browser",
+        "app/vocabulary/lessons/learn/[level]/page": "action-browser",
+        "app/vocabulary/lessons/learn/page": "action-browser",
+        "app/vocabulary/lessons/review/page": "action-browser",
+        "app/vocabulary/lessons/review/wordlists/page": "action-browser",
+        "app/vocabulary/lessons/review/wordlists/session/page": "action-browser",
+        "app/vocabulary/lessons/review/words/page": "action-browser",
+        "app/vocabulary/lessons/review/words/session/page": "action-browser",
+        "app/vocabulary/page": "action-browser",
+        "app/vocabulary/practice/page": "action-browser"
+      },
+      "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js",
+      "exportedName": "syncKeylessConfigAction"
+    }
+  },
+  "edge": {},
+  "encryptionKey": "etKDNiHIUNiF3vdUBInZ9G5MQ3xZ95AJOcvv6f9R1BI="
+}

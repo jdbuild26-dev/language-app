@@ -1,0 +1,17 @@
+{
+  "headers": {
+    "x-nextjs-stale-time": "300",
+    "x-nextjs-prerender": "1",
+    "x-next-cache-tags": "_N_T_/layout,_N_T_/ai-practice/layout,_N_T_/ai-practice/scenarios/layout,_N_T_/ai-practice/scenarios/missions/layout,_N_T_/ai-practice/scenarios/missions/page,_N_T_/ai-practice/scenarios/missions"
+  },
+  "segmentPaths": [
+    "/_tree",
+    "/_full",
+    "/ai-practice/scenarios/missions/__PAGE__",
+    "/ai-practice/scenarios/missions",
+    "/ai-practice/scenarios",
+    "/ai-practice",
+    "/_index",
+    "/_head"
+  ]
+}

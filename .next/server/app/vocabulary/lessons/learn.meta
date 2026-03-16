@@ -1,0 +1,17 @@
+{
+  "headers": {
+    "x-nextjs-stale-time": "300",
+    "x-nextjs-prerender": "1",
+    "x-next-cache-tags": "_N_T_/layout,_N_T_/vocabulary/layout,_N_T_/vocabulary/lessons/layout,_N_T_/vocabulary/lessons/learn/layout,_N_T_/vocabulary/lessons/learn/page,_N_T_/vocabulary/lessons/learn"
+  },
+  "segmentPaths": [
+    "/_tree",
+    "/_full",
+    "/vocabulary/lessons/learn/__PAGE__",
+    "/vocabulary/lessons/learn",
+    "/vocabulary/lessons",
+    "/vocabulary",
+    "/_index",
+    "/_head"
+  ]
+}

@@ -31,3 +31,6 @@ dist-ssr
 .env.test.local
 .env.production
 .env.production.local
+
+# clerk configuration (can include secrets)
+/.clerk/

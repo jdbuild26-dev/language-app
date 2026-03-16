@@ -1,0 +1,17 @@
+{
+  "headers": {
+    "x-nextjs-stale-time": "300",
+    "x-nextjs-prerender": "1",
+    "x-next-cache-tags": "_N_T_/layout,_N_T_/stories/layout,_N_T_/stories/learn/layout,_N_T_/stories/learn/by-level/layout,_N_T_/stories/learn/by-level/page,_N_T_/stories/learn/by-level"
+  },
+  "segmentPaths": [
+    "/_tree",
+    "/_full",
+    "/stories/learn/by-level/__PAGE__",
+    "/stories/learn/by-level",
+    "/stories/learn",
+    "/stories",
+    "/_index",
+    "/_head"
+  ]
+}

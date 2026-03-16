@@ -1,0 +1,16 @@
+{
+  "headers": {
+    "x-nextjs-stale-time": "300",
+    "x-nextjs-prerender": "1",
+    "x-next-cache-tags": "_N_T_/layout,_N_T_/teacher-dashboard/layout,_N_T_/teacher-dashboard/assignments/layout,_N_T_/teacher-dashboard/assignments/page,_N_T_/teacher-dashboard/assignments"
+  },
+  "segmentPaths": [
+    "/_tree",
+    "/_full",
+    "/teacher-dashboard/assignments/__PAGE__",
+    "/teacher-dashboard/assignments",
+    "/teacher-dashboard",
+    "/_index",
+    "/_head"
+  ]
+}

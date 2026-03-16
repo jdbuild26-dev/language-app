@@ -1,0 +1,16 @@
+{
+  "headers": {
+    "x-nextjs-stale-time": "300",
+    "x-nextjs-prerender": "1",
+    "x-next-cache-tags": "_N_T_/layout,_N_T_/vocabulary/layout,_N_T_/vocabulary/learn/layout,_N_T_/vocabulary/learn/page,_N_T_/vocabulary/learn"
+  },
+  "segmentPaths": [
+    "/_tree",
+    "/_full",
+    "/vocabulary/learn/__PAGE__",
+    "/vocabulary/learn",
+    "/vocabulary",
+    "/_index",
+    "/_head"
+  ]
+}

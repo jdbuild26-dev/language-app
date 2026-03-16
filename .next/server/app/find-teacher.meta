@@ -1,0 +1,15 @@
+{
+  "headers": {
+    "x-nextjs-stale-time": "300",
+    "x-nextjs-prerender": "1",
+    "x-next-cache-tags": "_N_T_/layout,_N_T_/find-teacher/layout,_N_T_/find-teacher/page,_N_T_/find-teacher"
+  },
+  "segmentPaths": [
+    "/_tree",
+    "/_full",
+    "/find-teacher/__PAGE__",
+    "/find-teacher",
+    "/_index",
+    "/_head"
+  ]
+}

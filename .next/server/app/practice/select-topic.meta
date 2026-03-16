@@ -1,0 +1,16 @@
+{
+  "headers": {
+    "x-nextjs-stale-time": "300",
+    "x-nextjs-prerender": "1",
+    "x-next-cache-tags": "_N_T_/layout,_N_T_/practice/layout,_N_T_/practice/select-topic/layout,_N_T_/practice/select-topic/page,_N_T_/practice/select-topic"
+  },
+  "segmentPaths": [
+    "/_tree",
+    "/_full",
+    "/practice/select-topic/__PAGE__",
+    "/practice/select-topic",
+    "/practice",
+    "/_index",
+    "/_head"
+  ]
+}
