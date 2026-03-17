@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { useUser, useAuth } from "@clerk/nextjs";
 import { motion, AnimatePresence } from "framer-motion";
@@ -26,6 +26,13 @@ const STEPS = {
 };
 
 export default function TeacherOnboardingModal({ onComplete }) {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+  if (!mounted) return null;
+  return <TeacherOnboardingModalContent onComplete={onComplete} />;
+}
+
+function TeacherOnboardingModalContent({ onComplete }) {
   const { user } = useUser();
   const { getToken } = useAuth();
   const [step, setStep] = useState(STEPS.TEACHING_LANG);

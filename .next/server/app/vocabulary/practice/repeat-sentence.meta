@@ -1,0 +1,17 @@
+{
+  "headers": {
+    "x-nextjs-stale-time": "300",
+    "x-nextjs-prerender": "1",
+    "x-next-cache-tags": "_N_T_/layout,_N_T_/vocabulary/layout,_N_T_/vocabulary/practice/layout,_N_T_/vocabulary/practice/repeat-sentence/layout,_N_T_/vocabulary/practice/repeat-sentence/page,_N_T_/vocabulary/practice/repeat-sentence"
+  },
+  "segmentPaths": [
+    "/_tree",
+    "/_full",
+    "/vocabulary/practice/repeat-sentence/__PAGE__",
+    "/vocabulary/practice/repeat-sentence",
+    "/vocabulary/practice",
+    "/vocabulary",
+    "/_index",
+    "/_head"
+  ]
+}

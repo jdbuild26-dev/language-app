@@ -261,6 +261,96 @@ type LayoutConfig<Route extends LayoutRoutes = LayoutRoutes> = {
   type __Unused = __Check
 }
 
+// Validate ../../../src/app/practice/listening/audio-fill-blanks-dropdown/page.tsx
+{
+  type __IsExpected<Specific extends AppPageConfig<"/practice/listening/audio-fill-blanks-dropdown">> = Specific
+  const handler = {} as typeof import("../../../src/app/practice/listening/audio-fill-blanks-dropdown/page.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
+// Validate ../../../src/app/practice/listening/audio-fill-blanks-pro/page.tsx
+{
+  type __IsExpected<Specific extends AppPageConfig<"/practice/listening/audio-fill-blanks-pro">> = Specific
+  const handler = {} as typeof import("../../../src/app/practice/listening/audio-fill-blanks-pro/page.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
+// Validate ../../../src/app/practice/listening/bubble/page.tsx
+{
+  type __IsExpected<Specific extends AppPageConfig<"/practice/listening/bubble">> = Specific
+  const handler = {} as typeof import("../../../src/app/practice/listening/bubble/page.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
+// Validate ../../../src/app/practice/listening/comprehension/page.tsx
+{
+  type __IsExpected<Specific extends AppPageConfig<"/practice/listening/comprehension">> = Specific
+  const handler = {} as typeof import("../../../src/app/practice/listening/comprehension/page.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
+// Validate ../../../src/app/practice/listening/conversation/page.tsx
+{
+  type __IsExpected<Specific extends AppPageConfig<"/practice/listening/conversation">> = Specific
+  const handler = {} as typeof import("../../../src/app/practice/listening/conversation/page.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
+// Validate ../../../src/app/practice/listening/interactive/page.tsx
+{
+  type __IsExpected<Specific extends AppPageConfig<"/practice/listening/interactive">> = Specific
+  const handler = {} as typeof import("../../../src/app/practice/listening/interactive/page.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
+// Validate ../../../src/app/practice/listening/order/page.tsx
+{
+  type __IsExpected<Specific extends AppPageConfig<"/practice/listening/order">> = Specific
+  const handler = {} as typeof import("../../../src/app/practice/listening/order/page.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
+// Validate ../../../src/app/practice/listening/passage/page.tsx
+{
+  type __IsExpected<Specific extends AppPageConfig<"/practice/listening/passage">> = Specific
+  const handler = {} as typeof import("../../../src/app/practice/listening/passage/page.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
+// Validate ../../../src/app/practice/listening/select/page.tsx
+{
+  type __IsExpected<Specific extends AppPageConfig<"/practice/listening/select">> = Specific
+  const handler = {} as typeof import("../../../src/app/practice/listening/select/page.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
+// Validate ../../../src/app/practice/listening/type/page.tsx
+{
+  type __IsExpected<Specific extends AppPageConfig<"/practice/listening/type">> = Specific
+  const handler = {} as typeof import("../../../src/app/practice/listening/type/page.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
 // Validate ../../../src/app/practice/page.tsx
 {
   type __IsExpected<Specific extends AppPageConfig<"/practice">> = Specific
@@ -270,10 +360,262 @@ type LayoutConfig<Route extends LayoutRoutes = LayoutRoutes> = {
   type __Unused = __Check
 }
 
+// Validate ../../../src/app/practice/reading/bubble-selection/page.tsx
+{
+  type __IsExpected<Specific extends AppPageConfig<"/practice/reading/bubble-selection">> = Specific
+  const handler = {} as typeof import("../../../src/app/practice/reading/bubble-selection/page.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
+// Validate ../../../src/app/practice/reading/complete-passage/page.tsx
+{
+  type __IsExpected<Specific extends AppPageConfig<"/practice/reading/complete-passage">> = Specific
+  const handler = {} as typeof import("../../../src/app/practice/reading/complete-passage/page.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
+// Validate ../../../src/app/practice/reading/comprehension/page.tsx
+{
+  type __IsExpected<Specific extends AppPageConfig<"/practice/reading/comprehension">> = Specific
+  const handler = {} as typeof import("../../../src/app/practice/reading/comprehension/page.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
+// Validate ../../../src/app/practice/reading/conversation/page.tsx
+{
+  type __IsExpected<Specific extends AppPageConfig<"/practice/reading/conversation">> = Specific
+  const handler = {} as typeof import("../../../src/app/practice/reading/conversation/page.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
+// Validate ../../../src/app/practice/reading/diagram-labelling/page.tsx
+{
+  type __IsExpected<Specific extends AppPageConfig<"/practice/reading/diagram-labelling">> = Specific
+  const handler = {} as typeof import("../../../src/app/practice/reading/diagram-labelling/page.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
+// Validate ../../../src/app/practice/reading/fill-blanks-passage/page.tsx
+{
+  type __IsExpected<Specific extends AppPageConfig<"/practice/reading/fill-blanks-passage">> = Specific
+  const handler = {} as typeof import("../../../src/app/practice/reading/fill-blanks-passage/page.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
+// Validate ../../../src/app/practice/reading/highlight-text/page.tsx
+{
+  type __IsExpected<Specific extends AppPageConfig<"/practice/reading/highlight-text">> = Specific
+  const handler = {} as typeof import("../../../src/app/practice/reading/highlight-text/page.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
+// Validate ../../../src/app/practice/reading/image-labelling/page.tsx
+{
+  type __IsExpected<Specific extends AppPageConfig<"/practice/reading/image-labelling">> = Specific
+  const handler = {} as typeof import("../../../src/app/practice/reading/image-labelling/page.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
+// Validate ../../../src/app/practice/reading/image-mcq/page.tsx
+{
+  type __IsExpected<Specific extends AppPageConfig<"/practice/reading/image-mcq">> = Specific
+  const handler = {} as typeof import("../../../src/app/practice/reading/image-mcq/page.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
+// Validate ../../../src/app/practice/reading/match-desc-to-image/page.tsx
+{
+  type __IsExpected<Specific extends AppPageConfig<"/practice/reading/match-desc-to-image">> = Specific
+  const handler = {} as typeof import("../../../src/app/practice/reading/match-desc-to-image/page.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
+// Validate ../../../src/app/practice/reading/match-pairs/page.tsx
+{
+  type __IsExpected<Specific extends AppPageConfig<"/practice/reading/match-pairs">> = Specific
+  const handler = {} as typeof import("../../../src/app/practice/reading/match-pairs/page.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
+// Validate ../../../src/app/practice/reading/reorder/page.tsx
+{
+  type __IsExpected<Specific extends AppPageConfig<"/practice/reading/reorder">> = Specific
+  const handler = {} as typeof import("../../../src/app/practice/reading/reorder/page.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
+// Validate ../../../src/app/practice/reading/summary-completion/page.tsx
+{
+  type __IsExpected<Specific extends AppPageConfig<"/practice/reading/summary-completion">> = Specific
+  const handler = {} as typeof import("../../../src/app/practice/reading/summary-completion/page.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
+// Validate ../../../src/app/practice/reading/true-false/page.tsx
+{
+  type __IsExpected<Specific extends AppPageConfig<"/practice/reading/true-false">> = Specific
+  const handler = {} as typeof import("../../../src/app/practice/reading/true-false/page.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
 // Validate ../../../src/app/practice/select-topic/page.tsx
 {
   type __IsExpected<Specific extends AppPageConfig<"/practice/select-topic">> = Specific
   const handler = {} as typeof import("../../../src/app/practice/select-topic/page.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
+// Validate ../../../src/app/practice/speaking/image/page.tsx
+{
+  type __IsExpected<Specific extends AppPageConfig<"/practice/speaking/image">> = Specific
+  const handler = {} as typeof import("../../../src/app/practice/speaking/image/page.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
+// Validate ../../../src/app/practice/speaking/interactive/page.tsx
+{
+  type __IsExpected<Specific extends AppPageConfig<"/practice/speaking/interactive">> = Specific
+  const handler = {} as typeof import("../../../src/app/practice/speaking/interactive/page.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
+// Validate ../../../src/app/practice/speaking/topic/page.tsx
+{
+  type __IsExpected<Specific extends AppPageConfig<"/practice/speaking/topic">> = Specific
+  const handler = {} as typeof import("../../../src/app/practice/speaking/topic/page.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
+// Validate ../../../src/app/practice/speaking/translate/page.tsx
+{
+  type __IsExpected<Specific extends AppPageConfig<"/practice/speaking/translate">> = Specific
+  const handler = {} as typeof import("../../../src/app/practice/speaking/translate/page.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
+// Validate ../../../src/app/practice/writing/analysis/page.tsx
+{
+  type __IsExpected<Specific extends AppPageConfig<"/practice/writing/analysis">> = Specific
+  const handler = {} as typeof import("../../../src/app/practice/writing/analysis/page.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
+// Validate ../../../src/app/practice/writing/documents/page.tsx
+{
+  type __IsExpected<Specific extends AppPageConfig<"/practice/writing/documents">> = Specific
+  const handler = {} as typeof import("../../../src/app/practice/writing/documents/page.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
+// Validate ../../../src/app/practice/writing/fill-blanks/page.tsx
+{
+  type __IsExpected<Specific extends AppPageConfig<"/practice/writing/fill-blanks">> = Specific
+  const handler = {} as typeof import("../../../src/app/practice/writing/fill-blanks/page.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
+// Validate ../../../src/app/practice/writing/form/page.tsx
+{
+  type __IsExpected<Specific extends AppPageConfig<"/practice/writing/form">> = Specific
+  const handler = {} as typeof import("../../../src/app/practice/writing/form/page.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
+// Validate ../../../src/app/practice/writing/image/page.tsx
+{
+  type __IsExpected<Specific extends AppPageConfig<"/practice/writing/image">> = Specific
+  const handler = {} as typeof import("../../../src/app/practice/writing/image/page.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
+// Validate ../../../src/app/practice/writing/interactive/page.tsx
+{
+  type __IsExpected<Specific extends AppPageConfig<"/practice/writing/interactive">> = Specific
+  const handler = {} as typeof import("../../../src/app/practice/writing/interactive/page.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
+// Validate ../../../src/app/practice/writing/sentence-completion/page.tsx
+{
+  type __IsExpected<Specific extends AppPageConfig<"/practice/writing/sentence-completion">> = Specific
+  const handler = {} as typeof import("../../../src/app/practice/writing/sentence-completion/page.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
+// Validate ../../../src/app/practice/writing/spelling/page.tsx
+{
+  type __IsExpected<Specific extends AppPageConfig<"/practice/writing/spelling">> = Specific
+  const handler = {} as typeof import("../../../src/app/practice/writing/spelling/page.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
+// Validate ../../../src/app/practice/writing/topic/page.tsx
+{
+  type __IsExpected<Specific extends AppPageConfig<"/practice/writing/topic">> = Specific
+  const handler = {} as typeof import("../../../src/app/practice/writing/topic/page.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
+// Validate ../../../src/app/practice/writing/translate/page.tsx
+{
+  type __IsExpected<Specific extends AppPageConfig<"/practice/writing/translate">> = Specific
+  const handler = {} as typeof import("../../../src/app/practice/writing/translate/page.js")
   type __Check = __IsExpected<typeof handler>
   // @ts-ignore
   type __Unused = __Check
@@ -495,10 +837,73 @@ type LayoutConfig<Route extends LayoutRoutes = LayoutRoutes> = {
   type __Unused = __Check
 }
 
+// Validate ../../../src/app/vocabulary/lessons/activities/correct-spelling/page.tsx
+{
+  type __IsExpected<Specific extends AppPageConfig<"/vocabulary/lessons/activities/correct-spelling">> = Specific
+  const handler = {} as typeof import("../../../src/app/vocabulary/lessons/activities/correct-spelling/page.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
+// Validate ../../../src/app/vocabulary/lessons/activities/flashcards/game/page.tsx
+{
+  type __IsExpected<Specific extends AppPageConfig<"/vocabulary/lessons/activities/flashcards/game">> = Specific
+  const handler = {} as typeof import("../../../src/app/vocabulary/lessons/activities/flashcards/game/page.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
+// Validate ../../../src/app/vocabulary/lessons/activities/flashcards/page.tsx
+{
+  type __IsExpected<Specific extends AppPageConfig<"/vocabulary/lessons/activities/flashcards">> = Specific
+  const handler = {} as typeof import("../../../src/app/vocabulary/lessons/activities/flashcards/page.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
+// Validate ../../../src/app/vocabulary/lessons/activities/gender-identifier/page.tsx
+{
+  type __IsExpected<Specific extends AppPageConfig<"/vocabulary/lessons/activities/gender-identifier">> = Specific
+  const handler = {} as typeof import("../../../src/app/vocabulary/lessons/activities/gender-identifier/page.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
+// Validate ../../../src/app/vocabulary/lessons/activities/match-images/page.tsx
+{
+  type __IsExpected<Specific extends AppPageConfig<"/vocabulary/lessons/activities/match-images">> = Specific
+  const handler = {} as typeof import("../../../src/app/vocabulary/lessons/activities/match-images/page.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
+// Validate ../../../src/app/vocabulary/lessons/activities/match-words/page.tsx
+{
+  type __IsExpected<Specific extends AppPageConfig<"/vocabulary/lessons/activities/match-words">> = Specific
+  const handler = {} as typeof import("../../../src/app/vocabulary/lessons/activities/match-words/page.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
 // Validate ../../../src/app/vocabulary/lessons/activities/page.tsx
 {
   type __IsExpected<Specific extends AppPageConfig<"/vocabulary/lessons/activities">> = Specific
   const handler = {} as typeof import("../../../src/app/vocabulary/lessons/activities/page.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
+// Validate ../../../src/app/vocabulary/lessons/activities/pronunciation/page.tsx
+{
+  type __IsExpected<Specific extends AppPageConfig<"/vocabulary/lessons/activities/pronunciation">> = Specific
+  const handler = {} as typeof import("../../../src/app/vocabulary/lessons/activities/pronunciation/page.js")
   type __Check = __IsExpected<typeof handler>
   // @ts-ignore
   type __Unused = __Check
@@ -585,10 +990,181 @@ type LayoutConfig<Route extends LayoutRoutes = LayoutRoutes> = {
   type __Unused = __Check
 }
 
+// Validate ../../../src/app/vocabulary/practice/choose-options/page.tsx
+{
+  type __IsExpected<Specific extends AppPageConfig<"/vocabulary/practice/choose-options">> = Specific
+  const handler = {} as typeof import("../../../src/app/vocabulary/practice/choose-options/page.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
+// Validate ../../../src/app/vocabulary/practice/correct-spelling/page.tsx
+{
+  type __IsExpected<Specific extends AppPageConfig<"/vocabulary/practice/correct-spelling">> = Specific
+  const handler = {} as typeof import("../../../src/app/vocabulary/practice/correct-spelling/page.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
+// Validate ../../../src/app/vocabulary/practice/dictation-image/page.tsx
+{
+  type __IsExpected<Specific extends AppPageConfig<"/vocabulary/practice/dictation-image">> = Specific
+  const handler = {} as typeof import("../../../src/app/vocabulary/practice/dictation-image/page.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
+// Validate ../../../src/app/vocabulary/practice/fill-in-blank/page.tsx
+{
+  type __IsExpected<Specific extends AppPageConfig<"/vocabulary/practice/fill-in-blank">> = Specific
+  const handler = {} as typeof import("../../../src/app/vocabulary/practice/fill-in-blank/page.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
+// Validate ../../../src/app/vocabulary/practice/group-words/page.tsx
+{
+  type __IsExpected<Specific extends AppPageConfig<"/vocabulary/practice/group-words">> = Specific
+  const handler = {} as typeof import("../../../src/app/vocabulary/practice/group-words/page.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
+// Validate ../../../src/app/vocabulary/practice/highlight-word/page.tsx
+{
+  type __IsExpected<Specific extends AppPageConfig<"/vocabulary/practice/highlight-word">> = Specific
+  const handler = {} as typeof import("../../../src/app/vocabulary/practice/highlight-word/page.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
+// Validate ../../../src/app/vocabulary/practice/is-french-word/page.tsx
+{
+  type __IsExpected<Specific extends AppPageConfig<"/vocabulary/practice/is-french-word">> = Specific
+  const handler = {} as typeof import("../../../src/app/vocabulary/practice/is-french-word/page.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
+// Validate ../../../src/app/vocabulary/practice/listening/audio-match/page.tsx
+{
+  type __IsExpected<Specific extends AppPageConfig<"/vocabulary/practice/listening/audio-match">> = Specific
+  const handler = {} as typeof import("../../../src/app/vocabulary/practice/listening/audio-match/page.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
+// Validate ../../../src/app/vocabulary/practice/listening/dictation/page.tsx
+{
+  type __IsExpected<Specific extends AppPageConfig<"/vocabulary/practice/listening/dictation">> = Specific
+  const handler = {} as typeof import("../../../src/app/vocabulary/practice/listening/dictation/page.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
+// Validate ../../../src/app/vocabulary/practice/listening/fill-blanks/page.tsx
+{
+  type __IsExpected<Specific extends AppPageConfig<"/vocabulary/practice/listening/fill-blanks">> = Specific
+  const handler = {} as typeof import("../../../src/app/vocabulary/practice/listening/fill-blanks/page.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
+// Validate ../../../src/app/vocabulary/practice/listening/fill-in-blank/page.tsx
+{
+  type __IsExpected<Specific extends AppPageConfig<"/vocabulary/practice/listening/fill-in-blank">> = Specific
+  const handler = {} as typeof import("../../../src/app/vocabulary/practice/listening/fill-in-blank/page.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
+// Validate ../../../src/app/vocabulary/practice/listening/multi-select/page.tsx
+{
+  type __IsExpected<Specific extends AppPageConfig<"/vocabulary/practice/listening/multi-select">> = Specific
+  const handler = {} as typeof import("../../../src/app/vocabulary/practice/listening/multi-select/page.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
+// Validate ../../../src/app/vocabulary/practice/listening/phonetics/page.tsx
+{
+  type __IsExpected<Specific extends AppPageConfig<"/vocabulary/practice/listening/phonetics">> = Specific
+  const handler = {} as typeof import("../../../src/app/vocabulary/practice/listening/phonetics/page.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
+// Validate ../../../src/app/vocabulary/practice/numbers/page.tsx
+{
+  type __IsExpected<Specific extends AppPageConfig<"/vocabulary/practice/numbers">> = Specific
+  const handler = {} as typeof import("../../../src/app/vocabulary/practice/numbers/page.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
+// Validate ../../../src/app/vocabulary/practice/odd-one-out/page.tsx
+{
+  type __IsExpected<Specific extends AppPageConfig<"/vocabulary/practice/odd-one-out">> = Specific
+  const handler = {} as typeof import("../../../src/app/vocabulary/practice/odd-one-out/page.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
 // Validate ../../../src/app/vocabulary/practice/page.tsx
 {
   type __IsExpected<Specific extends AppPageConfig<"/vocabulary/practice">> = Specific
   const handler = {} as typeof import("../../../src/app/vocabulary/practice/page.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
+// Validate ../../../src/app/vocabulary/practice/repeat-sentence/page.tsx
+{
+  type __IsExpected<Specific extends AppPageConfig<"/vocabulary/practice/repeat-sentence">> = Specific
+  const handler = {} as typeof import("../../../src/app/vocabulary/practice/repeat-sentence/page.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
+// Validate ../../../src/app/vocabulary/practice/repeat-word/page.tsx
+{
+  type __IsExpected<Specific extends AppPageConfig<"/vocabulary/practice/repeat-word">> = Specific
+  const handler = {} as typeof import("../../../src/app/vocabulary/practice/repeat-word/page.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
+// Validate ../../../src/app/vocabulary/practice/srs-spelling/page.tsx
+{
+  type __IsExpected<Specific extends AppPageConfig<"/vocabulary/practice/srs-spelling">> = Specific
+  const handler = {} as typeof import("../../../src/app/vocabulary/practice/srs-spelling/page.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
+// Validate ../../../src/app/vocabulary/practice/what-do-you-see/page.tsx
+{
+  type __IsExpected<Specific extends AppPageConfig<"/vocabulary/practice/what-do-you-see">> = Specific
+  const handler = {} as typeof import("../../../src/app/vocabulary/practice/what-do-you-see/page.js")
   type __Check = __IsExpected<typeof handler>
   // @ts-ignore
   type __Unused = __Check
@@ -622,6 +1198,15 @@ type LayoutConfig<Route extends LayoutRoutes = LayoutRoutes> = {
 {
   type __IsExpected<Specific extends LayoutConfig<"/teacher-dashboard">> = Specific
   const handler = {} as typeof import("../../../src/app/teacher-dashboard/layout.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
+// Validate ../../../src/app/vocabulary/layout.tsx
+{
+  type __IsExpected<Specific extends LayoutConfig<"/vocabulary">> = Specific
+  const handler = {} as typeof import("../../../src/app/vocabulary/layout.js")
   type __Check = __IsExpected<typeof handler>
   // @ts-ignore
   type __Unused = __Check

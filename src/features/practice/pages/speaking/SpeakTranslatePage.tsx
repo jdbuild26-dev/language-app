@@ -1,3 +1,5 @@
+"use client";
+
 import { Mic } from "lucide-react";
 import GenericSpeakingPage from "@/features/practice/pages/speaking/GenericSpeakingPage";
 

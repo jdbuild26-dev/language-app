@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { useParams } from "next/navigation";
+import Link from "next/link";
 import { useGrammarNoteContent } from "@/services/grammarApi";
 import { Loader2, ChevronLeft } from "lucide-react";
 

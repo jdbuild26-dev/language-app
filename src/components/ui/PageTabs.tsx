@@ -36,15 +36,6 @@ export default function PageTabs({ tabs, basePath, defaultTab, defaultSubTab }: 
   const activeTabConfig = tabs.find((t) => t.path === activeTopTab);
 
   useEffect(() => {
-    if (pathname === basePath || pathname === `${basePath}/`) {
-      const defaultPath = defaultSubTab
-        ? `${basePath}/${defaultTab}/${defaultSubTab}`
-        : `${basePath}/${defaultTab}`;
-      router.replace(defaultPath);
-    }
-  }, [pathname, basePath, defaultTab, defaultSubTab, router]);
-
-  useEffect(() => {
     if (activeTabConfig?.subTabs && !activeSubTab) {
       router.replace(`${basePath}/${activeTopTab}/${activeTabConfig.subTabs[0].path}`);
     }

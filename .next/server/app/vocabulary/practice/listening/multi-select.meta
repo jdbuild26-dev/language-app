@@ -1,0 +1,18 @@
+{
+  "headers": {
+    "x-nextjs-stale-time": "300",
+    "x-nextjs-prerender": "1",
+    "x-next-cache-tags": "_N_T_/layout,_N_T_/vocabulary/layout,_N_T_/vocabulary/practice/layout,_N_T_/vocabulary/practice/listening/layout,_N_T_/vocabulary/practice/listening/multi-select/layout,_N_T_/vocabulary/practice/listening/multi-select/page,_N_T_/vocabulary/practice/listening/multi-select"
+  },
+  "segmentPaths": [
+    "/_tree",
+    "/_full",
+    "/vocabulary/practice/listening/multi-select/__PAGE__",
+    "/vocabulary/practice/listening/multi-select",
+    "/vocabulary/practice/listening",
+    "/vocabulary/practice",
+    "/vocabulary",
+    "/_index",
+    "/_head"
+  ]
+}

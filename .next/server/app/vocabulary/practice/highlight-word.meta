@@ -1,0 +1,17 @@
+{
+  "headers": {
+    "x-nextjs-stale-time": "300",
+    "x-nextjs-prerender": "1",
+    "x-next-cache-tags": "_N_T_/layout,_N_T_/vocabulary/layout,_N_T_/vocabulary/practice/layout,_N_T_/vocabulary/practice/highlight-word/layout,_N_T_/vocabulary/practice/highlight-word/page,_N_T_/vocabulary/practice/highlight-word"
+  },
+  "segmentPaths": [
+    "/_tree",
+    "/_full",
+    "/vocabulary/practice/highlight-word/__PAGE__",
+    "/vocabulary/practice/highlight-word",
+    "/vocabulary/practice",
+    "/vocabulary",
+    "/_index",
+    "/_head"
+  ]
+}

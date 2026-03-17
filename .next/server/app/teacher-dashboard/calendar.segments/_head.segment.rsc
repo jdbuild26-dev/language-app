@@ -1,5 +1,5 @@
 1:"$Sreact.fragment"
-2:I[97367,["/_next/static/chunks/ff1a16fafef87110.js","/_next/static/chunks/55bd6be26a0ad63c.js"],"ViewportBoundary"]
-3:I[97367,["/_next/static/chunks/ff1a16fafef87110.js","/_next/static/chunks/55bd6be26a0ad63c.js"],"MetadataBoundary"]
+2:I[897367,["/_next/static/chunks/d96012bcfc98706a.js","/_next/static/chunks/16ea27c3b926bc31.js"],"ViewportBoundary"]
+3:I[897367,["/_next/static/chunks/d96012bcfc98706a.js","/_next/static/chunks/16ea27c3b926bc31.js"],"MetadataBoundary"]
 4:"$Sreact.suspense"
-0:{"buildId":"q5wqq8E92bZgWXDf3utYm","rsc":["$","$1","h",{"children":[null,["$","$L2",null,{"children":[["$","meta","0",{"charSet":"utf-8"}],["$","meta","1",{"name":"viewport","content":"width=device-width, initial-scale=1"}]]}],["$","div",null,{"hidden":true,"children":["$","$L3",null,{"children":["$","$4",null,{"name":"Next.Metadata","children":[["$","title","0",{"children":"Language App"}],["$","meta","1",{"name":"description","content":"Master New Languages With Confidence"}]]}]}]}],["$","meta",null,{"name":"next-size-adjust","content":""}]]}],"loading":null,"isPartial":false}
+0:{"buildId":"0PCLloO9DDj64JJKgSpoC","rsc":["$","$1","h",{"children":[null,["$","$L2",null,{"children":[["$","meta","0",{"charSet":"utf-8"}],["$","meta","1",{"name":"viewport","content":"width=device-width, initial-scale=1"}]]}],["$","div",null,{"hidden":true,"children":["$","$L3",null,{"children":["$","$4",null,{"name":"Next.Metadata","children":[["$","title","0",{"children":"Language App"}],["$","meta","1",{"name":"description","content":"Master New Languages With Confidence"}]]}]}]}],["$","meta",null,{"name":"next-size-adjust","content":""}]]}],"loading":null,"isPartial":false}

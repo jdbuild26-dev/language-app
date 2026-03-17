@@ -92,10 +92,10 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
             })}
           </nav>
 
-          {isTeacherUser && (
-            <div className="mt-8 pt-8 border-t border-gray-200 dark:border-gray-700">
-              <button
-                onClick={() => {
+          <div className="mt-8 pt-8 border-t border-gray-200 dark:border-gray-700">
+            <button
+              onClick={() => {
+                if (isTeacherUser) {
                   const teacherProfile = profiles.find(p => p.role === "teacher" && p.language === activeProfile?.language);
                   if (teacherProfile) {
                     switchProfile(teacherProfile);
@@ -103,17 +103,19 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
                   } else {
                     router.push(`/onboarding/new-profile?role=teacher&lang=${activeProfile?.language}`);
                   }
-                }}
-                className="w-full group flex items-center px-3 py-2 text-sm font-medium rounded-md text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-              >
-                <AcademicCapIcon
-                  className="flex-shrink-0 -ml-1 mr-3 h-6 w-6 text-gray-400 group-hover:text-gray-500"
-                  aria-hidden="true"
-                />
-                <span className="truncate">Teacher Dashboard</span>
-              </button>
-            </div>
-          )}
+                } else {
+                  router.push("/onboarding/teacher");
+                }
+              }}
+              className="w-full group flex items-center px-3 py-2 text-sm font-medium rounded-md text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+            >
+              <AcademicCapIcon
+                className="flex-shrink-0 -ml-1 mr-3 h-6 w-6 text-gray-400 group-hover:text-gray-500"
+                aria-hidden="true"
+              />
+              <span className="truncate">Teacher Dashboard</span>
+            </button>
+          </div>
         </aside>
 
         {/* Mobile Navigation (Tabs) */}
@@ -149,6 +151,26 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
                 </Link>
               );
             })}
+            {/* Teacher Dashboard — always visible in mobile nav */}
+            <button
+              onClick={() => {
+                if (isTeacherUser) {
+                  const teacherProfile = profiles.find(p => p.role === "teacher" && p.language === activeProfile?.language);
+                  if (teacherProfile) {
+                    switchProfile(teacherProfile);
+                    router.push("/teacher-dashboard");
+                  } else {
+                    router.push(`/onboarding/new-profile?role=teacher&lang=${activeProfile?.language}`);
+                  }
+                } else {
+                  router.push("/onboarding/teacher");
+                }
+              }}
+              className="whitespace-nowrap pb-2 px-1 border-b-2 border-transparent font-medium text-sm flex items-center text-gray-500 hover:text-gray-700 hover:border-gray-300"
+            >
+              <AcademicCapIcon className="flex-shrink-0 -ml-1 mr-2 h-5 w-5 text-gray-400" aria-hidden="true" />
+              Teacher Dashboard
+            </button>
           </nav>
         </div>
 

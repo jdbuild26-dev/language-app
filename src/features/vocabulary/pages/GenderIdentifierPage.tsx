@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { fetchVocabulary } from "@/services/vocabularyApi";
-import GenderIdentifierGame from "@/components/gender-identifier/GenderIdentifierGame";
+import GenderIdentifierGame from "@/features/vocabulary/components/gender-identifier/GenderIdentifierGame";
 
 export default function GenderIdentifierPage() {
   const router = useRouter();

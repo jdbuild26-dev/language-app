@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, Suspense } from "react";
 import { useExerciseTimer } from "@/hooks/useExerciseTimer";
 import { Loader2, Volume2, AlertCircle } from "lucide-react";
 import { usePracticeExit } from "@/hooks/usePracticeExit";
@@ -12,9 +12,17 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { Button } from "@/components/ui/button";
 
 export default function MatchPairsPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-blue-500" /></div>}>
+      <MatchPairsContent />
+    </Suspense>
+  );
+}
+
+function MatchPairsContent() {
   const handleExit = usePracticeExit();
   const router = useRouter();
-  const [searchParams] = useSearchParams();
+  const searchParams = useSearchParams();
   const tag = searchParams.get("tag");
   const level = searchParams.get("level");
 

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, Suspense } from "react";
 import {
   ArrowLeft,
   RotateCcw,
@@ -16,6 +16,52 @@ import { ProgressBar } from "@/components/ui/ProgressBar";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@clerk/nextjs";
 import { completeAssignment } from "@/services/assignmentsApi";
+
+/**
+ * Inner component that uses useSearchParams — must be wrapped in Suspense.
+ */
+function AssignmentSubmitter({ isGameOver, score, totalQuestions, questionType }) {
+  const searchParams = useSearchParams();
+  const { getToken } = useAuth();
+  const hasSubmitted = useRef(false);
+  const [isSubmittingResult, setIsSubmittingResult] = useState(false);
+
+  const assignmentId = searchParams.get("assignmentId");
+
+  useEffect(() => {
+    if (isGameOver && assignmentId && !hasSubmitted.current) {
+      const submitResult = async () => {
+        try {
+          hasSubmitted.current = true;
+          setIsSubmittingResult(true);
+          const token = await getToken();
+          const percentage =
+            totalQuestions > 0 ? Math.round((score / totalQuestions) * 100) : 0;
+          await completeAssignment(assignmentId, percentage, { rawScore: score, total: totalQuestions, type: questionType }, token);
+          console.log("✅ Assignment auto-completed:", assignmentId);
+        } catch (error) {
+          console.error("❌ Failed to auto-complete assignment:", error);
+          hasSubmitted.current = false;
+        } finally {
+          setIsSubmittingResult(false);
+        }
+      };
+      submitResult();
+    }
+  }, [isGameOver, assignmentId, score, totalQuestions, getToken, questionType]);
+
+  if (!assignmentId) return null;
+
+  return isSubmittingResult ? (
+    <div className="mb-6 px-4 py-2 bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-900/50 rounded-full text-blue-700 dark:text-blue-300 text-sm font-medium">
+      Saving results...
+    </div>
+  ) : isGameOver ? (
+    <div className="mb-6 px-4 py-2 bg-green-50 dark:bg-green-900/20 border border-green-100 dark:border-green-900/50 rounded-full text-green-700 dark:text-green-300 text-sm font-medium animate-in fade-in slide-in-from-top-2">
+      Assignment progress saved! ✅
+    </div>
+  ) : null;
+}
 
 /**
  * Standard Layout for Practice Games
@@ -47,61 +93,15 @@ export default function PracticeGameLayout({
   children,
 }) {
   const [showTranslation, setShowTranslation] = useState(false);
-  const [isSubmittingResult, setIsSubmittingResult] = useState(false);
-  const [searchParams] = useSearchParams();
-  const { getToken } = useAuth();
-  const hasSubmitted = useRef(false);
-
-  const assignmentId = searchParams.get("assignmentId");
-
-  useEffect(() => {
-    if (isGameOver && assignmentId && !hasSubmitted.current) {
-      const submitResult = async () => {
-        try {
-          hasSubmitted.current = true;
-          setIsSubmittingResult(true);
-          const token = await getToken();
-
-          // Calculate percentage score
-          const percentage =
-            totalQuestions > 0 ? Math.round((score / totalQuestions) * 100) : 0;
-
-          await completeAssignment(
-            assignmentId,
-            percentage,
-            {
-              rawScore: score,
-              total: totalQuestions,
-              type: questionType,
-            },
-            token,
-          );
-
-          console.log("✅ Assignment auto-completed:", assignmentId);
-        } catch (error) {
-          console.error("❌ Failed to auto-complete assignment:", error);
-          hasSubmitted.current = false; // Allow retry if it failed?
-        } finally {
-          setIsSubmittingResult(false);
-        }
-      };
-
-      submitResult();
-    }
-  }, [isGameOver, assignmentId, score, totalQuestions, getToken, questionType]);
 
   if (isGameOver) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen p-4 text-center animate-in zoom-in duration-300">
         <div className="w-20 h-20 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center mb-6">
-          {isSubmittingResult ? (
-            <Loader2 className="w-10 h-10 text-blue-600 animate-spin" />
-          ) : (
-            <span className="text-4xl">🏆</span>
-          )}
+          <span className="text-4xl">🏆</span>
         </div>
         <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-          {isSubmittingResult ? "Saving Results..." : "Quiz Complete!"}
+          Quiz Complete!
         </h2>
         <p className="text-xl text-gray-600 dark:text-gray-300 mb-8">
           You scored <span className="font-bold text-blue-600">{score}</span>{" "}
@@ -110,18 +110,20 @@ export default function PracticeGameLayout({
 
         {customEndGameContent}
 
-        {assignmentId && !isSubmittingResult && (
-          <div className="mb-6 px-4 py-2 bg-green-50 dark:bg-green-900/20 border border-green-100 dark:border-green-900/50 rounded-full text-green-700 dark:text-green-300 text-sm font-medium animate-in fade-in slide-in-from-top-2">
-            Assignment progress saved! ✅
-          </div>
-        )}
+        <Suspense fallback={null}>
+          <AssignmentSubmitter
+            isGameOver={isGameOver}
+            score={score}
+            totalQuestions={totalQuestions}
+            questionType={questionType}
+          />
+        </Suspense>
 
         <div className="flex gap-4">
           <Button
             variant="outline"
             size="lg"
             onClick={onExit}
-            disabled={isSubmittingResult}
           >
             Back to Menu
           </Button>
@@ -129,7 +131,6 @@ export default function PracticeGameLayout({
             onClick={onRestart}
             size="lg"
             className="gap-2"
-            disabled={isSubmittingResult}
           >
             <RotateCcw className="w-4 h-4" />
             Try Again

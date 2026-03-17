@@ -1,0 +1,17 @@
+{
+  "headers": {
+    "x-nextjs-stale-time": "300",
+    "x-nextjs-prerender": "1",
+    "x-next-cache-tags": "_N_T_/layout,_N_T_/vocabulary/layout,_N_T_/vocabulary/practice/layout,_N_T_/vocabulary/practice/choose-options/layout,_N_T_/vocabulary/practice/choose-options/page,_N_T_/vocabulary/practice/choose-options"
+  },
+  "segmentPaths": [
+    "/_tree",
+    "/_full",
+    "/vocabulary/practice/choose-options/__PAGE__",
+    "/vocabulary/practice/choose-options",
+    "/vocabulary/practice",
+    "/vocabulary",
+    "/_index",
+    "/_head"
+  ]
+}

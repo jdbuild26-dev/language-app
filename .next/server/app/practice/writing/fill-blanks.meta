@@ -1,0 +1,17 @@
+{
+  "headers": {
+    "x-nextjs-stale-time": "300",
+    "x-nextjs-prerender": "1",
+    "x-next-cache-tags": "_N_T_/layout,_N_T_/practice/layout,_N_T_/practice/writing/layout,_N_T_/practice/writing/fill-blanks/layout,_N_T_/practice/writing/fill-blanks/page,_N_T_/practice/writing/fill-blanks"
+  },
+  "segmentPaths": [
+    "/_tree",
+    "/_full",
+    "/practice/writing/fill-blanks/__PAGE__",
+    "/practice/writing/fill-blanks",
+    "/practice/writing",
+    "/practice",
+    "/_index",
+    "/_head"
+  ]
+}

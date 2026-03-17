@@ -1,0 +1,18 @@
+{
+  "headers": {
+    "x-nextjs-stale-time": "300",
+    "x-nextjs-prerender": "1",
+    "x-next-cache-tags": "_N_T_/layout,_N_T_/vocabulary/layout,_N_T_/vocabulary/practice/layout,_N_T_/vocabulary/practice/listening/layout,_N_T_/vocabulary/practice/listening/audio-match/layout,_N_T_/vocabulary/practice/listening/audio-match/page,_N_T_/vocabulary/practice/listening/audio-match"
+  },
+  "segmentPaths": [
+    "/_tree",
+    "/_full",
+    "/vocabulary/practice/listening/audio-match/__PAGE__",
+    "/vocabulary/practice/listening/audio-match",
+    "/vocabulary/practice/listening",
+    "/vocabulary/practice",
+    "/vocabulary",
+    "/_index",
+    "/_head"
+  ]
+}

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
+import Link from "next/link";
 import { useUser, useAuth } from "@clerk/nextjs";
 import {
   BookmarkIcon,
@@ -223,7 +224,14 @@ export default function CEFRLevelPage() {
         setIsLoading(true);
         setError(null);
         const data = await fetchCategoriesByLevel(level?.toUpperCase());
-        setCategories(data.categories || []);
+        // Deduplicate by slug in case the API returns duplicates
+        const seen = new Set();
+        const unique = (data.categories || []).filter((c) => {
+          if (seen.has(c.slug)) return false;
+          seen.add(c.slug);
+          return true;
+        });
+        setCategories(unique);
       } catch (err) {
         console.error("Failed to fetch categories:", err);
         setError("Failed to load categories. Please try again.");

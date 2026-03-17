@@ -3,7 +3,7 @@
     "00d877867770cd652d6c52e02d90a97ed5f3ee7033": {
       "workers": {
         "app/grammar/lessons/[noteId]/page": {
-          "moduleId": 1116,
+          "moduleId": 301116,
           "async": false,
           "exportedName": "invalidateCacheAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
@@ -18,7 +18,7 @@
     "00861522cb046b5ffe1b34dff9d752ea1e972cab65": {
       "workers": {
         "app/grammar/lessons/[noteId]/page": {
-          "moduleId": 1116,
+          "moduleId": 301116,
           "async": false,
           "exportedName": "createOrReadKeylessAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
@@ -33,7 +33,7 @@
     "009277e87c110946f79a5861b959cf98661fb3a765": {
       "workers": {
         "app/grammar/lessons/[noteId]/page": {
-          "moduleId": 1116,
+          "moduleId": 301116,
           "async": false,
           "exportedName": "deleteKeylessAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
@@ -48,7 +48,7 @@
     "408738f080daa3882da930161fff5aafe2877466c9": {
       "workers": {
         "app/grammar/lessons/[noteId]/page": {
-          "moduleId": 1116,
+          "moduleId": 301116,
           "async": false,
           "exportedName": "syncKeylessConfigAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"

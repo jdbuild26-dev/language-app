@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { useExerciseTimer } from "@/hooks/useExerciseTimer";
 import { Loader2, XCircle, CheckCircle2, Circle } from "lucide-react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { fetchPracticeQuestions } from "@/services/vocabularyApi";
 import PracticeGameLayout from "@/components/layout/PracticeGameLayout";

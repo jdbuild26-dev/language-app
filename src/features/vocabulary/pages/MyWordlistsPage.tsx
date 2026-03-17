@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { useUser, useAuth } from "@clerk/nextjs";
 import { useLanguage } from "@/contexts/LanguageContext";
 import {
@@ -43,15 +44,14 @@ export default function MyWordlistsPage() {
   const fetchBookmarks = useCallback(async () => {
     if (!user) return;
     try {
-      // Fetch user's review list to know what's already bookmarked
-      // Limit 1000 to get most/all
-      const data = await fetchReviewCards(user.id, { limit: 1000 });
+      const token = await getToken();
+      const data = await fetchReviewCards(token, { limit: 1000 });
       const ids = new Set(data.cards.map((c) => c.cardId));
       setBookmarkedIds(ids);
     } catch (err) {
       console.error("Failed to fetch bookmarks:", err);
     }
-  }, [user]);
+  }, [user, getToken]);
 
   // Fetch learned cards
   const loadCards = useCallback(
@@ -107,8 +107,8 @@ export default function MyWordlistsPage() {
 
     try {
       if (isBookmarked) {
-        // REMOVE bookmark
-        await removeFromReview(user.id, cardId);
+        const token = await getToken();
+        await removeFromReview(token, cardId);
         setBookmarkedIds((prev) => {
           const newSet = new Set(prev);
           newSet.delete(cardId);

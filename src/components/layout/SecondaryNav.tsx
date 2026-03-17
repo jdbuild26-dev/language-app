@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { usePathname } from "next/navigation";
+import Link from "next/link";
 import {
   BookOpenIcon,
   AcademicCapIcon,
@@ -31,6 +32,10 @@ export default function SecondaryNavbar() {
   const navItems = getNavItems(isTeacher);
 
   const pathname = usePathname();
+
+  // Hide on auth and onboarding pages
+  const hideOn = ["/sign-in", "/sign-up", "/onboarding"];
+  if (hideOn.some((p) => pathname.startsWith(p))) return null;
   const navRef = useRef(null);
   const itemRefs = useRef([]);
   const [pillStyle, setPillStyle] = useState({ left: 0, width: 0, opacity: 0 });

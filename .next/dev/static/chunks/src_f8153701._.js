@@ -27,7 +27,7 @@ __turbopack_context__.s([
     ()=>updateTeacherProfile
 ]);
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$build$2f$polyfills$2f$process$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = /*#__PURE__*/ __turbopack_context__.i("[project]/node_modules/next/dist/build/polyfills/process.js [app-client] (ecmascript)");
-const API_URL = ("TURBOPACK compile-time value", "http://localhost:8000") || "http://localhost:8000";
+const API_URL = ("TURBOPACK compile-time value", "https://language-backend-v8sy.onrender.com") || "http://localhost:8000";
 async function checkOnboardingStatus(token) {
     const response = await fetch(`${API_URL}/api/students/check`, {
         headers: {
@@ -225,7 +225,10 @@ const ProfileProvider = ({ children })=>{
                     setActiveProfile(null);
                 }
             } catch (error) {
-                console.error("Error fetching profiles:", error);
+                // API unreachable or returned an error - don't crash the app
+                console.warn("Could not reach API to fetch profiles:", error?.message || error);
+                setProfiles([]);
+                setActiveProfile(null);
             } finally{
                 setIsLoading(false);
             }
@@ -268,7 +271,7 @@ const ProfileProvider = ({ children })=>{
         children: children
     }, void 0, false, {
         fileName: "[project]/src/contexts/ProfileContext.tsx",
-        lineNumber: 82,
+        lineNumber: 85,
         columnNumber: 9
     }, ("TURBOPACK compile-time value", void 0));
 };

@@ -78,7 +78,10 @@ export async function fetchReviewCards(
   );
 
   if (!response.ok) {
-    throw new Error("Failed to fetch review cards");
+    const text = await response.text().catch(() => "");
+    console.warn(`[fetchReviewCards] ${response.status} ${response.statusText}`, text);
+    // Return empty result instead of throwing so callers degrade gracefully
+    return { cards: [], hasMore: false, nextCursor: null };
   }
 
   return response.json();

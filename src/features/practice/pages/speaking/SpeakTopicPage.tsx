@@ -1,3 +1,5 @@
+"use client";
+
 import { MessageSquare } from "lucide-react";
 import GenericSpeakingPage from "@/features/practice/pages/speaking/GenericSpeakingPage";
 

@@ -1,0 +1,17 @@
+{
+  "headers": {
+    "x-nextjs-stale-time": "300",
+    "x-nextjs-prerender": "1",
+    "x-next-cache-tags": "_N_T_/layout,_N_T_/practice/layout,_N_T_/practice/reading/layout,_N_T_/practice/reading/image-mcq/layout,_N_T_/practice/reading/image-mcq/page,_N_T_/practice/reading/image-mcq"
+  },
+  "segmentPaths": [
+    "/_tree",
+    "/_full",
+    "/practice/reading/image-mcq/__PAGE__",
+    "/practice/reading/image-mcq",
+    "/practice/reading",
+    "/practice",
+    "/_index",
+    "/_head"
+  ]
+}

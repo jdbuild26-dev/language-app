@@ -1,6 +1,7 @@
 "use client";
 
 import { Fragment, useState, useEffect } from "react";
+import Link from "next/link";
 import { Dialog, Transition } from "@headlessui/react";
 import { useRouter, usePathname } from "next/navigation";
 import { UserButton, useUser } from "@clerk/nextjs";

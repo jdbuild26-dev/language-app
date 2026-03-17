@@ -1,9 +1,6 @@
 1:"$Sreact.fragment"
-2:I[47257,["/_next/static/chunks/ff1a16fafef87110.js","/_next/static/chunks/55bd6be26a0ad63c.js"],"ClientPageRoot"]
-3:I[30518,["/_next/static/chunks/8fab886318be5835.js","/_next/static/chunks/6e06258459c0d0b6.js","/_next/static/chunks/87633a5323d5946f.js","/_next/static/chunks/38894bbc5ea8b4bd.js","/_next/static/chunks/1ba7165fcad84f60.js","/_next/static/chunks/195c216f52dae3f8.js","/_next/static/chunks/cdc466f2d376c720.js"],"default"]
-6:I[97367,["/_next/static/chunks/ff1a16fafef87110.js","/_next/static/chunks/55bd6be26a0ad63c.js"],"OutletBoundary"]
-7:"$Sreact.suspense"
-0:{"buildId":"q5wqq8E92bZgWXDf3utYm","rsc":["$","$1","c",{"children":[["$","$L2",null,{"Component":"$3","serverProvidedParams":{"searchParams":{},"params":{},"promises":["$@4","$@5"]}}],[["$","script","script-0",{"src":"/_next/static/chunks/195c216f52dae3f8.js","async":true}],["$","script","script-1",{"src":"/_next/static/chunks/cdc466f2d376c720.js","async":true}]],["$","$L6",null,{"children":["$","$7",null,{"name":"Next.MetadataOutlet","children":"$@8"}]}]]}],"loading":null,"isPartial":false}
-4:{}
-5:"$0:rsc:props:children:0:props:serverProvidedParams:params"
-8:null
+3:I[897367,["/_next/static/chunks/d96012bcfc98706a.js","/_next/static/chunks/16ea27c3b926bc31.js"],"OutletBoundary"]
+4:"$Sreact.suspense"
+0:{"buildId":"0PCLloO9DDj64JJKgSpoC","rsc":["$","$1","c",{"children":["$L2",null,["$","$L3",null,{"children":["$","$4",null,{"name":"Next.MetadataOutlet","children":"$@5"}]}]]}],"loading":null,"isPartial":false}
+5:null
+2:E{"digest":"NEXT_REDIRECT;replace;/vocabulary/lessons/learn;307;"}

@@ -278,10 +278,238 @@
       "namedRegex": "^/practice/fill\\-in\\-blank(?:/)?$"
     },
     {
+      "page": "/practice/listening/audio-fill-blanks-dropdown",
+      "regex": "^/practice/listening/audio\\-fill\\-blanks\\-dropdown(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/practice/listening/audio\\-fill\\-blanks\\-dropdown(?:/)?$"
+    },
+    {
+      "page": "/practice/listening/audio-fill-blanks-pro",
+      "regex": "^/practice/listening/audio\\-fill\\-blanks\\-pro(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/practice/listening/audio\\-fill\\-blanks\\-pro(?:/)?$"
+    },
+    {
+      "page": "/practice/listening/bubble",
+      "regex": "^/practice/listening/bubble(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/practice/listening/bubble(?:/)?$"
+    },
+    {
+      "page": "/practice/listening/comprehension",
+      "regex": "^/practice/listening/comprehension(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/practice/listening/comprehension(?:/)?$"
+    },
+    {
+      "page": "/practice/listening/conversation",
+      "regex": "^/practice/listening/conversation(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/practice/listening/conversation(?:/)?$"
+    },
+    {
+      "page": "/practice/listening/interactive",
+      "regex": "^/practice/listening/interactive(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/practice/listening/interactive(?:/)?$"
+    },
+    {
+      "page": "/practice/listening/order",
+      "regex": "^/practice/listening/order(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/practice/listening/order(?:/)?$"
+    },
+    {
+      "page": "/practice/listening/passage",
+      "regex": "^/practice/listening/passage(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/practice/listening/passage(?:/)?$"
+    },
+    {
+      "page": "/practice/listening/select",
+      "regex": "^/practice/listening/select(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/practice/listening/select(?:/)?$"
+    },
+    {
+      "page": "/practice/listening/type",
+      "regex": "^/practice/listening/type(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/practice/listening/type(?:/)?$"
+    },
+    {
+      "page": "/practice/reading/bubble-selection",
+      "regex": "^/practice/reading/bubble\\-selection(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/practice/reading/bubble\\-selection(?:/)?$"
+    },
+    {
+      "page": "/practice/reading/complete-passage",
+      "regex": "^/practice/reading/complete\\-passage(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/practice/reading/complete\\-passage(?:/)?$"
+    },
+    {
+      "page": "/practice/reading/comprehension",
+      "regex": "^/practice/reading/comprehension(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/practice/reading/comprehension(?:/)?$"
+    },
+    {
+      "page": "/practice/reading/conversation",
+      "regex": "^/practice/reading/conversation(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/practice/reading/conversation(?:/)?$"
+    },
+    {
+      "page": "/practice/reading/diagram-labelling",
+      "regex": "^/practice/reading/diagram\\-labelling(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/practice/reading/diagram\\-labelling(?:/)?$"
+    },
+    {
+      "page": "/practice/reading/fill-blanks-passage",
+      "regex": "^/practice/reading/fill\\-blanks\\-passage(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/practice/reading/fill\\-blanks\\-passage(?:/)?$"
+    },
+    {
+      "page": "/practice/reading/highlight-text",
+      "regex": "^/practice/reading/highlight\\-text(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/practice/reading/highlight\\-text(?:/)?$"
+    },
+    {
+      "page": "/practice/reading/image-labelling",
+      "regex": "^/practice/reading/image\\-labelling(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/practice/reading/image\\-labelling(?:/)?$"
+    },
+    {
+      "page": "/practice/reading/image-mcq",
+      "regex": "^/practice/reading/image\\-mcq(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/practice/reading/image\\-mcq(?:/)?$"
+    },
+    {
+      "page": "/practice/reading/match-desc-to-image",
+      "regex": "^/practice/reading/match\\-desc\\-to\\-image(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/practice/reading/match\\-desc\\-to\\-image(?:/)?$"
+    },
+    {
+      "page": "/practice/reading/match-pairs",
+      "regex": "^/practice/reading/match\\-pairs(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/practice/reading/match\\-pairs(?:/)?$"
+    },
+    {
+      "page": "/practice/reading/reorder",
+      "regex": "^/practice/reading/reorder(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/practice/reading/reorder(?:/)?$"
+    },
+    {
+      "page": "/practice/reading/summary-completion",
+      "regex": "^/practice/reading/summary\\-completion(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/practice/reading/summary\\-completion(?:/)?$"
+    },
+    {
+      "page": "/practice/reading/true-false",
+      "regex": "^/practice/reading/true\\-false(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/practice/reading/true\\-false(?:/)?$"
+    },
+    {
       "page": "/practice/select-topic",
       "regex": "^/practice/select\\-topic(?:/)?$",
       "routeKeys": {},
       "namedRegex": "^/practice/select\\-topic(?:/)?$"
+    },
+    {
+      "page": "/practice/speaking/image",
+      "regex": "^/practice/speaking/image(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/practice/speaking/image(?:/)?$"
+    },
+    {
+      "page": "/practice/speaking/interactive",
+      "regex": "^/practice/speaking/interactive(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/practice/speaking/interactive(?:/)?$"
+    },
+    {
+      "page": "/practice/speaking/topic",
+      "regex": "^/practice/speaking/topic(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/practice/speaking/topic(?:/)?$"
+    },
+    {
+      "page": "/practice/speaking/translate",
+      "regex": "^/practice/speaking/translate(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/practice/speaking/translate(?:/)?$"
+    },
+    {
+      "page": "/practice/writing/analysis",
+      "regex": "^/practice/writing/analysis(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/practice/writing/analysis(?:/)?$"
+    },
+    {
+      "page": "/practice/writing/documents",
+      "regex": "^/practice/writing/documents(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/practice/writing/documents(?:/)?$"
+    },
+    {
+      "page": "/practice/writing/fill-blanks",
+      "regex": "^/practice/writing/fill\\-blanks(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/practice/writing/fill\\-blanks(?:/)?$"
+    },
+    {
+      "page": "/practice/writing/form",
+      "regex": "^/practice/writing/form(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/practice/writing/form(?:/)?$"
+    },
+    {
+      "page": "/practice/writing/image",
+      "regex": "^/practice/writing/image(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/practice/writing/image(?:/)?$"
+    },
+    {
+      "page": "/practice/writing/interactive",
+      "regex": "^/practice/writing/interactive(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/practice/writing/interactive(?:/)?$"
+    },
+    {
+      "page": "/practice/writing/sentence-completion",
+      "regex": "^/practice/writing/sentence\\-completion(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/practice/writing/sentence\\-completion(?:/)?$"
+    },
+    {
+      "page": "/practice/writing/spelling",
+      "regex": "^/practice/writing/spelling(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/practice/writing/spelling(?:/)?$"
+    },
+    {
+      "page": "/practice/writing/topic",
+      "regex": "^/practice/writing/topic(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/practice/writing/topic(?:/)?$"
+    },
+    {
+      "page": "/practice/writing/translate",
+      "regex": "^/practice/writing/translate(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/practice/writing/translate(?:/)?$"
     },
     {
       "page": "/privacy-policy",
@@ -392,6 +620,48 @@
       "namedRegex": "^/vocabulary/lessons/activities(?:/)?$"
     },
     {
+      "page": "/vocabulary/lessons/activities/correct-spelling",
+      "regex": "^/vocabulary/lessons/activities/correct\\-spelling(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/vocabulary/lessons/activities/correct\\-spelling(?:/)?$"
+    },
+    {
+      "page": "/vocabulary/lessons/activities/flashcards",
+      "regex": "^/vocabulary/lessons/activities/flashcards(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/vocabulary/lessons/activities/flashcards(?:/)?$"
+    },
+    {
+      "page": "/vocabulary/lessons/activities/flashcards/game",
+      "regex": "^/vocabulary/lessons/activities/flashcards/game(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/vocabulary/lessons/activities/flashcards/game(?:/)?$"
+    },
+    {
+      "page": "/vocabulary/lessons/activities/gender-identifier",
+      "regex": "^/vocabulary/lessons/activities/gender\\-identifier(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/vocabulary/lessons/activities/gender\\-identifier(?:/)?$"
+    },
+    {
+      "page": "/vocabulary/lessons/activities/match-images",
+      "regex": "^/vocabulary/lessons/activities/match\\-images(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/vocabulary/lessons/activities/match\\-images(?:/)?$"
+    },
+    {
+      "page": "/vocabulary/lessons/activities/match-words",
+      "regex": "^/vocabulary/lessons/activities/match\\-words(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/vocabulary/lessons/activities/match\\-words(?:/)?$"
+    },
+    {
+      "page": "/vocabulary/lessons/activities/pronunciation",
+      "regex": "^/vocabulary/lessons/activities/pronunciation(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/vocabulary/lessons/activities/pronunciation(?:/)?$"
+    },
+    {
       "page": "/vocabulary/lessons/learn",
       "regex": "^/vocabulary/lessons/learn(?:/)?$",
       "routeKeys": {},
@@ -432,6 +702,120 @@
       "regex": "^/vocabulary/practice(?:/)?$",
       "routeKeys": {},
       "namedRegex": "^/vocabulary/practice(?:/)?$"
+    },
+    {
+      "page": "/vocabulary/practice/choose-options",
+      "regex": "^/vocabulary/practice/choose\\-options(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/vocabulary/practice/choose\\-options(?:/)?$"
+    },
+    {
+      "page": "/vocabulary/practice/correct-spelling",
+      "regex": "^/vocabulary/practice/correct\\-spelling(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/vocabulary/practice/correct\\-spelling(?:/)?$"
+    },
+    {
+      "page": "/vocabulary/practice/dictation-image",
+      "regex": "^/vocabulary/practice/dictation\\-image(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/vocabulary/practice/dictation\\-image(?:/)?$"
+    },
+    {
+      "page": "/vocabulary/practice/fill-in-blank",
+      "regex": "^/vocabulary/practice/fill\\-in\\-blank(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/vocabulary/practice/fill\\-in\\-blank(?:/)?$"
+    },
+    {
+      "page": "/vocabulary/practice/group-words",
+      "regex": "^/vocabulary/practice/group\\-words(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/vocabulary/practice/group\\-words(?:/)?$"
+    },
+    {
+      "page": "/vocabulary/practice/highlight-word",
+      "regex": "^/vocabulary/practice/highlight\\-word(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/vocabulary/practice/highlight\\-word(?:/)?$"
+    },
+    {
+      "page": "/vocabulary/practice/is-french-word",
+      "regex": "^/vocabulary/practice/is\\-french\\-word(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/vocabulary/practice/is\\-french\\-word(?:/)?$"
+    },
+    {
+      "page": "/vocabulary/practice/listening/audio-match",
+      "regex": "^/vocabulary/practice/listening/audio\\-match(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/vocabulary/practice/listening/audio\\-match(?:/)?$"
+    },
+    {
+      "page": "/vocabulary/practice/listening/dictation",
+      "regex": "^/vocabulary/practice/listening/dictation(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/vocabulary/practice/listening/dictation(?:/)?$"
+    },
+    {
+      "page": "/vocabulary/practice/listening/fill-blanks",
+      "regex": "^/vocabulary/practice/listening/fill\\-blanks(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/vocabulary/practice/listening/fill\\-blanks(?:/)?$"
+    },
+    {
+      "page": "/vocabulary/practice/listening/fill-in-blank",
+      "regex": "^/vocabulary/practice/listening/fill\\-in\\-blank(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/vocabulary/practice/listening/fill\\-in\\-blank(?:/)?$"
+    },
+    {
+      "page": "/vocabulary/practice/listening/multi-select",
+      "regex": "^/vocabulary/practice/listening/multi\\-select(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/vocabulary/practice/listening/multi\\-select(?:/)?$"
+    },
+    {
+      "page": "/vocabulary/practice/listening/phonetics",
+      "regex": "^/vocabulary/practice/listening/phonetics(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/vocabulary/practice/listening/phonetics(?:/)?$"
+    },
+    {
+      "page": "/vocabulary/practice/numbers",
+      "regex": "^/vocabulary/practice/numbers(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/vocabulary/practice/numbers(?:/)?$"
+    },
+    {
+      "page": "/vocabulary/practice/odd-one-out",
+      "regex": "^/vocabulary/practice/odd\\-one\\-out(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/vocabulary/practice/odd\\-one\\-out(?:/)?$"
+    },
+    {
+      "page": "/vocabulary/practice/repeat-sentence",
+      "regex": "^/vocabulary/practice/repeat\\-sentence(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/vocabulary/practice/repeat\\-sentence(?:/)?$"
+    },
+    {
+      "page": "/vocabulary/practice/repeat-word",
+      "regex": "^/vocabulary/practice/repeat\\-word(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/vocabulary/practice/repeat\\-word(?:/)?$"
+    },
+    {
+      "page": "/vocabulary/practice/srs-spelling",
+      "regex": "^/vocabulary/practice/srs\\-spelling(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/vocabulary/practice/srs\\-spelling(?:/)?$"
+    },
+    {
+      "page": "/vocabulary/practice/what-do-you-see",
+      "regex": "^/vocabulary/practice/what\\-do\\-you\\-see(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/vocabulary/practice/what\\-do\\-you\\-see(?:/)?$"
     }
   ],
   "dataRoutes": [],

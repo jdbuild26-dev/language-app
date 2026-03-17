@@ -5,11 +5,11 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import NumberInputControls from "@/components/number-practice/NumberInputControls";
-import NumberDisplayArea from "@/components/number-practice/NumberDisplayArea";
-import ConstructedAnswerArea from "@/components/number-practice/ConstructedAnswerArea";
-import WordBankArea from "@/components/number-practice/WordBankArea";
-import { numberToFrenchTokens, numberToFrench } from "@/utils/numberToFrench";
+import NumberInputControls from "@/features/vocabulary/components/number-practice/NumberInputControls";
+import NumberDisplayArea from "@/features/vocabulary/components/number-practice/NumberDisplayArea";
+import ConstructedAnswerArea from "@/features/vocabulary/components/number-practice/ConstructedAnswerArea";
+import WordBankArea from "@/features/vocabulary/components/number-practice/WordBankArea";
+import { numberToFrenchTokens, numberToFrench } from "@/features/vocabulary/utils/numberToFrench";
 
 export default function NumberPracticePage() {
   const router = useRouter();

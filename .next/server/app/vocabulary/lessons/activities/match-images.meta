@@ -1,0 +1,18 @@
+{
+  "headers": {
+    "x-nextjs-stale-time": "300",
+    "x-nextjs-prerender": "1",
+    "x-next-cache-tags": "_N_T_/layout,_N_T_/vocabulary/layout,_N_T_/vocabulary/lessons/layout,_N_T_/vocabulary/lessons/activities/layout,_N_T_/vocabulary/lessons/activities/match-images/layout,_N_T_/vocabulary/lessons/activities/match-images/page,_N_T_/vocabulary/lessons/activities/match-images"
+  },
+  "segmentPaths": [
+    "/_tree",
+    "/_full",
+    "/vocabulary/lessons/activities/match-images/__PAGE__",
+    "/vocabulary/lessons/activities/match-images",
+    "/vocabulary/lessons/activities",
+    "/vocabulary/lessons",
+    "/vocabulary",
+    "/_index",
+    "/_head"
+  ]
+}

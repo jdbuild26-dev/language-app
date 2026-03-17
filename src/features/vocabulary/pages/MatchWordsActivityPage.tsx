@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, Suspense } from "react";
 import { useExerciseTimer } from "@/hooks/useExerciseTimer";
 import { Loader2, Volume2, Image as ImageIcon } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -9,10 +9,18 @@ import { useTextToSpeech } from "@/hooks/useTextToSpeech";
 import { fetchMatchPairsData } from "@/services/vocabularyApi";
 
 export default function MatchWordsActivityPage({ mode = "text" }) {
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center min-h-screen"><Loader2 className="w-8 h-8 animate-spin text-sky-500" /></div>}>
+      <MatchWordsContent mode={mode} />
+    </Suspense>
+  );
+}
+
+function MatchWordsContent({ mode = "text" }) {
   // mode: 'text' (English <-> French) or 'image' (Image <-> French)
   const router = useRouter();
   const { speak } = useTextToSpeech();
-  const [searchParams] = useSearchParams();
+  const searchParams = useSearchParams();
 
   // Allow overriding mode via query param if needed, though prop is cleaner for distinct routes
   const currentMode = searchParams.get("mode") || mode;

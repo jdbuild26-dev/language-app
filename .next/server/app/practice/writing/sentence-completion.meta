@@ -1,0 +1,17 @@
+{
+  "headers": {
+    "x-nextjs-stale-time": "300",
+    "x-nextjs-prerender": "1",
+    "x-next-cache-tags": "_N_T_/layout,_N_T_/practice/layout,_N_T_/practice/writing/layout,_N_T_/practice/writing/sentence-completion/layout,_N_T_/practice/writing/sentence-completion/page,_N_T_/practice/writing/sentence-completion"
+  },
+  "segmentPaths": [
+    "/_tree",
+    "/_full",
+    "/practice/writing/sentence-completion/__PAGE__",
+    "/practice/writing/sentence-completion",
+    "/practice/writing",
+    "/practice",
+    "/_index",
+    "/_head"
+  ]
+}

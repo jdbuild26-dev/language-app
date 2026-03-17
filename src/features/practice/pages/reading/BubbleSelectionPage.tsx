@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, Suspense } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { usePracticeExit } from "@/hooks/usePracticeExit";
 import { useExerciseTimer } from "@/hooks/useExerciseTimer";
@@ -27,10 +27,18 @@ function shuffleArray(array) {
 }
 
 export default function BubbleSelectionPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-blue-500" /></div>}>
+      <BubbleSelectionContent />
+    </Suspense>
+  );
+}
+
+function BubbleSelectionContent() {
   const handleExit = usePracticeExit();
   const { speak } = useTextToSpeech();
   const { learningLang, knownLang } = useLanguage();
-  const [searchParams] = useSearchParams();
+  const searchParams = useSearchParams();
   const tag = searchParams.get("tag");
 
   const [questions, setQuestions] = useState([]);

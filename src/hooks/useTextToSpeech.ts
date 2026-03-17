@@ -11,10 +11,13 @@ export const useTextToSpeech = () => {
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [voices, setVoices] = useState([]);
-  const syntaxRef = useRef(window.speechSynthesis);
+  const syntaxRef = useRef(typeof window !== "undefined" ? window.speechSynthesis : null);
 
   useEffect(() => {
+    if (!syntaxRef.current) return;
+
     const updateVoices = () => {
+      if (!syntaxRef.current) return;
       const availableVoices = syntaxRef.current.getVoices();
       if (availableVoices.length > 0) {
         setVoices(availableVoices);

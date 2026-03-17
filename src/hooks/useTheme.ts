@@ -3,18 +3,17 @@
 import { useEffect, useState } from "react";
 
 export function useTheme() {
-  const [theme, setTheme] = useState(() => {
-    if (typeof window !== "undefined") {
-      const savedTheme = localStorage.getItem("theme");
-      if (savedTheme) {
-        return savedTheme;
-      }
-      if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
-        return "dark";
-      }
+  const [theme, setTheme] = useState("light"); // always "light" on SSR
+
+  // After mount, sync to saved preference
+  useEffect(() => {
+    const saved = localStorage.getItem("theme");
+    if (saved) {
+      setTheme(saved);
+    } else if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
+      setTheme("dark");
     }
-    return "light";
-  });
+  }, []);
 
   useEffect(() => {
     const root = window.document.documentElement;

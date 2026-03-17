@@ -1,0 +1,17 @@
+{
+  "headers": {
+    "x-nextjs-stale-time": "300",
+    "x-nextjs-prerender": "1",
+    "x-next-cache-tags": "_N_T_/layout,_N_T_/practice/layout,_N_T_/practice/reading/layout,_N_T_/practice/reading/comprehension/layout,_N_T_/practice/reading/comprehension/page,_N_T_/practice/reading/comprehension"
+  },
+  "segmentPaths": [
+    "/_tree",
+    "/_full",
+    "/practice/reading/comprehension/__PAGE__",
+    "/practice/reading/comprehension",
+    "/practice/reading",
+    "/practice",
+    "/_index",
+    "/_head"
+  ]
+}

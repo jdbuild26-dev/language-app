@@ -16,6 +16,17 @@ import { saveProgress, getLessonProgress } from "@/services/progressApi";
 import { useLanguage } from "@/contexts/LanguageContext";
 
 export default function LessonLearnPage() {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+  if (!mounted) return (
+    <div className="fixed inset-0 z-[9999] bg-white dark:bg-slate-950 flex items-center justify-center">
+      <div className="w-12 h-12 border-4 border-sky-500 border-t-transparent rounded-full animate-spin"></div>
+    </div>
+  );
+  return <LessonLearnPageContent />;
+}
+
+function LessonLearnPageContent() {
   const router = useRouter();
   const { user } = useUser();
   const { getToken } = useAuth();

@@ -1,7 +1,7 @@
 1:"$Sreact.fragment"
-2:I[92825,["/_next/static/chunks/ff1a16fafef87110.js","/_next/static/chunks/55bd6be26a0ad63c.js"],"ClientSegmentRoot"]
-3:I[51861,["/_next/static/chunks/8fab886318be5835.js","/_next/static/chunks/6e06258459c0d0b6.js","/_next/static/chunks/87633a5323d5946f.js","/_next/static/chunks/38894bbc5ea8b4bd.js","/_next/static/chunks/1ba7165fcad84f60.js","/_next/static/chunks/787a431261d98967.js"],"default"]
-4:I[39756,["/_next/static/chunks/ff1a16fafef87110.js","/_next/static/chunks/55bd6be26a0ad63c.js"],"default"]
-5:I[37457,["/_next/static/chunks/ff1a16fafef87110.js","/_next/static/chunks/55bd6be26a0ad63c.js"],"default"]
-0:{"buildId":"q5wqq8E92bZgWXDf3utYm","rsc":["$","$1","c",{"children":[[["$","script","script-0",{"src":"/_next/static/chunks/787a431261d98967.js","async":true}]],["$","$L2",null,{"Component":"$3","slots":{"children":["$","$L4",null,{"parallelRouterKey":"children","template":["$","$L5",null,{}]}]},"serverProvidedParams":{"params":{},"promises":["$@6"]}}]]}],"loading":null,"isPartial":false}
+2:I[92825,["/_next/static/chunks/d96012bcfc98706a.js","/_next/static/chunks/16ea27c3b926bc31.js"],"ClientSegmentRoot"]
+3:I[451861,["/_next/static/chunks/e8f8cd3d09caa729.js","/_next/static/chunks/bd4807038a6e44b7.js","/_next/static/chunks/442a64f8e01a213b.js","/_next/static/chunks/4a7bb85d98e5bb02.js","/_next/static/chunks/d43738abda8636f7.js","/_next/static/chunks/d5c29e9c5145a8c7.js","/_next/static/chunks/0b004d86c5f1a258.js","/_next/static/chunks/a4999182ef1ffdfd.js","/_next/static/chunks/3fee8e4bee915d0d.js"],"default"]
+4:I[339756,["/_next/static/chunks/d96012bcfc98706a.js","/_next/static/chunks/16ea27c3b926bc31.js"],"default"]
+5:I[837457,["/_next/static/chunks/d96012bcfc98706a.js","/_next/static/chunks/16ea27c3b926bc31.js"],"default"]
+0:{"buildId":"0PCLloO9DDj64JJKgSpoC","rsc":["$","$1","c",{"children":[[["$","script","script-0",{"src":"/_next/static/chunks/3fee8e4bee915d0d.js","async":true}]],["$","$L2",null,{"Component":"$3","slots":{"children":["$","$L4",null,{"parallelRouterKey":"children","template":["$","$L5",null,{}]}]},"serverProvidedParams":{"params":{},"promises":["$@6"]}}]]}],"loading":null,"isPartial":false}
 6:"$0:rsc:props:children:1:props:serverProvidedParams:params"

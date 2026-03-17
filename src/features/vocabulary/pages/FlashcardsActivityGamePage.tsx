@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ArrowLeft, Settings, X, Volume2, VolumeX } from "lucide-react";
+import { ArrowLeft, Settings, X, Volume2, VolumeX, Loader2 } from "lucide-react";
 import {
   fetchVocabulary,
   saveUserProgress,
@@ -14,7 +14,15 @@ import { useUser, useAuth } from "@clerk/nextjs";
 import { AnimatePresence, motion } from "framer-motion";
 
 export default function FlashcardsActivityGamePage() {
-  const [searchParams] = useSearchParams();
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-sky-500" /></div>}>
+      <FlashcardsActivityGameContent />
+    </Suspense>
+  );
+}
+
+function FlashcardsActivityGameContent() {
+  const searchParams = useSearchParams();
   const router = useRouter();
   const { user } = useUser();
   const { getToken } = useAuth();

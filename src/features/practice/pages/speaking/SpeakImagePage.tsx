@@ -1,3 +1,5 @@
+"use client";
+
 import { Image as ImageIcon } from "lucide-react";
 import GenericSpeakingPage from "@/features/practice/pages/speaking/GenericSpeakingPage";
 

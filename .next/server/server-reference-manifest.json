@@ -9,55 +9,55 @@
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
         },
         "app/_not-found/page": {
-          "moduleId": 9101,
+          "moduleId": 209101,
           "async": false,
           "exportedName": "invalidateCacheAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
         },
         "app/ai-practice/general/page": {
-          "moduleId": 16737,
+          "moduleId": 316737,
           "async": false,
           "exportedName": "invalidateCacheAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
         },
         "app/ai-practice/page": {
-          "moduleId": 83590,
+          "moduleId": 183590,
           "async": false,
           "exportedName": "invalidateCacheAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
         },
         "app/ai-practice/scenarios/chats/[topicSlug]/chat/page": {
-          "moduleId": 22516,
+          "moduleId": 122516,
           "async": false,
           "exportedName": "invalidateCacheAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
         },
         "app/ai-practice/scenarios/chats/page": {
-          "moduleId": 53057,
+          "moduleId": 753057,
           "async": false,
           "exportedName": "invalidateCacheAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
         },
         "app/ai-practice/scenarios/missions/page": {
-          "moduleId": 16306,
+          "moduleId": 916306,
           "async": false,
           "exportedName": "invalidateCacheAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
         },
         "app/ai-practice/scenarios/profession/page": {
-          "moduleId": 42736,
+          "moduleId": 842736,
           "async": false,
           "exportedName": "invalidateCacheAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
         },
         "app/blogs/page": {
-          "moduleId": 98821,
+          "moduleId": 498821,
           "async": false,
           "exportedName": "invalidateCacheAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
         },
         "app/dashboard/assignments/page": {
-          "moduleId": 6298,
+          "moduleId": 206298,
           "async": false,
           "exportedName": "invalidateCacheAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
@@ -69,7 +69,7 @@
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
         },
         "app/dashboard/page": {
-          "moduleId": 40520,
+          "moduleId": 340520,
           "async": false,
           "exportedName": "invalidateCacheAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
@@ -81,31 +81,31 @@
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
         },
         "app/dashboard/referral/page": {
-          "moduleId": 51056,
+          "moduleId": 751056,
           "async": false,
           "exportedName": "invalidateCacheAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
         },
         "app/dashboard/teachers/page": {
-          "moduleId": 99581,
+          "moduleId": 999581,
           "async": false,
           "exportedName": "invalidateCacheAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
         },
         "app/find-teacher/page": {
-          "moduleId": 97106,
+          "moduleId": 397106,
           "async": false,
           "exportedName": "invalidateCacheAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
         },
         "app/grammar/lessons/[noteId]/page": {
-          "moduleId": 1116,
+          "moduleId": 301116,
           "async": false,
           "exportedName": "invalidateCacheAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
         },
         "app/grammar/lessons/page": {
-          "moduleId": 38195,
+          "moduleId": 438195,
           "async": false,
           "exportedName": "invalidateCacheAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
@@ -117,97 +117,325 @@
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
         },
         "app/grammar/practice/page": {
-          "moduleId": 39914,
+          "moduleId": 439914,
           "async": false,
           "exportedName": "invalidateCacheAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
         },
         "app/onboarding/new-profile/page": {
-          "moduleId": 57357,
+          "moduleId": 557357,
           "async": false,
           "exportedName": "invalidateCacheAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
         },
         "app/onboarding/student/page": {
-          "moduleId": 14169,
+          "moduleId": 814169,
           "async": false,
           "exportedName": "invalidateCacheAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
         },
         "app/onboarding/teacher/page": {
-          "moduleId": 55966,
+          "moduleId": 555966,
           "async": false,
           "exportedName": "invalidateCacheAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
         },
         "app/page": {
-          "moduleId": 63731,
+          "moduleId": 663731,
           "async": false,
           "exportedName": "invalidateCacheAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
         },
         "app/practice/correct-spelling/page": {
-          "moduleId": 25222,
+          "moduleId": 725222,
           "async": false,
           "exportedName": "invalidateCacheAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
         },
         "app/practice/fill-in-blank/page": {
-          "moduleId": 44768,
+          "moduleId": 144768,
+          "async": false,
+          "exportedName": "invalidateCacheAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
+        },
+        "app/practice/listening/audio-fill-blanks-dropdown/page": {
+          "moduleId": 977014,
+          "async": false,
+          "exportedName": "invalidateCacheAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
+        },
+        "app/practice/listening/audio-fill-blanks-pro/page": {
+          "moduleId": 808777,
+          "async": false,
+          "exportedName": "invalidateCacheAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
+        },
+        "app/practice/listening/bubble/page": {
+          "moduleId": 926746,
+          "async": false,
+          "exportedName": "invalidateCacheAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
+        },
+        "app/practice/listening/comprehension/page": {
+          "moduleId": 68167,
+          "async": false,
+          "exportedName": "invalidateCacheAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
+        },
+        "app/practice/listening/conversation/page": {
+          "moduleId": 439133,
+          "async": false,
+          "exportedName": "invalidateCacheAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
+        },
+        "app/practice/listening/interactive/page": {
+          "moduleId": 746090,
+          "async": false,
+          "exportedName": "invalidateCacheAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
+        },
+        "app/practice/listening/order/page": {
+          "moduleId": 710384,
+          "async": false,
+          "exportedName": "invalidateCacheAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
+        },
+        "app/practice/listening/passage/page": {
+          "moduleId": 439114,
+          "async": false,
+          "exportedName": "invalidateCacheAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
+        },
+        "app/practice/listening/select/page": {
+          "moduleId": 420261,
+          "async": false,
+          "exportedName": "invalidateCacheAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
+        },
+        "app/practice/listening/type/page": {
+          "moduleId": 74900,
           "async": false,
           "exportedName": "invalidateCacheAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
         },
         "app/practice/page": {
-          "moduleId": 96501,
+          "moduleId": 296501,
+          "async": false,
+          "exportedName": "invalidateCacheAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
+        },
+        "app/practice/reading/bubble-selection/page": {
+          "moduleId": 250672,
+          "async": false,
+          "exportedName": "invalidateCacheAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
+        },
+        "app/practice/reading/complete-passage/page": {
+          "moduleId": 412194,
+          "async": false,
+          "exportedName": "invalidateCacheAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
+        },
+        "app/practice/reading/comprehension/page": {
+          "moduleId": 362948,
+          "async": false,
+          "exportedName": "invalidateCacheAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
+        },
+        "app/practice/reading/conversation/page": {
+          "moduleId": 77794,
+          "async": false,
+          "exportedName": "invalidateCacheAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
+        },
+        "app/practice/reading/diagram-labelling/page": {
+          "moduleId": 20309,
+          "async": false,
+          "exportedName": "invalidateCacheAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
+        },
+        "app/practice/reading/fill-blanks-passage/page": {
+          "moduleId": 972796,
+          "async": false,
+          "exportedName": "invalidateCacheAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
+        },
+        "app/practice/reading/highlight-text/page": {
+          "moduleId": 372004,
+          "async": false,
+          "exportedName": "invalidateCacheAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
+        },
+        "app/practice/reading/image-labelling/page": {
+          "moduleId": 961017,
+          "async": false,
+          "exportedName": "invalidateCacheAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
+        },
+        "app/practice/reading/image-mcq/page": {
+          "moduleId": 7886,
+          "async": false,
+          "exportedName": "invalidateCacheAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
+        },
+        "app/practice/reading/match-desc-to-image/page": {
+          "moduleId": 799248,
+          "async": false,
+          "exportedName": "invalidateCacheAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
+        },
+        "app/practice/reading/match-pairs/page": {
+          "moduleId": 397660,
+          "async": false,
+          "exportedName": "invalidateCacheAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
+        },
+        "app/practice/reading/reorder/page": {
+          "moduleId": 413538,
+          "async": false,
+          "exportedName": "invalidateCacheAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
+        },
+        "app/practice/reading/summary-completion/page": {
+          "moduleId": 579046,
+          "async": false,
+          "exportedName": "invalidateCacheAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
+        },
+        "app/practice/reading/true-false/page": {
+          "moduleId": 655308,
           "async": false,
           "exportedName": "invalidateCacheAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
         },
         "app/practice/select-topic/page": {
-          "moduleId": 25873,
+          "moduleId": 425873,
+          "async": false,
+          "exportedName": "invalidateCacheAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
+        },
+        "app/practice/speaking/image/page": {
+          "moduleId": 622706,
+          "async": false,
+          "exportedName": "invalidateCacheAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
+        },
+        "app/practice/speaking/interactive/page": {
+          "moduleId": 666390,
+          "async": false,
+          "exportedName": "invalidateCacheAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
+        },
+        "app/practice/speaking/topic/page": {
+          "moduleId": 518608,
+          "async": false,
+          "exportedName": "invalidateCacheAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
+        },
+        "app/practice/speaking/translate/page": {
+          "moduleId": 180132,
+          "async": false,
+          "exportedName": "invalidateCacheAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
+        },
+        "app/practice/writing/analysis/page": {
+          "moduleId": 1994,
+          "async": false,
+          "exportedName": "invalidateCacheAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
+        },
+        "app/practice/writing/documents/page": {
+          "moduleId": 529028,
+          "async": false,
+          "exportedName": "invalidateCacheAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
+        },
+        "app/practice/writing/fill-blanks/page": {
+          "moduleId": 647412,
+          "async": false,
+          "exportedName": "invalidateCacheAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
+        },
+        "app/practice/writing/form/page": {
+          "moduleId": 866741,
+          "async": false,
+          "exportedName": "invalidateCacheAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
+        },
+        "app/practice/writing/image/page": {
+          "moduleId": 770317,
+          "async": false,
+          "exportedName": "invalidateCacheAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
+        },
+        "app/practice/writing/interactive/page": {
+          "moduleId": 347767,
+          "async": false,
+          "exportedName": "invalidateCacheAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
+        },
+        "app/practice/writing/sentence-completion/page": {
+          "moduleId": 882690,
+          "async": false,
+          "exportedName": "invalidateCacheAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
+        },
+        "app/practice/writing/spelling/page": {
+          "moduleId": 386569,
+          "async": false,
+          "exportedName": "invalidateCacheAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
+        },
+        "app/practice/writing/topic/page": {
+          "moduleId": 844796,
+          "async": false,
+          "exportedName": "invalidateCacheAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
+        },
+        "app/practice/writing/translate/page": {
+          "moduleId": 172682,
           "async": false,
           "exportedName": "invalidateCacheAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
         },
         "app/privacy-policy/page": {
-          "moduleId": 44862,
+          "moduleId": 344862,
           "async": false,
           "exportedName": "invalidateCacheAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
         },
         "app/profile/[username]/page": {
-          "moduleId": 82668,
+          "moduleId": 582668,
           "async": false,
           "exportedName": "invalidateCacheAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
         },
         "app/refund-policy/page": {
-          "moduleId": 38934,
+          "moduleId": 138934,
           "async": false,
           "exportedName": "invalidateCacheAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
         },
         "app/sign-in/[[...sign-in]]/page": {
-          "moduleId": 68459,
+          "moduleId": 868459,
           "async": false,
           "exportedName": "invalidateCacheAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
         },
         "app/sign-up/[[...sign-up]]/page": {
-          "moduleId": 91415,
+          "moduleId": 791415,
           "async": false,
           "exportedName": "invalidateCacheAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
         },
         "app/stories/[storyId]/page": {
-          "moduleId": 36616,
+          "moduleId": 636616,
           "async": false,
           "exportedName": "invalidateCacheAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
         },
         "app/stories/learn/by-grammar/[topic]/page": {
-          "moduleId": 59342,
+          "moduleId": 859342,
           "async": false,
           "exportedName": "invalidateCacheAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
@@ -219,97 +447,133 @@
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
         },
         "app/stories/learn/by-level/[level]/page": {
-          "moduleId": 90844,
+          "moduleId": 590844,
           "async": false,
           "exportedName": "invalidateCacheAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
         },
         "app/stories/learn/by-level/page": {
-          "moduleId": 71298,
+          "moduleId": 671298,
           "async": false,
           "exportedName": "invalidateCacheAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
         },
         "app/stories/learn/by-theme/[theme]/page": {
-          "moduleId": 83293,
+          "moduleId": 683293,
           "async": false,
           "exportedName": "invalidateCacheAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
         },
         "app/stories/learn/by-theme/page": {
-          "moduleId": 23048,
+          "moduleId": 423048,
           "async": false,
           "exportedName": "invalidateCacheAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
         },
         "app/stories/learn/page": {
-          "moduleId": 56101,
+          "moduleId": 756101,
           "async": false,
           "exportedName": "invalidateCacheAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
         },
         "app/stories/page": {
-          "moduleId": 43261,
+          "moduleId": 743261,
           "async": false,
           "exportedName": "invalidateCacheAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
         },
         "app/teacher-dashboard/assignments/page": {
-          "moduleId": 96986,
+          "moduleId": 596986,
           "async": false,
           "exportedName": "invalidateCacheAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
         },
         "app/teacher-dashboard/calendar/page": {
-          "moduleId": 80824,
+          "moduleId": 480824,
           "async": false,
           "exportedName": "invalidateCacheAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
         },
         "app/teacher-dashboard/classes/page": {
-          "moduleId": 54550,
+          "moduleId": 854550,
           "async": false,
           "exportedName": "invalidateCacheAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
         },
         "app/teacher-dashboard/page": {
-          "moduleId": 9394,
+          "moduleId": 609394,
           "async": false,
           "exportedName": "invalidateCacheAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
         },
         "app/teacher-dashboard/profile/page": {
-          "moduleId": 28131,
+          "moduleId": 528131,
           "async": false,
           "exportedName": "invalidateCacheAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
         },
         "app/teacher-dashboard/referral/page": {
-          "moduleId": 10003,
+          "moduleId": 510003,
           "async": false,
           "exportedName": "invalidateCacheAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
         },
         "app/teacher-dashboard/students/page": {
-          "moduleId": 45751,
+          "moduleId": 145751,
           "async": false,
           "exportedName": "invalidateCacheAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
         },
         "app/terms-conditions/page": {
-          "moduleId": 32597,
+          "moduleId": 632597,
           "async": false,
           "exportedName": "invalidateCacheAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
         },
         "app/vocabulary/flashcards/[level]/[category]/page": {
-          "moduleId": 48082,
+          "moduleId": 748082,
           "async": false,
           "exportedName": "invalidateCacheAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
         },
         "app/vocabulary/learn/page": {
-          "moduleId": 36266,
+          "moduleId": 636266,
+          "async": false,
+          "exportedName": "invalidateCacheAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
+        },
+        "app/vocabulary/lessons/activities/correct-spelling/page": {
+          "moduleId": 312445,
+          "async": false,
+          "exportedName": "invalidateCacheAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
+        },
+        "app/vocabulary/lessons/activities/flashcards/game/page": {
+          "moduleId": 121588,
+          "async": false,
+          "exportedName": "invalidateCacheAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
+        },
+        "app/vocabulary/lessons/activities/flashcards/page": {
+          "moduleId": 70244,
+          "async": false,
+          "exportedName": "invalidateCacheAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
+        },
+        "app/vocabulary/lessons/activities/gender-identifier/page": {
+          "moduleId": 23516,
+          "async": false,
+          "exportedName": "invalidateCacheAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
+        },
+        "app/vocabulary/lessons/activities/match-images/page": {
+          "moduleId": 559897,
+          "async": false,
+          "exportedName": "invalidateCacheAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
+        },
+        "app/vocabulary/lessons/activities/match-words/page": {
+          "moduleId": 709192,
           "async": false,
           "exportedName": "invalidateCacheAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
@@ -320,32 +584,38 @@
           "exportedName": "invalidateCacheAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
         },
+        "app/vocabulary/lessons/activities/pronunciation/page": {
+          "moduleId": 323301,
+          "async": false,
+          "exportedName": "invalidateCacheAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
+        },
         "app/vocabulary/lessons/learn/[level]/[category]/page": {
-          "moduleId": 49431,
+          "moduleId": 849431,
           "async": false,
           "exportedName": "invalidateCacheAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
         },
         "app/vocabulary/lessons/learn/[level]/page": {
-          "moduleId": 76944,
+          "moduleId": 576944,
           "async": false,
           "exportedName": "invalidateCacheAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
         },
         "app/vocabulary/lessons/learn/page": {
-          "moduleId": 59727,
+          "moduleId": 959727,
           "async": false,
           "exportedName": "invalidateCacheAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
         },
         "app/vocabulary/lessons/review/page": {
-          "moduleId": 39077,
+          "moduleId": 339077,
           "async": false,
           "exportedName": "invalidateCacheAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
         },
         "app/vocabulary/lessons/review/wordlists/page": {
-          "moduleId": 78897,
+          "moduleId": 478897,
           "async": false,
           "exportedName": "invalidateCacheAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
@@ -357,25 +627,139 @@
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
         },
         "app/vocabulary/lessons/review/words/page": {
-          "moduleId": 18817,
+          "moduleId": 218817,
           "async": false,
           "exportedName": "invalidateCacheAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
         },
         "app/vocabulary/lessons/review/words/session/page": {
-          "moduleId": 14494,
+          "moduleId": 614494,
           "async": false,
           "exportedName": "invalidateCacheAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
         },
         "app/vocabulary/page": {
-          "moduleId": 34103,
+          "moduleId": 434103,
+          "async": false,
+          "exportedName": "invalidateCacheAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
+        },
+        "app/vocabulary/practice/choose-options/page": {
+          "moduleId": 199985,
+          "async": false,
+          "exportedName": "invalidateCacheAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
+        },
+        "app/vocabulary/practice/correct-spelling/page": {
+          "moduleId": 950107,
+          "async": false,
+          "exportedName": "invalidateCacheAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
+        },
+        "app/vocabulary/practice/dictation-image/page": {
+          "moduleId": 929176,
+          "async": false,
+          "exportedName": "invalidateCacheAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
+        },
+        "app/vocabulary/practice/fill-in-blank/page": {
+          "moduleId": 718772,
+          "async": false,
+          "exportedName": "invalidateCacheAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
+        },
+        "app/vocabulary/practice/group-words/page": {
+          "moduleId": 254369,
+          "async": false,
+          "exportedName": "invalidateCacheAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
+        },
+        "app/vocabulary/practice/highlight-word/page": {
+          "moduleId": 403520,
+          "async": false,
+          "exportedName": "invalidateCacheAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
+        },
+        "app/vocabulary/practice/is-french-word/page": {
+          "moduleId": 864557,
+          "async": false,
+          "exportedName": "invalidateCacheAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
+        },
+        "app/vocabulary/practice/listening/audio-match/page": {
+          "moduleId": 770509,
+          "async": false,
+          "exportedName": "invalidateCacheAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
+        },
+        "app/vocabulary/practice/listening/dictation/page": {
+          "moduleId": 921170,
+          "async": false,
+          "exportedName": "invalidateCacheAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
+        },
+        "app/vocabulary/practice/listening/fill-blanks/page": {
+          "moduleId": 297852,
+          "async": false,
+          "exportedName": "invalidateCacheAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
+        },
+        "app/vocabulary/practice/listening/fill-in-blank/page": {
+          "moduleId": 391788,
+          "async": false,
+          "exportedName": "invalidateCacheAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
+        },
+        "app/vocabulary/practice/listening/multi-select/page": {
+          "moduleId": 581204,
+          "async": false,
+          "exportedName": "invalidateCacheAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
+        },
+        "app/vocabulary/practice/listening/phonetics/page": {
+          "moduleId": 265208,
+          "async": false,
+          "exportedName": "invalidateCacheAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
+        },
+        "app/vocabulary/practice/numbers/page": {
+          "moduleId": 668606,
+          "async": false,
+          "exportedName": "invalidateCacheAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
+        },
+        "app/vocabulary/practice/odd-one-out/page": {
+          "moduleId": 596224,
           "async": false,
           "exportedName": "invalidateCacheAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
         },
         "app/vocabulary/practice/page": {
-          "moduleId": 15786,
+          "moduleId": 315786,
+          "async": false,
+          "exportedName": "invalidateCacheAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
+        },
+        "app/vocabulary/practice/repeat-sentence/page": {
+          "moduleId": 496159,
+          "async": false,
+          "exportedName": "invalidateCacheAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
+        },
+        "app/vocabulary/practice/repeat-word/page": {
+          "moduleId": 292999,
+          "async": false,
+          "exportedName": "invalidateCacheAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
+        },
+        "app/vocabulary/practice/srs-spelling/page": {
+          "moduleId": 841670,
+          "async": false,
+          "exportedName": "invalidateCacheAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
+        },
+        "app/vocabulary/practice/what-do-you-see/page": {
+          "moduleId": 670359,
           "async": false,
           "exportedName": "invalidateCacheAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
@@ -408,8 +792,46 @@
         "app/page": "action-browser",
         "app/practice/correct-spelling/page": "action-browser",
         "app/practice/fill-in-blank/page": "action-browser",
+        "app/practice/listening/audio-fill-blanks-dropdown/page": "action-browser",
+        "app/practice/listening/audio-fill-blanks-pro/page": "action-browser",
+        "app/practice/listening/bubble/page": "action-browser",
+        "app/practice/listening/comprehension/page": "action-browser",
+        "app/practice/listening/conversation/page": "action-browser",
+        "app/practice/listening/interactive/page": "action-browser",
+        "app/practice/listening/order/page": "action-browser",
+        "app/practice/listening/passage/page": "action-browser",
+        "app/practice/listening/select/page": "action-browser",
+        "app/practice/listening/type/page": "action-browser",
         "app/practice/page": "action-browser",
+        "app/practice/reading/bubble-selection/page": "action-browser",
+        "app/practice/reading/complete-passage/page": "action-browser",
+        "app/practice/reading/comprehension/page": "action-browser",
+        "app/practice/reading/conversation/page": "action-browser",
+        "app/practice/reading/diagram-labelling/page": "action-browser",
+        "app/practice/reading/fill-blanks-passage/page": "action-browser",
+        "app/practice/reading/highlight-text/page": "action-browser",
+        "app/practice/reading/image-labelling/page": "action-browser",
+        "app/practice/reading/image-mcq/page": "action-browser",
+        "app/practice/reading/match-desc-to-image/page": "action-browser",
+        "app/practice/reading/match-pairs/page": "action-browser",
+        "app/practice/reading/reorder/page": "action-browser",
+        "app/practice/reading/summary-completion/page": "action-browser",
+        "app/practice/reading/true-false/page": "action-browser",
         "app/practice/select-topic/page": "action-browser",
+        "app/practice/speaking/image/page": "action-browser",
+        "app/practice/speaking/interactive/page": "action-browser",
+        "app/practice/speaking/topic/page": "action-browser",
+        "app/practice/speaking/translate/page": "action-browser",
+        "app/practice/writing/analysis/page": "action-browser",
+        "app/practice/writing/documents/page": "action-browser",
+        "app/practice/writing/fill-blanks/page": "action-browser",
+        "app/practice/writing/form/page": "action-browser",
+        "app/practice/writing/image/page": "action-browser",
+        "app/practice/writing/interactive/page": "action-browser",
+        "app/practice/writing/sentence-completion/page": "action-browser",
+        "app/practice/writing/spelling/page": "action-browser",
+        "app/practice/writing/topic/page": "action-browser",
+        "app/practice/writing/translate/page": "action-browser",
         "app/privacy-policy/page": "action-browser",
         "app/profile/[username]/page": "action-browser",
         "app/refund-policy/page": "action-browser",
@@ -434,7 +856,14 @@
         "app/terms-conditions/page": "action-browser",
         "app/vocabulary/flashcards/[level]/[category]/page": "action-browser",
         "app/vocabulary/learn/page": "action-browser",
+        "app/vocabulary/lessons/activities/correct-spelling/page": "action-browser",
+        "app/vocabulary/lessons/activities/flashcards/game/page": "action-browser",
+        "app/vocabulary/lessons/activities/flashcards/page": "action-browser",
+        "app/vocabulary/lessons/activities/gender-identifier/page": "action-browser",
+        "app/vocabulary/lessons/activities/match-images/page": "action-browser",
+        "app/vocabulary/lessons/activities/match-words/page": "action-browser",
         "app/vocabulary/lessons/activities/page": "action-browser",
+        "app/vocabulary/lessons/activities/pronunciation/page": "action-browser",
         "app/vocabulary/lessons/learn/[level]/[category]/page": "action-browser",
         "app/vocabulary/lessons/learn/[level]/page": "action-browser",
         "app/vocabulary/lessons/learn/page": "action-browser",
@@ -444,7 +873,26 @@
         "app/vocabulary/lessons/review/words/page": "action-browser",
         "app/vocabulary/lessons/review/words/session/page": "action-browser",
         "app/vocabulary/page": "action-browser",
-        "app/vocabulary/practice/page": "action-browser"
+        "app/vocabulary/practice/choose-options/page": "action-browser",
+        "app/vocabulary/practice/correct-spelling/page": "action-browser",
+        "app/vocabulary/practice/dictation-image/page": "action-browser",
+        "app/vocabulary/practice/fill-in-blank/page": "action-browser",
+        "app/vocabulary/practice/group-words/page": "action-browser",
+        "app/vocabulary/practice/highlight-word/page": "action-browser",
+        "app/vocabulary/practice/is-french-word/page": "action-browser",
+        "app/vocabulary/practice/listening/audio-match/page": "action-browser",
+        "app/vocabulary/practice/listening/dictation/page": "action-browser",
+        "app/vocabulary/practice/listening/fill-blanks/page": "action-browser",
+        "app/vocabulary/practice/listening/fill-in-blank/page": "action-browser",
+        "app/vocabulary/practice/listening/multi-select/page": "action-browser",
+        "app/vocabulary/practice/listening/phonetics/page": "action-browser",
+        "app/vocabulary/practice/numbers/page": "action-browser",
+        "app/vocabulary/practice/odd-one-out/page": "action-browser",
+        "app/vocabulary/practice/page": "action-browser",
+        "app/vocabulary/practice/repeat-sentence/page": "action-browser",
+        "app/vocabulary/practice/repeat-word/page": "action-browser",
+        "app/vocabulary/practice/srs-spelling/page": "action-browser",
+        "app/vocabulary/practice/what-do-you-see/page": "action-browser"
       },
       "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js",
       "exportedName": "invalidateCacheAction"
@@ -458,55 +906,55 @@
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
         },
         "app/_not-found/page": {
-          "moduleId": 9101,
+          "moduleId": 209101,
           "async": false,
           "exportedName": "createOrReadKeylessAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
         },
         "app/ai-practice/general/page": {
-          "moduleId": 16737,
+          "moduleId": 316737,
           "async": false,
           "exportedName": "createOrReadKeylessAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
         },
         "app/ai-practice/page": {
-          "moduleId": 83590,
+          "moduleId": 183590,
           "async": false,
           "exportedName": "createOrReadKeylessAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
         },
         "app/ai-practice/scenarios/chats/[topicSlug]/chat/page": {
-          "moduleId": 22516,
+          "moduleId": 122516,
           "async": false,
           "exportedName": "createOrReadKeylessAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
         },
         "app/ai-practice/scenarios/chats/page": {
-          "moduleId": 53057,
+          "moduleId": 753057,
           "async": false,
           "exportedName": "createOrReadKeylessAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
         },
         "app/ai-practice/scenarios/missions/page": {
-          "moduleId": 16306,
+          "moduleId": 916306,
           "async": false,
           "exportedName": "createOrReadKeylessAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
         },
         "app/ai-practice/scenarios/profession/page": {
-          "moduleId": 42736,
+          "moduleId": 842736,
           "async": false,
           "exportedName": "createOrReadKeylessAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
         },
         "app/blogs/page": {
-          "moduleId": 98821,
+          "moduleId": 498821,
           "async": false,
           "exportedName": "createOrReadKeylessAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
         },
         "app/dashboard/assignments/page": {
-          "moduleId": 6298,
+          "moduleId": 206298,
           "async": false,
           "exportedName": "createOrReadKeylessAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
@@ -518,7 +966,7 @@
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
         },
         "app/dashboard/page": {
-          "moduleId": 40520,
+          "moduleId": 340520,
           "async": false,
           "exportedName": "createOrReadKeylessAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
@@ -530,31 +978,31 @@
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
         },
         "app/dashboard/referral/page": {
-          "moduleId": 51056,
+          "moduleId": 751056,
           "async": false,
           "exportedName": "createOrReadKeylessAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
         },
         "app/dashboard/teachers/page": {
-          "moduleId": 99581,
+          "moduleId": 999581,
           "async": false,
           "exportedName": "createOrReadKeylessAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
         },
         "app/find-teacher/page": {
-          "moduleId": 97106,
+          "moduleId": 397106,
           "async": false,
           "exportedName": "createOrReadKeylessAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
         },
         "app/grammar/lessons/[noteId]/page": {
-          "moduleId": 1116,
+          "moduleId": 301116,
           "async": false,
           "exportedName": "createOrReadKeylessAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
         },
         "app/grammar/lessons/page": {
-          "moduleId": 38195,
+          "moduleId": 438195,
           "async": false,
           "exportedName": "createOrReadKeylessAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
@@ -566,97 +1014,325 @@
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
         },
         "app/grammar/practice/page": {
-          "moduleId": 39914,
+          "moduleId": 439914,
           "async": false,
           "exportedName": "createOrReadKeylessAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
         },
         "app/onboarding/new-profile/page": {
-          "moduleId": 57357,
+          "moduleId": 557357,
           "async": false,
           "exportedName": "createOrReadKeylessAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
         },
         "app/onboarding/student/page": {
-          "moduleId": 14169,
+          "moduleId": 814169,
           "async": false,
           "exportedName": "createOrReadKeylessAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
         },
         "app/onboarding/teacher/page": {
-          "moduleId": 55966,
+          "moduleId": 555966,
           "async": false,
           "exportedName": "createOrReadKeylessAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
         },
         "app/page": {
-          "moduleId": 63731,
+          "moduleId": 663731,
           "async": false,
           "exportedName": "createOrReadKeylessAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
         },
         "app/practice/correct-spelling/page": {
-          "moduleId": 25222,
+          "moduleId": 725222,
           "async": false,
           "exportedName": "createOrReadKeylessAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
         },
         "app/practice/fill-in-blank/page": {
-          "moduleId": 44768,
+          "moduleId": 144768,
+          "async": false,
+          "exportedName": "createOrReadKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/practice/listening/audio-fill-blanks-dropdown/page": {
+          "moduleId": 977014,
+          "async": false,
+          "exportedName": "createOrReadKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/practice/listening/audio-fill-blanks-pro/page": {
+          "moduleId": 808777,
+          "async": false,
+          "exportedName": "createOrReadKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/practice/listening/bubble/page": {
+          "moduleId": 926746,
+          "async": false,
+          "exportedName": "createOrReadKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/practice/listening/comprehension/page": {
+          "moduleId": 68167,
+          "async": false,
+          "exportedName": "createOrReadKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/practice/listening/conversation/page": {
+          "moduleId": 439133,
+          "async": false,
+          "exportedName": "createOrReadKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/practice/listening/interactive/page": {
+          "moduleId": 746090,
+          "async": false,
+          "exportedName": "createOrReadKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/practice/listening/order/page": {
+          "moduleId": 710384,
+          "async": false,
+          "exportedName": "createOrReadKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/practice/listening/passage/page": {
+          "moduleId": 439114,
+          "async": false,
+          "exportedName": "createOrReadKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/practice/listening/select/page": {
+          "moduleId": 420261,
+          "async": false,
+          "exportedName": "createOrReadKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/practice/listening/type/page": {
+          "moduleId": 74900,
           "async": false,
           "exportedName": "createOrReadKeylessAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
         },
         "app/practice/page": {
-          "moduleId": 96501,
+          "moduleId": 296501,
+          "async": false,
+          "exportedName": "createOrReadKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/practice/reading/bubble-selection/page": {
+          "moduleId": 250672,
+          "async": false,
+          "exportedName": "createOrReadKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/practice/reading/complete-passage/page": {
+          "moduleId": 412194,
+          "async": false,
+          "exportedName": "createOrReadKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/practice/reading/comprehension/page": {
+          "moduleId": 362948,
+          "async": false,
+          "exportedName": "createOrReadKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/practice/reading/conversation/page": {
+          "moduleId": 77794,
+          "async": false,
+          "exportedName": "createOrReadKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/practice/reading/diagram-labelling/page": {
+          "moduleId": 20309,
+          "async": false,
+          "exportedName": "createOrReadKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/practice/reading/fill-blanks-passage/page": {
+          "moduleId": 972796,
+          "async": false,
+          "exportedName": "createOrReadKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/practice/reading/highlight-text/page": {
+          "moduleId": 372004,
+          "async": false,
+          "exportedName": "createOrReadKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/practice/reading/image-labelling/page": {
+          "moduleId": 961017,
+          "async": false,
+          "exportedName": "createOrReadKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/practice/reading/image-mcq/page": {
+          "moduleId": 7886,
+          "async": false,
+          "exportedName": "createOrReadKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/practice/reading/match-desc-to-image/page": {
+          "moduleId": 799248,
+          "async": false,
+          "exportedName": "createOrReadKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/practice/reading/match-pairs/page": {
+          "moduleId": 397660,
+          "async": false,
+          "exportedName": "createOrReadKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/practice/reading/reorder/page": {
+          "moduleId": 413538,
+          "async": false,
+          "exportedName": "createOrReadKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/practice/reading/summary-completion/page": {
+          "moduleId": 579046,
+          "async": false,
+          "exportedName": "createOrReadKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/practice/reading/true-false/page": {
+          "moduleId": 655308,
           "async": false,
           "exportedName": "createOrReadKeylessAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
         },
         "app/practice/select-topic/page": {
-          "moduleId": 25873,
+          "moduleId": 425873,
+          "async": false,
+          "exportedName": "createOrReadKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/practice/speaking/image/page": {
+          "moduleId": 622706,
+          "async": false,
+          "exportedName": "createOrReadKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/practice/speaking/interactive/page": {
+          "moduleId": 666390,
+          "async": false,
+          "exportedName": "createOrReadKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/practice/speaking/topic/page": {
+          "moduleId": 518608,
+          "async": false,
+          "exportedName": "createOrReadKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/practice/speaking/translate/page": {
+          "moduleId": 180132,
+          "async": false,
+          "exportedName": "createOrReadKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/practice/writing/analysis/page": {
+          "moduleId": 1994,
+          "async": false,
+          "exportedName": "createOrReadKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/practice/writing/documents/page": {
+          "moduleId": 529028,
+          "async": false,
+          "exportedName": "createOrReadKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/practice/writing/fill-blanks/page": {
+          "moduleId": 647412,
+          "async": false,
+          "exportedName": "createOrReadKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/practice/writing/form/page": {
+          "moduleId": 866741,
+          "async": false,
+          "exportedName": "createOrReadKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/practice/writing/image/page": {
+          "moduleId": 770317,
+          "async": false,
+          "exportedName": "createOrReadKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/practice/writing/interactive/page": {
+          "moduleId": 347767,
+          "async": false,
+          "exportedName": "createOrReadKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/practice/writing/sentence-completion/page": {
+          "moduleId": 882690,
+          "async": false,
+          "exportedName": "createOrReadKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/practice/writing/spelling/page": {
+          "moduleId": 386569,
+          "async": false,
+          "exportedName": "createOrReadKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/practice/writing/topic/page": {
+          "moduleId": 844796,
+          "async": false,
+          "exportedName": "createOrReadKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/practice/writing/translate/page": {
+          "moduleId": 172682,
           "async": false,
           "exportedName": "createOrReadKeylessAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
         },
         "app/privacy-policy/page": {
-          "moduleId": 44862,
+          "moduleId": 344862,
           "async": false,
           "exportedName": "createOrReadKeylessAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
         },
         "app/profile/[username]/page": {
-          "moduleId": 82668,
+          "moduleId": 582668,
           "async": false,
           "exportedName": "createOrReadKeylessAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
         },
         "app/refund-policy/page": {
-          "moduleId": 38934,
+          "moduleId": 138934,
           "async": false,
           "exportedName": "createOrReadKeylessAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
         },
         "app/sign-in/[[...sign-in]]/page": {
-          "moduleId": 68459,
+          "moduleId": 868459,
           "async": false,
           "exportedName": "createOrReadKeylessAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
         },
         "app/sign-up/[[...sign-up]]/page": {
-          "moduleId": 91415,
+          "moduleId": 791415,
           "async": false,
           "exportedName": "createOrReadKeylessAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
         },
         "app/stories/[storyId]/page": {
-          "moduleId": 36616,
+          "moduleId": 636616,
           "async": false,
           "exportedName": "createOrReadKeylessAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
         },
         "app/stories/learn/by-grammar/[topic]/page": {
-          "moduleId": 59342,
+          "moduleId": 859342,
           "async": false,
           "exportedName": "createOrReadKeylessAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
@@ -668,97 +1344,133 @@
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
         },
         "app/stories/learn/by-level/[level]/page": {
-          "moduleId": 90844,
+          "moduleId": 590844,
           "async": false,
           "exportedName": "createOrReadKeylessAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
         },
         "app/stories/learn/by-level/page": {
-          "moduleId": 71298,
+          "moduleId": 671298,
           "async": false,
           "exportedName": "createOrReadKeylessAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
         },
         "app/stories/learn/by-theme/[theme]/page": {
-          "moduleId": 83293,
+          "moduleId": 683293,
           "async": false,
           "exportedName": "createOrReadKeylessAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
         },
         "app/stories/learn/by-theme/page": {
-          "moduleId": 23048,
+          "moduleId": 423048,
           "async": false,
           "exportedName": "createOrReadKeylessAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
         },
         "app/stories/learn/page": {
-          "moduleId": 56101,
+          "moduleId": 756101,
           "async": false,
           "exportedName": "createOrReadKeylessAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
         },
         "app/stories/page": {
-          "moduleId": 43261,
+          "moduleId": 743261,
           "async": false,
           "exportedName": "createOrReadKeylessAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
         },
         "app/teacher-dashboard/assignments/page": {
-          "moduleId": 96986,
+          "moduleId": 596986,
           "async": false,
           "exportedName": "createOrReadKeylessAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
         },
         "app/teacher-dashboard/calendar/page": {
-          "moduleId": 80824,
+          "moduleId": 480824,
           "async": false,
           "exportedName": "createOrReadKeylessAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
         },
         "app/teacher-dashboard/classes/page": {
-          "moduleId": 54550,
+          "moduleId": 854550,
           "async": false,
           "exportedName": "createOrReadKeylessAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
         },
         "app/teacher-dashboard/page": {
-          "moduleId": 9394,
+          "moduleId": 609394,
           "async": false,
           "exportedName": "createOrReadKeylessAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
         },
         "app/teacher-dashboard/profile/page": {
-          "moduleId": 28131,
+          "moduleId": 528131,
           "async": false,
           "exportedName": "createOrReadKeylessAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
         },
         "app/teacher-dashboard/referral/page": {
-          "moduleId": 10003,
+          "moduleId": 510003,
           "async": false,
           "exportedName": "createOrReadKeylessAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
         },
         "app/teacher-dashboard/students/page": {
-          "moduleId": 45751,
+          "moduleId": 145751,
           "async": false,
           "exportedName": "createOrReadKeylessAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
         },
         "app/terms-conditions/page": {
-          "moduleId": 32597,
+          "moduleId": 632597,
           "async": false,
           "exportedName": "createOrReadKeylessAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
         },
         "app/vocabulary/flashcards/[level]/[category]/page": {
-          "moduleId": 48082,
+          "moduleId": 748082,
           "async": false,
           "exportedName": "createOrReadKeylessAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
         },
         "app/vocabulary/learn/page": {
-          "moduleId": 36266,
+          "moduleId": 636266,
+          "async": false,
+          "exportedName": "createOrReadKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/vocabulary/lessons/activities/correct-spelling/page": {
+          "moduleId": 312445,
+          "async": false,
+          "exportedName": "createOrReadKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/vocabulary/lessons/activities/flashcards/game/page": {
+          "moduleId": 121588,
+          "async": false,
+          "exportedName": "createOrReadKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/vocabulary/lessons/activities/flashcards/page": {
+          "moduleId": 70244,
+          "async": false,
+          "exportedName": "createOrReadKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/vocabulary/lessons/activities/gender-identifier/page": {
+          "moduleId": 23516,
+          "async": false,
+          "exportedName": "createOrReadKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/vocabulary/lessons/activities/match-images/page": {
+          "moduleId": 559897,
+          "async": false,
+          "exportedName": "createOrReadKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/vocabulary/lessons/activities/match-words/page": {
+          "moduleId": 709192,
           "async": false,
           "exportedName": "createOrReadKeylessAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
@@ -769,32 +1481,38 @@
           "exportedName": "createOrReadKeylessAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
         },
+        "app/vocabulary/lessons/activities/pronunciation/page": {
+          "moduleId": 323301,
+          "async": false,
+          "exportedName": "createOrReadKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
         "app/vocabulary/lessons/learn/[level]/[category]/page": {
-          "moduleId": 49431,
+          "moduleId": 849431,
           "async": false,
           "exportedName": "createOrReadKeylessAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
         },
         "app/vocabulary/lessons/learn/[level]/page": {
-          "moduleId": 76944,
+          "moduleId": 576944,
           "async": false,
           "exportedName": "createOrReadKeylessAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
         },
         "app/vocabulary/lessons/learn/page": {
-          "moduleId": 59727,
+          "moduleId": 959727,
           "async": false,
           "exportedName": "createOrReadKeylessAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
         },
         "app/vocabulary/lessons/review/page": {
-          "moduleId": 39077,
+          "moduleId": 339077,
           "async": false,
           "exportedName": "createOrReadKeylessAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
         },
         "app/vocabulary/lessons/review/wordlists/page": {
-          "moduleId": 78897,
+          "moduleId": 478897,
           "async": false,
           "exportedName": "createOrReadKeylessAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
@@ -806,25 +1524,139 @@
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
         },
         "app/vocabulary/lessons/review/words/page": {
-          "moduleId": 18817,
+          "moduleId": 218817,
           "async": false,
           "exportedName": "createOrReadKeylessAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
         },
         "app/vocabulary/lessons/review/words/session/page": {
-          "moduleId": 14494,
+          "moduleId": 614494,
           "async": false,
           "exportedName": "createOrReadKeylessAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
         },
         "app/vocabulary/page": {
-          "moduleId": 34103,
+          "moduleId": 434103,
+          "async": false,
+          "exportedName": "createOrReadKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/vocabulary/practice/choose-options/page": {
+          "moduleId": 199985,
+          "async": false,
+          "exportedName": "createOrReadKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/vocabulary/practice/correct-spelling/page": {
+          "moduleId": 950107,
+          "async": false,
+          "exportedName": "createOrReadKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/vocabulary/practice/dictation-image/page": {
+          "moduleId": 929176,
+          "async": false,
+          "exportedName": "createOrReadKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/vocabulary/practice/fill-in-blank/page": {
+          "moduleId": 718772,
+          "async": false,
+          "exportedName": "createOrReadKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/vocabulary/practice/group-words/page": {
+          "moduleId": 254369,
+          "async": false,
+          "exportedName": "createOrReadKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/vocabulary/practice/highlight-word/page": {
+          "moduleId": 403520,
+          "async": false,
+          "exportedName": "createOrReadKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/vocabulary/practice/is-french-word/page": {
+          "moduleId": 864557,
+          "async": false,
+          "exportedName": "createOrReadKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/vocabulary/practice/listening/audio-match/page": {
+          "moduleId": 770509,
+          "async": false,
+          "exportedName": "createOrReadKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/vocabulary/practice/listening/dictation/page": {
+          "moduleId": 921170,
+          "async": false,
+          "exportedName": "createOrReadKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/vocabulary/practice/listening/fill-blanks/page": {
+          "moduleId": 297852,
+          "async": false,
+          "exportedName": "createOrReadKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/vocabulary/practice/listening/fill-in-blank/page": {
+          "moduleId": 391788,
+          "async": false,
+          "exportedName": "createOrReadKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/vocabulary/practice/listening/multi-select/page": {
+          "moduleId": 581204,
+          "async": false,
+          "exportedName": "createOrReadKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/vocabulary/practice/listening/phonetics/page": {
+          "moduleId": 265208,
+          "async": false,
+          "exportedName": "createOrReadKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/vocabulary/practice/numbers/page": {
+          "moduleId": 668606,
+          "async": false,
+          "exportedName": "createOrReadKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/vocabulary/practice/odd-one-out/page": {
+          "moduleId": 596224,
           "async": false,
           "exportedName": "createOrReadKeylessAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
         },
         "app/vocabulary/practice/page": {
-          "moduleId": 15786,
+          "moduleId": 315786,
+          "async": false,
+          "exportedName": "createOrReadKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/vocabulary/practice/repeat-sentence/page": {
+          "moduleId": 496159,
+          "async": false,
+          "exportedName": "createOrReadKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/vocabulary/practice/repeat-word/page": {
+          "moduleId": 292999,
+          "async": false,
+          "exportedName": "createOrReadKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/vocabulary/practice/srs-spelling/page": {
+          "moduleId": 841670,
+          "async": false,
+          "exportedName": "createOrReadKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/vocabulary/practice/what-do-you-see/page": {
+          "moduleId": 670359,
           "async": false,
           "exportedName": "createOrReadKeylessAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
@@ -857,8 +1689,46 @@
         "app/page": "rsc",
         "app/practice/correct-spelling/page": "rsc",
         "app/practice/fill-in-blank/page": "rsc",
+        "app/practice/listening/audio-fill-blanks-dropdown/page": "rsc",
+        "app/practice/listening/audio-fill-blanks-pro/page": "rsc",
+        "app/practice/listening/bubble/page": "rsc",
+        "app/practice/listening/comprehension/page": "rsc",
+        "app/practice/listening/conversation/page": "rsc",
+        "app/practice/listening/interactive/page": "rsc",
+        "app/practice/listening/order/page": "rsc",
+        "app/practice/listening/passage/page": "rsc",
+        "app/practice/listening/select/page": "rsc",
+        "app/practice/listening/type/page": "rsc",
         "app/practice/page": "rsc",
+        "app/practice/reading/bubble-selection/page": "rsc",
+        "app/practice/reading/complete-passage/page": "rsc",
+        "app/practice/reading/comprehension/page": "rsc",
+        "app/practice/reading/conversation/page": "rsc",
+        "app/practice/reading/diagram-labelling/page": "rsc",
+        "app/practice/reading/fill-blanks-passage/page": "rsc",
+        "app/practice/reading/highlight-text/page": "rsc",
+        "app/practice/reading/image-labelling/page": "rsc",
+        "app/practice/reading/image-mcq/page": "rsc",
+        "app/practice/reading/match-desc-to-image/page": "rsc",
+        "app/practice/reading/match-pairs/page": "rsc",
+        "app/practice/reading/reorder/page": "rsc",
+        "app/practice/reading/summary-completion/page": "rsc",
+        "app/practice/reading/true-false/page": "rsc",
         "app/practice/select-topic/page": "rsc",
+        "app/practice/speaking/image/page": "rsc",
+        "app/practice/speaking/interactive/page": "rsc",
+        "app/practice/speaking/topic/page": "rsc",
+        "app/practice/speaking/translate/page": "rsc",
+        "app/practice/writing/analysis/page": "rsc",
+        "app/practice/writing/documents/page": "rsc",
+        "app/practice/writing/fill-blanks/page": "rsc",
+        "app/practice/writing/form/page": "rsc",
+        "app/practice/writing/image/page": "rsc",
+        "app/practice/writing/interactive/page": "rsc",
+        "app/practice/writing/sentence-completion/page": "rsc",
+        "app/practice/writing/spelling/page": "rsc",
+        "app/practice/writing/topic/page": "rsc",
+        "app/practice/writing/translate/page": "rsc",
         "app/privacy-policy/page": "rsc",
         "app/profile/[username]/page": "rsc",
         "app/refund-policy/page": "rsc",
@@ -883,7 +1753,14 @@
         "app/terms-conditions/page": "rsc",
         "app/vocabulary/flashcards/[level]/[category]/page": "rsc",
         "app/vocabulary/learn/page": "rsc",
+        "app/vocabulary/lessons/activities/correct-spelling/page": "rsc",
+        "app/vocabulary/lessons/activities/flashcards/game/page": "rsc",
+        "app/vocabulary/lessons/activities/flashcards/page": "rsc",
+        "app/vocabulary/lessons/activities/gender-identifier/page": "rsc",
+        "app/vocabulary/lessons/activities/match-images/page": "rsc",
+        "app/vocabulary/lessons/activities/match-words/page": "rsc",
         "app/vocabulary/lessons/activities/page": "rsc",
+        "app/vocabulary/lessons/activities/pronunciation/page": "rsc",
         "app/vocabulary/lessons/learn/[level]/[category]/page": "rsc",
         "app/vocabulary/lessons/learn/[level]/page": "rsc",
         "app/vocabulary/lessons/learn/page": "rsc",
@@ -893,7 +1770,26 @@
         "app/vocabulary/lessons/review/words/page": "rsc",
         "app/vocabulary/lessons/review/words/session/page": "rsc",
         "app/vocabulary/page": "rsc",
-        "app/vocabulary/practice/page": "rsc"
+        "app/vocabulary/practice/choose-options/page": "rsc",
+        "app/vocabulary/practice/correct-spelling/page": "rsc",
+        "app/vocabulary/practice/dictation-image/page": "rsc",
+        "app/vocabulary/practice/fill-in-blank/page": "rsc",
+        "app/vocabulary/practice/group-words/page": "rsc",
+        "app/vocabulary/practice/highlight-word/page": "rsc",
+        "app/vocabulary/practice/is-french-word/page": "rsc",
+        "app/vocabulary/practice/listening/audio-match/page": "rsc",
+        "app/vocabulary/practice/listening/dictation/page": "rsc",
+        "app/vocabulary/practice/listening/fill-blanks/page": "rsc",
+        "app/vocabulary/practice/listening/fill-in-blank/page": "rsc",
+        "app/vocabulary/practice/listening/multi-select/page": "rsc",
+        "app/vocabulary/practice/listening/phonetics/page": "rsc",
+        "app/vocabulary/practice/numbers/page": "rsc",
+        "app/vocabulary/practice/odd-one-out/page": "rsc",
+        "app/vocabulary/practice/page": "rsc",
+        "app/vocabulary/practice/repeat-sentence/page": "rsc",
+        "app/vocabulary/practice/repeat-word/page": "rsc",
+        "app/vocabulary/practice/srs-spelling/page": "rsc",
+        "app/vocabulary/practice/what-do-you-see/page": "rsc"
       },
       "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js",
       "exportedName": "createOrReadKeylessAction"
@@ -907,55 +1803,55 @@
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
         },
         "app/_not-found/page": {
-          "moduleId": 9101,
+          "moduleId": 209101,
           "async": false,
           "exportedName": "deleteKeylessAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
         },
         "app/ai-practice/general/page": {
-          "moduleId": 16737,
+          "moduleId": 316737,
           "async": false,
           "exportedName": "deleteKeylessAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
         },
         "app/ai-practice/page": {
-          "moduleId": 83590,
+          "moduleId": 183590,
           "async": false,
           "exportedName": "deleteKeylessAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
         },
         "app/ai-practice/scenarios/chats/[topicSlug]/chat/page": {
-          "moduleId": 22516,
+          "moduleId": 122516,
           "async": false,
           "exportedName": "deleteKeylessAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
         },
         "app/ai-practice/scenarios/chats/page": {
-          "moduleId": 53057,
+          "moduleId": 753057,
           "async": false,
           "exportedName": "deleteKeylessAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
         },
         "app/ai-practice/scenarios/missions/page": {
-          "moduleId": 16306,
+          "moduleId": 916306,
           "async": false,
           "exportedName": "deleteKeylessAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
         },
         "app/ai-practice/scenarios/profession/page": {
-          "moduleId": 42736,
+          "moduleId": 842736,
           "async": false,
           "exportedName": "deleteKeylessAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
         },
         "app/blogs/page": {
-          "moduleId": 98821,
+          "moduleId": 498821,
           "async": false,
           "exportedName": "deleteKeylessAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
         },
         "app/dashboard/assignments/page": {
-          "moduleId": 6298,
+          "moduleId": 206298,
           "async": false,
           "exportedName": "deleteKeylessAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
@@ -967,7 +1863,7 @@
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
         },
         "app/dashboard/page": {
-          "moduleId": 40520,
+          "moduleId": 340520,
           "async": false,
           "exportedName": "deleteKeylessAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
@@ -979,31 +1875,31 @@
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
         },
         "app/dashboard/referral/page": {
-          "moduleId": 51056,
+          "moduleId": 751056,
           "async": false,
           "exportedName": "deleteKeylessAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
         },
         "app/dashboard/teachers/page": {
-          "moduleId": 99581,
+          "moduleId": 999581,
           "async": false,
           "exportedName": "deleteKeylessAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
         },
         "app/find-teacher/page": {
-          "moduleId": 97106,
+          "moduleId": 397106,
           "async": false,
           "exportedName": "deleteKeylessAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
         },
         "app/grammar/lessons/[noteId]/page": {
-          "moduleId": 1116,
+          "moduleId": 301116,
           "async": false,
           "exportedName": "deleteKeylessAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
         },
         "app/grammar/lessons/page": {
-          "moduleId": 38195,
+          "moduleId": 438195,
           "async": false,
           "exportedName": "deleteKeylessAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
@@ -1015,97 +1911,325 @@
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
         },
         "app/grammar/practice/page": {
-          "moduleId": 39914,
+          "moduleId": 439914,
           "async": false,
           "exportedName": "deleteKeylessAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
         },
         "app/onboarding/new-profile/page": {
-          "moduleId": 57357,
+          "moduleId": 557357,
           "async": false,
           "exportedName": "deleteKeylessAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
         },
         "app/onboarding/student/page": {
-          "moduleId": 14169,
+          "moduleId": 814169,
           "async": false,
           "exportedName": "deleteKeylessAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
         },
         "app/onboarding/teacher/page": {
-          "moduleId": 55966,
+          "moduleId": 555966,
           "async": false,
           "exportedName": "deleteKeylessAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
         },
         "app/page": {
-          "moduleId": 63731,
+          "moduleId": 663731,
           "async": false,
           "exportedName": "deleteKeylessAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
         },
         "app/practice/correct-spelling/page": {
-          "moduleId": 25222,
+          "moduleId": 725222,
           "async": false,
           "exportedName": "deleteKeylessAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
         },
         "app/practice/fill-in-blank/page": {
-          "moduleId": 44768,
+          "moduleId": 144768,
+          "async": false,
+          "exportedName": "deleteKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/practice/listening/audio-fill-blanks-dropdown/page": {
+          "moduleId": 977014,
+          "async": false,
+          "exportedName": "deleteKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/practice/listening/audio-fill-blanks-pro/page": {
+          "moduleId": 808777,
+          "async": false,
+          "exportedName": "deleteKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/practice/listening/bubble/page": {
+          "moduleId": 926746,
+          "async": false,
+          "exportedName": "deleteKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/practice/listening/comprehension/page": {
+          "moduleId": 68167,
+          "async": false,
+          "exportedName": "deleteKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/practice/listening/conversation/page": {
+          "moduleId": 439133,
+          "async": false,
+          "exportedName": "deleteKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/practice/listening/interactive/page": {
+          "moduleId": 746090,
+          "async": false,
+          "exportedName": "deleteKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/practice/listening/order/page": {
+          "moduleId": 710384,
+          "async": false,
+          "exportedName": "deleteKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/practice/listening/passage/page": {
+          "moduleId": 439114,
+          "async": false,
+          "exportedName": "deleteKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/practice/listening/select/page": {
+          "moduleId": 420261,
+          "async": false,
+          "exportedName": "deleteKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/practice/listening/type/page": {
+          "moduleId": 74900,
           "async": false,
           "exportedName": "deleteKeylessAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
         },
         "app/practice/page": {
-          "moduleId": 96501,
+          "moduleId": 296501,
+          "async": false,
+          "exportedName": "deleteKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/practice/reading/bubble-selection/page": {
+          "moduleId": 250672,
+          "async": false,
+          "exportedName": "deleteKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/practice/reading/complete-passage/page": {
+          "moduleId": 412194,
+          "async": false,
+          "exportedName": "deleteKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/practice/reading/comprehension/page": {
+          "moduleId": 362948,
+          "async": false,
+          "exportedName": "deleteKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/practice/reading/conversation/page": {
+          "moduleId": 77794,
+          "async": false,
+          "exportedName": "deleteKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/practice/reading/diagram-labelling/page": {
+          "moduleId": 20309,
+          "async": false,
+          "exportedName": "deleteKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/practice/reading/fill-blanks-passage/page": {
+          "moduleId": 972796,
+          "async": false,
+          "exportedName": "deleteKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/practice/reading/highlight-text/page": {
+          "moduleId": 372004,
+          "async": false,
+          "exportedName": "deleteKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/practice/reading/image-labelling/page": {
+          "moduleId": 961017,
+          "async": false,
+          "exportedName": "deleteKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/practice/reading/image-mcq/page": {
+          "moduleId": 7886,
+          "async": false,
+          "exportedName": "deleteKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/practice/reading/match-desc-to-image/page": {
+          "moduleId": 799248,
+          "async": false,
+          "exportedName": "deleteKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/practice/reading/match-pairs/page": {
+          "moduleId": 397660,
+          "async": false,
+          "exportedName": "deleteKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/practice/reading/reorder/page": {
+          "moduleId": 413538,
+          "async": false,
+          "exportedName": "deleteKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/practice/reading/summary-completion/page": {
+          "moduleId": 579046,
+          "async": false,
+          "exportedName": "deleteKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/practice/reading/true-false/page": {
+          "moduleId": 655308,
           "async": false,
           "exportedName": "deleteKeylessAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
         },
         "app/practice/select-topic/page": {
-          "moduleId": 25873,
+          "moduleId": 425873,
+          "async": false,
+          "exportedName": "deleteKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/practice/speaking/image/page": {
+          "moduleId": 622706,
+          "async": false,
+          "exportedName": "deleteKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/practice/speaking/interactive/page": {
+          "moduleId": 666390,
+          "async": false,
+          "exportedName": "deleteKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/practice/speaking/topic/page": {
+          "moduleId": 518608,
+          "async": false,
+          "exportedName": "deleteKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/practice/speaking/translate/page": {
+          "moduleId": 180132,
+          "async": false,
+          "exportedName": "deleteKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/practice/writing/analysis/page": {
+          "moduleId": 1994,
+          "async": false,
+          "exportedName": "deleteKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/practice/writing/documents/page": {
+          "moduleId": 529028,
+          "async": false,
+          "exportedName": "deleteKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/practice/writing/fill-blanks/page": {
+          "moduleId": 647412,
+          "async": false,
+          "exportedName": "deleteKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/practice/writing/form/page": {
+          "moduleId": 866741,
+          "async": false,
+          "exportedName": "deleteKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/practice/writing/image/page": {
+          "moduleId": 770317,
+          "async": false,
+          "exportedName": "deleteKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/practice/writing/interactive/page": {
+          "moduleId": 347767,
+          "async": false,
+          "exportedName": "deleteKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/practice/writing/sentence-completion/page": {
+          "moduleId": 882690,
+          "async": false,
+          "exportedName": "deleteKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/practice/writing/spelling/page": {
+          "moduleId": 386569,
+          "async": false,
+          "exportedName": "deleteKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/practice/writing/topic/page": {
+          "moduleId": 844796,
+          "async": false,
+          "exportedName": "deleteKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/practice/writing/translate/page": {
+          "moduleId": 172682,
           "async": false,
           "exportedName": "deleteKeylessAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
         },
         "app/privacy-policy/page": {
-          "moduleId": 44862,
+          "moduleId": 344862,
           "async": false,
           "exportedName": "deleteKeylessAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
         },
         "app/profile/[username]/page": {
-          "moduleId": 82668,
+          "moduleId": 582668,
           "async": false,
           "exportedName": "deleteKeylessAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
         },
         "app/refund-policy/page": {
-          "moduleId": 38934,
+          "moduleId": 138934,
           "async": false,
           "exportedName": "deleteKeylessAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
         },
         "app/sign-in/[[...sign-in]]/page": {
-          "moduleId": 68459,
+          "moduleId": 868459,
           "async": false,
           "exportedName": "deleteKeylessAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
         },
         "app/sign-up/[[...sign-up]]/page": {
-          "moduleId": 91415,
+          "moduleId": 791415,
           "async": false,
           "exportedName": "deleteKeylessAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
         },
         "app/stories/[storyId]/page": {
-          "moduleId": 36616,
+          "moduleId": 636616,
           "async": false,
           "exportedName": "deleteKeylessAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
         },
         "app/stories/learn/by-grammar/[topic]/page": {
-          "moduleId": 59342,
+          "moduleId": 859342,
           "async": false,
           "exportedName": "deleteKeylessAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
@@ -1117,97 +2241,133 @@
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
         },
         "app/stories/learn/by-level/[level]/page": {
-          "moduleId": 90844,
+          "moduleId": 590844,
           "async": false,
           "exportedName": "deleteKeylessAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
         },
         "app/stories/learn/by-level/page": {
-          "moduleId": 71298,
+          "moduleId": 671298,
           "async": false,
           "exportedName": "deleteKeylessAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
         },
         "app/stories/learn/by-theme/[theme]/page": {
-          "moduleId": 83293,
+          "moduleId": 683293,
           "async": false,
           "exportedName": "deleteKeylessAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
         },
         "app/stories/learn/by-theme/page": {
-          "moduleId": 23048,
+          "moduleId": 423048,
           "async": false,
           "exportedName": "deleteKeylessAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
         },
         "app/stories/learn/page": {
-          "moduleId": 56101,
+          "moduleId": 756101,
           "async": false,
           "exportedName": "deleteKeylessAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
         },
         "app/stories/page": {
-          "moduleId": 43261,
+          "moduleId": 743261,
           "async": false,
           "exportedName": "deleteKeylessAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
         },
         "app/teacher-dashboard/assignments/page": {
-          "moduleId": 96986,
+          "moduleId": 596986,
           "async": false,
           "exportedName": "deleteKeylessAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
         },
         "app/teacher-dashboard/calendar/page": {
-          "moduleId": 80824,
+          "moduleId": 480824,
           "async": false,
           "exportedName": "deleteKeylessAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
         },
         "app/teacher-dashboard/classes/page": {
-          "moduleId": 54550,
+          "moduleId": 854550,
           "async": false,
           "exportedName": "deleteKeylessAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
         },
         "app/teacher-dashboard/page": {
-          "moduleId": 9394,
+          "moduleId": 609394,
           "async": false,
           "exportedName": "deleteKeylessAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
         },
         "app/teacher-dashboard/profile/page": {
-          "moduleId": 28131,
+          "moduleId": 528131,
           "async": false,
           "exportedName": "deleteKeylessAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
         },
         "app/teacher-dashboard/referral/page": {
-          "moduleId": 10003,
+          "moduleId": 510003,
           "async": false,
           "exportedName": "deleteKeylessAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
         },
         "app/teacher-dashboard/students/page": {
-          "moduleId": 45751,
+          "moduleId": 145751,
           "async": false,
           "exportedName": "deleteKeylessAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
         },
         "app/terms-conditions/page": {
-          "moduleId": 32597,
+          "moduleId": 632597,
           "async": false,
           "exportedName": "deleteKeylessAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
         },
         "app/vocabulary/flashcards/[level]/[category]/page": {
-          "moduleId": 48082,
+          "moduleId": 748082,
           "async": false,
           "exportedName": "deleteKeylessAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
         },
         "app/vocabulary/learn/page": {
-          "moduleId": 36266,
+          "moduleId": 636266,
+          "async": false,
+          "exportedName": "deleteKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/vocabulary/lessons/activities/correct-spelling/page": {
+          "moduleId": 312445,
+          "async": false,
+          "exportedName": "deleteKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/vocabulary/lessons/activities/flashcards/game/page": {
+          "moduleId": 121588,
+          "async": false,
+          "exportedName": "deleteKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/vocabulary/lessons/activities/flashcards/page": {
+          "moduleId": 70244,
+          "async": false,
+          "exportedName": "deleteKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/vocabulary/lessons/activities/gender-identifier/page": {
+          "moduleId": 23516,
+          "async": false,
+          "exportedName": "deleteKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/vocabulary/lessons/activities/match-images/page": {
+          "moduleId": 559897,
+          "async": false,
+          "exportedName": "deleteKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/vocabulary/lessons/activities/match-words/page": {
+          "moduleId": 709192,
           "async": false,
           "exportedName": "deleteKeylessAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
@@ -1218,32 +2378,38 @@
           "exportedName": "deleteKeylessAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
         },
+        "app/vocabulary/lessons/activities/pronunciation/page": {
+          "moduleId": 323301,
+          "async": false,
+          "exportedName": "deleteKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
         "app/vocabulary/lessons/learn/[level]/[category]/page": {
-          "moduleId": 49431,
+          "moduleId": 849431,
           "async": false,
           "exportedName": "deleteKeylessAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
         },
         "app/vocabulary/lessons/learn/[level]/page": {
-          "moduleId": 76944,
+          "moduleId": 576944,
           "async": false,
           "exportedName": "deleteKeylessAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
         },
         "app/vocabulary/lessons/learn/page": {
-          "moduleId": 59727,
+          "moduleId": 959727,
           "async": false,
           "exportedName": "deleteKeylessAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
         },
         "app/vocabulary/lessons/review/page": {
-          "moduleId": 39077,
+          "moduleId": 339077,
           "async": false,
           "exportedName": "deleteKeylessAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
         },
         "app/vocabulary/lessons/review/wordlists/page": {
-          "moduleId": 78897,
+          "moduleId": 478897,
           "async": false,
           "exportedName": "deleteKeylessAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
@@ -1255,25 +2421,139 @@
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
         },
         "app/vocabulary/lessons/review/words/page": {
-          "moduleId": 18817,
+          "moduleId": 218817,
           "async": false,
           "exportedName": "deleteKeylessAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
         },
         "app/vocabulary/lessons/review/words/session/page": {
-          "moduleId": 14494,
+          "moduleId": 614494,
           "async": false,
           "exportedName": "deleteKeylessAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
         },
         "app/vocabulary/page": {
-          "moduleId": 34103,
+          "moduleId": 434103,
+          "async": false,
+          "exportedName": "deleteKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/vocabulary/practice/choose-options/page": {
+          "moduleId": 199985,
+          "async": false,
+          "exportedName": "deleteKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/vocabulary/practice/correct-spelling/page": {
+          "moduleId": 950107,
+          "async": false,
+          "exportedName": "deleteKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/vocabulary/practice/dictation-image/page": {
+          "moduleId": 929176,
+          "async": false,
+          "exportedName": "deleteKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/vocabulary/practice/fill-in-blank/page": {
+          "moduleId": 718772,
+          "async": false,
+          "exportedName": "deleteKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/vocabulary/practice/group-words/page": {
+          "moduleId": 254369,
+          "async": false,
+          "exportedName": "deleteKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/vocabulary/practice/highlight-word/page": {
+          "moduleId": 403520,
+          "async": false,
+          "exportedName": "deleteKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/vocabulary/practice/is-french-word/page": {
+          "moduleId": 864557,
+          "async": false,
+          "exportedName": "deleteKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/vocabulary/practice/listening/audio-match/page": {
+          "moduleId": 770509,
+          "async": false,
+          "exportedName": "deleteKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/vocabulary/practice/listening/dictation/page": {
+          "moduleId": 921170,
+          "async": false,
+          "exportedName": "deleteKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/vocabulary/practice/listening/fill-blanks/page": {
+          "moduleId": 297852,
+          "async": false,
+          "exportedName": "deleteKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/vocabulary/practice/listening/fill-in-blank/page": {
+          "moduleId": 391788,
+          "async": false,
+          "exportedName": "deleteKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/vocabulary/practice/listening/multi-select/page": {
+          "moduleId": 581204,
+          "async": false,
+          "exportedName": "deleteKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/vocabulary/practice/listening/phonetics/page": {
+          "moduleId": 265208,
+          "async": false,
+          "exportedName": "deleteKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/vocabulary/practice/numbers/page": {
+          "moduleId": 668606,
+          "async": false,
+          "exportedName": "deleteKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/vocabulary/practice/odd-one-out/page": {
+          "moduleId": 596224,
           "async": false,
           "exportedName": "deleteKeylessAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
         },
         "app/vocabulary/practice/page": {
-          "moduleId": 15786,
+          "moduleId": 315786,
+          "async": false,
+          "exportedName": "deleteKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/vocabulary/practice/repeat-sentence/page": {
+          "moduleId": 496159,
+          "async": false,
+          "exportedName": "deleteKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/vocabulary/practice/repeat-word/page": {
+          "moduleId": 292999,
+          "async": false,
+          "exportedName": "deleteKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/vocabulary/practice/srs-spelling/page": {
+          "moduleId": 841670,
+          "async": false,
+          "exportedName": "deleteKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/vocabulary/practice/what-do-you-see/page": {
+          "moduleId": 670359,
           "async": false,
           "exportedName": "deleteKeylessAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
@@ -1306,8 +2586,46 @@
         "app/page": "action-browser",
         "app/practice/correct-spelling/page": "action-browser",
         "app/practice/fill-in-blank/page": "action-browser",
+        "app/practice/listening/audio-fill-blanks-dropdown/page": "action-browser",
+        "app/practice/listening/audio-fill-blanks-pro/page": "action-browser",
+        "app/practice/listening/bubble/page": "action-browser",
+        "app/practice/listening/comprehension/page": "action-browser",
+        "app/practice/listening/conversation/page": "action-browser",
+        "app/practice/listening/interactive/page": "action-browser",
+        "app/practice/listening/order/page": "action-browser",
+        "app/practice/listening/passage/page": "action-browser",
+        "app/practice/listening/select/page": "action-browser",
+        "app/practice/listening/type/page": "action-browser",
         "app/practice/page": "action-browser",
+        "app/practice/reading/bubble-selection/page": "action-browser",
+        "app/practice/reading/complete-passage/page": "action-browser",
+        "app/practice/reading/comprehension/page": "action-browser",
+        "app/practice/reading/conversation/page": "action-browser",
+        "app/practice/reading/diagram-labelling/page": "action-browser",
+        "app/practice/reading/fill-blanks-passage/page": "action-browser",
+        "app/practice/reading/highlight-text/page": "action-browser",
+        "app/practice/reading/image-labelling/page": "action-browser",
+        "app/practice/reading/image-mcq/page": "action-browser",
+        "app/practice/reading/match-desc-to-image/page": "action-browser",
+        "app/practice/reading/match-pairs/page": "action-browser",
+        "app/practice/reading/reorder/page": "action-browser",
+        "app/practice/reading/summary-completion/page": "action-browser",
+        "app/practice/reading/true-false/page": "action-browser",
         "app/practice/select-topic/page": "action-browser",
+        "app/practice/speaking/image/page": "action-browser",
+        "app/practice/speaking/interactive/page": "action-browser",
+        "app/practice/speaking/topic/page": "action-browser",
+        "app/practice/speaking/translate/page": "action-browser",
+        "app/practice/writing/analysis/page": "action-browser",
+        "app/practice/writing/documents/page": "action-browser",
+        "app/practice/writing/fill-blanks/page": "action-browser",
+        "app/practice/writing/form/page": "action-browser",
+        "app/practice/writing/image/page": "action-browser",
+        "app/practice/writing/interactive/page": "action-browser",
+        "app/practice/writing/sentence-completion/page": "action-browser",
+        "app/practice/writing/spelling/page": "action-browser",
+        "app/practice/writing/topic/page": "action-browser",
+        "app/practice/writing/translate/page": "action-browser",
         "app/privacy-policy/page": "action-browser",
         "app/profile/[username]/page": "action-browser",
         "app/refund-policy/page": "action-browser",
@@ -1332,7 +2650,14 @@
         "app/terms-conditions/page": "action-browser",
         "app/vocabulary/flashcards/[level]/[category]/page": "action-browser",
         "app/vocabulary/learn/page": "action-browser",
+        "app/vocabulary/lessons/activities/correct-spelling/page": "action-browser",
+        "app/vocabulary/lessons/activities/flashcards/game/page": "action-browser",
+        "app/vocabulary/lessons/activities/flashcards/page": "action-browser",
+        "app/vocabulary/lessons/activities/gender-identifier/page": "action-browser",
+        "app/vocabulary/lessons/activities/match-images/page": "action-browser",
+        "app/vocabulary/lessons/activities/match-words/page": "action-browser",
         "app/vocabulary/lessons/activities/page": "action-browser",
+        "app/vocabulary/lessons/activities/pronunciation/page": "action-browser",
         "app/vocabulary/lessons/learn/[level]/[category]/page": "action-browser",
         "app/vocabulary/lessons/learn/[level]/page": "action-browser",
         "app/vocabulary/lessons/learn/page": "action-browser",
@@ -1342,7 +2667,26 @@
         "app/vocabulary/lessons/review/words/page": "action-browser",
         "app/vocabulary/lessons/review/words/session/page": "action-browser",
         "app/vocabulary/page": "action-browser",
-        "app/vocabulary/practice/page": "action-browser"
+        "app/vocabulary/practice/choose-options/page": "action-browser",
+        "app/vocabulary/practice/correct-spelling/page": "action-browser",
+        "app/vocabulary/practice/dictation-image/page": "action-browser",
+        "app/vocabulary/practice/fill-in-blank/page": "action-browser",
+        "app/vocabulary/practice/group-words/page": "action-browser",
+        "app/vocabulary/practice/highlight-word/page": "action-browser",
+        "app/vocabulary/practice/is-french-word/page": "action-browser",
+        "app/vocabulary/practice/listening/audio-match/page": "action-browser",
+        "app/vocabulary/practice/listening/dictation/page": "action-browser",
+        "app/vocabulary/practice/listening/fill-blanks/page": "action-browser",
+        "app/vocabulary/practice/listening/fill-in-blank/page": "action-browser",
+        "app/vocabulary/practice/listening/multi-select/page": "action-browser",
+        "app/vocabulary/practice/listening/phonetics/page": "action-browser",
+        "app/vocabulary/practice/numbers/page": "action-browser",
+        "app/vocabulary/practice/odd-one-out/page": "action-browser",
+        "app/vocabulary/practice/page": "action-browser",
+        "app/vocabulary/practice/repeat-sentence/page": "action-browser",
+        "app/vocabulary/practice/repeat-word/page": "action-browser",
+        "app/vocabulary/practice/srs-spelling/page": "action-browser",
+        "app/vocabulary/practice/what-do-you-see/page": "action-browser"
       },
       "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js",
       "exportedName": "deleteKeylessAction"
@@ -1356,55 +2700,55 @@
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
         },
         "app/_not-found/page": {
-          "moduleId": 9101,
+          "moduleId": 209101,
           "async": false,
           "exportedName": "syncKeylessConfigAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
         },
         "app/ai-practice/general/page": {
-          "moduleId": 16737,
+          "moduleId": 316737,
           "async": false,
           "exportedName": "syncKeylessConfigAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
         },
         "app/ai-practice/page": {
-          "moduleId": 83590,
+          "moduleId": 183590,
           "async": false,
           "exportedName": "syncKeylessConfigAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
         },
         "app/ai-practice/scenarios/chats/[topicSlug]/chat/page": {
-          "moduleId": 22516,
+          "moduleId": 122516,
           "async": false,
           "exportedName": "syncKeylessConfigAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
         },
         "app/ai-practice/scenarios/chats/page": {
-          "moduleId": 53057,
+          "moduleId": 753057,
           "async": false,
           "exportedName": "syncKeylessConfigAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
         },
         "app/ai-practice/scenarios/missions/page": {
-          "moduleId": 16306,
+          "moduleId": 916306,
           "async": false,
           "exportedName": "syncKeylessConfigAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
         },
         "app/ai-practice/scenarios/profession/page": {
-          "moduleId": 42736,
+          "moduleId": 842736,
           "async": false,
           "exportedName": "syncKeylessConfigAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
         },
         "app/blogs/page": {
-          "moduleId": 98821,
+          "moduleId": 498821,
           "async": false,
           "exportedName": "syncKeylessConfigAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
         },
         "app/dashboard/assignments/page": {
-          "moduleId": 6298,
+          "moduleId": 206298,
           "async": false,
           "exportedName": "syncKeylessConfigAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
@@ -1416,7 +2760,7 @@
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
         },
         "app/dashboard/page": {
-          "moduleId": 40520,
+          "moduleId": 340520,
           "async": false,
           "exportedName": "syncKeylessConfigAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
@@ -1428,31 +2772,31 @@
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
         },
         "app/dashboard/referral/page": {
-          "moduleId": 51056,
+          "moduleId": 751056,
           "async": false,
           "exportedName": "syncKeylessConfigAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
         },
         "app/dashboard/teachers/page": {
-          "moduleId": 99581,
+          "moduleId": 999581,
           "async": false,
           "exportedName": "syncKeylessConfigAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
         },
         "app/find-teacher/page": {
-          "moduleId": 97106,
+          "moduleId": 397106,
           "async": false,
           "exportedName": "syncKeylessConfigAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
         },
         "app/grammar/lessons/[noteId]/page": {
-          "moduleId": 1116,
+          "moduleId": 301116,
           "async": false,
           "exportedName": "syncKeylessConfigAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
         },
         "app/grammar/lessons/page": {
-          "moduleId": 38195,
+          "moduleId": 438195,
           "async": false,
           "exportedName": "syncKeylessConfigAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
@@ -1464,97 +2808,325 @@
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
         },
         "app/grammar/practice/page": {
-          "moduleId": 39914,
+          "moduleId": 439914,
           "async": false,
           "exportedName": "syncKeylessConfigAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
         },
         "app/onboarding/new-profile/page": {
-          "moduleId": 57357,
+          "moduleId": 557357,
           "async": false,
           "exportedName": "syncKeylessConfigAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
         },
         "app/onboarding/student/page": {
-          "moduleId": 14169,
+          "moduleId": 814169,
           "async": false,
           "exportedName": "syncKeylessConfigAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
         },
         "app/onboarding/teacher/page": {
-          "moduleId": 55966,
+          "moduleId": 555966,
           "async": false,
           "exportedName": "syncKeylessConfigAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
         },
         "app/page": {
-          "moduleId": 63731,
+          "moduleId": 663731,
           "async": false,
           "exportedName": "syncKeylessConfigAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
         },
         "app/practice/correct-spelling/page": {
-          "moduleId": 25222,
+          "moduleId": 725222,
           "async": false,
           "exportedName": "syncKeylessConfigAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
         },
         "app/practice/fill-in-blank/page": {
-          "moduleId": 44768,
+          "moduleId": 144768,
+          "async": false,
+          "exportedName": "syncKeylessConfigAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/practice/listening/audio-fill-blanks-dropdown/page": {
+          "moduleId": 977014,
+          "async": false,
+          "exportedName": "syncKeylessConfigAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/practice/listening/audio-fill-blanks-pro/page": {
+          "moduleId": 808777,
+          "async": false,
+          "exportedName": "syncKeylessConfigAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/practice/listening/bubble/page": {
+          "moduleId": 926746,
+          "async": false,
+          "exportedName": "syncKeylessConfigAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/practice/listening/comprehension/page": {
+          "moduleId": 68167,
+          "async": false,
+          "exportedName": "syncKeylessConfigAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/practice/listening/conversation/page": {
+          "moduleId": 439133,
+          "async": false,
+          "exportedName": "syncKeylessConfigAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/practice/listening/interactive/page": {
+          "moduleId": 746090,
+          "async": false,
+          "exportedName": "syncKeylessConfigAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/practice/listening/order/page": {
+          "moduleId": 710384,
+          "async": false,
+          "exportedName": "syncKeylessConfigAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/practice/listening/passage/page": {
+          "moduleId": 439114,
+          "async": false,
+          "exportedName": "syncKeylessConfigAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/practice/listening/select/page": {
+          "moduleId": 420261,
+          "async": false,
+          "exportedName": "syncKeylessConfigAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/practice/listening/type/page": {
+          "moduleId": 74900,
           "async": false,
           "exportedName": "syncKeylessConfigAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
         },
         "app/practice/page": {
-          "moduleId": 96501,
+          "moduleId": 296501,
+          "async": false,
+          "exportedName": "syncKeylessConfigAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/practice/reading/bubble-selection/page": {
+          "moduleId": 250672,
+          "async": false,
+          "exportedName": "syncKeylessConfigAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/practice/reading/complete-passage/page": {
+          "moduleId": 412194,
+          "async": false,
+          "exportedName": "syncKeylessConfigAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/practice/reading/comprehension/page": {
+          "moduleId": 362948,
+          "async": false,
+          "exportedName": "syncKeylessConfigAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/practice/reading/conversation/page": {
+          "moduleId": 77794,
+          "async": false,
+          "exportedName": "syncKeylessConfigAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/practice/reading/diagram-labelling/page": {
+          "moduleId": 20309,
+          "async": false,
+          "exportedName": "syncKeylessConfigAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/practice/reading/fill-blanks-passage/page": {
+          "moduleId": 972796,
+          "async": false,
+          "exportedName": "syncKeylessConfigAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/practice/reading/highlight-text/page": {
+          "moduleId": 372004,
+          "async": false,
+          "exportedName": "syncKeylessConfigAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/practice/reading/image-labelling/page": {
+          "moduleId": 961017,
+          "async": false,
+          "exportedName": "syncKeylessConfigAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/practice/reading/image-mcq/page": {
+          "moduleId": 7886,
+          "async": false,
+          "exportedName": "syncKeylessConfigAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/practice/reading/match-desc-to-image/page": {
+          "moduleId": 799248,
+          "async": false,
+          "exportedName": "syncKeylessConfigAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/practice/reading/match-pairs/page": {
+          "moduleId": 397660,
+          "async": false,
+          "exportedName": "syncKeylessConfigAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/practice/reading/reorder/page": {
+          "moduleId": 413538,
+          "async": false,
+          "exportedName": "syncKeylessConfigAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/practice/reading/summary-completion/page": {
+          "moduleId": 579046,
+          "async": false,
+          "exportedName": "syncKeylessConfigAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/practice/reading/true-false/page": {
+          "moduleId": 655308,
           "async": false,
           "exportedName": "syncKeylessConfigAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
         },
         "app/practice/select-topic/page": {
-          "moduleId": 25873,
+          "moduleId": 425873,
+          "async": false,
+          "exportedName": "syncKeylessConfigAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/practice/speaking/image/page": {
+          "moduleId": 622706,
+          "async": false,
+          "exportedName": "syncKeylessConfigAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/practice/speaking/interactive/page": {
+          "moduleId": 666390,
+          "async": false,
+          "exportedName": "syncKeylessConfigAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/practice/speaking/topic/page": {
+          "moduleId": 518608,
+          "async": false,
+          "exportedName": "syncKeylessConfigAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/practice/speaking/translate/page": {
+          "moduleId": 180132,
+          "async": false,
+          "exportedName": "syncKeylessConfigAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/practice/writing/analysis/page": {
+          "moduleId": 1994,
+          "async": false,
+          "exportedName": "syncKeylessConfigAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/practice/writing/documents/page": {
+          "moduleId": 529028,
+          "async": false,
+          "exportedName": "syncKeylessConfigAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/practice/writing/fill-blanks/page": {
+          "moduleId": 647412,
+          "async": false,
+          "exportedName": "syncKeylessConfigAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/practice/writing/form/page": {
+          "moduleId": 866741,
+          "async": false,
+          "exportedName": "syncKeylessConfigAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/practice/writing/image/page": {
+          "moduleId": 770317,
+          "async": false,
+          "exportedName": "syncKeylessConfigAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/practice/writing/interactive/page": {
+          "moduleId": 347767,
+          "async": false,
+          "exportedName": "syncKeylessConfigAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/practice/writing/sentence-completion/page": {
+          "moduleId": 882690,
+          "async": false,
+          "exportedName": "syncKeylessConfigAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/practice/writing/spelling/page": {
+          "moduleId": 386569,
+          "async": false,
+          "exportedName": "syncKeylessConfigAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/practice/writing/topic/page": {
+          "moduleId": 844796,
+          "async": false,
+          "exportedName": "syncKeylessConfigAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/practice/writing/translate/page": {
+          "moduleId": 172682,
           "async": false,
           "exportedName": "syncKeylessConfigAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
         },
         "app/privacy-policy/page": {
-          "moduleId": 44862,
+          "moduleId": 344862,
           "async": false,
           "exportedName": "syncKeylessConfigAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
         },
         "app/profile/[username]/page": {
-          "moduleId": 82668,
+          "moduleId": 582668,
           "async": false,
           "exportedName": "syncKeylessConfigAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
         },
         "app/refund-policy/page": {
-          "moduleId": 38934,
+          "moduleId": 138934,
           "async": false,
           "exportedName": "syncKeylessConfigAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
         },
         "app/sign-in/[[...sign-in]]/page": {
-          "moduleId": 68459,
+          "moduleId": 868459,
           "async": false,
           "exportedName": "syncKeylessConfigAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
         },
         "app/sign-up/[[...sign-up]]/page": {
-          "moduleId": 91415,
+          "moduleId": 791415,
           "async": false,
           "exportedName": "syncKeylessConfigAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
         },
         "app/stories/[storyId]/page": {
-          "moduleId": 36616,
+          "moduleId": 636616,
           "async": false,
           "exportedName": "syncKeylessConfigAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
         },
         "app/stories/learn/by-grammar/[topic]/page": {
-          "moduleId": 59342,
+          "moduleId": 859342,
           "async": false,
           "exportedName": "syncKeylessConfigAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
@@ -1566,97 +3138,133 @@
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
         },
         "app/stories/learn/by-level/[level]/page": {
-          "moduleId": 90844,
+          "moduleId": 590844,
           "async": false,
           "exportedName": "syncKeylessConfigAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
         },
         "app/stories/learn/by-level/page": {
-          "moduleId": 71298,
+          "moduleId": 671298,
           "async": false,
           "exportedName": "syncKeylessConfigAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
         },
         "app/stories/learn/by-theme/[theme]/page": {
-          "moduleId": 83293,
+          "moduleId": 683293,
           "async": false,
           "exportedName": "syncKeylessConfigAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
         },
         "app/stories/learn/by-theme/page": {
-          "moduleId": 23048,
+          "moduleId": 423048,
           "async": false,
           "exportedName": "syncKeylessConfigAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
         },
         "app/stories/learn/page": {
-          "moduleId": 56101,
+          "moduleId": 756101,
           "async": false,
           "exportedName": "syncKeylessConfigAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
         },
         "app/stories/page": {
-          "moduleId": 43261,
+          "moduleId": 743261,
           "async": false,
           "exportedName": "syncKeylessConfigAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
         },
         "app/teacher-dashboard/assignments/page": {
-          "moduleId": 96986,
+          "moduleId": 596986,
           "async": false,
           "exportedName": "syncKeylessConfigAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
         },
         "app/teacher-dashboard/calendar/page": {
-          "moduleId": 80824,
+          "moduleId": 480824,
           "async": false,
           "exportedName": "syncKeylessConfigAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
         },
         "app/teacher-dashboard/classes/page": {
-          "moduleId": 54550,
+          "moduleId": 854550,
           "async": false,
           "exportedName": "syncKeylessConfigAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
         },
         "app/teacher-dashboard/page": {
-          "moduleId": 9394,
+          "moduleId": 609394,
           "async": false,
           "exportedName": "syncKeylessConfigAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
         },
         "app/teacher-dashboard/profile/page": {
-          "moduleId": 28131,
+          "moduleId": 528131,
           "async": false,
           "exportedName": "syncKeylessConfigAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
         },
         "app/teacher-dashboard/referral/page": {
-          "moduleId": 10003,
+          "moduleId": 510003,
           "async": false,
           "exportedName": "syncKeylessConfigAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
         },
         "app/teacher-dashboard/students/page": {
-          "moduleId": 45751,
+          "moduleId": 145751,
           "async": false,
           "exportedName": "syncKeylessConfigAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
         },
         "app/terms-conditions/page": {
-          "moduleId": 32597,
+          "moduleId": 632597,
           "async": false,
           "exportedName": "syncKeylessConfigAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
         },
         "app/vocabulary/flashcards/[level]/[category]/page": {
-          "moduleId": 48082,
+          "moduleId": 748082,
           "async": false,
           "exportedName": "syncKeylessConfigAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
         },
         "app/vocabulary/learn/page": {
-          "moduleId": 36266,
+          "moduleId": 636266,
+          "async": false,
+          "exportedName": "syncKeylessConfigAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/vocabulary/lessons/activities/correct-spelling/page": {
+          "moduleId": 312445,
+          "async": false,
+          "exportedName": "syncKeylessConfigAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/vocabulary/lessons/activities/flashcards/game/page": {
+          "moduleId": 121588,
+          "async": false,
+          "exportedName": "syncKeylessConfigAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/vocabulary/lessons/activities/flashcards/page": {
+          "moduleId": 70244,
+          "async": false,
+          "exportedName": "syncKeylessConfigAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/vocabulary/lessons/activities/gender-identifier/page": {
+          "moduleId": 23516,
+          "async": false,
+          "exportedName": "syncKeylessConfigAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/vocabulary/lessons/activities/match-images/page": {
+          "moduleId": 559897,
+          "async": false,
+          "exportedName": "syncKeylessConfigAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/vocabulary/lessons/activities/match-words/page": {
+          "moduleId": 709192,
           "async": false,
           "exportedName": "syncKeylessConfigAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
@@ -1667,32 +3275,38 @@
           "exportedName": "syncKeylessConfigAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
         },
+        "app/vocabulary/lessons/activities/pronunciation/page": {
+          "moduleId": 323301,
+          "async": false,
+          "exportedName": "syncKeylessConfigAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
         "app/vocabulary/lessons/learn/[level]/[category]/page": {
-          "moduleId": 49431,
+          "moduleId": 849431,
           "async": false,
           "exportedName": "syncKeylessConfigAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
         },
         "app/vocabulary/lessons/learn/[level]/page": {
-          "moduleId": 76944,
+          "moduleId": 576944,
           "async": false,
           "exportedName": "syncKeylessConfigAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
         },
         "app/vocabulary/lessons/learn/page": {
-          "moduleId": 59727,
+          "moduleId": 959727,
           "async": false,
           "exportedName": "syncKeylessConfigAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
         },
         "app/vocabulary/lessons/review/page": {
-          "moduleId": 39077,
+          "moduleId": 339077,
           "async": false,
           "exportedName": "syncKeylessConfigAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
         },
         "app/vocabulary/lessons/review/wordlists/page": {
-          "moduleId": 78897,
+          "moduleId": 478897,
           "async": false,
           "exportedName": "syncKeylessConfigAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
@@ -1704,25 +3318,139 @@
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
         },
         "app/vocabulary/lessons/review/words/page": {
-          "moduleId": 18817,
+          "moduleId": 218817,
           "async": false,
           "exportedName": "syncKeylessConfigAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
         },
         "app/vocabulary/lessons/review/words/session/page": {
-          "moduleId": 14494,
+          "moduleId": 614494,
           "async": false,
           "exportedName": "syncKeylessConfigAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
         },
         "app/vocabulary/page": {
-          "moduleId": 34103,
+          "moduleId": 434103,
+          "async": false,
+          "exportedName": "syncKeylessConfigAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/vocabulary/practice/choose-options/page": {
+          "moduleId": 199985,
+          "async": false,
+          "exportedName": "syncKeylessConfigAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/vocabulary/practice/correct-spelling/page": {
+          "moduleId": 950107,
+          "async": false,
+          "exportedName": "syncKeylessConfigAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/vocabulary/practice/dictation-image/page": {
+          "moduleId": 929176,
+          "async": false,
+          "exportedName": "syncKeylessConfigAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/vocabulary/practice/fill-in-blank/page": {
+          "moduleId": 718772,
+          "async": false,
+          "exportedName": "syncKeylessConfigAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/vocabulary/practice/group-words/page": {
+          "moduleId": 254369,
+          "async": false,
+          "exportedName": "syncKeylessConfigAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/vocabulary/practice/highlight-word/page": {
+          "moduleId": 403520,
+          "async": false,
+          "exportedName": "syncKeylessConfigAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/vocabulary/practice/is-french-word/page": {
+          "moduleId": 864557,
+          "async": false,
+          "exportedName": "syncKeylessConfigAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/vocabulary/practice/listening/audio-match/page": {
+          "moduleId": 770509,
+          "async": false,
+          "exportedName": "syncKeylessConfigAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/vocabulary/practice/listening/dictation/page": {
+          "moduleId": 921170,
+          "async": false,
+          "exportedName": "syncKeylessConfigAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/vocabulary/practice/listening/fill-blanks/page": {
+          "moduleId": 297852,
+          "async": false,
+          "exportedName": "syncKeylessConfigAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/vocabulary/practice/listening/fill-in-blank/page": {
+          "moduleId": 391788,
+          "async": false,
+          "exportedName": "syncKeylessConfigAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/vocabulary/practice/listening/multi-select/page": {
+          "moduleId": 581204,
+          "async": false,
+          "exportedName": "syncKeylessConfigAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/vocabulary/practice/listening/phonetics/page": {
+          "moduleId": 265208,
+          "async": false,
+          "exportedName": "syncKeylessConfigAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/vocabulary/practice/numbers/page": {
+          "moduleId": 668606,
+          "async": false,
+          "exportedName": "syncKeylessConfigAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/vocabulary/practice/odd-one-out/page": {
+          "moduleId": 596224,
           "async": false,
           "exportedName": "syncKeylessConfigAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
         },
         "app/vocabulary/practice/page": {
-          "moduleId": 15786,
+          "moduleId": 315786,
+          "async": false,
+          "exportedName": "syncKeylessConfigAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/vocabulary/practice/repeat-sentence/page": {
+          "moduleId": 496159,
+          "async": false,
+          "exportedName": "syncKeylessConfigAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/vocabulary/practice/repeat-word/page": {
+          "moduleId": 292999,
+          "async": false,
+          "exportedName": "syncKeylessConfigAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/vocabulary/practice/srs-spelling/page": {
+          "moduleId": 841670,
+          "async": false,
+          "exportedName": "syncKeylessConfigAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/vocabulary/practice/what-do-you-see/page": {
+          "moduleId": 670359,
           "async": false,
           "exportedName": "syncKeylessConfigAction",
           "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
@@ -1755,8 +3483,46 @@
         "app/page": "action-browser",
         "app/practice/correct-spelling/page": "action-browser",
         "app/practice/fill-in-blank/page": "action-browser",
+        "app/practice/listening/audio-fill-blanks-dropdown/page": "action-browser",
+        "app/practice/listening/audio-fill-blanks-pro/page": "action-browser",
+        "app/practice/listening/bubble/page": "action-browser",
+        "app/practice/listening/comprehension/page": "action-browser",
+        "app/practice/listening/conversation/page": "action-browser",
+        "app/practice/listening/interactive/page": "action-browser",
+        "app/practice/listening/order/page": "action-browser",
+        "app/practice/listening/passage/page": "action-browser",
+        "app/practice/listening/select/page": "action-browser",
+        "app/practice/listening/type/page": "action-browser",
         "app/practice/page": "action-browser",
+        "app/practice/reading/bubble-selection/page": "action-browser",
+        "app/practice/reading/complete-passage/page": "action-browser",
+        "app/practice/reading/comprehension/page": "action-browser",
+        "app/practice/reading/conversation/page": "action-browser",
+        "app/practice/reading/diagram-labelling/page": "action-browser",
+        "app/practice/reading/fill-blanks-passage/page": "action-browser",
+        "app/practice/reading/highlight-text/page": "action-browser",
+        "app/practice/reading/image-labelling/page": "action-browser",
+        "app/practice/reading/image-mcq/page": "action-browser",
+        "app/practice/reading/match-desc-to-image/page": "action-browser",
+        "app/practice/reading/match-pairs/page": "action-browser",
+        "app/practice/reading/reorder/page": "action-browser",
+        "app/practice/reading/summary-completion/page": "action-browser",
+        "app/practice/reading/true-false/page": "action-browser",
         "app/practice/select-topic/page": "action-browser",
+        "app/practice/speaking/image/page": "action-browser",
+        "app/practice/speaking/interactive/page": "action-browser",
+        "app/practice/speaking/topic/page": "action-browser",
+        "app/practice/speaking/translate/page": "action-browser",
+        "app/practice/writing/analysis/page": "action-browser",
+        "app/practice/writing/documents/page": "action-browser",
+        "app/practice/writing/fill-blanks/page": "action-browser",
+        "app/practice/writing/form/page": "action-browser",
+        "app/practice/writing/image/page": "action-browser",
+        "app/practice/writing/interactive/page": "action-browser",
+        "app/practice/writing/sentence-completion/page": "action-browser",
+        "app/practice/writing/spelling/page": "action-browser",
+        "app/practice/writing/topic/page": "action-browser",
+        "app/practice/writing/translate/page": "action-browser",
         "app/privacy-policy/page": "action-browser",
         "app/profile/[username]/page": "action-browser",
         "app/refund-policy/page": "action-browser",
@@ -1781,7 +3547,14 @@
         "app/terms-conditions/page": "action-browser",
         "app/vocabulary/flashcards/[level]/[category]/page": "action-browser",
         "app/vocabulary/learn/page": "action-browser",
+        "app/vocabulary/lessons/activities/correct-spelling/page": "action-browser",
+        "app/vocabulary/lessons/activities/flashcards/game/page": "action-browser",
+        "app/vocabulary/lessons/activities/flashcards/page": "action-browser",
+        "app/vocabulary/lessons/activities/gender-identifier/page": "action-browser",
+        "app/vocabulary/lessons/activities/match-images/page": "action-browser",
+        "app/vocabulary/lessons/activities/match-words/page": "action-browser",
         "app/vocabulary/lessons/activities/page": "action-browser",
+        "app/vocabulary/lessons/activities/pronunciation/page": "action-browser",
         "app/vocabulary/lessons/learn/[level]/[category]/page": "action-browser",
         "app/vocabulary/lessons/learn/[level]/page": "action-browser",
         "app/vocabulary/lessons/learn/page": "action-browser",
@@ -1791,7 +3564,26 @@
         "app/vocabulary/lessons/review/words/page": "action-browser",
         "app/vocabulary/lessons/review/words/session/page": "action-browser",
         "app/vocabulary/page": "action-browser",
-        "app/vocabulary/practice/page": "action-browser"
+        "app/vocabulary/practice/choose-options/page": "action-browser",
+        "app/vocabulary/practice/correct-spelling/page": "action-browser",
+        "app/vocabulary/practice/dictation-image/page": "action-browser",
+        "app/vocabulary/practice/fill-in-blank/page": "action-browser",
+        "app/vocabulary/practice/group-words/page": "action-browser",
+        "app/vocabulary/practice/highlight-word/page": "action-browser",
+        "app/vocabulary/practice/is-french-word/page": "action-browser",
+        "app/vocabulary/practice/listening/audio-match/page": "action-browser",
+        "app/vocabulary/practice/listening/dictation/page": "action-browser",
+        "app/vocabulary/practice/listening/fill-blanks/page": "action-browser",
+        "app/vocabulary/practice/listening/fill-in-blank/page": "action-browser",
+        "app/vocabulary/practice/listening/multi-select/page": "action-browser",
+        "app/vocabulary/practice/listening/phonetics/page": "action-browser",
+        "app/vocabulary/practice/numbers/page": "action-browser",
+        "app/vocabulary/practice/odd-one-out/page": "action-browser",
+        "app/vocabulary/practice/page": "action-browser",
+        "app/vocabulary/practice/repeat-sentence/page": "action-browser",
+        "app/vocabulary/practice/repeat-word/page": "action-browser",
+        "app/vocabulary/practice/srs-spelling/page": "action-browser",
+        "app/vocabulary/practice/what-do-you-see/page": "action-browser"
       },
       "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js",
       "exportedName": "syncKeylessConfigAction"
