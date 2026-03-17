@@ -32,5 +32,9 @@ dist-ssr
 .env.production
 .env.production.local
 
+# Next.js build output
+.next/
+out/
+
 # clerk configuration (can include secrets)
 /.clerk/

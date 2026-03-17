@@ -1,1 +1,0 @@
-{"version":3,"sources":["../../../../src/app/vocabulary/page.tsx"],"sourcesContent":["import { redirect } from \"next/navigation\";\r\n\r\nexport default function VocabularyPage() {\r\n  redirect(\"/vocabulary/lessons/learn\");\r\n}\r\n"],"names":[],"mappings":"mNAAA,EAAA,CAAA,CAAA,QAAA,IAAA,EAAA,EAAA,CAAA,CAAA,QAEe,SAAS,IACtB,CAAA,EAAA,EAAA,QAAA,AAAQ,EAAC,4BACX"}
