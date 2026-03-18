@@ -10,7 +10,7 @@ import "../styles/globals.css";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Language App",
+  title: "LangLearn- Master any Language",
   description: "Master New Languages With Confidence",
 };
 

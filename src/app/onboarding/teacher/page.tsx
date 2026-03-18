@@ -113,8 +113,13 @@ function TeacherOnboardingContent() {
                             <Input
                                 id="experience"
                                 type="number"
+                                min={0}
+                                max={100}
                                 value={experience}
-                                onChange={(e) => setExperience(e.target.value)}
+                                onChange={(e) => {
+                                  const val = Math.min(100, Math.max(0, parseInt(e.target.value) || 0));
+                                  setExperience(String(val));
+                                }}
                                 className="bg-slate-800/50 border-slate-700 text-white"
                                 placeholder="e.g. 5"
                             />

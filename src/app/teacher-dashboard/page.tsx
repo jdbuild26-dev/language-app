@@ -14,7 +14,6 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
-import { Progress } from "@/components/ui/progress";
 import { useProfile } from "@/contexts/ProfileContext";
 import { useAuth } from "@clerk/nextjs";
 import { updateTeacherProfile } from "@/services/userApi";
@@ -23,12 +22,43 @@ import toast from "react-hot-toast";
 
 const QUESTIONS_PER_PAGE = 5;
 
+/** Returns an error string or null for a single question response. */
+function validateQuestion(q: any, value: any): string | null {
+  // All questions are required
+  const isEmpty =
+    value === undefined ||
+    value === null ||
+    value === "" ||
+    (typeof value === "string" && value.trim() === "");
+
+  if (isEmpty) return "This field is required.";
+
+  if (q.type === "email") {
+    const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRe.test(value)) return "Please enter a valid email address.";
+  }
+
+  if (q.type === "number") {
+    const num = Number(value);
+    if (isNaN(num) || num < 0) return "Please enter a valid non-negative number.";
+    // Q5 is years of experience — cap at 100
+    if (q.id === 5 && num > 100) return "Years of experience must be between 0 and 100.";
+  }
+
+  if (q.type === "text" || q.type === "long_text") {
+    if (value.trim().length < 2) return "Please provide a more detailed answer.";
+  }
+
+  return null;
+}
+
 export default function OverviewPage() {
   const { activeProfile, refreshProfiles } = useProfile();
   const { getToken } = useAuth();
   const [showQuestionnaire, setShowQuestionnaire] = useState(false);
   const [currentPage, setCurrentPage] = useState(0);
-  const [responses, setResponses] = useState({});
+  const [responses, setResponses] = useState<Record<number, any>>({});
+  const [errors, setErrors] = useState<Record<number, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
@@ -47,11 +77,28 @@ export default function OverviewPage() {
   const completedQuestionsCount = Object.keys(responses).filter(k => !!responses[k]).length;
   const isQuestionnaireComplete = completedQuestionsCount >= questions.length;
 
-  const handleInputChange = (id, value) => {
+  const handleInputChange = (id: number, value: any) => {
     setResponses(prev => ({ ...prev, [id]: value }));
+    // Clear error on change
+    if (errors[id]) setErrors(prev => { const e = { ...prev }; delete e[id]; return e; });
+  };
+
+  /** Validates current page questions. Returns true if all pass. */
+  const validateCurrentPage = (): boolean => {
+    const newErrors: Record<number, string> = {};
+    for (const q of currentQuestions) {
+      const err = validateQuestion(q, responses[q.id]);
+      if (err) newErrors[q.id] = err;
+    }
+    setErrors(prev => ({ ...prev, ...newErrors }));
+    return Object.keys(newErrors).length === 0;
   };
 
   const handleNext = () => {
+    if (!validateCurrentPage()) {
+      toast.error("Please answer all questions before continuing.");
+      return;
+    }
     if (currentPage < totalPages - 1) {
       setCurrentPage(prev => prev + 1);
     } else {
@@ -66,9 +113,7 @@ export default function OverviewPage() {
       await updateTeacherProfile({ questionnaireResponses: responses }, token, activeProfile.language);
       await refreshProfiles();
       toast.success("Questionnaire saved successfully!");
-      if (isQuestionnaireComplete) {
-        setShowQuestionnaire(false);
-      }
+      if (isQuestionnaireComplete) setShowQuestionnaire(false);
     } catch (error) {
       console.error("Failed to update questionnaire:", error);
       toast.error("Failed to save. Please try again.");
@@ -77,21 +122,54 @@ export default function OverviewPage() {
     }
   };
 
-  const renderQuestion = (q) => {
+  const cn = (...classes: (string | boolean | undefined)[]) => classes.filter(Boolean).join(" ");
+
+  const renderQuestion = (q: any) => {
     const value = responses[q.id];
-    const cn = (...classes) => classes.filter(Boolean).join(" ");
+    const hasError = !!errors[q.id];
+
+    const inputBase = cn(
+      "bg-gray-50 dark:bg-slate-800 border-gray-200 dark:border-slate-700",
+      hasError && "border-red-500 dark:border-red-500 focus-visible:ring-red-500"
+    );
 
     switch (q.type) {
       case "text":
-      case "email":
-      case "number":
         return (
           <Input
-            type={q.type}
+            type="text"
             value={value || ""}
             onChange={(e) => handleInputChange(q.id, e.target.value)}
             placeholder="Type your answer here..."
-            className="bg-gray-50 dark:bg-slate-800 border-gray-200 dark:border-slate-700"
+            className={inputBase}
+          />
+        );
+      case "email":
+        return (
+          <Input
+            type="email"
+            value={value || ""}
+            onChange={(e) => handleInputChange(q.id, e.target.value)}
+            placeholder="your@email.com"
+            className={inputBase}
+          />
+        );
+      case "number":
+        return (
+          <Input
+            type="number"
+            min={0}
+            max={q.id === 5 ? 100 : undefined}
+            value={value ?? ""}
+            onChange={(e) => {
+              let num = parseFloat(e.target.value);
+              if (isNaN(num)) { handleInputChange(q.id, ""); return; }
+              if (num < 0) num = 0;
+              if (q.id === 5 && num > 100) num = 100;
+              handleInputChange(q.id, num);
+            }}
+            placeholder="Enter a number..."
+            className={inputBase}
           />
         );
       case "long_text":
@@ -100,7 +178,7 @@ export default function OverviewPage() {
             value={value || ""}
             onChange={(e) => handleInputChange(q.id, e.target.value)}
             placeholder="Share your thoughts..."
-            className="bg-gray-50 dark:bg-slate-800 border-gray-200 dark:border-slate-700 min-h-[100px]"
+            className={cn(inputBase, "min-h-[100px]")}
           />
         );
       case "multiple_choice":
@@ -110,12 +188,18 @@ export default function OverviewPage() {
             onValueChange={(val) => handleInputChange(q.id, val)}
             className="grid grid-cols-1 sm:grid-cols-2 gap-2"
           >
-            {q.options.map((opt) => (
-              <div key={opt} className="flex items-center space-x-2 bg-gray-50 dark:bg-slate-800/50 p-3 rounded-lg border border-gray-200 dark:border-slate-700">
+            {q.options.map((opt: string) => (
+              <div
+                key={opt}
+                className={cn(
+                  "flex items-center space-x-2 p-3 rounded-lg border",
+                  hasError
+                    ? "bg-red-50 dark:bg-red-900/10 border-red-300 dark:border-red-700"
+                    : "bg-gray-50 dark:bg-slate-800/50 border-gray-200 dark:border-slate-700"
+                )}
+              >
                 <RadioGroupItem value={opt} id={`q${q.id}-${opt}`} />
-                <Label htmlFor={`q${q.id}-${opt}`} className="cursor-pointer flex-1">
-                  {opt}
-                </Label>
+                <Label htmlFor={`q${q.id}-${opt}`} className="cursor-pointer flex-1">{opt}</Label>
               </div>
             ))}
           </RadioGroup>
@@ -127,14 +211,20 @@ export default function OverviewPage() {
             onValueChange={(val) => handleInputChange(q.id, val === "true")}
             className="flex gap-4"
           >
-            <div className="flex items-center space-x-2">
-              <RadioGroupItem value="true" id={`q${q.id}-yes`} />
-              <Label htmlFor={`q${q.id}-yes`} className="cursor-pointer">Yes</Label>
-            </div>
-            <div className="flex items-center space-x-2">
-              <RadioGroupItem value="false" id={`q${q.id}-no`} />
-              <Label htmlFor={`q${q.id}-no`} className="cursor-pointer">No</Label>
-            </div>
+            {[{ label: "Yes", val: "true" }, { label: "No", val: "false" }].map(({ label, val }) => (
+              <div
+                key={val}
+                className={cn(
+                  "flex items-center space-x-2 px-4 py-2 rounded-lg border",
+                  hasError
+                    ? "bg-red-50 dark:bg-red-900/10 border-red-300 dark:border-red-700"
+                    : "bg-gray-50 dark:bg-slate-800/50 border-gray-200 dark:border-slate-700"
+                )}
+              >
+                <RadioGroupItem value={val} id={`q${q.id}-${val}`} />
+                <Label htmlFor={`q${q.id}-${val}`} className="cursor-pointer">{label}</Label>
+              </div>
+            ))}
           </RadioGroup>
         );
       case "scale":
@@ -143,12 +233,15 @@ export default function OverviewPage() {
             {[1, 2, 3, 4, 5].map((num) => (
               <button
                 key={num}
+                type="button"
                 onClick={() => handleInputChange(q.id, num)}
                 className={cn(
                   "flex-1 py-2 rounded-lg border font-bold transition-all",
                   value === num
                     ? "bg-blue-600 border-blue-500 text-white shadow-md"
-                    : "bg-gray-50 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-400 hover:border-blue-400"
+                    : hasError
+                      ? "bg-red-50 dark:bg-red-900/10 border-red-300 dark:border-red-700 text-gray-400"
+                      : "bg-gray-50 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-400 hover:border-blue-400"
                 )}
               >
                 {num}
@@ -191,7 +284,9 @@ export default function OverviewPage() {
                     style={{ width: `${(completedQuestionsCount / questions.length) * 100}%` }}
                   />
                 </div>
-                <span className="text-xs font-bold uppercase tracking-widest">{Math.round((completedQuestionsCount / questions.length) * 100)}% Done</span>
+                <span className="text-xs font-bold uppercase tracking-widest">
+                  {Math.round((completedQuestionsCount / questions.length) * 100)}% Done
+                </span>
               </div>
             </div>
             <Button
@@ -218,20 +313,34 @@ export default function OverviewPage() {
               Close
             </Button>
           </CardHeader>
+
           <CardContent className="p-8 space-y-10">
             {currentQuestions.map((q) => (
-              <div key={q.id} className="space-y-4">
-                <Label className="text-base font-bold text-gray-700 dark:text-slate-200">
+              <div key={q.id} className="space-y-3">
+                <Label className={cn(
+                  "text-base font-bold",
+                  errors[q.id]
+                    ? "text-red-600 dark:text-red-400"
+                    : "text-gray-700 dark:text-slate-200"
+                )}>
                   {q.id}. {q.question}
+                  <span className="text-red-500 ml-1">*</span>
                 </Label>
                 {renderQuestion(q)}
+                {errors[q.id] && (
+                  <p className="flex items-center gap-1.5 text-sm text-red-600 dark:text-red-400 animate-in fade-in slide-in-from-top-1 duration-200">
+                    <ExclamationCircleIcon className="h-4 w-4 flex-shrink-0" />
+                    {errors[q.id]}
+                  </p>
+                )}
               </div>
             ))}
           </CardContent>
+
           <CardFooter className="bg-gray-50 dark:bg-slate-800/50 border-t border-gray-100 dark:border-slate-800 flex justify-between p-6">
             <Button
               variant="outline"
-              onClick={() => setCurrentPage(prev => Math.max(0, prev - 1))}
+              onClick={() => { setCurrentPage(prev => Math.max(0, prev - 1)); setErrors({}); }}
               disabled={currentPage === 0}
             >
               Previous
@@ -256,9 +365,7 @@ export default function OverviewPage() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Card className="hover:shadow-md transition-shadow group">
           <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-            <CardTitle className="text-sm font-medium text-gray-500">
-              Total Students
-            </CardTitle>
+            <CardTitle className="text-sm font-medium text-gray-500">Total Students</CardTitle>
             <div className="p-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg group-hover:scale-110 transition-transform">
               <UserGroupIcon className="h-4 w-4 text-brand-blue-1" />
             </div>
@@ -274,9 +381,7 @@ export default function OverviewPage() {
 
         <Card className="hover:shadow-md transition-shadow group">
           <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-            <CardTitle className="text-sm font-medium text-gray-500">
-              Active Classes
-            </CardTitle>
+            <CardTitle className="text-sm font-medium text-gray-500">Active Classes</CardTitle>
             <div className="p-2 bg-purple-50 dark:bg-purple-900/20 rounded-lg group-hover:scale-110 transition-transform">
               <CalendarIcon className="h-4 w-4 text-brand-purple-1" />
             </div>
@@ -289,9 +394,7 @@ export default function OverviewPage() {
 
         <Card className="hover:shadow-md transition-shadow group">
           <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-            <CardTitle className="text-sm font-medium text-gray-500">
-              Pending Reviews
-            </CardTitle>
+            <CardTitle className="text-sm font-medium text-gray-500">Pending Reviews</CardTitle>
             <div className="p-2 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg group-hover:scale-110 transition-transform">
               <ClipboardDocumentCheckIcon className="h-4 w-4 text-brand-yellow-1" />
             </div>
@@ -303,7 +406,7 @@ export default function OverviewPage() {
         </Card>
       </div>
 
-      {/* Info Card */}
+      {/* Info Cards */}
       {!showQuestionnaire && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <Card>

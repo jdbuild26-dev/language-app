@@ -1,29 +1,69 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { Play, Pause, Volume2, Loader2 } from "lucide-react";
+import { Play, Pause, Volume2 } from "lucide-react";
 
 const SPEED_OPTIONS = ["0.5x", "0.7x", "0.8x", "1x"];
+
+/** Returns a promise that resolves once voices are available. */
+function waitForVoices(): Promise<SpeechSynthesisVoice[]> {
+  return new Promise((resolve) => {
+    const voices = window.speechSynthesis.getVoices();
+    if (voices.length > 0) return resolve(voices);
+    window.speechSynthesis.addEventListener("voiceschanged", () => {
+      resolve(window.speechSynthesis.getVoices());
+    }, { once: true });
+  });
+}
 
 export default function AudioPlayer({ text, autoPlay = false }) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [speed, setSpeed] = useState("1x");
   const [showSpeedMenu, setShowSpeedMenu] = useState(false);
-  const utteranceRef = useRef(null);
+  const currentSpeedRef = useRef("1x");
+
+  // Keep ref in sync so playAudio always uses latest speed
+  useEffect(() => { currentSpeedRef.current = speed; }, [speed]);
 
   useEffect(() => {
-    if (autoPlay && text) {
-      playAudio();
-    }
+    if (autoPlay && text) playAudio();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [autoPlay, text]);
 
   useEffect(() => {
-    // Cleanup on unmount or text change
     return () => {
       window.speechSynthesis.cancel();
       setIsPlaying(false);
     };
   }, [text]);
+
+  const playAudio = async () => {
+    window.speechSynthesis.cancel();
+
+    // Wait for voices so the engine is ready
+    await waitForVoices();
+
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = "fr-FR";
+    utterance.rate = parseFloat(currentSpeedRef.current.replace("x", ""));
+
+    // Pick a French voice if available
+    const voices = window.speechSynthesis.getVoices();
+    const frVoice = voices.find((v) => v.lang.startsWith("fr"));
+    if (frVoice) utterance.voice = frVoice;
+
+    utterance.onend = () => setIsPlaying(false);
+    utterance.onerror = (event) => {
+      // "interrupted" fires when cancel() is called — not a real error
+      if (event.error !== "interrupted" && event.error !== "canceled") {
+        console.warn("Speech synthesis error:", event.error);
+      }
+      setIsPlaying(false);
+    };
+
+    window.speechSynthesis.speak(utterance);
+    setIsPlaying(true);
+  };
 
   const togglePlay = () => {
     if (isPlaying) {
@@ -34,53 +74,18 @@ export default function AudioPlayer({ text, autoPlay = false }) {
     }
   };
 
-  const playAudio = () => {
-    window.speechSynthesis.cancel(); // Stop any current playback
-
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = "fr-FR"; // Set language to French
-
-    // Parse speed string to number (e.g., "0.5x" -> 0.5)
-    const rate = parseFloat(speed.replace("x", ""));
-    utterance.rate = rate;
-
-    utterance.onend = () => {
-      setIsPlaying(false);
-    };
-
-    utterance.onerror = (event) => {
-      console.error("Speech synthesis error", event);
-      setIsPlaying(false);
-    };
-
-    console.log("Speaking text:", text); // Debugging
-    utteranceRef.current = utterance;
-    window.speechSynthesis.speak(utterance);
-    setIsPlaying(true);
-  };
-
-  const handleSpeedChange = (newSpeed) => {
+  const handleSpeedChange = (newSpeed: string) => {
     setSpeed(newSpeed);
+    currentSpeedRef.current = newSpeed;
     setShowSpeedMenu(false);
-
-    // If getting blocked by previous utterance, cancel it
-    window.speechSynthesis.cancel();
     if (isPlaying) {
-      // Small timeout to ensure cancellation completes
-      setTimeout(() => {
-        // Replay with new speed if was already playing
-        // We need to update the rate logic inside playAudio,
-        // but since playAudio uses state 'speed', and state update is async,
-        // we might need to pass the new speed directly or rely on effect.
-        // Simpler: Just stop playback. User clicks play again.
-        setIsPlaying(false);
-      }, 50);
+      window.speechSynthesis.cancel();
+      setIsPlaying(false);
     }
   };
 
   return (
     <div className="flex items-center gap-1">
-      {/* Play/Pause Button */}
       <button
         onClick={togglePlay}
         className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors"
@@ -93,7 +98,6 @@ export default function AudioPlayer({ text, autoPlay = false }) {
         )}
       </button>
 
-      {/* Speed Selector */}
       <div className="relative">
         <button
           onClick={() => setShowSpeedMenu(!showSpeedMenu)}
@@ -104,7 +108,6 @@ export default function AudioPlayer({ text, autoPlay = false }) {
           {speed}
         </button>
 
-        {/* Speed Menu Dropdown */}
         {showSpeedMenu && (
           <div className="absolute bottom-full left-0 mb-1 bg-white dark:bg-slate-800 rounded-lg shadow-lg border border-gray-200 dark:border-slate-700 py-1 min-w-[60px] z-20">
             {SPEED_OPTIONS.map((option) => (

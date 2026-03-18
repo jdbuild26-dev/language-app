@@ -14,6 +14,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@clerk/nextjs";
 import { useState } from "react";
 import { AssignTaskModal } from "@/features/teacher-dashboard/components/AssignTaskModal";
+import { AddStudentModal } from "@/features/teacher-dashboard/components/AddStudentModal";
 
 export default function MyStudentsPage() {
   const { profile } = useTeacherProfile();
@@ -81,6 +82,7 @@ export default function MyStudentsPage() {
     studentId: null,
     studentName: "",
   });
+  const [showAddStudent, setShowAddStudent] = useState(false);
 
   const openAssignModal = (student) => {
     setAssignModal({
@@ -103,7 +105,10 @@ export default function MyStudentsPage() {
             Manage your student roster and track their progress.
           </p>
         </div>
-        <Button>Add Student</Button>
+        <Button onClick={() => setShowAddStudent(true)}>
+          <UserPlus className="h-4 w-4 mr-2" />
+          Add Student
+        </Button>
       </div>
 
       {/* Teacher ID Info */}
@@ -273,6 +278,12 @@ export default function MyStudentsPage() {
         onClose={() => setAssignModal({ ...assignModal, isOpen: false })}
         studentId={assignModal.studentId}
         studentName={assignModal.studentName}
+      />
+
+      <AddStudentModal
+        isOpen={showAddStudent}
+        onClose={() => setShowAddStudent(false)}
+        onSuccess={() => { refetchPending(); refetchActive(); }}
       />
     </div>
   );

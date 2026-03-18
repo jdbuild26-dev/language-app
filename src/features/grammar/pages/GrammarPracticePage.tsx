@@ -142,8 +142,7 @@ const practiceExercises = [
 
 export default function GrammarPracticePage() {
   return (
-    <div className="max-w-7xl mx-auto px-4 py-6">
-      <div className="space-y-8 pb-10">
+    <div className="space-y-8 pb-10">
         <div className="flex flex-col gap-2">
           <h2 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">
             Grammar Practice
@@ -229,6 +228,5 @@ export default function GrammarPracticePage() {
           ))}
         </div>
       </div>
-    </div>
   );
 }

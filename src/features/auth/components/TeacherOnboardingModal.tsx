@@ -243,17 +243,16 @@ function TeacherOnboardingModalContent({ onComplete }) {
                     <input
                       type="number"
                       min="0"
+                      max="100"
                       className="w-full p-3 rounded-lg border border-gray-200 dark:bg-card-dark dark:border-gray-700"
                       value={formData.experience.years}
-                      onChange={(e) =>
+                      onChange={(e) => {
+                        const val = Math.min(100, Math.max(0, parseInt(e.target.value) || 0));
                         setFormData({
                           ...formData,
-                          experience: {
-                            ...formData.experience,
-                            years: parseInt(e.target.value) || 0,
-                          },
-                        })
-                      }
+                          experience: { ...formData.experience, years: val },
+                        });
+                      }}
                     />
                   </div>
 
