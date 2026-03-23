@@ -33,9 +33,13 @@ export default function SecondaryNavbar() {
 
   const pathname = usePathname();
 
-  // Hide on auth and onboarding pages
+  // Hide on auth, onboarding, and practice exercise pages
   const hideOn = ["/sign-in", "/sign-up", "/onboarding"];
   if (hideOn.some((p) => pathname.startsWith(p))) return null;
+  const isPracticeExercise =
+    pathname.startsWith("/practice/") &&
+    !pathname.startsWith("/practice/select-topic");
+  if (isPracticeExercise) return null;
   const navRef = useRef(null);
   const itemRefs = useRef([]);
   const [pillStyle, setPillStyle] = useState({ left: 0, width: 0, opacity: 0 });

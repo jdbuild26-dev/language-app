@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { UserButton } from "@clerk/nextjs";
 import { SignedIn, SignedOut } from "@/components/shared/ClerkGates";
 import { Bars3Icon } from "@heroicons/react/24/outline";
@@ -21,8 +22,14 @@ import { DarkModeToggle } from "@/components/shared/DarkModeToggle";
 import ProfileMenu from "@/components/layout/header/ProfileMenu";
 
 export default function Header() {
+  const pathname = usePathname();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [activeMobileSection, setActiveMobileSection] = useState(null);
+
+  const isPracticeExercise =
+    pathname.startsWith("/practice/") &&
+    !pathname.startsWith("/practice/select-topic");
+  if (isPracticeExercise) return null;
 
   return (
     <nav className="sticky top-0 z-50 h-[72px] w-full bg-gradient-to-r from-cyan-500 to-blue-600 dark:from-slate-900 dark:to-slate-900 shadow-md dark:shadow-slate-950 border-b border-white/10 dark:border-slate-700 transition-all">
