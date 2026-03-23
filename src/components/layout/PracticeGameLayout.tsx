@@ -7,6 +7,7 @@ import {
   Languages,
   CheckCircle,
   XCircle,
+  X,
   Loader2,
 } from "lucide-react";
 import Link from "next/link";
@@ -144,6 +145,16 @@ export default function PracticeGameLayout({
     <div className="flex flex-col h-screen max-h-screen bg-white dark:bg-slate-950 overflow-hidden font-sans">
       {/* HEADER */}
       <div className="pt-8 md:pt-12 pb-4 md:pb-6 px-4 text-center border-b-[1px] border-red-100 dark:border-red-900/30 shrink-0 relative bg-white dark:bg-slate-950 z-10">
+        {/* Close Button */}
+        {onExit && (
+          <button
+            onClick={onExit}
+            className="absolute top-3 right-3 w-8 h-8 flex items-center justify-center rounded-full bg-gray-200 dark:bg-slate-700 text-gray-600 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-slate-600 transition-colors"
+            aria-label="Close exercise"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        )}
         {/* Instructions (Main Heading) */}
         <div className="flex flex-col items-center justify-center gap-2">
           <div className="flex items-center justify-center gap-3">
