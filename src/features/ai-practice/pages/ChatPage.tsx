@@ -268,7 +268,7 @@ export default function ChatPage() {
   // Loading state
   if (isLoading) {
     return (
-      <div className="fixed inset-0 top-[64px] z-40 flex items-center justify-center bg-gray-50 dark:bg-slate-950">
+      <div className="fixed inset-0 z-40 flex items-center justify-center bg-gray-50 dark:bg-slate-950">
         <div className="text-center">
           <Loader2 className="w-10 h-10 text-sky-500 animate-spin mx-auto mb-4" />
           <p className="text-gray-600 dark:text-slate-400">
@@ -282,7 +282,7 @@ export default function ChatPage() {
   // Error state (no scenario loaded)
   if (error && !scenario) {
     return (
-      <div className="fixed inset-0 top-[64px] z-40 flex items-center justify-center bg-gray-50 dark:bg-slate-950">
+      <div className="fixed inset-0 z-40 flex items-center justify-center bg-gray-50 dark:bg-slate-950">
         <div className="text-center max-w-md px-4">
           <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
           <p className="text-red-600 dark:text-red-400 mb-4">{error}</p>
@@ -298,7 +298,7 @@ export default function ChatPage() {
   }
 
   return (
-    <div className="fixed inset-0 top-[64px] z-40 flex flex-col bg-gray-50 dark:bg-slate-950">
+    <div className="fixed inset-0 z-40 flex flex-col bg-gray-50 dark:bg-slate-950">
       {/* Warmup Overlay */}
       {showWarmup && <ConversationWarmup onComplete={handleWarmupComplete} />}
 

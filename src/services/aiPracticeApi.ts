@@ -112,19 +112,14 @@ export async function getInitialGreeting(scenario) {
  * @returns {Promise<{text: string, translation: string}>}
  */
 export async function translateText(text, targetLang = "en") {
-  const url = `${API_URL}/api/ai-practice/translate`;
-
-  const response = await fetch(url, {
+  const response = await fetch("/api/translate", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      text,
-      target_lang: targetLang,
-    }),
+    body: JSON.stringify({ text, target_lang: targetLang }),
   });
 
   if (!response.ok) {
-    throw new Error(`Translation request failed: ${response.statusText}`);
+    throw new Error(`Translation request failed: ${response.status}`);
   }
   return response.json();
 }

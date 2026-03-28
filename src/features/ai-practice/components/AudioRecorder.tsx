@@ -103,7 +103,7 @@ export default function AudioRecorder({
       {isRecording ? (
         <button
           onClick={stopRecording}
-          className="p-3 bg-red-500 hover:bg-red-600 text-white rounded-full transition-all animate-pulse shadow-lg"
+          className="p-2.5 bg-red-500 hover:bg-red-600 text-white rounded-xl transition-all animate-pulse shadow-lg"
           title="Stop Recording"
         >
           <Square className="w-5 h-5 fill-current" />
@@ -112,7 +112,7 @@ export default function AudioRecorder({
         <button
           onClick={startRecording}
           disabled={disabled}
-          className={`p-3 rounded-full transition-all shadow-sm ${
+          className={`p-2.5 rounded-xl transition-all shadow-sm ${
             disabled
               ? "bg-gray-100 dark:bg-slate-800 text-gray-400 cursor-not-allowed"
               : "bg-sky-500 hover:bg-sky-600 text-white"
