@@ -38,3 +38,6 @@ out/
 
 # clerk configuration (can include secrets)
 /.clerk/
+
+# Google service account credentials
+credentials.json
