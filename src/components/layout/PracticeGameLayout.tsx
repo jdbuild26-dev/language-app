@@ -191,6 +191,7 @@ export default function PracticeGameLayout({
               }
               total={totalQuestions || 1}
               label="Questions"
+              className=""
             />
           </div>
         </div>

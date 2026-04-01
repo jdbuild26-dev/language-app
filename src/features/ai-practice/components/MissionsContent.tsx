@@ -75,14 +75,17 @@ export default function MissionsContent() {
     const router = useRouter();
 
     const handleStartMission = (mission) => {
+        // Build a flat ScenarioInfo object matching the backend model
         const scenario = {
             title: mission.title,
             level: mission.level,
-            formality: "formal", // Missions usually formal
+            formality: "formal",
             mode: "mission",
             objective: mission.objective,
-            ...mission.scenario,
-            icon: "🎯"
+            aiRole: mission.scenario.aiRole,
+            userRole: mission.scenario.userRole,
+            aiPrompt: mission.scenario.aiPrompt,
+            icon: "🎯",
         };
 
         sessionStorage.setItem("chatScenario", JSON.stringify(scenario));

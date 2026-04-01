@@ -15,7 +15,7 @@ export default function FeedbackBanner({
   message,
   continueLabel = "CONTINUE",
   hideButton = false,
-  children
+  children = null
 }) {
   return (
     <div

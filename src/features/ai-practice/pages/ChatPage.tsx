@@ -3,7 +3,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { Loader2, AlertCircle } from "lucide-react";
-import { useChat } from "@ai-sdk/react";
 import ChatHeader from "@/features/ai-practice/components/chat/ChatHeader";
 import ChatInput from "@/features/ai-practice/components/chat/ChatInput";
 import MessageBubble from "@/features/ai-practice/components/chat/MessageBubble";
@@ -17,36 +16,43 @@ import {
   getHint,
 } from "@/services/aiPracticeApi";
 
-export default function ChatPage() {
-  const { topicSlug } = useParams();
-  const router = useRouter();
-  const messagesEndRef = useRef(null);
+interface Scenario {
+  title: string;
+  level: string;
+  formality: string;
+  mode: string;
+  aiRole: string;
+  userRole: string;
+  aiPrompt: string;
+  objective?: string | null;
+  icon?: string;
+}
 
-  // Scenario & UI state
-  const [scenario, setScenario] = useState(null);
-  const [initError, setInitError] = useState(null);
+interface Message {
+  id: string;
+  sender: "ai" | "user";
+  text: string;
+  timestamp?: string;
+  correction?: string | null;
+  autoPlay?: boolean;
+}
+
+export default function ChatPage() {
+  const params = useParams();
+  const topicSlug = params?.topicSlug as string | undefined;
+  const router = useRouter();
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const [scenario, setScenario] = useState<Scenario | null>(null);
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [isSending, setIsSending] = useState(false);
   const [isInitializing, setIsInitializing] = useState(true);
+  const [initError, setInitError] = useState<string | null>(null);
+  const [sendError, setSendError] = useState<string | null>(null);
 
   const [showWarmup, setShowWarmup] = useState(true);
   const [showAnalyze, setShowAnalyze] = useState(false);
-  const [analysisData, setAnalysisData] = useState(null);
-
-  // useChat manages messages, input, loading, and optimistic appending
-  const {
-    messages,
-    setMessages,
-    input,
-    setInput,
-    isLoading: isSending,
-    error: chatError,
-    append,
-  } = useChat({
-    // We handle sending manually via our own backend, so no api route needed.
-    // Set a no-op api to prevent the default fetch.
-    api: "/api/noop",
-    // Disable automatic submission — we call append() ourselves.
-    onError: (err) => console.error("useChat error:", err),
-  });
+  const [analysisData, setAnalysisData] = useState<any>(null);
 
   // Auto-scroll on new messages
   useEffect(() => {
@@ -60,7 +66,7 @@ export default function ChatPage() {
         setIsInitializing(true);
         setInitError(null);
 
-        let scenarioData;
+        let scenarioData: Scenario;
         const stored = sessionStorage.getItem("chatScenario");
         if (stored) {
           scenarioData = JSON.parse(stored);
@@ -84,13 +90,11 @@ export default function ChatPage() {
           objective: scenarioData.objective,
         });
 
-        // Seed useChat with the AI greeting as the first message
         setMessages([
           {
             id: "greeting",
-            role: "assistant",
-            content: greeting.ai_response,
-            // Custom fields stored in the message for rendering
+            sender: "ai",
+            text: greeting.ai_response,
             autoPlay: false,
           },
         ]);
@@ -103,11 +107,10 @@ export default function ChatPage() {
     }
 
     init();
-  }, [topicSlug, setMessages]);
+  }, [topicSlug]);
 
   const handleWarmupComplete = () => {
     setShowWarmup(false);
-    // Trigger audio autoplay on the greeting after warmup
     setMessages((prev) =>
       prev.map((m, i) => (i === 0 ? { ...m, autoPlay: true } : m))
     );
@@ -121,16 +124,22 @@ export default function ChatPage() {
       minute: "2-digit",
     });
 
-    // Optimistically append user message via useChat
-    append({ role: "user", content: text, id: `user-${Date.now()}` } as any);
-    setInput("");
+    const userMsg: Message = {
+      id: `user-${Date.now()}`,
+      sender: "user",
+      text,
+      timestamp,
+    };
+
+    setMessages((prev) => [...prev, userMsg]);
+    setIsSending(true);
+    setSendError(null);
 
     try {
-      // Build history from current messages (before the new user msg)
       const history = messages.map((m) => ({
-        sender: m.role === "assistant" ? "ai" : "user",
-        text: m.content,
-        correction: (m as any).correction ?? null,
+        sender: m.sender,
+        text: m.text,
+        correction: m.correction ?? null,
       }));
 
       const response = await sendChatMessage({
@@ -148,13 +157,12 @@ export default function ChatPage() {
         },
       });
 
-      // Attach correction to the last user message, then append AI reply
       setMessages((prev) => {
         const updated = [...prev];
-        // Find the last user message and attach correction
+        // Attach correction to the last user message
         for (let i = updated.length - 1; i >= 0; i--) {
-          if (updated[i].role === "user") {
-            updated[i] = { ...updated[i], correction: response.correction } as any;
+          if (updated[i].sender === "user") {
+            updated[i] = { ...updated[i], correction: response.correction };
             break;
           }
         }
@@ -162,16 +170,21 @@ export default function ChatPage() {
           ...updated,
           {
             id: `ai-${Date.now()}`,
-            role: "assistant",
-            content: response.ai_response,
-            timestamp,
-          } as any,
+            sender: "ai" as const,
+            text: response.ai_response,
+            timestamp: new Date().toLocaleTimeString([], {
+              hour: "2-digit",
+              minute: "2-digit",
+            }),
+          },
         ];
       });
     } catch (err) {
       console.error("Failed to send message:", err);
-      // Roll back the optimistic user message
+      setSendError("Failed to get response. Please try again.");
       setMessages((prev) => prev.slice(0, -1));
+    } finally {
+      setIsSending(false);
     }
   };
 
@@ -182,9 +195,9 @@ export default function ChatPage() {
 
     try {
       const history = messages.map((m) => ({
-        sender: m.role === "assistant" ? "ai" : "user",
-        text: m.content,
-        correction: (m as any).correction ?? null,
+        sender: m.sender,
+        text: m.text,
+        correction: m.correction ?? null,
       }));
 
       const analysis = await analyzeSession(history, {
@@ -211,13 +224,13 @@ export default function ChatPage() {
     }
   };
 
-  const handleHint = async () => {
-    if (!scenario) return null;
+  const handleHint = async (): Promise<string> => {
+    if (!scenario) return "Je ne sais pas quoi dire...";
     try {
       const history = messages.map((m) => ({
-        sender: m.role === "assistant" ? "ai" : "user",
-        text: m.content,
-        correction: (m as any).correction ?? null,
+        sender: m.sender,
+        text: m.text,
+        correction: m.correction ?? null,
       }));
       const response = await getHint(history, {
         level: scenario.level,
@@ -271,6 +284,8 @@ export default function ChatPage() {
         isOpen={showAnalyze}
         onClose={() => router.push("/ai-practice")}
         analysisData={analysisData}
+        mode={(scenario?.mode as any) ?? "chat"}
+        scenarioTitle={scenario?.title}
       />
 
       <ChatHeader scenario={scenario} onEndSession={handleEndSession} />
@@ -279,20 +294,9 @@ export default function ChatPage() {
       <div className="flex-1 overflow-y-auto px-4 py-6">
         <div className="max-w-3xl mx-auto">
           {messages.map((message) => (
-            <MessageBubble
-              key={message.id}
-              message={{
-                id: message.id,
-                sender: message.role === "assistant" ? "ai" : "user",
-                text: message.content,
-                correction: (message as any).correction,
-                autoPlay: (message as any).autoPlay,
-                timestamp: (message as any).timestamp,
-              }}
-            />
+            <MessageBubble key={message.id} message={message} />
           ))}
 
-          {/* Typing indicator */}
           {isSending && (
             <div className="flex justify-start mb-4">
               <div className="bg-gray-100 dark:bg-slate-800 rounded-2xl px-4 py-3 rounded-tl-sm">
@@ -309,9 +313,9 @@ export default function ChatPage() {
             </div>
           )}
 
-          {chatError && (
+          {sendError && (
             <div className="text-center py-2">
-              <p className="text-sm text-red-500">Failed to get response. Please try again.</p>
+              <p className="text-sm text-red-500">{sendError}</p>
             </div>
           )}
 

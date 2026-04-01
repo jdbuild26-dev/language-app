@@ -1,10 +1,7 @@
-"use client";
-
 import { Sparkles, MessageCircle, Target, Briefcase, Settings } from "lucide-react";
-import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import PageTabs from "@/components/ui/PageTabs";
 
-export const aiPracticeTabs = [
+const aiPracticeTabs = [
   {
     label: "Scenarios",
     path: "scenarios",
@@ -18,11 +15,16 @@ export const aiPracticeTabs = [
   { label: "General", path: "general", icon: Settings },
 ];
 
-// Root /ai-practice → redirect to default tab
-export default function AIPracticePage() {
-  const router = useRouter();
-  useEffect(() => {
-    router.replace("/ai-practice/scenarios/chats");
-  }, [router]);
-  return null;
+export default function AIPracticeLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="max-w-7xl mx-auto px-4 py-6">
+      <PageTabs
+        basePath="/ai-practice"
+        defaultTab="scenarios"
+        defaultSubTab="chats"
+        tabs={aiPracticeTabs}
+      />
+      <div className="mt-6">{children}</div>
+    </div>
+  );
 }
