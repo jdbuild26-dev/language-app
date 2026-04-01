@@ -1,3 +1,5 @@
+"use client";
+
 import { Sparkles, MessageCircle, Target, Briefcase, Settings } from "lucide-react";
 import PageTabs from "@/components/ui/PageTabs";
 

@@ -14,7 +14,12 @@ const levelColors = {
 };
 
 export default function ChatHeader({ scenario, onEndSession }) {
-  const levelColor = levelColors[scenario.level] || levelColors.A1;
+  // Guard against null scenario during initial load
+  if (!scenario) return (
+    <div className="sticky top-0 z-10 bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-slate-700 px-4 py-3 h-14" />
+  );
+
+  const levelColor = levelColors[scenario?.level] || levelColors.A1;
 
   return (
     <div className="sticky top-0 z-10 bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-slate-700 px-4 py-3">

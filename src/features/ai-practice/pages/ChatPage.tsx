@@ -72,29 +72,58 @@ export default function ChatPage() {
           scenarioData = JSON.parse(stored);
           sessionStorage.removeItem("chatScenario");
         } else if (topicSlug) {
-          scenarioData = await fetchTopicBySlug(topicSlug);
+          // Only Google Sheets chat topics exist in the backend by slug.
+          // Mission/profession slugs (e.g. "lawyer", "rent-apartment") are
+          // frontend-only and require sessionStorage. If it's missing (page
+          // refresh), redirect back rather than 404-crashing.
+          try {
+            const topic = await fetchTopicBySlug(topicSlug);
+            scenarioData = {
+              title: topic.title,
+              level: topic.level || "A1",
+              formality: topic.formality || "casual",
+              mode: "chat",
+              aiRole: topic.aiRole || "Conversation Partner",
+              userRole: topic.userRole || "Learner",
+              aiPrompt: topic.aiPrompt || "",
+              objective: null,
+              icon: topic.icon,
+            };
+          } catch {
+            // Slug not found in backend — this is a mission/profession that
+            // needs sessionStorage. Send the user back to pick a topic.
+            router.replace("/ai-practice/scenarios/chats");
+            return;
+          }
         } else {
           throw new Error("No scenario provided");
         }
 
         setScenario(scenarioData);
 
-        const greeting = await getInitialGreeting({
-          level: scenarioData.level,
-          formality: scenarioData.formality,
-          title: scenarioData.title,
-          aiPrompt: scenarioData.aiPrompt,
-          aiRole: scenarioData.aiRole,
-          userRole: scenarioData.userRole,
-          mode: scenarioData.mode || "chat",
-          objective: scenarioData.objective,
-        });
+        // Get initial greeting — fall back gracefully if backend is cold-starting
+        let greetingText = "Bonjour ! Comment puis-je vous aider ?";
+        try {
+          const greeting = await getInitialGreeting({
+            level: scenarioData.level,
+            formality: scenarioData.formality,
+            title: scenarioData.title,
+            aiPrompt: scenarioData.aiPrompt,
+            aiRole: scenarioData.aiRole,
+            userRole: scenarioData.userRole,
+            mode: scenarioData.mode || "chat",
+            objective: scenarioData.objective,
+          });
+          greetingText = greeting.ai_response;
+        } catch (greetErr) {
+          console.warn("Greeting fetch failed, using fallback:", greetErr);
+        }
 
         setMessages([
           {
             id: "greeting",
             sender: "ai",
-            text: greeting.ai_response,
+            text: greetingText,
             autoPlay: false,
           },
         ]);
@@ -250,7 +279,7 @@ export default function ChatPage() {
 
   if (isInitializing) {
     return (
-      <div className="fixed inset-0 z-40 flex items-center justify-center bg-gray-50 dark:bg-slate-950">
+      <div className="fixed inset-0 z-[60] flex items-center justify-center bg-gray-50 dark:bg-slate-950">
         <div className="text-center">
           <Loader2 className="w-10 h-10 text-sky-500 animate-spin mx-auto mb-4" />
           <p className="text-gray-600 dark:text-slate-400">Starting conversation...</p>
@@ -261,15 +290,18 @@ export default function ChatPage() {
 
   if (initError && !scenario) {
     return (
-      <div className="fixed inset-0 z-40 flex items-center justify-center bg-gray-50 dark:bg-slate-950">
+      <div className="fixed inset-0 z-[60] flex items-center justify-center bg-gray-50 dark:bg-slate-950">
         <div className="text-center max-w-md px-4">
           <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-          <p className="text-red-600 dark:text-red-400 mb-4">{initError}</p>
+          <p className="text-gray-700 dark:text-slate-300 font-semibold mb-2">
+            Couldn't start the conversation
+          </p>
+          <p className="text-red-600 dark:text-red-400 text-sm mb-6">{initError}</p>
           <button
             onClick={() => router.back()}
-            className="px-4 py-2 bg-sky-500 text-white rounded-lg hover:bg-sky-600 transition-colors"
+            className="px-6 py-2.5 bg-sky-500 text-white rounded-xl hover:bg-sky-600 transition-colors font-medium"
           >
-            Go Back
+            ← Go Back
           </button>
         </div>
       </div>
@@ -277,7 +309,7 @@ export default function ChatPage() {
   }
 
   return (
-    <div className="fixed inset-0 z-40 flex flex-col bg-gray-50 dark:bg-slate-950">
+    <div className="fixed inset-0 z-[60] flex flex-col bg-gray-50 dark:bg-slate-950">
       {showWarmup && <ConversationWarmup onComplete={handleWarmupComplete} />}
 
       <AnalyzeModal
