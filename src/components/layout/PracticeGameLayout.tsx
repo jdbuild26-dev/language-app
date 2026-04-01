@@ -5,8 +5,6 @@ import {
   ArrowLeft,
   RotateCcw,
   Languages,
-  CheckCircle,
-  XCircle,
   X,
   Loader2,
 } from "lucide-react";
@@ -17,6 +15,7 @@ import { ProgressBar } from "@/components/ui/ProgressBar";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@clerk/nextjs";
 import { completeAssignment } from "@/services/assignmentsApi";
+import FeedbackBanner from "@/components/ui/FeedbackBanner";
 
 /**
  * Inner component that uses useSearchParams — must be wrapped in Suspense.
@@ -186,9 +185,11 @@ export default function PracticeGameLayout({
               current={
                 currentQuestionIndex !== undefined
                   ? currentQuestionIndex
-                  : Math.round((progress / 100) * totalQuestions)
+                  : totalQuestions > 0
+                    ? Math.round(((progress ?? 0) / 100) * totalQuestions)
+                    : 0
               }
-              total={totalQuestions}
+              total={totalQuestions || 1}
               label="Questions"
             />
           </div>
@@ -202,78 +203,40 @@ export default function PracticeGameLayout({
         </div>
       </div>
 
-      <div
-        className={cn(
-          "py-4 md:py-6 px-4 md:px-8 border-t-[1px] shrink-0 flex items-center justify-between w-full z-10 transition-colors duration-300",
-          showFeedback
-            ? isCorrect
-              ? "bg-green-100 dark:bg-green-900/30 border-green-500"
-              : "bg-red-100 dark:bg-red-900/30 border-red-500"
-            : "bg-white dark:bg-slate-950 border-red-100 dark:border-red-900/30",
-        )}
-      >
-        {/* Feedback Content (Left/Center) or Timer (Left) */}
-        <div className="flex items-center gap-4 flex-1">
-          {showFeedback ? (
-            <div className="flex items-center gap-3 animate-in fade-in slide-in-from-bottom-2 duration-300">
-              {isCorrect ? (
-                <CheckCircle className="w-8 h-8 text-green-600 dark:text-green-400 shrink-0" />
-              ) : (
-                <XCircle className="w-8 h-8 text-red-600 dark:text-red-400 shrink-0" />
-              )}
-              <div className="flex flex-col">
-                <span
-                  className={cn(
-                    "text-lg md:text-xl font-bold leading-tight",
-                    isCorrect
-                      ? "text-green-800 dark:text-green-200"
-                      : "text-red-800 dark:text-red-200",
-                  )}
-                >
-                  {feedbackMessage}
-                </span>
-                {!isCorrect && correctAnswer && (
-                  <span className="text-red-700 dark:text-red-300 text-sm font-medium">
-                    Correct Answer: {correctAnswer}
-                  </span>
-                )}
-              </div>
-            </div>
-          ) : (
-            <div
-              className={cn(
-                "text-xl md:text-3xl font-bold font-mono tracking-wider min-w-[60px] md:min-w-[80px] transition-colors",
-                // Timer Styling default
-                "text-gray-800 dark:text-gray-200",
-              )}
-            >
-              {timerValue || ""}
-            </div>
-          )}
-        </div>
+      {/* FOOTER — timer + submit button when no feedback; FeedbackBanner when feedback is active */}
+      {showFeedback ? (
+        <FeedbackBanner
+          isCorrect={isCorrect}
+          correctAnswer={correctAnswer}
+          message={feedbackMessage}
+          onContinue={onNext}
+        />
+      ) : (
+        <div className="py-4 md:py-6 px-4 md:px-8 border-t border-red-100 dark:border-red-900/30 shrink-0 flex items-center justify-between w-full z-10 bg-white dark:bg-slate-950">
+          {/* Timer */}
+          <div className="text-xl md:text-3xl font-bold font-mono tracking-wider min-w-[60px] md:min-w-[80px] text-gray-800 dark:text-gray-200">
+            {timerValue || ""}
+          </div>
 
-        {/* Right: Action Button */}
-        <div className="shrink-0 ml-4">
-          {showSubmitButton && (
-            <button
-              onClick={onNext}
-              disabled={!isSubmitEnabled}
-              className={cn(
-                "px-6 md:px-8 py-3 md:py-6 text-base md:text-lg font-bold rounded-xl uppercase tracking-wider shadow-lg transition-transform active:scale-95 min-w-[120px] md:min-w-[140px]",
-                showFeedback
-                  ? isCorrect
-                    ? "bg-green-600 hover:bg-green-700 text-white border-b-4 border-green-700 active:border-b-0"
-                    : "bg-red-600 hover:bg-red-700 text-white border-b-4 border-red-700 active:border-b-0"
-                  : !isSubmitEnabled
+          {/* Submit button */}
+          <div className="shrink-0 ml-4">
+            {showSubmitButton && (
+              <button
+                onClick={onNext}
+                disabled={!isSubmitEnabled}
+                className={cn(
+                  "px-6 md:px-8 py-3 md:py-6 text-base md:text-lg font-bold rounded-xl uppercase tracking-wider shadow-lg transition-transform active:scale-95 min-w-[120px] md:min-w-[140px]",
+                  !isSubmitEnabled
                     ? "opacity-50 cursor-not-allowed bg-gray-200 text-gray-400"
                     : "bg-sky-400 hover:bg-sky-500 text-white border-b-4 border-sky-500 active:border-b-0",
-              )}
-            >
-              {submitLabel}
-            </button>
-          )}
+                )}
+              >
+                {submitLabel}
+              </button>
+            )}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }
