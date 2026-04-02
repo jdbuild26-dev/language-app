@@ -59,6 +59,8 @@ export default function PracticeGameLayout({
   feedbackTone,
   feedbackMessage = "",
   correctAnswer = "",
+  userAnswer = "",
+  questionContext = "",
   customEndGameContent = null,
   children,
 }) {

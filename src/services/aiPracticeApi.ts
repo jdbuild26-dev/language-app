@@ -171,3 +171,29 @@ export async function analyzeSession(conversationHistory, scenario) {
   }
   return response.json();
 }
+
+/**
+ * Generate a full CEFR-level-aware feedback report for a completed conversation.
+ * Uses level-specific prompts (A1/A2/B1/B2) or a generic prompt for C1/C2.
+ * @param {Array} conversationHistory - All messages from the session (with corrections)
+ * @param {Object} scenario - Scenario metadata
+ * @returns {Promise<{level: string, title: string, date: string, report_markdown: string}>}
+ */
+export async function getFeedbackReport(conversationHistory, scenario) {
+  const url = `${API_URL}/api/ai-practice/feedback-report`;
+
+  const response = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      conversation_history: conversationHistory,
+      scenario,
+    }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Feedback report request failed: ${response.statusText}`);
+  }
+  return response.json();
+}
+
