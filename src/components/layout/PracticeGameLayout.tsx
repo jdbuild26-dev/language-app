@@ -89,6 +89,8 @@ export default function PracticeGameLayout({
   isCorrect = false,
   feedbackMessage = "",
   correctAnswer = "",
+  userAnswer = "",
+  questionContext = "",
   customEndGameContent = null,
   children,
 }) {
@@ -209,6 +211,8 @@ export default function PracticeGameLayout({
         <FeedbackBanner
           isCorrect={isCorrect}
           correctAnswer={correctAnswer}
+          userAnswer={userAnswer}
+          questionContext={questionContext}
           message={feedbackMessage}
           onContinue={onNext}
         />

@@ -80,7 +80,7 @@ export default function GenericSpeakingPage({
                     data = mockData;
                 } else {
                     const response = await fetch(
-                        `${process.env.NEXT_PUBLIC_API_URL}/api/practice/${sheetName}`
+                        `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"}/api/practice/${sheetName}`
                     );
                     if (!response.ok) throw new Error("Failed to fetch data");
                     const json = await response.json();
@@ -137,7 +137,7 @@ export default function GenericSpeakingPage({
 
         setIsSubmitting(true);
         try {
-            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/practice/evaluate-speaking`, {
+            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"}/api/practice/evaluate-speaking`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
@@ -220,6 +220,9 @@ export default function GenericSpeakingPage({
             showFeedback={!!evaluation}
             isCorrect={evaluation?.is_correct ?? false}
             feedbackMessage={evaluation ? (evaluation.is_correct ? "Great job!" : "Not quite — keep practising!") : ""}
+            correctAnswer={evaluation?.correction || currentQuestion?.correctAnswer || currentQuestion?.Answer || currentQuestion?.Translation || currentQuestion?.['Correct Answer'] || ""}
+            userAnswer={spokenText}
+            questionContext={currentQuestion?.Question || currentQuestion?.Prompt || currentQuestion?.Topic || currentQuestion?.Sentence || title}
         >
             <div className="flex flex-col items-center justify-center max-w-3xl w-full gap-8">
                 {/* Task Content */}

@@ -32,10 +32,11 @@ interface Section {
 
 interface AnalysisData {
   is_correct: boolean;
-  wrong_subject: Section;
-  wrong_verb: Section;
-  missing_article: Section;
-  incorrect_structure: Section;
+  alternates?: string[];
+  wrong_subject?: Section | null;
+  wrong_verb?: Section | null;
+  missing_article?: Section | null;
+  incorrect_structure?: Section | null;
 }
 
 const SECTION_CONFIG = [
@@ -297,16 +298,37 @@ export default function TranslationExplainButton({
               <span className="text-sm">Analysing your answer...</span>
             </div>
           ) : analysis ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-              {SECTION_CONFIG.map((config, i) => (
-                <SectionCard
-                  key={config.key}
-                  config={config}
-                  section={analysis[config.key]}
-                  index={i}
-                  isCorrect={!analysis[config.key].found}
-                />
-              ))}
+            <div className="space-y-4">
+              {analysis.alternates && analysis.alternates.length > 0 && (
+                <div className="rounded-xl border bg-blue-50 dark:bg-blue-900/20 border-blue-200 p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Sparkles className="w-4 h-4 text-blue-500" />
+                    <span className="font-bold text-sm text-gray-900 dark:text-white">Other correct ways to say this:</span>
+                  </div>
+                  <ul className="list-disc list-inside text-sm text-gray-700 dark:text-gray-300">
+                    {analysis.alternates.map((alt, idx) => (
+                      <li key={idx}>{alt}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                {SECTION_CONFIG.map((config, i) => {
+                  const sectionData = analysis[config.key];
+                  if (!sectionData) return null;
+                  
+                  return (
+                    <SectionCard
+                      key={config.key}
+                      config={config}
+                      section={sectionData}
+                      index={i}
+                      isCorrect={!sectionData.found}
+                    />
+                  );
+                })}
+              </div>
             </div>
           ) : null}
         </div>

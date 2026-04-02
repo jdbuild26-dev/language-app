@@ -151,3 +151,106 @@
     transform: rotateY(180deg);
   }
 }
+
+/* ============================================================
+   Print styles — Feedback Report & Transcript PDF
+   Used by window.print() in FeedbackReportPage and ChatPage
+   ============================================================ */
+@media print {
+  /* Use visibility (not display) so nested child elements can override */
+  body * {
+    visibility: hidden !important;
+  }
+
+  /* Make the print containers and ALL their descendants visible */
+  #transcript-print-container,
+  #transcript-print-container *,
+  #report-print-area,
+  #report-print-area * {
+    visibility: visible !important;
+  }
+
+  /* Position print areas at the top of the printed page */
+  #transcript-print-container,
+  #report-print-area {
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+    display: block !important;
+  }
+
+  /* Page settings */
+  @page {
+    margin: 20mm;
+    size: A4;
+  }
+
+  /* Transcript container styles */
+  #transcript-print-container {
+    font-family: Georgia, serif;
+    font-size: 11pt;
+    line-height: 1.7;
+    color: #111;
+  }
+
+  #transcript-print-container .transcript-header {
+    border-bottom: 2px solid #333;
+    padding-bottom: 10px;
+    margin-bottom: 20px;
+  }
+
+  #transcript-print-container .transcript-header h1 {
+    font-size: 18pt;
+    margin: 0 0 4px;
+  }
+
+  #transcript-print-container .transcript-header p {
+    font-size: 10pt;
+    color: #555;
+    margin: 0;
+  }
+
+  #transcript-print-container .msg-block {
+    margin-bottom: 14px;
+    page-break-inside: avoid;
+  }
+
+  #transcript-print-container .msg-sender {
+    font-weight: bold;
+    font-size: 10pt;
+    color: #374151;
+    margin-bottom: 2px;
+  }
+
+  #transcript-print-container .msg-text {
+    margin: 0;
+  }
+
+  #transcript-print-container .msg-correction {
+    margin-top: 3px;
+    font-size: 9.5pt;
+    color: #b45309;
+    font-style: italic;
+  }
+
+  /* Report print area tables */
+  #report-print-area table {
+    border-collapse: collapse;
+    width: 100%;
+    page-break-inside: auto;
+  }
+
+  #report-print-area tr {
+    page-break-inside: avoid;
+  }
+
+  #report-print-area td,
+  #report-print-area th {
+    border: 1px solid #d1d5db;
+    padding: 5px 8px;
+    text-align: left;
+    vertical-align: top;
+  }
+}
+
