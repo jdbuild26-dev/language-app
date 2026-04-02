@@ -1,175 +1,229 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { usePracticeExit } from "@/hooks/usePracticeExit";
 import { useExerciseTimer } from "@/hooks/useExerciseTimer";
-import { CheckCircle, XCircle, Loader2 } from "lucide-react";
+import { XCircle, Loader2, Languages } from "lucide-react";
 import { fetchCompletePassageData } from "@/services/vocabularyApi";
 import { loadMockCSV } from "@/utils/csvLoader";
 import { cn } from "@/lib/utils";
 import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
-import FeedbackBanner from "@/components/ui/FeedbackBanner";
-
+import CustomSelect from "@/components/ui/CustomSelect";
 import { useLanguage } from "@/contexts/LanguageContext";
 
-/* 
-  Data for the exercise: 
-  A longer passage with multiple blanks.
-*/
-// Consants removed - migrated to CSV
+type PassageSegment = string | { type: "blank"; id: number };
+type BlankValue = { correct: string; options: string[] } | string;
+type CompletePassageRow = {
+  timeLimitSeconds?: number;
+  passageSegments?: PassageSegment[];
+  blanksData?: Record<string, BlankValue>;
+  localizedInstruction?: string;
+  instructionFr?: string;
+  instructionEn?: string;
+};
 
 export default function CompletePassagePage() {
   const handleExit = usePracticeExit();
   const { learningLang, knownLang } = useLanguage();
 
-  // State
-  const [passageSegments, setPassageSegments] = useState([]);
-  const [blanksData, setBlanksData] = useState({});
-  const [fullText, setFullText] = useState("");
+  const [passageSegments, setPassageSegments] = useState<PassageSegment[]>([]);
+  const [blanksData, setBlanksData] = useState<Record<string, BlankValue>>({});
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [currentQuestion, setCurrentQuestion] = useState(null);
-
-  const [answers, setAnswers] = useState({}); // { 1: "option", 2: "option" }
-  const [showFeedback, setShowFeedback] = useState(false);
-  const [isCorrect, setIsCorrect] = useState(false);
-  const [feedbackMessage, setFeedbackMessage] = useState("");
+  const [error, setError] = useState<string | null>(null);
   const [score, setScore] = useState(0);
   const [isCompleted, setIsCompleted] = useState(false);
+  const [showFeedback, setShowFeedback] = useState(false);
+  const [isCorrect, setIsCorrect] = useState(false);
+  const [feedbackTone, setFeedbackTone] = useState<
+    "success" | "error" | "partial"
+  >("error");
+  const [feedbackMessage, setFeedbackMessage] = useState("");
+  const [answers, setAnswers] = useState<Record<string, string>>({});
+
+  const parseJsonIfString = (value: unknown, fallback: unknown) => {
+    if (value == null || value === "") return fallback;
+    if (typeof value === "string") {
+      try {
+        return JSON.parse(value);
+      } catch {
+        return fallback;
+      }
+    }
+    return value;
+  };
+
+  const normalizeOptions = (options: unknown) => {
+    if (Array.isArray(options)) return options.filter(Boolean).map(String);
+    if (typeof options === "string") {
+      return options
+        .split("|")
+        .map((opt) => opt.trim())
+        .filter(Boolean);
+    }
+    return [];
+  };
+
+  const normalizeRow = (row: unknown): CompletePassageRow | null => {
+    if (!row || typeof row !== "object") return null;
+    const source = row as Record<string, unknown>;
+    const passageSegments = parseJsonIfString(
+      source.passageSegments ??
+        (source.content as Record<string, unknown> | undefined)?.
+          passageSegments,
+      [],
+    );
+    const blanks = parseJsonIfString(
+      source.blanksData ??
+        (source.evaluation as Record<string, unknown> | undefined)
+          ?.blanksData ??
+        source.eval_blanksData,
+      {},
+    );
+    return {
+      passageSegments: Array.isArray(passageSegments)
+        ? (passageSegments as PassageSegment[])
+        : [],
+      blanksData:
+        blanks && typeof blanks === "object"
+          ? (blanks as Record<string, BlankValue>)
+          : {},
+      localizedInstruction:
+        typeof source.localizedInstruction === "string"
+          ? source.localizedInstruction
+          : undefined,
+      instructionFr:
+        typeof source.instructionFr === "string"
+          ? source.instructionFr
+          : undefined,
+      instructionEn:
+        typeof source.instructionEn === "string"
+          ? source.instructionEn
+          : undefined,
+      timeLimitSeconds:
+        typeof source.timeLimitSeconds === "number"
+          ? source.timeLimitSeconds
+          : undefined,
+    };
+  };
+
+  const getFirstUsableRow = (payload: unknown) => {
+    const candidates = Array.isArray(payload) ? payload : [payload];
+    for (const candidate of candidates) {
+      const normalized = normalizeRow(candidate);
+      if (
+        normalized &&
+        normalized.passageSegments?.length &&
+        normalized.blanksData &&
+        Object.keys(normalized.blanksData).length > 0
+      ) {
+        return normalized;
+      }
+    }
+    return null;
+  };
 
   useEffect(() => {
     const fetchData = async () => {
-      let data = null;
+      setLoading(true);
+      setError(null);
+
+      let data: unknown = null;
       try {
-        setLoading(true);
-        console.log(
-          "[CompletePassagePage] Attempting to fetch data from BACKEND API...",
-        );
         data = await fetchCompletePassageData({ learningLang, knownLang });
-        if (data) {
-          console.log(
-            "[CompletePassagePage] Data Source: BACKEND API (Success)",
-          );
-        }
-      } catch (err) {
-        console.warn(
-          "[CompletePassagePage] Backend fetch failed, falling back to local CSV",
-          err,
-        );
-        // Fallback to CSV
+      } catch {
         try {
-          console.log(
-            "[CompletePassagePage] Attempting to fetch data from LOCAL CSV...",
-          );
           data = await loadMockCSV(
             "practice/reading/complete_passage_dropdown.csv",
-            { learningLang, knownLang }
+            { learningLang, knownLang },
           );
-          if (data && data.length > 0) {
-            console.log(
-              "[CompletePassagePage] Data Source: LOCAL CSV (Success)",
-            );
-          }
-        } catch (csvErr) {
-          console.error("CSV Fallback failed", csvErr);
-          setError("Failed to load practice data from both API and CSV.");
+        } catch {
+          data = null;
         }
       }
 
-      if (data) {
-        // If API returns array (like CSV loader did)
-        const row = Array.isArray(data) ? data[0] : data;
-        setCurrentQuestion(row);
-
-        setPassageSegments(row.passageSegments || []);
-        setBlanksData(row.blanksData || {});
-        setFullText(row.fullText || "");
-      } else if (!error) {
-        // If we didn't set error above but have no data
-        // setError("No data found."); // Optional: verify if we want to show error here
+      const usableRow = getFirstUsableRow(data);
+      if (!usableRow) {
+        setError("No data found for this practice item.");
+      } else {
+        setPassageSegments(usableRow.passageSegments || []);
+        setBlanksData(usableRow.blanksData || {});
       }
+
       setLoading(false);
     };
-    fetchData();
-  }, [learningLang, knownLang]);
 
-  // Timer: 8 minutes (480s) to match screenshot mostly
-  const { timerString, resetTimer, pauseTimer } = useExerciseTimer({
-    duration: currentQuestion?.timeLimitSeconds || 480,
+    fetchData();
+  }, [learningLang, knownLang]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const { timerString } = useExerciseTimer({
+    duration: 480,
     mode: "timer",
     onExpire: () => {
-      if (!showFeedback && !isCompleted) {
-        checkAnswers(true);
-      }
+      if (!showFeedback && !isCompleted) checkAnswers(true);
     },
     isPaused: showFeedback || isCompleted || loading,
   });
 
-  const handleOptionSelect = (blankId, value) => {
+  const handleOptionSelect = (blankId: string, value: string) => {
     if (showFeedback) return;
-    setAnswers((prev) => ({ ...prev, [blankId]: value }));
+    setAnswers((prev) => ({ ...prev, [String(blankId)]: value }));
   };
 
   const checkAnswers = (timeExpired = false) => {
-    // Count correct answers
-    let correctCount = 0;
-    const totalBlanks = Object.keys(blanksData).length;
+    const keys = Object.keys(blanksData);
+    if (keys.length === 0) return;
 
-    Object.keys(blanksData).forEach((key) => {
-      const id = parseInt(key);
-      if (answers[id] === blanksData[id].correct) {
-        correctCount++;
-      }
+    let correctCount = 0;
+    keys.forEach((key) => {
+      const blank = blanksData[key];
+      const correctVal =
+        typeof blank === "object" && blank !== null
+          ? blank.correct
+          : String(blank);
+      if (answers[String(key)] === correctVal) correctCount++;
     });
 
-    const verifyAllCorrect = correctCount === totalBlanks;
-    setIsCorrect(verifyAllCorrect);
-
-    if (verifyAllCorrect) {
-      setScore(correctCount);
-      setFeedbackMessage("Excellent! All answers are correct.");
-    } else {
-      setScore(correctCount);
-      setFeedbackMessage(
-        timeExpired
-          ? "Time's up!"
-          : `You got ${correctCount} out of ${totalBlanks} correct.`,
-      );
-    }
-
+    const allCorrect = correctCount === keys.length;
+    const hasSomeCorrect = correctCount > 0 && correctCount < keys.length;
+    setScore(correctCount);
+    setIsCorrect(allCorrect);
+    setFeedbackTone(
+      allCorrect ? "success" : hasSomeCorrect ? "partial" : "error",
+    );
+    setFeedbackMessage(
+      allCorrect
+        ? "Excellent! All answers are correct."
+        : hasSomeCorrect
+          ? `Partially correct: ${correctCount} out of ${keys.length}.`
+          : timeExpired
+            ? "Time's up!"
+            : `You got ${correctCount} out of ${keys.length} correct.`,
+    );
     setShowFeedback(true);
-    if (verifyAllCorrect) {
-      setIsCompleted(true);
-    }
+    if (allCorrect) setIsCompleted(true);
   };
 
   const handleSubmit = () => {
-    if (showFeedback) return;
-    // Verify that all are selected? Or allow partial?
-    // Let's require all to be selected for "Check", or at least warn logic.
-    // Usually "Check" is available.
-    checkAnswers();
+    if (!showFeedback) checkAnswers();
   };
 
   const handleContinue = () => {
-    // Logic after feedback
-    if (isCorrect) {
-      // Exit or show completion
-      setIsCompleted(true);
-      handleExit(); // Or manual exit
-    } else {
-      // Allow retry? Or finish?
-      // Usually practice games allow retry or just show results.
-      // Based on other games, "Continue" might go to next question.
-      // Since this is a single page game, "Continue" could finish.
-      setIsCompleted(true);
-      handleExit();
-    }
+    setShowFeedback(false);
+    setIsCompleted(true);
   };
 
-  const allAnswered = Object.keys(blanksData).every((key) => answers[key]);
-  const progress =
-    (Object.keys(answers).length / Object.keys(blanksData).length) * 100;
+  const totalBlanks = Object.keys(blanksData).length;
+  const allAnswered = Object.keys(blanksData).every(
+    (key) => answers[String(key)],
+  );
+  const progress = totalBlanks
+    ? (Object.keys(answers).length / totalBlanks) * 100
+    : 0;
+  const answeredCount = Object.keys(answers).length;
+  const displayQuestionNumber = Math.min(
+    totalBlanks || 1,
+    Math.max(answeredCount, 1),
+  );
 
   if (loading) {
     return (
@@ -203,194 +257,173 @@ export default function CompletePassagePage() {
     <>
       <PracticeGameLayout
         questionType="Fill in the blanks - Passage"
-        localizedInstruction={currentQuestion?.localizedInstruction}
-        instructionFr={currentQuestion?.instructionFr || "Complétez le passage"}
-        instructionEn={currentQuestion?.instructionEn || "Select the best option for each missing word"}
+        questionTypeFr="Complétez le passage"
+        questionTypeEn="Complete the passage"
+        localizedInstruction="Complétez le passage"
+        instructionFr="Complétez le passage"
+        instructionEn="Select the best option for each missing word"
         progress={progress}
         isGameOver={isCompleted}
         score={score}
-        totalQuestions={Object.keys(blanksData).length}
+        totalQuestions={totalBlanks}
+        currentQuestionIndex={0}
+        questionCounterValue={displayQuestionNumber}
+        feedbackTone={feedbackTone}
         onExit={handleExit}
-        onNext={handleSubmit} // Using onNext as Submit trigger from layout if needed
+        onNext={showFeedback ? handleContinue : handleSubmit}
         onRestart={() => window.location.reload()}
-        isSubmitEnabled={allAnswered && !showFeedback}
-        showSubmitButton={!showFeedback}
-        submitLabel="Check"
+        isSubmitEnabled={showFeedback || allAnswered}
+        showSubmitButton={true}
+        submitLabel={showFeedback ? "FINISH" : "Submit Answer"}
         timerValue={timerString}
+        showFeedback={showFeedback}
+        isCorrect={isCorrect}
+        feedbackMessage={feedbackMessage}
+        correctAnswer={undefined}
       >
-        <div className="flex flex-col lg:flex-row w-full max-w-7xl mx-auto gap-6 p-4 h-full md:items-stretch overflow-hidden">
-          {/* Left Column: Passage */}
-          <div className="flex-1 flex flex-col bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden min-h-[400px]">
-            <div className="p-6 md:p-8 overflow-y-auto custom-scrollbar">
-              <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-6">
-                PASSAGE
-              </h3>
-              <div className="text-lg md:text-xl leading-loose text-slate-800 dark:text-slate-100 font-serif">
+        <div
+          className={cn(
+            "flex flex-col md:flex-row gap-3 p-3 mx-auto w-full overflow-hidden h-[570px] min-h-[570px] max-h-[570px]",
+          )}
+        >
+          <div className="flex-1 md:basis-[70%] md:max-w-[70%] flex flex-col bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden h-full">
+            <div className="px-5 md:px-7 py-4 border-b border-slate-200 dark:border-slate-700 bg-slate-50/70 dark:bg-slate-900/30 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Languages className="w-4 h-4 text-blue-500 shrink-0" />
+                <h3 className="text-xs font-bold text-slate-500 dark:text-slate-300 uppercase tracking-[0.18em]">
+                  Passage
+                </h3>
+              </div>
+              <span className="text-xs font-semibold text-slate-500 dark:text-slate-300 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-full px-2.5 py-1">
+                {Object.keys(answers).length}/{totalBlanks} filled
+              </span>
+            </div>
+
+            <div className="px-5 md:px-7 py-6 md:py-7">
+              <div className="text-lg md:text-xl leading-9 md:leading-10 text-slate-700 dark:text-slate-100 font-sans">
                 {passageSegments.map((segment, index) => {
                   if (typeof segment === "string") {
                     return <span key={index}>{segment}</span>;
-                  } else if (segment.type === "blank") {
-                    const id = segment.id;
-                    const userAnswer = answers[id];
-                    const isCorrectAnswer =
-                      userAnswer === blanksData[id].correct;
+                  }
 
-                    return (
+                  const id = segment.id;
+                  const blankEntry = blanksData[String(id)];
+                  if (!blankEntry) return null;
+                  const correctValue =
+                    typeof blankEntry === "object" && blankEntry !== null
+                      ? blankEntry.correct
+                      : String(blankEntry);
+                  const userAnswer = answers[String(id)];
+                  const isCorrectAnswer = userAnswer === correctValue;
+
+                  return (
+                    <span
+                      key={index}
+                      className="mx-1 inline-flex items-end gap-1.5 align-baseline"
+                    >
                       <span
-                        key={index}
-                        className="mx-1 inline-flex items-center relative"
-                      >
-                        <span
-                          className={cn(
-                            "inline-flex items-center justify-center px-1.5 py-0.5 rounded border border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 text-sm font-bold text-slate-500 mr-1 min-w-[24px]",
-                            showFeedback &&
+                        className={cn(
+                          "inline-flex items-center justify-center w-7 h-7 rounded-md border border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 text-xs font-bold text-slate-500",
+                          showFeedback &&
                             isCorrectAnswer &&
                             "bg-green-100 border-green-400 text-green-700",
-                            showFeedback &&
+                          showFeedback &&
                             !isCorrectAnswer &&
                             "bg-red-100 border-red-400 text-red-700",
-                          )}
-                        >
-                          {id}
-                        </span>
-
-                        {/* Mobile: Inline Dropdowns */}
-                        {!showFeedback && (
-                          <div className="relative inline-block lg:hidden mx-1">
-                            <select
-                              value={userAnswer || ""}
-                              onChange={(e) =>
-                                handleOptionSelect(id, e.target.value)
-                              }
-                              className={cn(
-                                "appearance-none bg-slate-50 dark:bg-slate-900 border-2 rounded-lg px-2 py-0.5 pr-7 text-sm font-bold outline-none transition-all cursor-pointer shadow-sm translate-y-[2px]",
-                                userAnswer
-                                  ? "border-sky-500 text-sky-600 dark:text-sky-400 bg-white"
-                                  : "border-slate-200 dark:border-slate-700 text-slate-400",
-                              )}
-                            >
-                              <option value="" disabled>
-                                Select
-                              </option>
-                              {blanksData[id].options.map((opt, i) => (
-                                <option key={i} value={opt}>
-                                  {opt}
-                                </option>
-                              ))}
-                            </select>
-                            <div className="pointer-events-none absolute right-1.5 top-1/2 -translate-y-1/2 mt-[2px]">
-                              <svg
-                                className="w-3.5 h-3.5 text-slate-400"
-                                fill="none"
-                                viewBox="0 0 24 24"
-                                stroke="currentColor"
-                              >
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  strokeWidth={2}
-                                  d="M19 9l-7 7-7-7"
-                                />
-                              </svg>
-                            </div>
-                          </div>
                         )}
-
-                        {/* Desktop: Show selection as text even before feedback */}
-                        {!showFeedback && userAnswer && (
-                          <span className="hidden lg:inline-flex font-bold text-sky-600 dark:text-sky-400 underline decoration-2 decoration-sky-300 underline-offset-4 ml-1">
-                            {userAnswer}
-                          </span>
-                        )}
-
-                        {showFeedback && (
-                          <span
-                            className={cn(
-                              "font-bold underline decoration-2 underline-offset-4",
-                              isCorrectAnswer
-                                ? "text-green-600 decoration-green-500"
-                                : "text-red-600 decoration-red-500",
-                            )}
-                          >
-                            {userAnswer || "(empty)"}
-                          </span>
-                        )}
-
-                        {showFeedback && !isCorrectAnswer && (
-                          <span className="text-sm font-bold text-green-600 ml-1">
-                            (Correct: {blanksData[id].correct})
-                          </span>
-                        )}
+                      >
+                        {id}
                       </span>
-                    );
-                  }
-                  return null;
+
+                      <span
+                        className={cn(
+                          "items-end px-1 border-b-2 pb-0.5 text-lg md:text-xl font-semibold leading-none whitespace-nowrap",
+                          userAnswer
+                            ? "inline-flex min-w-9 md:min-w-[80px]"
+                            : "inline-block w-14 md:w-[110px]",
+                          !userAnswer && "text-slate-300",
+                          !showFeedback &&
+                            userAnswer &&
+                            "text-blue-600 border-blue-300",
+                          !showFeedback && !userAnswer && "border-slate-300",
+                          showFeedback &&
+                            isCorrectAnswer &&
+                            "text-green-600 border-green-500",
+                          showFeedback &&
+                            !isCorrectAnswer &&
+                            "text-red-600 border-red-500",
+                        )}
+                      >
+                        {userAnswer || "\u00A0"}
+                      </span>
+                    </span>
+                  );
                 })}
               </div>
             </div>
           </div>
 
-          {/* Right Column: Questions (Hidden on mobile) */}
-          <div className="hidden lg:flex flex-1 flex flex-col justify-start lg:max-w-md overflow-hidden">
-            <div className="bg-white dark:bg-slate-800/50 rounded-xl p-6 h-full overflow-y-auto custom-scrollbar border border-slate-200 dark:border-slate-700 shadow-sm">
-              <h2 className="text-xl font-bold text-slate-800 dark:text-white mb-6">
+          <div className="flex-1 md:basis-[30%] md:max-w-[30%] min-h-0 flex flex-col justify-start overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900">
+            <div className="p-6 flex-1 min-h-0 overflow-y-auto custom-scrollbar">
+              <h2 className="practice-reading-heading mb-6 flex md:text-xl md:font-semibold  gap-2 ">
+                <Languages className="w-5 h-5 mb-5 text-blue-500 shrink-0 self-center" />
                 Select the best option for each missing word
               </h2>
 
-              <div className="space-y-4">
+              <div className="space-y-2">
                 {Object.keys(blanksData).map((key) => {
-                  const id = parseInt(key);
-                  const blank = blanksData[id];
-                  const userAnswer = answers[id];
-                  const isCorrectAnswer = userAnswer === blank.correct;
+                  const blank = blanksData[key];
+                  if (!blank) return null;
+
+                  const id = parseInt(key, 10);
+                  const userAnswer = answers[String(key)];
+                  const correctValue =
+                    typeof blank === "object" && blank !== null
+                      ? blank.correct
+                      : String(blank);
+                  const isCorrectAnswer = userAnswer === correctValue;
+                  const options = normalizeOptions(
+                    typeof blank === "object" && blank !== null
+                      ? blank.options
+                      : [],
+                  );
 
                   return (
-                    <div key={id} className="flex items-center gap-3">
-                      <div className="flex-shrink-0 w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center font-bold text-slate-500 border border-slate-200 dark:border-slate-600">
+                    <div key={key} className="flex items-center gap-3">
+                      <div
+                        className={cn(
+                          "flex-shrink-0 w-8 h-8 rounded-md flex items-center justify-center font-bold border text-sm transition-colors",
+                          userAnswer
+                            ? "bg-blue-500 border-blue-500 text-white"
+                            : "bg-slate-100 dark:bg-slate-700 text-slate-500 border-slate-200 dark:border-slate-600",
+                          showFeedback &&
+                            isCorrectAnswer &&
+                            "bg-green-500 border-green-500 text-white",
+                          showFeedback &&
+                            userAnswer &&
+                            !isCorrectAnswer &&
+                            "bg-red-500 border-red-500 text-white",
+                        )}
+                      >
                         {id}
                       </div>
+
                       <div className="flex-grow">
-                        <select
+                        <CustomSelect
+                          options={options}
                           value={userAnswer || ""}
-                          onChange={(e) =>
-                            handleOptionSelect(id, e.target.value)
+                          onChange={(val: string) =>
+                            handleOptionSelect(key, val)
                           }
-                          disabled={showFeedback}
-                          className={cn(
-                            "w-full p-3 rounded-lg border bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 outline-none transition-all appearance-none cursor-pointer",
-                            "focus:ring-2 focus:ring-sky-500 border-slate-200 dark:border-slate-700",
-                            showFeedback &&
-                            isCorrectAnswer &&
-                            "border-green-500 bg-green-50 dark:bg-green-900/20 text-green-900 dark:text-green-100",
-                            showFeedback &&
-                            !isCorrectAnswer &&
-                            "border-red-500 bg-red-50 dark:bg-red-900/20 text-red-900 dark:text-red-100",
-                          )}
-                        >
-                          <option value="" disabled>
-                            Select a word
-                          </option>
-                          {blank.options.map((opt, i) => (
-                            <option key={i} value={opt}>
-                              {opt}
-                            </option>
-                          ))}
-                        </select>
+                          placeholder="Select a word"
+                          disabled={false}
+                          isCorrect={showFeedback && isCorrectAnswer}
+                          isWrong={showFeedback && !isCorrectAnswer}
+                          feedbackMode={showFeedback}
+                          correctValue={String(correctValue || "")}
+                          className="[&>button]:font-sans [&>button]:text-lg [&>button]:md:text-lg [&_ul]:font-sans [&_li]:font-sans"
+                        />
                       </div>
-                      {showFeedback && (
-                        <div className="flex-shrink-0">
-                          {isCorrectAnswer ? (
-                            <CheckCircle className="w-6 h-6 text-green-500" />
-                          ) : (
-                            <XCircle className="w-6 h-6 text-red-500" />
-                          )}
-                        </div>
-                      )}
-                      {showFeedback && !isCorrectAnswer && (
-                        <div className="text-sm font-medium text-green-600">
-                          Correct: {blank.correct}
-                        </div>
-                      )}
                     </div>
                   );
                 })}
@@ -399,17 +432,6 @@ export default function CompletePassagePage() {
           </div>
         </div>
       </PracticeGameLayout>
-
-      {/* Feedback Banner */}
-      {showFeedback && (
-        <FeedbackBanner
-          isCorrect={isCorrect}
-          correctAnswer={null} // Not used for multi-answer
-          onContinue={handleContinue}
-          message={feedbackMessage}
-          continueLabel="FINISH"
-        />
-      )}
     </>
   );
 }
