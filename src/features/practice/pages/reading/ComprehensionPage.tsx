@@ -3,22 +3,32 @@
 import React, { useState, useEffect } from "react";
 import { usePracticeExit } from "@/hooks/usePracticeExit";
 import { useExerciseTimer } from "@/hooks/useExerciseTimer";
-import { cn } from "@/lib/utils";
 import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
 import FeedbackBanner from "@/components/ui/FeedbackBanner";
 import { getFeedbackMessage } from "@/utils/feedbackMessages";
 import { loadMockCSV } from "@/utils/csvLoader";
-import { Button } from "@/components/ui/button";
+import PracticeOptions from "@/components/ui/PracticeOptions";
 
 import { useLanguage } from "@/contexts/LanguageContext";
+
+type ComprehensionQuestion = {
+  passage?: string;
+  question?: string;
+  options: string[];
+  correctIndex: number;
+  localizedInstruction?: string;
+  instructionFr?: string;
+  instructionEn?: string;
+  timeLimitSeconds?: number;
+};
 
 export default function ComprehensionPage() {
   const handleExit = usePracticeExit();
   const { learningLang, knownLang } = useLanguage();
 
-  const [questions, setQuestions] = useState([]);
+  const [questions, setQuestions] = useState<ComprehensionQuestion[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [selectedOption, setSelectedOption] = useState(null);
+  const [selectedOption, setSelectedOption] = useState<number | null>(null);
   const [isCompleted, setIsCompleted] = useState(false);
   const [showFeedback, setShowFeedback] = useState(false);
   const [isCorrect, setIsCorrect] = useState(false);
@@ -34,7 +44,7 @@ export default function ComprehensionPage() {
           learningLang,
           knownLang
         });
-        setQuestions(data);
+        setQuestions(Array.isArray(data) ? (data as ComprehensionQuestion[]) : []);
       } catch (error) {
         console.error("Error loading mock data:", error);
       } finally {
@@ -68,7 +78,7 @@ export default function ComprehensionPage() {
     }
   }, [currentIndex, currentQuestion, isCompleted, resetTimer]);
 
-  const handleOptionSelect = (index) => {
+  const handleOptionSelect = (index: number) => {
     if (showFeedback) return;
     setSelectedOption(index);
   };
@@ -108,7 +118,12 @@ export default function ComprehensionPage() {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-slate-50 dark:bg-slate-900">
         <p className="text-xl text-slate-600 dark:text-slate-400">No questions available.</p>
-        <Button onClick={() => handleExit()} variant="outline" className="mt-4">Back</Button>
+        <button
+          onClick={() => handleExit()}
+          className="mt-4 rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
+        >
+          Back
+        </button>
       </div>
     );
   }
@@ -121,6 +136,8 @@ export default function ComprehensionPage() {
     <>
       <PracticeGameLayout
         questionType="Reading Comprehension"
+        questionTypeFr="Compréhension de lecture"
+        questionTypeEn="Reading Comprehension"
         localizedInstruction={currentQuestion?.localizedInstruction}
         instructionFr={currentQuestion?.instructionFr || "Lisez le passage et répondez"}
         instructionEn={currentQuestion?.instructionEn || "Read the passage and answer"}
@@ -129,16 +146,25 @@ export default function ComprehensionPage() {
         score={score}
         totalQuestions={questions.length}
         onExit={handleExit}
-        onNext={handleSubmit}
+        onNext={showFeedback ? handleContinue : handleSubmit}
         onRestart={() => window.location.reload()}
-        isSubmitEnabled={selectedOption !== null && !showFeedback}
-        showSubmitButton={!showFeedback}
-        submitLabel="Check"
+        currentQuestionIndex={currentIndex}
+        questionCounterValue={currentIndex + 1}
+        isSubmitEnabled={selectedOption !== null || showFeedback}
+        showSubmitButton={true}
+        submitLabel={
+          showFeedback
+            ? currentIndex + 1 === questions.length
+              ? "FINISH"
+              : "CONTINUE"
+            : "Submit Answer"
+        }
         timerValue={timerString}
+        feedbackTone={showFeedback ? (isCorrect ? "success" : "error") : "neutral"}
       >
-        <div className="flex w-full max-w-5xl mx-auto px-6 py-8 gap-0">
+        <div className="flex flex-col md:flex-row gap-3 p-3 mx-auto w-full flex-1 pb-[108px]">
           {/* Left Column - Passage */}
-          <div className="flex-1 pr-8">
+          <div className="flex-1 bg-white dark:bg-slate-800 p-8 pb-24 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 flex flex-col">
             <p className="text-sm font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-4">
               PASSAGE
             </p>
@@ -147,73 +173,22 @@ export default function ComprehensionPage() {
             </p>
           </div>
 
-          {/* Vertical Divider */}
-          <div className="w-px bg-cyan-400 dark:bg-cyan-500 mx-4 self-stretch" />
-
           {/* Right Column - Question & Options */}
-          <div className="flex-1 pl-8">
+          <div className="flex-1 flex flex-col dark:bg-slate-900 rounded-2xl border border-slate-200 bg-white dark:border-slate-700 p-8 pb-24 gap-5 overflow-y-auto">
             {/* Question */}
             <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100 mb-6">
               {currentQuestion?.question}
             </h3>
 
             {/* Options */}
-            <div className="space-y-4">
-              {currentQuestion?.options.map((option, index) => (
-                <button
-                  key={index}
-                  onClick={() => handleOptionSelect(index)}
-                  disabled={showFeedback}
-                  className={cn(
-                    "w-full py-4 px-5 rounded-lg text-left text-base font-medium transition-all duration-200 border flex items-center gap-4",
-                    selectedOption === index
-                      ? "bg-cyan-50 dark:bg-cyan-900/30 text-cyan-700 dark:text-cyan-300 border-cyan-400 dark:border-cyan-500"
-                      : "bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-cyan-300 dark:hover:border-cyan-600",
-                    showFeedback && index === currentQuestion.correctIndex
-                      ? "bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 border-emerald-400 dark:border-emerald-500"
-                      : "",
-                    showFeedback &&
-                      selectedOption === index &&
-                      index !== currentQuestion.correctIndex
-                      ? "bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300 border-red-400 dark:border-red-500"
-                      : "",
-                  )}
-                >
-                  {/* Radio Circle */}
-                  <div
-                    className={cn(
-                      "w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0",
-                      selectedOption === index
-                        ? "border-cyan-500 dark:border-cyan-400"
-                        : "border-slate-300 dark:border-slate-600",
-                      showFeedback && index === currentQuestion.correctIndex
-                        ? "border-emerald-500 dark:border-emerald-400"
-                        : "",
-                      showFeedback &&
-                        selectedOption === index &&
-                        index !== currentQuestion.correctIndex
-                        ? "border-red-500 dark:border-red-400"
-                        : "",
-                    )}
-                  >
-                    {selectedOption === index && (
-                      <div
-                        className={cn(
-                          "w-3 h-3 rounded-full",
-                          showFeedback && index === currentQuestion.correctIndex
-                            ? "bg-emerald-500 dark:bg-emerald-400"
-                            : showFeedback &&
-                              index !== currentQuestion.correctIndex
-                              ? "bg-red-500 dark:bg-red-400"
-                              : "bg-cyan-500 dark:bg-cyan-400",
-                        )}
-                      />
-                    )}
-                  </div>
-                  <span>{option}</span>
-                </button>
-              ))}
-            </div>
+            <PracticeOptions
+              options={currentQuestion?.options || []}
+              selectedOption={selectedOption}
+              correctIndex={currentQuestion?.correctIndex ?? -1}
+              showFeedback={showFeedback}
+              onSelect={handleOptionSelect}
+              renderLabel={(option) => option}
+            />
           </div>
         </div>
       </PracticeGameLayout>
@@ -222,6 +197,7 @@ export default function ComprehensionPage() {
       {showFeedback && (
         <FeedbackBanner
           isCorrect={isCorrect}
+          feedbackTone={isCorrect ? "success" : "error"}
           correctAnswer={
             !isCorrect
               ? currentQuestion.options[currentQuestion.correctIndex]

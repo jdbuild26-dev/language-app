@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { usePracticeExit } from "@/hooks/usePracticeExit";
 import { useExerciseTimer } from "@/hooks/useExerciseTimer";
-import { Volume2, RefreshCw, Loader2 } from "lucide-react";
+import { RefreshCw, Loader2 } from "lucide-react";
 import { loadMockCSV } from "@/utils/csvLoader";
 import { cn } from "@/lib/utils";
 import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
@@ -111,20 +111,6 @@ export default function HighlightTextPage() {
       .trim();
   };
 
-  // Calculate similarity for partial matches
-  const calculateSimilarity = (s1, s2) => {
-    const longer = s1.length > s2.length ? s1 : s2;
-    const shorter = s1.length > s2.length ? s2 : s1;
-    if (longer.length === 0) return 1.0;
-
-    // Simple inclusion check for this use case often works better than Levenshtein for sentence highlighting
-    // because users might highlight a bit more or less context.
-    // But "Highlight the sentence" usually implies exact text.
-    // Let's stick to a strict normalization check but maybe allow substring if it captures the core meaning.
-    // For now: Strict Normalized Equality.
-    return normalize(s1) === normalize(s2);
-  };
-
   const handleSubmit = () => {
     if (showFeedback || !selectedText) return;
 
@@ -196,7 +182,7 @@ export default function HighlightTextPage() {
             ? currentIndex + 1 === questions.length
               ? "FINISH"
               : "CONTINUE"
-            : "SUBMIT ANSWER"
+            : "Submit Answer"
         }
         timerValue={timerString}
         showFeedback={showFeedback}
@@ -204,29 +190,29 @@ export default function HighlightTextPage() {
         correctAnswer={!isCorrect ? currentQuestion.correctAnswer : null}
         feedbackMessage={feedbackMessage}
       >
-        <div className="flex flex-col md:flex-row gap-6 w-full max-w-6xl mx-auto h-full min-h-[500px]">
+        <div className="flex flex-col md:flex-row gap-3 p-3 md:p-4 mx-auto w-full flex-1 min-h-0 pb-[108px]">
           {/* Left Column: Passage */}
-          <div className="flex-1 bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm border border-slate-200 dark:border-slate-700 flex flex-col">
-            <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-4">
-              {currentQuestion.title}
-            </h3>
+          <div className="flex-1 min-h-0 bg-white dark:bg-slate-800 rounded-2xl p-5 md:p-6 shadow-sm border border-slate-200 dark:border-slate-700 flex flex-col">
+            <div className="flex items-center justify-between pb-3 mb-4 border-b border-slate-200 dark:border-slate-700">
+              <h3 className="text-sm font-bold text-slate-500 uppercase tracking-wider">
+                {currentQuestion.title}
+              </h3>
+              <div className="text-xs text-slate-400 italic flex items-center gap-1.5">
+                <RefreshCw className="w-3 h-3" />
+                Drag text to answer
+              </div>
+            </div>
             <div
               ref={passageRef}
               className="prose dark:prose-invert max-w-none text-lg leading-relaxed text-slate-800 dark:text-slate-200 select-text"
             >
               {currentQuestion.passage}
             </div>
-
-            {/* Visual hint that text is selectable */}
-            <div className="mt-auto pt-4 text-xs text-slate-400 italic flex items-center gap-2">
-              <RefreshCw className="w-3 h-3" />
-              Select text to answer
-            </div>
           </div>
 
           {/* Right Column: Interaction */}
-          <div className="flex-1 flex flex-col justify-start">
-            <div className="bg-white dark:bg-slate-800 rounded-xl p-8 shadow-sm border border-slate-200 dark:border-slate-700 md:sticky md:top-4">
+          <div className="flex-1 min-h-0 flex flex-col justify-start">
+            <div className="h-full bg-white dark:bg-slate-800 rounded-2xl p-6 md:p-8 shadow-sm border border-slate-200 dark:border-slate-700 flex flex-col">
               <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-6 leading-tight">
                 {currentQuestion.questionTitle}
               </h2>

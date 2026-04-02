@@ -9,17 +9,27 @@ import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
 import FeedbackBanner from "@/components/ui/FeedbackBanner";
 import { getFeedbackMessage } from "@/utils/feedbackMessages";
 import { loadMockCSV } from "@/utils/csvLoader";
-import { Button } from "@/components/ui/button";
 import { useTextToSpeech } from "@/hooks/useTextToSpeech";
+
+type FillBlanksQuestion = {
+  timeLimitSeconds?: number;
+  Sentence?: string;
+  completeSentence?: string;
+  sentenceWithBlank?: string;
+  correctAnswer?: string;
+  englishTranslation?: string;
+  wordBank: string[];
+  localizedInstruction?: string;
+};
 
 export default function FillBlanksPage() {
   const handleExit = usePracticeExit();
   const { speak, isSpeaking } = useTextToSpeech();
 
-  const [questions, setQuestions] = useState([]);
+  const [questions, setQuestions] = useState<FillBlanksQuestion[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [selectedWord, setSelectedWord] = useState(null);
+  const [selectedWord, setSelectedWord] = useState<string | null>(null);
   const [isCompleted, setIsCompleted] = useState(false);
   const [showFeedback, setShowFeedback] = useState(false);
   const [isCorrect, setIsCorrect] = useState(false);
@@ -29,7 +39,7 @@ export default function FillBlanksPage() {
   useEffect(() => {
     const fetchData = async () => {
       const data = await loadMockCSV("practice/reading/fill_blanks.csv");
-      setQuestions(data);
+      setQuestions(Array.isArray(data) ? data : []);
       setLoading(false);
     };
     fetchData();
@@ -54,11 +64,12 @@ export default function FillBlanksPage() {
   useEffect(() => {
     if (questions.length > 0 && !isCompleted) {
       resetTimer();
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setSelectedWord(null);
     }
   }, [currentIndex, questions, isCompleted, resetTimer]);
 
-  const handleWordSelect = (word) => {
+  const handleWordSelect = (word: string) => {
     if (showFeedback) return;
     setSelectedWord(word);
   };
@@ -72,7 +83,7 @@ export default function FillBlanksPage() {
         (currentQuestion.sentenceWithBlank
           ? currentQuestion.sentenceWithBlank.replace(
               "______",
-              currentQuestion.correctAnswer,
+              currentQuestion.correctAnswer || "",
             )
           : "");
 
@@ -82,7 +93,29 @@ export default function FillBlanksPage() {
     }
   };
 
-  // ... (lines 74-100 omitted) ...
+  const handleSubmit = () => {
+    if (showFeedback || !selectedWord || !currentQuestion) return;
+
+    const correct = selectedWord === currentQuestion.correctAnswer;
+    setIsCorrect(correct);
+    setFeedbackMessage(getFeedbackMessage(correct));
+    setShowFeedback(true);
+
+    if (correct) {
+      setScore((prev) => prev + 1);
+    }
+  };
+
+  const handleContinue = () => {
+    if (isCorrect) {
+      if (currentIndex < questions.length - 1) {
+        setCurrentIndex((prev) => prev + 1);
+      } else {
+        setIsCompleted(true);
+      }
+    }
+    setShowFeedback(false);
+  };
 
   // Split sentence around blank
   // If sentenceWithBlank is missing but we have Sentence and correctAnswer,
@@ -112,29 +145,43 @@ export default function FillBlanksPage() {
         <p className="text-xl text-slate-600 dark:text-slate-400">
           No questions available.
         </p>
-        <Button onClick={() => handleExit()} variant="outline" className="mt-4">
+        <button
+          onClick={() => handleExit()}
+          className="mt-4 px-4 py-2 border border-slate-300 rounded hover:bg-slate-100"
+        >
           Back
-        </Button>
+        </button>
       </div>
     );
   }
+
+  const progress =
+    questions.length > 0 ? ((currentIndex + 1) / questions.length) * 100 : 0;
 
   return (
     <>
       <PracticeGameLayout
         questionType="Fill in the Blanks"
+        questionTypeFr="Texte à trous"
+        questionTypeEn="Fill in the Blanks"
+        localizedInstruction={currentQuestion?.localizedInstruction}
         instructionFr="Choisissez le mot correct"
         instructionEn="Choose the correct word"
         progress={progress}
         isGameOver={isCompleted}
         score={score}
+        questionCounterValue={currentIndex + 1}
+        currentQuestionIndex={currentIndex + 1}
         totalQuestions={questions.length}
         onExit={handleExit}
         onNext={handleSubmit}
         onRestart={() => window.location.reload()}
         isSubmitEnabled={!!selectedWord && !showFeedback}
         showSubmitButton={!showFeedback}
-        submitLabel="Check"
+        submitLabel="Submit Answer"
+        feedbackTone={
+          showFeedback ? (isCorrect ? "success" : "error") : "neutral"
+        }
         timerValue={timerString}
       >
         <div className="flex flex-col items-center w-full max-w-2xl mx-auto px-4 py-8">
@@ -155,14 +202,14 @@ export default function FillBlanksPage() {
             </button>
 
             {/* Sentence with Blank */}
-            <div className="text-xl md:text-2xl text-slate-800 dark:text-slate-100 leading-relaxed font-medium text-center">
+            <div className="text-base md:text-lg font-medium leading-relaxed text-center text-slate-800 dark:text-slate-100">
               <span>{sentenceParts[0]}</span>
               <span
                 className={cn(
                   "inline-block min-w-[120px] px-4 py-1 mx-1 rounded-lg border-2 border-dashed transition-all duration-200",
                   selectedWord
                     ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400"
-                    : "border-slate-300 dark:border-slate-600 text-slate-400",
+                    : "border-slate-300 dark:border-slate-600 text-slate-400 dark:text-slate-500",
                 )}
               >
                 {selectedWord || "______"}
@@ -184,7 +231,7 @@ export default function FillBlanksPage() {
                 onClick={() => handleWordSelect(word)}
                 disabled={showFeedback}
                 className={cn(
-                  "py-4 px-6 rounded-xl text-lg font-semibold transition-all duration-200 border-2",
+                  "py-4 px-6 rounded-xl transition-all duration-200 border-2 text-base font-medium leading-relaxed",
                   selectedWord === word
                     ? "bg-blue-500 text-white border-blue-500 shadow-lg scale-105"
                     : "bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700 hover:border-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20",
@@ -209,13 +256,17 @@ export default function FillBlanksPage() {
       {showFeedback && (
         <FeedbackBanner
           isCorrect={isCorrect}
-          correctAnswer={currentQuestion.correctAnswer}
-          userAnswer={selectedWord || ""}
-          questionContext={currentQuestion.sentenceWithBlank || ""}
+          feedbackTone={isCorrect ? "success" : "error"}
+          correctAnswer={!isCorrect ? currentQuestion.correctAnswer : null}
+          englishCorrectAnswer=""
           onContinue={handleContinue}
           message={feedbackMessage}
           continueLabel={
-            currentIndex + 1 === questions.length ? "FINISH" : "CONTINUE"
+            isCorrect
+              ? currentIndex < questions.length - 1
+                ? "CONTINUE"
+                : "FINISH"
+              : "TRY AGAIN"
           }
         />
       )}

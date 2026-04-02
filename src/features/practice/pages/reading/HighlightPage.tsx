@@ -3,12 +3,11 @@
 import React, { useState, useEffect } from "react";
 import { usePracticeExit } from "@/hooks/usePracticeExit";
 import { useExerciseTimer } from "@/hooks/useExerciseTimer";
+import { useTextToSpeech } from "@/hooks/useTextToSpeech";
 import { Loader2, Volume2 } from "lucide-react";
 import { loadMockCSV } from "@/utils/csvLoader";
 import { cn } from "@/lib/utils";
-import { useTextToSpeech } from "@/hooks/useTextToSpeech";
 import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
-import FeedbackBanner from "@/components/ui/FeedbackBanner";
 
 // MOCK_QUESTIONS removed - migrated to CSV
 
@@ -16,7 +15,7 @@ export default function HighlightPage() {
   const handleExit = usePracticeExit();
   const { speak, isSpeaking } = useTextToSpeech();
 
-  const [questions, setQuestions] = useState([]);
+  const [questions, setQuestions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedWord, setSelectedWord] = useState(null);
@@ -26,7 +25,7 @@ export default function HighlightPage() {
     const fetchQuestions = async () => {
       try {
         const data = await loadMockCSV("practice/reading/highlight_word.csv");
-        setQuestions(data);
+        setQuestions(Array.isArray(data) ? (data as any[]) : []);
       } catch (error) {
         console.error("Error loading mock data:", error);
       } finally {
@@ -130,6 +129,9 @@ export default function HighlightPage() {
     <>
       <PracticeGameLayout
         questionType="Highlight the Word"
+        questionTypeFr="Surligner le mot"
+        questionTypeEn="Highlight the Word"
+        localizedInstruction={undefined}
         instructionFr="Trouvez et sélectionnez le mot"
         instructionEn="Find and select the word"
         progress={progress}
@@ -137,14 +139,27 @@ export default function HighlightPage() {
         score={score}
         totalQuestions={questions.length}
         onExit={handleExit}
-        onNext={handleSubmit}
+        onNext={showFeedback ? handleContinue : handleSubmit}
         onRestart={() => window.location.reload()}
-        isSubmitEnabled={!!selectedWord && !showFeedback}
-        showSubmitButton={!showFeedback}
-        submitLabel="Check"
+        currentQuestionIndex={currentIndex}
+        questionCounterValue={currentIndex + 1}
+        isSubmitEnabled={!!selectedWord || showFeedback}
+        showSubmitButton={true}
+        submitLabel={
+          showFeedback
+            ? currentIndex + 1 === questions.length
+              ? "FINISH"
+              : "CONTINUE"
+            : "Submit Answer"
+        }
         timerValue={timerString}
+        showFeedback={showFeedback}
+        isCorrect={isCorrect}
+        correctAnswer={!isCorrect ? currentQuestion.correctWord : null}
+        feedbackMessage={feedbackMessage}
+        feedbackTone={showFeedback ? (isCorrect ? "success" : "error") : "neutral"}
       >
-        <div className="flex flex-col items-center w-full max-w-2xl mx-auto px-4 py-6">
+        <div className="flex flex-col items-center w-full max-w-2xl mx-auto px-4 py-6 pb-[108px]">
           {/* Question */}
           <div className="w-full bg-gradient-to-r from-emerald-500 to-teal-600 rounded-2xl p-6 mb-6 shadow-lg">
             <p className="text-lg md:text-xl text-white font-semibold text-center">
@@ -202,19 +217,6 @@ export default function HighlightPage() {
           </button>
         </div>
       </PracticeGameLayout>
-
-      {/* Feedback Banner */}
-      {showFeedback && (
-        <FeedbackBanner
-          isCorrect={isCorrect}
-          correctAnswer={!isCorrect ? currentQuestion.correctWord : null}
-          onContinue={handleContinue}
-          message={feedbackMessage}
-          continueLabel={
-            currentIndex + 1 === questions.length ? "FINISH" : "CONTINUE"
-          }
-        />
-      )}
     </>
   );
 }

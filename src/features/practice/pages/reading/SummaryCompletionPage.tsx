@@ -182,11 +182,17 @@ export default function SummaryCompletionPage() {
         score={score}
         totalQuestions={Object.keys(blanksData).length}
         onExit={handleExit}
-        onNext={handleSubmit}
+        onNext={showFeedback ? handleContinue : handleSubmit}
         onRestart={() => window.location.reload()}
-        isSubmitEnabled={allAnswered && !showFeedback}
-        showSubmitButton={!showFeedback}
-        submitLabel="Check"
+        isSubmitEnabled={allAnswered || showFeedback}
+        showSubmitButton={true}
+        submitLabel={
+          showFeedback
+            ? currentIndex + 1 === questionKeys.length
+              ? "FINISH"
+              : "CONTINUE"
+            : "Submit Answer"
+        }
         timerValue={timerString}
       >
         <div className="flex flex-col lg:flex-row w-full max-w-7xl mx-auto gap-6 p-4 h-full md:items-stretch overflow-hidden">
