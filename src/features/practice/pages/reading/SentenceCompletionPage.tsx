@@ -51,6 +51,7 @@ export default function SentenceCompletionPage() {
 
   useEffect(() => {
     if (currentQuestion && !isCompleted) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setSelectedOption(null);
       resetTimer();
     }
@@ -116,16 +117,22 @@ export default function SentenceCompletionPage() {
         score={score}
         totalQuestions={questions.length}
         onExit={handleExit}
-        onNext={handleSubmit}
+        onNext={showFeedback ? handleContinue : handleSubmit}
         onRestart={() => window.location.reload()}
-        isSubmitEnabled={selectedOption !== null && !showFeedback}
-        showSubmitButton={!showFeedback}
-        submitLabel="Check"
+        isSubmitEnabled={selectedOption !== null || showFeedback}
+        showSubmitButton={true}
+        submitLabel={
+          showFeedback
+            ? currentIndex + 1 === questions.length
+              ? "FINISH"
+              : "CONTINUE"
+            : "Submit Answer"
+        }
         timerValue={timerString}
       >
-        <div className="flex flex-col lg:flex-row w-full max-w-6xl mx-auto px-4 md:px-6 py-6 gap-6">
+        <div className="flex flex-col md:flex-row gap-3 p-3 md:p-4 mx-auto w-full flex-1 pb-[108px]">
           {/* Left Column - Passage */}
-          <div className="flex-1 bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6 md:p-8">
+          <div className="flex-1 bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 p-6 md:p-8">
             <p className="text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-4">
               PASSAGE
             </p>
@@ -205,7 +212,7 @@ export default function SentenceCompletionPage() {
           <div className="hidden lg:block w-px bg-cyan-400 dark:bg-cyan-500 self-stretch" />
 
           {/* Right Column - Question & Options (Hidden on Mobile) */}
-          <div className="hidden lg:block flex-1 lg:max-w-md">
+          <div className="hidden lg:block flex-1 lg:max-w-md overflow-y-auto">
             <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6 md:p-8">
               {/* Question */}
               <h3 className="text-base md:text-lg font-bold text-slate-800 dark:text-slate-100 mb-6">

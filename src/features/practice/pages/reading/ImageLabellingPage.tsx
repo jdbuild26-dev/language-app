@@ -5,24 +5,41 @@ import { usePracticeExit } from "@/hooks/usePracticeExit";
 import { useExerciseTimer } from "@/hooks/useExerciseTimer";
 import { cn } from "@/lib/utils";
 import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
-import FeedbackBanner from "@/components/ui/FeedbackBanner";
-import { Button } from "@/components/ui/button";
 import { loadMockCSV } from "@/utils/csvLoader";
 import { CheckCircle2 } from "lucide-react";
 
+type ImageLabelItem = {
+  name: string;
+  x: number;
+  y: number;
+};
+
+type ImageLabellingQuestion = {
+  title?: string;
+  instructionFr?: string;
+  instructionEn?: string;
+  localizedInstruction?: string;
+  image?: string;
+  items?: ImageLabelItem[];
+};
+
+type PlacedItem = ImageLabelItem & {
+  isCorrect: boolean | null;
+};
+
 export default function ImageLabellingPage() {
   const handleExit = usePracticeExit();
-  const imageRef = useRef(null);
+  const imageRef = useRef<HTMLImageElement | null>(null);
   const [imgSize, setImgSize] = useState({ width: 0, height: 0 });
 
   // Game Data
-  const [questions, setQuestions] = useState([]);
+  const [questions, setQuestions] = useState<ImageLabellingQuestion[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   // State
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [bankItems, setBankItems] = useState([]);
-  const [placedItems, setPlacedItems] = useState([]); // Array of { name, x, y, isCorrect }
+  const [bankItems, setBankItems] = useState<string[]>([]);
+  const [placedItems, setPlacedItems] = useState<PlacedItem[]>([]);
   const [isCompleted, setIsCompleted] = useState(false); // Entirely finished all exercises
   const [showFeedback, setShowFeedback] = useState(false);
   const [score, setScore] = useState(0);
@@ -32,222 +49,242 @@ export default function ImageLabellingPage() {
   useEffect(() => {
     const fetchData = async () => {
       const data = await loadMockCSV("practice/reading/image_labelling.csv");
-      if (data) {
-        setQuestions(data);
-      } else {
-        setQuestions([]);
-      }
+      setQuestions(Array.isArray(data) ? (data as ImageLabellingQuestion[]) : []);
       setIsLoading(false);
     };
     fetchData();
   }, []);
+    const [selectedLabel, setSelectedLabel] = useState<string | null>(null);
+    const [selectedTarget, setSelectedTarget] = useState<ImageLabelItem | null>(
+      null,
+    );
 
-  const currentExercise = questions[currentIndex];
+    useEffect(() => {
+      const fetchData = async () => {
+        const data = await loadMockCSV("practice/reading/image_labelling.csv");
+        setQuestions(Array.isArray(data) ? (data as ImageLabellingQuestion[]) : []);
+        setIsLoading(false);
+      };
+      fetchData();
+    }, []);
 
-  // New Selection State
-  const [selectedLabel, setSelectedLabel] = useState(null); // String (name)
-  const [selectedTarget, setSelectedTarget] = useState(null); // Object from currentExercise.items
+    const currentExercise = questions[currentIndex];
+    const items = currentExercise?.items || [];
 
-  // Handle image load to get dimensions for perfect marker wrapping
-  const handleImageLoad = (e) => {
-    setImgSize({
-      width: e.target.clientWidth,
-      height: e.target.clientHeight,
+    const handleImageLoad = (e: React.SyntheticEvent<HTMLImageElement>) => {
+      setImgSize({
+        width: e.currentTarget.clientWidth,
+        height: e.currentTarget.clientHeight,
+      });
+    };
+
+    useEffect(() => {
+      const handleResize = () => {
+        if (imageRef.current) {
+          setImgSize({
+            width: imageRef.current.clientWidth,
+            height: imageRef.current.clientHeight,
+          });
+        }
+      };
+
+      window.addEventListener("resize", handleResize);
+      return () => window.removeEventListener("resize", handleResize);
+    }, []);
+
+    const resetGame = () => {
+      if (!currentExercise) return;
+
+      const shuffled = [...items]
+        .map((item) => item.name)
+        .sort(() => Math.random() - 0.5);
+
+      setBankItems(shuffled);
+      setPlacedItems([]);
+      setShowFeedback(false);
+      setScore(0);
+      setIsCorrect(false);
+      setSelectedLabel(null);
+      setSelectedTarget(null);
+    };
+
+    useEffect(() => {
+      if (currentExercise) {
+        resetGame();
+      }
+    }, [currentIndex, currentExercise]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    const { timerString } = useExerciseTimer({
+      mode: "stopwatch",
+      onExpire: () => {},
+      isPaused: isCompleted || showFeedback,
     });
-  };
 
-  // Update dimensions on resize
-  useEffect(() => {
-    const handleResize = () => {
-      if (imageRef.current) {
-        setImgSize({
-          width: imageRef.current.clientWidth,
-          height: imageRef.current.clientHeight,
-        });
+    const handleLabelClick = (name: string) => {
+      if (showFeedback) return;
+
+      if (selectedTarget) {
+        placeItem(name, selectedTarget);
+        setSelectedTarget(null);
+        setSelectedLabel(null);
+      } else {
+        setSelectedLabel(selectedLabel === name ? null : name);
       }
     };
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, []);
 
-  // Initialize/Reset when index changes
-  useEffect(() => {
-    if (questions.length > 0) {
-      resetGame();
-    }
-  }, [currentIndex, questions]);
+    const handleTargetClick = (target: ImageLabelItem) => {
+      if (showFeedback) return;
 
-  const resetGame = () => {
-    if (!currentExercise) return;
-
-    // Shuffle items for the bank
-    const shuffled = [...currentExercise.items]
-      .map((item) => item.name)
-      .sort(() => Math.random() - 0.5);
-    setBankItems(shuffled);
-    setPlacedItems([]);
-    setShowFeedback(false);
-    setScore(0);
-    setIsCorrect(false);
-    setSelectedLabel(null);
-    setSelectedTarget(null);
-  };
-
-  const { timerString, stopTimer } = useExerciseTimer({
-    mode: "stopwatch",
-    isPaused: isCompleted || showFeedback,
-  });
-
-  const handleLabelClick = (name) => {
-    if (showFeedback) return;
-
-    if (selectedTarget) {
-      placeItem(name, selectedTarget);
-      setSelectedTarget(null);
-      setSelectedLabel(null);
-    } else {
-      setSelectedLabel(selectedLabel === name ? null : name);
-    }
-  };
-
-  const handleTargetClick = (target) => {
-    if (showFeedback) return;
-
-    const alreadyPlaced = placedItems.find(
-      (p) => p.x === target.x && p.y === target.y,
-    );
-
-    if (alreadyPlaced) {
-      handleReturnToBank(alreadyPlaced.name);
-      return;
-    }
-
-    if (selectedLabel) {
-      placeItem(selectedLabel, target);
-      setSelectedLabel(null);
-      setSelectedTarget(null);
-    } else {
-      setSelectedTarget(selectedTarget === target ? null : target);
-    }
-  };
-
-  const placeItem = (name, target) => {
-    setBankItems((prev) => prev.filter((i) => i !== name));
-    setPlacedItems((prev) => [
-      ...prev,
-      { name, x: target.x, y: target.y, isCorrect: null },
-    ]);
-  };
-
-  const handleReturnToBank = (name) => {
-    if (showFeedback) return;
-    setPlacedItems((prev) => prev.filter((p) => p.name !== name));
-    setBankItems((prev) => {
-      if (!prev.includes(name)) return [...prev, name];
-      return prev;
-    });
-  };
-
-  const handleCheck = () => {
-    let correct = 0;
-    const total = currentExercise.items.length;
-
-    const newPlacedItems = placedItems.map((placed) => {
-      const target = currentExercise.items.find(
-        (k) => k.x === placed.x && k.y === placed.y,
+      const alreadyPlaced = placedItems.find(
+        (p) => p.x === target.x && p.y === target.y,
       );
-      if (!target) return placed;
 
-      const isHit = target.name === placed.name;
-      if (isHit) correct++;
-
-      return {
-        ...placed,
-        isCorrect: isHit,
-      };
-    });
-
-    setPlacedItems(newPlacedItems);
-    setScore(correct);
-
-    if (correct === total) {
-      setIsCorrect(true);
-      setFeedbackMessage(
-        `Perfect! You identified all ${total} items correctly!`,
-      );
-    } else {
-      setIsCorrect(false);
-      setFeedbackMessage(
-        `You got ${correct} out of ${total} correct. Check your placements!`,
-      );
-    }
-    setShowFeedback(true);
-  };
-
-  const handleContinue = () => {
-    if (isCorrect) {
-      if (currentIndex < questions.length - 1) {
-        // Move to next exercise
-        setCurrentIndex((prev) => prev + 1);
-      } else {
-        // Finish the whole thing
-        setIsCompleted(true);
-        stopTimer();
+      if (alreadyPlaced) {
+        handleReturnToBank(alreadyPlaced.name);
+        return;
       }
-    }
-    setShowFeedback(false);
-  };
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-slate-50 dark:bg-slate-900">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
-      </div>
-    );
-  }
+      if (selectedLabel) {
+        placeItem(selectedLabel, target);
+        setSelectedLabel(null);
+        setSelectedTarget(null);
+      } else {
+        setSelectedTarget(selectedTarget === target ? null : target);
+      }
+    };
 
-  if (!currentExercise) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-slate-50 dark:bg-slate-900">
-        <p className="text-xl text-slate-600 dark:text-slate-400">
-          No questions available.
-        </p>
-        <Button onClick={() => handleExit()} variant="outline" className="mt-4">
-          Back
-        </Button>
-      </div>
-    );
-  }
+    const placeItem = (name: string, target: ImageLabelItem) => {
+      setBankItems((prev) => prev.filter((i) => i !== name));
+      setPlacedItems((prev) => [
+        ...prev,
+        { name, x: target.x, y: target.y, isCorrect: null },
+      ]);
+    };
 
-  return (
-    <>
-      <PracticeGameLayout
-        questionType={currentExercise.title}
-        instructionFr={currentExercise.instructionFr}
-        instructionEn={currentExercise.instructionEn}
-        progress={
-          ((currentIndex +
-            placedItems.length / (currentExercise.items?.length || 1)) /
-            (questions.length || 1)) *
-          100
+    const handleReturnToBank = (name: string) => {
+      if (showFeedback) return;
+      setPlacedItems((prev) => prev.filter((p) => p.name !== name));
+      setBankItems((prev) => (prev.includes(name) ? prev : [...prev, name]));
+    };
+
+    const handleCheck = () => {
+      if (!items.length) return;
+
+      let correct = 0;
+      const total = items.length;
+
+      const newPlacedItems = placedItems.map((placed) => {
+        const target = items.find((k) => k.x === placed.x && k.y === placed.y);
+        if (!target) return placed;
+
+        const isHit = target.name === placed.name;
+        if (isHit) correct++;
+
+        return { ...placed, isCorrect: isHit };
+      });
+
+      setPlacedItems(newPlacedItems);
+      setScore(correct);
+
+      if (correct === total) {
+        setIsCorrect(true);
+        setFeedbackMessage(`Perfect! You identified all ${total} items correctly!`);
+      } else {
+        setIsCorrect(false);
+        setFeedbackMessage(
+          `You got ${correct} out of ${total} correct. Check your placements!`,
+        );
+      }
+
+      setShowFeedback(true);
+    };
+
+    const handleContinue = () => {
+      if (isCorrect) {
+        if (currentIndex < questions.length - 1) {
+          setCurrentIndex((prev) => prev + 1);
+        } else {
+          setIsCompleted(true);
         }
+      }
+
+      setShowFeedback(false);
+    };
+
+    if (isLoading) {
+      return (
+        <div className="flex items-center justify-center min-h-screen bg-slate-50 dark:bg-slate-900">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+        </div>
+      );
+    }
+
+    if (!currentExercise) {
+      return (
+        <div className="flex flex-col items-center justify-center min-h-screen bg-slate-50 dark:bg-slate-900">
+          <p className="text-xl text-slate-600 dark:text-slate-400">
+            No questions available.
+          </p>
+          <button
+            onClick={() => handleExit()}
+            className="mt-4 px-4 py-2 border border-slate-300 rounded hover:bg-slate-100"
+          >
+            Back
+          </button>
+        </div>
+      );
+    }
+
+    const itemCount = items.length;
+    const progress =
+      questions.length > 0
+        ? ((currentIndex + placedItems.length / (itemCount || 1)) /
+            questions.length) *
+          100
+        : 0;
+
+    const submitLabel = showFeedback
+      ? isCorrect
+        ? currentIndex < questions.length - 1
+          ? "NEXT EXERCISE"
+          : "FINISH"
+        : "TRY AGAIN"
+      : "Check Answers";
+
+    const handleNext = showFeedback ? handleContinue : handleCheck;
+
+    return (
+      <PracticeGameLayout
+        questionType={currentExercise.title || "Image Labelling"}
+        questionTypeFr="Étiquetage d'image"
+        questionTypeEn="Image Labelling"
+        localizedInstruction={currentExercise.localizedInstruction}
+        instructionFr={currentExercise.instructionFr || "Étiquetez l'image"}
+        instructionEn={currentExercise.instructionEn || "Label the image"}
+        progress={progress}
         isGameOver={isCompleted}
         score={score}
-        totalQuestions={currentExercise.items.length}
+        questionCounterValue={currentIndex + 1}
+        currentQuestionIndex={currentIndex + 1}
+        totalQuestions={itemCount}
         onExit={handleExit}
-        onNext={handleCheck}
+        onNext={handleNext}
         onRestart={() => {
           setCurrentIndex(0);
           setIsCompleted(false);
         }}
         isSubmitEnabled={placedItems.length > 0 && !showFeedback}
-        showSubmitButton={!showFeedback}
-        submitLabel="Check Answers"
+        showSubmitButton={true}
+        submitLabel={submitLabel}
+        feedbackTone={showFeedback ? (isCorrect ? "success" : "error") : "neutral"}
+        showFeedback={showFeedback}
+        isCorrect={isCorrect}
+        feedbackMessage={feedbackMessage}
+        correctAnswer={undefined}
         timerValue={timerString}
       >
-        <div className="flex flex-col-reverse lg:flex-row w-full h-full gap-4 p-4 lg:p-6 overflow-hidden">
-          {/* Label Bank */}
-          <div className="w-full lg:w-56 shrink-0 flex flex-col bg-slate-100 dark:bg-slate-900 rounded-2xl border-2 border-slate-200 dark:border-slate-700 overflow-hidden shadow-sm">
+        <div className="flex flex-col md:flex-row-reverse gap-3 p-3 md:p-4 mx-auto w-full flex-1 pb-[108px] overflow-hidden">
+          <div className="flex-1 shrink-0 flex flex-col bg-slate-100 dark:bg-slate-900 rounded-2xl border-2 border-slate-200 dark:border-slate-700 overflow-hidden shadow-sm">
             <div className="px-4 py-2 lg:py-3 bg-slate-200/70 dark:bg-slate-800 border-b border-slate-300 dark:border-slate-600 flex lg:flex-col justify-between items-center lg:items-center">
               <h3 className="text-[10px] lg:text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">
                 Labels
@@ -258,8 +295,7 @@ export default function ImageLabellingPage() {
             </div>
 
             <div className="flex lg:flex-col flex-row gap-2 p-3 overflow-x-auto lg:overflow-y-auto custom-scrollbar no-scrollbar lg:flex-1">
-              {bankItems.length === 0 &&
-              placedItems.length === currentExercise.items.length ? (
+              {bankItems.length === 0 && placedItems.length === itemCount ? (
                 <div className="flex flex-1 items-center justify-center gap-2 text-slate-400 min-w-full">
                   <CheckCircle2 className="w-5 h-5 opacity-50 text-emerald-500" />
                   <span className="text-xs font-semibold">Done!</span>
@@ -283,8 +319,7 @@ export default function ImageLabellingPage() {
             </div>
           </div>
 
-          {/* Image Workspace */}
-          <div className="flex-1 flex flex-col min-w-0 bg-white dark:bg-slate-900/40 rounded-3xl border-2 border-slate-200 dark:border-slate-700 overflow-hidden shadow-sm relative">
+          <div className="flex-1 flex flex-col min-w-0 bg-white dark:bg-slate-900/40 rounded-2xl border-2 border-slate-200 dark:border-slate-700 overflow-hidden shadow-sm relative">
             <div className="absolute top-4 left-4 right-4 z-10 pointer-events-none text-center">
               <span className="inline-block px-4 py-1.5 bg-slate-900/80 backdrop-blur-md text-white text-[10px] lg:text-xs font-bold rounded-full shadow-lg border border-white/20">
                 {selectedLabel
@@ -307,14 +342,13 @@ export default function ImageLabellingPage() {
               >
                 <img
                   ref={imageRef}
-                  src={currentExercise.image}
-                  alt={currentExercise.title}
+                  src={currentExercise.image || ""}
+                  alt={currentExercise.title || "Image labelling"}
                   onLoad={handleImageLoad}
                   className="block max-w-full max-h-[calc(100vh-320px)] lg:max-h-[calc(100vh-280px)] w-auto h-auto object-contain pointer-events-none select-none"
                 />
 
-                {/* Targets (Dots) */}
-                {currentExercise.items.map((target, idx) => {
+                {items.map((target, idx) => {
                   const isPlaced = placedItems.some(
                     (p) =>
                       Math.abs(p.x - target.x) < 0.0001 &&
@@ -346,7 +380,6 @@ export default function ImageLabellingPage() {
                   );
                 })}
 
-                {/* Placed Labels */}
                 {placedItems.map((item) => (
                   <button
                     key={item.name}
@@ -377,22 +410,5 @@ export default function ImageLabellingPage() {
           </div>
         </div>
       </PracticeGameLayout>
-
-      {showFeedback && (
-        <FeedbackBanner
-          isCorrect={isCorrect}
-          correctAnswer={null}
-          onContinue={handleContinue}
-          message={feedbackMessage}
-          continueLabel={
-            isCorrect
-              ? currentIndex < questions.length - 1
-                ? "NEXT EXERCISE"
-                : "FINISH"
-              : "TRY AGAIN"
-          }
-        />
-      )}
-    </>
-  );
-}
+    );
+  }

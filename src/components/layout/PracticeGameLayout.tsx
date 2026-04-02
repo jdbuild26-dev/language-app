@@ -1,70 +1,37 @@
 "use client";
 
-import React, { useState, useEffect, useRef, Suspense } from "react";
+import React, { Suspense, useState, useEffect, useRef } from "react";
 import {
-  ArrowLeft,
   RotateCcw,
   Languages,
+  CheckCircle,
   X,
   Loader2,
+  Trophy,
+  Timer,
+  ListChecks,
+  Settings,
 } from "lucide-react";
-import Link from "next/link";
+import { motion, AnimatePresence } from "framer-motion";
 import { useSearchParams } from "next/navigation";
-import { Button } from "@/components/ui/button";
 import { ProgressBar } from "@/components/ui/ProgressBar";
+import FeedbackBanner from "@/components/ui/FeedbackBanner";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@clerk/nextjs";
 import { completeAssignment } from "@/services/assignmentsApi";
-import FeedbackBanner from "@/components/ui/FeedbackBanner";
 
-/**
- * Inner component that uses useSearchParams — must be wrapped in Suspense.
- */
-function AssignmentSubmitter({ isGameOver, score, totalQuestions, questionType }) {
+function AssignmentIdSync({ onChange }) {
   const searchParams = useSearchParams();
-  const { getToken } = useAuth();
-  const hasSubmitted = useRef(false);
-  const [isSubmittingResult, setIsSubmittingResult] = useState(false);
-
-  const assignmentId = searchParams.get("assignmentId");
 
   useEffect(() => {
-    if (isGameOver && assignmentId && !hasSubmitted.current) {
-      const submitResult = async () => {
-        try {
-          hasSubmitted.current = true;
-          setIsSubmittingResult(true);
-          const token = await getToken();
-          const percentage =
-            totalQuestions > 0 ? Math.round((score / totalQuestions) * 100) : 0;
-          await completeAssignment(assignmentId, percentage, { rawScore: score, total: totalQuestions, type: questionType }, token);
-          console.log("✅ Assignment auto-completed:", assignmentId);
-        } catch (error) {
-          console.error("❌ Failed to auto-complete assignment:", error);
-          hasSubmitted.current = false;
-        } finally {
-          setIsSubmittingResult(false);
-        }
-      };
-      submitResult();
-    }
-  }, [isGameOver, assignmentId, score, totalQuestions, getToken, questionType]);
+    onChange(searchParams?.get("assignmentId") ?? null);
+  }, [searchParams, onChange]);
 
-  if (!assignmentId) return null;
-
-  return isSubmittingResult ? (
-    <div className="mb-6 px-4 py-2 bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-900/50 rounded-full text-blue-700 dark:text-blue-300 text-sm font-medium">
-      Saving results...
-    </div>
-  ) : isGameOver ? (
-    <div className="mb-6 px-4 py-2 bg-green-50 dark:bg-green-900/20 border border-green-100 dark:border-green-900/50 rounded-full text-green-700 dark:text-green-300 text-sm font-medium animate-in fade-in slide-in-from-top-2">
-      Assignment progress saved! ✅
-    </div>
-  ) : null;
+  return null;
 }
 
 /**
- * Standard Layout for Practice Games
+ * Standard Layout for Practice Games — Premium Design
  */
 export default function PracticeGameLayout({
   questionType,
@@ -82,11 +49,14 @@ export default function PracticeGameLayout({
   onRestart,
   isSubmitEnabled = true,
   showSubmitButton = true,
-  submitLabel = "Submit",
+  submitLabel = "Submit Answer",
+  disableContentScroll = false,
   timerValue,
   currentQuestionIndex,
+  questionCounterValue,
   showFeedback = false,
   isCorrect = false,
+  feedbackTone,
   feedbackMessage = "",
   correctAnswer = "",
   userAnswer = "",
@@ -95,152 +65,295 @@ export default function PracticeGameLayout({
   children,
 }) {
   const [showTranslation, setShowTranslation] = useState(false);
+  const [isSubmittingResult, setIsSubmittingResult] = useState(false);
+  const [assignmentId, setAssignmentId] = useState<string | null>(null);
+  const { getToken } = useAuth();
+  const hasSubmitted = useRef(false);
 
+  useEffect(() => {
+    if (isGameOver && assignmentId && !hasSubmitted.current) {
+      const submitResult = async () => {
+        try {
+          hasSubmitted.current = true;
+          setIsSubmittingResult(true);
+          const token = await getToken();
+          const percentage =
+            totalQuestions > 0 ? Math.round((score / totalQuestions) * 100) : 0;
+          await completeAssignment(
+            assignmentId,
+            percentage,
+            { rawScore: score, total: totalQuestions, type: questionType },
+            token,
+          );
+          console.log("✅ Assignment auto-completed:", assignmentId);
+        } catch (error) {
+          console.error("❌ Failed to auto-complete assignment:", error);
+          hasSubmitted.current = false;
+        } finally {
+          setIsSubmittingResult(false);
+        }
+      };
+      submitResult();
+    }
+  }, [isGameOver, assignmentId, score, totalQuestions, getToken, questionType]);
+
+  /* ─── GAME OVER SCREEN ─────────────────────────────────────────────────── */
   if (isGameOver) {
+    const percentage =
+      totalQuestions > 0 ? Math.round((score / totalQuestions) * 100) : 0;
+    const isPerfect = percentage === 100;
+    const isGood = percentage >= 70;
+
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen p-4 text-center animate-in zoom-in duration-300">
-        <div className="w-20 h-20 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center mb-6">
-          <span className="text-4xl">🏆</span>
-        </div>
-        <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-          Quiz Complete!
-        </h2>
-        <p className="text-xl text-gray-600 dark:text-gray-300 mb-8">
-          You scored <span className="font-bold text-blue-600">{score}</span>{" "}
-          out of {totalQuestions}
-        </p>
-
-        {customEndGameContent}
-
+      <div className="flex flex-col items-center w-full justify-center min-h-screen p-6 bg-gradient-to-br from-slate-50 via-blue-50/40 to-indigo-50 dark:from-slate-950 dark:via-blue-950/20 dark:to-indigo-950/30">
         <Suspense fallback={null}>
-          <AssignmentSubmitter
-            isGameOver={isGameOver}
-            score={score}
-            totalQuestions={totalQuestions}
-            questionType={questionType}
-          />
+          <AssignmentIdSync onChange={setAssignmentId} />
         </Suspense>
+        <div className="w-full max-w-sm text-center">
+          {/* Trophy */}
+          <div
+            className={cn(
+              "w-28 h-28 rounded-full flex items-center justify-center mx-auto mb-6 shadow-2xl ring-4",
+              isPerfect
+                ? "bg-gradient-to-br from-yellow-400 to-orange-400 ring-yellow-200 dark:ring-yellow-800"
+                : isGood
+                  ? "bg-gradient-to-br from-blue-500 to-indigo-500 ring-blue-200 dark:ring-blue-800"
+                  : "bg-gradient-to-br from-slate-400 to-slate-500 ring-slate-200 dark:ring-slate-700",
+            )}
+          >
+            {isSubmittingResult ? (
+              <Loader2 className="w-12 h-12 text-white animate-spin" />
+            ) : (
+              <Trophy className="w-12 h-12 text-white drop-shadow" />
+            )}
+          </div>
 
-        <div className="flex gap-4">
-          <Button
-            variant="outline"
-            size="lg"
-            onClick={onExit}
-          >
-            Back to Menu
-          </Button>
-          <Button
-            onClick={onRestart}
-            size="lg"
-            className="gap-2"
-          >
-            <RotateCcw className="w-4 h-4" />
-            Try Again
-          </Button>
+          <h2 className="text-3xl font-extrabold text-gray-900 dark:text-white mb-1 tracking-tight">
+            {isSubmittingResult
+              ? "Saving…"
+              : isPerfect
+                ? "Perfect! 🎉"
+                : isGood
+                  ? "Great Job!"
+                  : "Quiz Done!"}
+          </h2>
+          <p className="text-gray-500 dark:text-gray-400 text-base mb-8">
+            {isSubmittingResult
+              ? "Recording your result…"
+              : "Here's how you did"}
+          </p>
+
+          {/* Score card */}
+          <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-xl p-6 mb-6 border border-gray-100 dark:border-slate-800">
+            <div className="flex items-center justify-center gap-3 mb-4">
+              <span className="text-5xl px-2 font-black text-gray-900 dark:text-white">
+                {score}
+              </span>
+              <span className="text-2xl text-gray-400 font-light mt-1">
+                / {totalQuestions}
+              </span>
+            </div>
+            {/* Percentage bar */}
+            <div className="h-3 w-full bg-gray-100 dark:bg-slate-800 rounded-full overflow-hidden">
+              <div
+                className={cn(
+                  "h-full rounded-full transition-all duration-700 ease-out",
+                  isPerfect
+                    ? "bg-gradient-to-r from-yellow-400 to-orange-400"
+                    : isGood
+                      ? "bg-gradient-to-r from-blue-500 to-indigo-500"
+                      : "bg-gradient-to-r from-slate-400 to-slate-500",
+                )}
+                style={{ width: `${percentage}%` }}
+              />
+            </div>
+            <p
+              className={cn(
+                "text-sm font-semibold mt-2",
+                isPerfect
+                  ? "text-orange-500"
+                  : isGood
+                    ? "text-blue-600 dark:text-blue-400"
+                    : "text-slate-500",
+              )}
+            >
+              {percentage}% correct
+            </p>
+          </div>
+
+          {assignmentId && !isSubmittingResult && (
+            <div className="mb-5 px-4 py-2.5 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl text-green-700 dark:text-green-300 text-sm font-medium flex items-center justify-center gap-2">
+              <CheckCircle className="w-4 h-4" />
+              Assignment result saved
+            </div>
+          )}
+
+          <div className="flex gap-3">
+            <button
+              onClick={onExit}
+              disabled={isSubmittingResult}
+              className="flex-1 h-12 font-semibold rounded-xl border border-input bg-background hover:bg-accent hover:text-accent-foreground"
+            >
+              Exit
+            </button>
+            <button
+              onClick={onRestart}
+              disabled={isSubmittingResult}
+              className="flex-1 h-12 font-semibold rounded-xl gap-2 bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-500/30"
+            >
+              <RotateCcw className="w-4 h-4" />
+              Try Again
+            </button>
+          </div>
+
+          {customEndGameContent}
         </div>
       </div>
     );
   }
 
+  /* ─── MAIN GAME LAYOUT ─────────────────────────────────────────────────── */
+  const instruction = showTranslation
+    ? instructionEn || instructionFr || localizedInstruction
+    : localizedInstruction || instructionFr || instructionEn;
+
+  const hasTranslation =
+    (instructionFr && instructionEn) || (localizedInstruction && instructionEn);
+
+  const currentQ =
+    currentQuestionIndex !== undefined
+      ? currentQuestionIndex
+      : Math.round((progress / 100) * totalQuestions);
+  const displayQuestionNumber =
+    questionCounterValue !== undefined
+      ? questionCounterValue
+      : Math.min(totalQuestions, currentQ + 1);
+
   return (
-    <div className="flex flex-col h-screen max-h-screen bg-white dark:bg-slate-950 overflow-hidden font-sans">
-      {/* HEADER */}
-      <div className="pt-8 md:pt-12 pb-4 md:pb-6 px-4 text-center border-b-[1px] border-red-100 dark:border-red-900/30 shrink-0 relative bg-white dark:bg-slate-950 z-10">
-        {/* Close Button */}
-        {onExit && (
-          <button
-            onClick={onExit}
-            className="absolute top-3 right-3 w-8 h-8 flex items-center justify-center rounded-full bg-gray-200 dark:bg-slate-700 text-gray-600 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-slate-600 transition-colors"
-            aria-label="Close exercise"
-          >
-            <X className="w-4 h-4" />
-          </button>
-        )}
-        {/* Instructions (Main Heading) */}
-        <div className="flex flex-col items-center justify-center gap-2">
-          <div className="flex items-center justify-center gap-3">
-            <h1 className="text-xl md:text-3xl font-bold text-gray-900 dark:text-white tracking-tight">
-              {showTranslation
-                ? instructionEn || instructionFr || localizedInstruction
-                : localizedInstruction || instructionFr || instructionEn}
-            </h1>
+    <div className="flex flex-col min-h-screen dark:bg-slate-950 overflow-hidden font-sans">
+      <Suspense fallback={null}>
+        <AssignmentIdSync onChange={setAssignmentId} />
+      </Suspense>
+      {/* ── HEADER ──────────────────────────────────────────────────────────── */}
+      <header className="shrink-0 flex flex-col h-20 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 z-10">
+        {/* Row 1: Speaker | Title + Lang icon | Settings */}
+        <div className="relative flex-1 flex items-center px-3 md:px-5 lg:px-6">
+          {/* Speaker icon — left */}
+          <div className="flex items-center shrink-0 w-8 md:w-12 z-10">
+            <img src="/favicon.svg" alt="" className="w-5 h-5 md:w-7 md:h-7" />
+          </div>
 
-            {((instructionFr && instructionEn) ||
-              (localizedInstruction && instructionEn)) && (
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setShowTranslation(!showTranslation)}
-                className="rounded-full w-8 h-8 text-gray-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
-                title="Translate"
-              >
-                <Languages className="w-5 h-5" />
-              </Button>
+          {/* Title + Language toggle — perfectly centered */}
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none px-14 md:px-40">
+            <div className="flex items-center gap-2 pointer-events-auto">
+              <AnimatePresence mode="wait">
+                <motion.h1
+                  key={instruction}
+                  initial={{ opacity: 0, y: -6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 6 }}
+                  transition={{ duration: 0.18, ease: "easeInOut" }}
+                  className="text-2xl md:text-[2.05rem] font-bold text-slate-800 dark:text-white tracking-tight text-center leading-snug truncate max-w-[58vw] md:max-w-[46vw]"
+                >
+                  {instruction}
+                </motion.h1>
+              </AnimatePresence>
+              {hasTranslation && (
+                <button
+                  onClick={() => setShowTranslation((v) => !v)}
+                  className="shrink-0 text-slate-400 hover:text-blue-500 transition-colors"
+                  title="Toggle translation"
+                >
+                  <Languages className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Top meta + controls — right */}
+          <div className="ml-auto flex items-center gap-2 shrink-0 z-10">
+            <div className="h-9 px-3 rounded-full border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 text-slate-700 dark:text-slate-200 text-sm font-semibold tabular-nums flex items-center gap-1.5">
+              <ListChecks className="w-4 h-4 text-blue-600 dark:text-blue-300" />
+              {displayQuestionNumber} / {totalQuestions}
+            </div>
+
+            {timerValue && (
+              <div className="h-9 px-3 rounded-full border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 text-blue-700 dark:text-blue-300 text-sm font-semibold tabular-nums flex items-center gap-1.5">
+                <Timer className="w-4 h-4" />
+                {timerValue}
+              </div>
             )}
-          </div>
 
-          {/* Secondary Heading / Question Type - REMOVED */}
+            <button
+              type="button"
+              className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800 dark:hover:text-slate-200 transition-colors"
+              title="Settings"
+            >
+              <Settings className="w-4 h-4" />
+            </button>
 
-          {/* Progress Bar */}
-          <div className="w-full max-w-sm mt-4">
-            <ProgressBar
-              current={
-                currentQuestionIndex !== undefined
-                  ? currentQuestionIndex
-                  : totalQuestions > 0
-                    ? Math.round(((progress ?? 0) / 100) * totalQuestions)
-                    : 0
-              }
-              total={totalQuestions || 1}
-              label="Questions"
-              className=""
-            />
+            <button
+              type="button"
+              onClick={onExit}
+              className="w-9 h-9 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/70 flex items-center justify-center text-slate-500 hover:text-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 dark:text-slate-300 transition-colors"
+              title="Exit"
+            >
+              <X className="w-4 h-4" />
+            </button>
           </div>
         </div>
-      </div>
 
-      {/* CONTENT AREA */}
-      <div className="flex-1 flex flex-col items-center justify-start p-6 overflow-y-auto w-full max-w-[95%] mx-auto">
-        <div className="w-full h-full flex flex-col justify-start items-center pt-8">
-          {children}
-        </div>
-      </div>
-
-      {/* FOOTER — timer + submit button when no feedback; FeedbackBanner when feedback is active */}
-      {showFeedback ? (
-        <FeedbackBanner
-          isCorrect={isCorrect}
-          correctAnswer={correctAnswer}
-          userAnswer={userAnswer}
-          questionContext={questionContext}
-          message={feedbackMessage}
-          onContinue={onNext}
+        {/* Row 2: Progress bar — pinned to bottom of header */}
+        <ProgressBar
+          current={currentQ}
+          total={totalQuestions}
+          slim
+          className="h-[3px] max-w-none"
         />
-      ) : (
-        <div className="py-4 md:py-6 px-4 md:px-8 border-t border-red-100 dark:border-red-900/30 shrink-0 flex items-center justify-between w-full z-10 bg-white dark:bg-slate-950">
-          {/* Timer */}
-          <div className="text-xl md:text-3xl font-bold font-mono tracking-wider min-w-[60px] md:min-w-[80px] text-gray-800 dark:text-gray-200">
-            {timerValue || ""}
-          </div>
+      </header>
 
-          {/* Submit button */}
-          <div className="shrink-0 ml-4">
-            {showSubmitButton && (
+      {/* ── CONTENT ─────────────────────────────────────────────────────────── */}
+      <main
+        className={cn(
+          "flex-1 overflow-y-auto flex  bg-neutral-50 flex-col",
+          disableContentScroll ? "overflow-hidden pb-0" : "",
+        )}
+      >
+        <div className="w-full mx-auto flex-1 flex flex-col">{children}</div>
+      </main>
+
+      {/* ── FOOTER BAR (fixed bottom, hidden when feedback is showing) ───── */}
+      {showSubmitButton && !showFeedback && (
+        <div className="fixed bottom-0 left-0 right-0 h-20 bg-white/95 dark:bg-slate-900/95 backdrop-blur border-t border-slate-200 dark:border-slate-800">
+          <div className="mx-auto px-4 md:px-5 h-full flex items-center justify-end">
+            <div className="justify-self-end">
               <button
                 onClick={onNext}
                 disabled={!isSubmitEnabled}
                 className={cn(
-                  "px-6 md:px-8 py-3 md:py-6 text-base md:text-lg font-bold rounded-xl uppercase tracking-wider shadow-lg transition-transform active:scale-95 min-w-[120px] md:min-w-[140px]",
-                  !isSubmitEnabled
-                    ? "opacity-50 cursor-not-allowed bg-gray-200 text-gray-400"
-                    : "bg-sky-400 hover:bg-sky-500 text-white border-b-4 border-sky-500 active:border-b-0",
+                  "min-w-[132px] h-9 px-4 rounded-lg font-bold text-xs uppercase tracking-wide transition-all duration-200",
+                  isSubmitEnabled
+                    ? "bg-blue-600 hover:bg-blue-700 text-white"
+                    : "bg-slate-200 dark:bg-slate-700 text-slate-400 dark:text-slate-500 cursor-not-allowed",
                 )}
               >
                 {submitLabel}
               </button>
-            )}
+            </div>
           </div>
         </div>
+      )}
+
+      {/* ── FEEDBACK BANNER (replaces submit button when feedback is active) ── */}
+      {showSubmitButton && showFeedback && (
+        <FeedbackBanner
+          isCorrect={isCorrect}
+          feedbackTone={feedbackTone}
+          correctAnswer={correctAnswer}
+          message={feedbackMessage}
+          onContinue={onNext}
+          continueLabel={submitLabel}
+        />
       )}
     </div>
   );
