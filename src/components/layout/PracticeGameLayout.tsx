@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { Suspense, useState, useEffect, useRef } from "react";
 import {
   RotateCcw,
   Languages,
@@ -19,6 +19,16 @@ import FeedbackBanner from "@/components/ui/FeedbackBanner";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@clerk/nextjs";
 import { completeAssignment } from "@/services/assignmentsApi";
+
+function AssignmentIdSync({ onChange }) {
+  const searchParams = useSearchParams();
+
+  useEffect(() => {
+    onChange(searchParams?.get("assignmentId") ?? null);
+  }, [searchParams, onChange]);
+
+  return null;
+}
 
 /**
  * Standard Layout for Practice Games — Premium Design
@@ -54,11 +64,9 @@ export default function PracticeGameLayout({
 }) {
   const [showTranslation, setShowTranslation] = useState(false);
   const [isSubmittingResult, setIsSubmittingResult] = useState(false);
-  const searchParams = useSearchParams();
+  const [assignmentId, setAssignmentId] = useState<string | null>(null);
   const { getToken } = useAuth();
   const hasSubmitted = useRef(false);
-
-  const assignmentId = searchParams?.get("assignmentId");
 
   useEffect(() => {
     if (isGameOver && assignmentId && !hasSubmitted.current) {
@@ -96,6 +104,9 @@ export default function PracticeGameLayout({
 
     return (
       <div className="flex flex-col items-center w-full justify-center min-h-screen p-6 bg-gradient-to-br from-slate-50 via-blue-50/40 to-indigo-50 dark:from-slate-950 dark:via-blue-950/20 dark:to-indigo-950/30">
+        <Suspense fallback={null}>
+          <AssignmentIdSync onChange={setAssignmentId} />
+        </Suspense>
         <div className="w-full max-w-sm text-center">
           {/* Trophy */}
           <div
@@ -218,6 +229,9 @@ export default function PracticeGameLayout({
 
   return (
     <div className="flex flex-col min-h-screen dark:bg-slate-950 overflow-hidden font-sans">
+      <Suspense fallback={null}>
+        <AssignmentIdSync onChange={setAssignmentId} />
+      </Suspense>
       {/* ── HEADER ──────────────────────────────────────────────────────────── */}
       <header className="shrink-0 flex flex-col h-20 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 z-10">
         {/* Row 1: Speaker | Title + Lang icon | Settings */}
