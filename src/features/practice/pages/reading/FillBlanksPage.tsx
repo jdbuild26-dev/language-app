@@ -209,7 +209,9 @@ export default function FillBlanksPage() {
       {showFeedback && (
         <FeedbackBanner
           isCorrect={isCorrect}
-          correctAnswer={!isCorrect ? currentQuestion.correctAnswer : null}
+          correctAnswer={currentQuestion.correctAnswer}
+          userAnswer={selectedWord || ""}
+          questionContext={currentQuestion.sentenceWithBlank || ""}
           onContinue={handleContinue}
           message={feedbackMessage}
           continueLabel={

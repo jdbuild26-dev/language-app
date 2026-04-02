@@ -5,6 +5,10 @@ import { usePracticeExit } from "@/hooks/usePracticeExit";
 import { useExerciseTimer } from "@/hooks/useExerciseTimer";
 import { Loader2, Volume2 } from "lucide-react";
 import { loadMockCSV } from "@/utils/csvLoader";
+import { cn } from "@/lib/utils";
+import { useTextToSpeech } from "@/hooks/useTextToSpeech";
+import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
+import FeedbackBanner from "@/components/ui/FeedbackBanner";
 
 // MOCK_QUESTIONS removed - migrated to CSV
 

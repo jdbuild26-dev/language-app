@@ -3,19 +3,23 @@
 import React from "react";
 import { CheckCircle, XCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
+import ExplainButton from "@/components/ui/ExplainButton";
 
 /**
  * Duolingo-style feedback banner component
- * Shows at the bottom of the screen with correct/incorrect feedback
+ * Shows at the bottom of the screen with correct/incorrect feedback.
+ * Automatically includes an Explain button when correctAnswer is provided.
  */
 export default function FeedbackBanner({
   isCorrect,
-  correctAnswer,
+  correctAnswer = "",
+  userAnswer = "",
+  questionContext = "",
   onContinue,
   message,
   continueLabel = "CONTINUE",
   hideButton = false,
-  children = null
+  children = null,
 }) {
   return (
     <div
@@ -72,6 +76,15 @@ export default function FeedbackBanner({
           </button>
         )}
       </div>
+      {/* Explain button — shown whenever correctAnswer is available */}
+      {correctAnswer && (
+        <ExplainButton
+          correctAnswer={correctAnswer}
+          userAnswer={userAnswer}
+          questionContext={questionContext}
+          isCorrect={isCorrect}
+        />
+      )}
       <div className="pointer-events-auto">
         {children}
       </div>

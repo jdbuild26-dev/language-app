@@ -341,9 +341,9 @@ function ListenSelectContent() {
       {showFeedback && (
         <FeedbackBanner
           isCorrect={isCorrect}
-          correctAnswer={
-            !isCorrect ? "Listen to the audio marked with checkmark" : null
-          }
+          correctAnswer={currentQuestion?.audioOptions?.[currentQuestion.correctIndex]?.french || ""}
+          userAnswer={selectedOption !== null ? currentQuestion?.audioOptions?.[selectedOption]?.french || "" : ""}
+          questionContext={currentQuestion?.questionText || ""}
           onContinue={handleContinue}
           message={feedbackMessage}
           continueLabel={
