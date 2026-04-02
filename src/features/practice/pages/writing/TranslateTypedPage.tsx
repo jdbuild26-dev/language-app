@@ -10,6 +10,7 @@ import { getFeedbackMessage } from "@/utils/feedbackMessages";
 import { loadMockCSV } from "@/utils/csvLoader";
 import { Button } from "@/components/ui/button";
 import AccentKeyboard from "@/components/ui/AccentKeyboard";
+import WritingTranslateResult from "@/components/ui/WritingTranslateResult";
 
 export default function TranslateTypedPage() {
   const handleExit = usePracticeExit();
@@ -24,6 +25,7 @@ export default function TranslateTypedPage() {
   const [feedbackMessage, setFeedbackMessage] = useState("");
   const [score, setScore] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
+  const [showResult, setShowResult] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -53,6 +55,7 @@ export default function TranslateTypedPage() {
   useEffect(() => {
     if (currentQuestion && !isCompleted) {
       setUserInput("");
+      setShowResult(false);
       resetTimer();
     }
   }, [currentIndex, currentQuestion, isCompleted, resetTimer]);
@@ -67,19 +70,15 @@ export default function TranslateTypedPage() {
 
   const handleSubmit = () => {
     if (showFeedback || !userInput.trim()) return;
+    // Show the result area — WritingTranslateResult handles LLM validation
+    setShowResult(true);
+    setShowFeedback(true);
+  };
 
-    const userAnswer = normalize(userInput);
-    const correct = currentQuestion.acceptableAnswers.some(
-      (answer) => normalize(answer) === userAnswer,
-    );
-
+  const handleResult = (correct: boolean, _correctAnswer: string) => {
     setIsCorrect(correct);
     setFeedbackMessage(getFeedbackMessage(correct));
-    setShowFeedback(true);
-
-    if (correct) {
-      setScore((prev) => prev + 1);
-    }
+    if (correct) setScore((prev) => prev + 1);
   };
 
   const handleContinue = () => {
@@ -197,24 +196,20 @@ export default function TranslateTypedPage() {
             </div>
           </div>
 
-          {/* Correct Answer Display */}
-          {showFeedback && currentQuestion?.correctAnswer && (
-            <div className="w-full max-w-4xl mx-auto px-4 -mt-2">
-              <div
-                className={cn(
-                  "rounded-2xl p-4 border-2 transition-all duration-300",
-                  isCorrect
-                    ? "bg-emerald-50 dark:bg-emerald-900/10 border-emerald-500"
-                    : "bg-red-50 dark:bg-red-900/10 border-red-500",
-                )}
-              >
-                <p className="text-sm font-semibold text-slate-600 dark:text-slate-400 mb-1">
-                  Correct Answer:
-                </p>
-                <p className="text-lg font-medium text-slate-800 dark:text-slate-100">
-                  {currentQuestion.correctAnswer}
-                </p>
-              </div>
+          {/* Result area — Check & Explain (replaces static correct answer display) */}
+          {showResult && currentQuestion && (
+            <div className="w-full max-w-4xl mx-auto px-4 -mt-2 space-y-3">
+              <WritingTranslateResult
+                sourceSentence={currentQuestion.sourceText || ""}
+                userAnswer={userInput}
+                acceptableAnswers={
+                  Array.isArray(currentQuestion.acceptableAnswers)
+                    ? currentQuestion.acceptableAnswers
+                    : [currentQuestion.correctAnswer || ""]
+                }
+                level={currentQuestion.level || "A1"}
+                onResult={handleResult}
+              />
             </div>
           )}
 
@@ -222,11 +217,11 @@ export default function TranslateTypedPage() {
         </div>
       </PracticeGameLayout>
 
-      {/* Feedback Banner */}
-      {showFeedback && (
+      {/* Feedback Banner — shown after LLM result comes back */}
+      {showFeedback && feedbackMessage && (
         <FeedbackBanner
           isCorrect={isCorrect}
-          correctAnswer={!isCorrect ? currentQuestion.correctAnswer : null}
+          correctAnswer=""
           onContinue={handleContinue}
           message={feedbackMessage}
           continueLabel={

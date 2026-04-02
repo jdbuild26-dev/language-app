@@ -76,8 +76,8 @@ export default function FeedbackBanner({
           </button>
         )}
       </div>
-      {/* Explain button — shown whenever correctAnswer is available */}
-      {correctAnswer && (
+      {/* Explain button — shown when correctAnswer is available and no custom children override */}
+      {correctAnswer && !children && (
         <ExplainButton
           correctAnswer={correctAnswer}
           userAnswer={userAnswer}

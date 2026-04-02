@@ -11,6 +11,7 @@ import FeedbackBanner from "@/components/ui/FeedbackBanner";
 import { getFeedbackMessage } from "@/utils/feedbackMessages";
 import { loadMockCSV } from "@/utils/csvLoader";
 import { Button } from "@/components/ui/button";
+import TranslationExplainButton from "@/components/ui/TranslationExplainButton";
 
 // Fisher-Yates shuffle algorithm
 function shuffleArray(array) {
@@ -38,6 +39,7 @@ export default function ListenBubblePage() {
   const [feedbackMessage, setFeedbackMessage] = useState("");
   const [score, setScore] = useState(0);
   const [playedAudio, setPlayedAudio] = useState(false);
+  const [submittedAnswer, setSubmittedAnswer] = useState("");
 
   const currentQuestion = questions[currentIndex];
   const timerDuration = currentQuestion?.timeLimitSeconds || 60;
@@ -150,6 +152,7 @@ export default function ListenBubblePage() {
     const correctAnswer = normalize(currentQuestion.sentence);
     const correct = userAnswer === correctAnswer;
 
+    setSubmittedAnswer(selectedWords.join(" "));
     setIsCorrect(correct);
     setFeedbackMessage(getFeedbackMessage(correct));
     setShowFeedback(true);
@@ -294,13 +297,22 @@ export default function ListenBubblePage() {
       {showFeedback && (
         <FeedbackBanner
           isCorrect={isCorrect}
-          correctAnswer={!isCorrect ? currentQuestion.sentence : null}
+          correctAnswer={currentQuestion.sentence || ""}
+          userAnswer={submittedAnswer}
+          questionContext={currentQuestion.audioText || ""}
           onContinue={handleContinue}
           message={feedbackMessage}
           continueLabel={
             currentIndex + 1 === questions.length ? "FINISH" : "CONTINUE"
           }
-        />
+        >
+          <TranslationExplainButton
+            sourceSentence={currentQuestion.audioText || currentQuestion.sentence || ""}
+            correctAnswer={currentQuestion.sentence || ""}
+            userAnswer={submittedAnswer}
+            isCorrect={isCorrect}
+          />
+        </FeedbackBanner>
       )}
     </>
   );
