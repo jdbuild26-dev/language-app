@@ -71,13 +71,17 @@ export default function ProfessionContent() {
     const router = useRouter();
 
     const handleStartProfession = (profession) => {
+        // Build a flat ScenarioInfo object matching the backend model
         const scenario = {
             title: profession.title,
             level: profession.level,
             formality: "formal",
             mode: "profession",
-            ...profession.scenario,
-            icon: "💼"
+            objective: `Practice professional French vocabulary and etiquette as a ${profession.title}.`,
+            aiRole: profession.scenario.aiRole,
+            userRole: profession.scenario.userRole,
+            aiPrompt: profession.scenario.aiPrompt,
+            icon: "💼",
         };
 
         sessionStorage.setItem("chatScenario", JSON.stringify(scenario));

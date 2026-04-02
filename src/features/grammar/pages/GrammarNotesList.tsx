@@ -15,14 +15,14 @@ const GrammarNotesList = () => {
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
-        <Loader2 className="w-8 h-8 animate-spin text-indigo-600" />
+        <Loader2 className="w-8 h-8 animate-spin text-indigo-600 dark:text-indigo-400" />
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="bg-red-50 border border-red-200 text-red-600 p-4 rounded-lg">
+      <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 p-4 rounded-lg">
         Error loading grammar notes: {error}
       </div>
     );
@@ -30,15 +30,15 @@ const GrammarNotesList = () => {
 
   if (!loading && !error && notes.length === 0) {
     return (
-      <div className="text-center py-12 bg-slate-50 rounded-lg border border-dashed border-slate-300">
-        <p className="text-slate-500">No grammar notes found.</p>
+      <div className="text-center py-12 bg-slate-50 dark:bg-slate-900 rounded-lg border border-dashed border-slate-300 dark:border-slate-700">
+        <p className="text-slate-500 dark:text-slate-400">No grammar notes found.</p>
       </div>
     );
   }
 
   return (
     <div>
-      <h2 className="text-2xl font-semibold text-slate-800 mb-6">
+      <h2 className="text-2xl font-semibold text-slate-800 dark:text-white mb-6">
         Grammar Notes
       </h2>
 
@@ -47,20 +47,20 @@ const GrammarNotesList = () => {
           <Link
             key={note.id}
             href={`/grammar/lessons/${note.id}`}
-            className="group bg-white rounded-xl shadow-sm hover:shadow-md border border-slate-200 p-6 transition-all duration-200"
+            className="group bg-white dark:bg-slate-900 rounded-xl shadow-sm hover:shadow-md border border-slate-200 dark:border-slate-700 p-6 transition-all duration-200"
           >
             <div className="flex items-start justify-between">
-              <div className="p-3 bg-indigo-50 rounded-lg group-hover:bg-indigo-100 transition-colors">
-                <FileText className="w-6 h-6 text-indigo-600" />
+              <div className="p-3 bg-indigo-50 dark:bg-indigo-900/30 rounded-lg group-hover:bg-indigo-100 dark:group-hover:bg-indigo-900/50 transition-colors">
+                <FileText className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
               </div>
-              <ExternalLink className="w-5 h-5 text-slate-300 group-hover:text-indigo-600 transition-colors" />
+              <ExternalLink className="w-5 h-5 text-slate-300 dark:text-slate-600 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors" />
             </div>
 
-            <h3 className="mt-4 text-lg font-semibold text-slate-800 group-hover:text-indigo-600 transition-colors">
+            <h3 className="mt-4 text-lg font-semibold text-slate-800 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
               {note.name.replace(".html", "")}
             </h3>
 
-            <div className="mt-2 text-sm text-slate-400">
+            <div className="mt-2 text-sm text-slate-400 dark:text-slate-500">
               Created: {new Date(note.createdTime).toLocaleDateString()}
             </div>
           </Link>

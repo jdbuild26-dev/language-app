@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { useSearchParams } from "next/navigation";
 
 import { useLanguage } from "@/contexts/LanguageContext";
+import TranslationExplainButton from "@/components/ui/TranslationExplainButton";
 
 // Fisher-Yates shuffle algorithm
 function shuffleArray(array) {
@@ -52,6 +53,7 @@ function BubbleSelectionContent() {
   const [isCorrect, setIsCorrect] = useState(false);
   const [feedbackMessage, setFeedbackMessage] = useState("");
   const [score, setScore] = useState(0);
+  const [submittedAnswer, setSubmittedAnswer] = useState("");
 
   const currentQuestion = questions[currentIndex];
   const timerDuration = currentQuestion?.timeLimitSeconds || 45;
@@ -146,6 +148,7 @@ function BubbleSelectionContent() {
     );
     const correct = userAnswer === correctAnswer;
 
+    setSubmittedAnswer(selectedWords.join(" "));
     setIsCorrect(correct);
     setFeedbackMessage(getFeedbackMessage(correct));
     setShowFeedback(true);
@@ -301,16 +304,23 @@ function BubbleSelectionContent() {
         <FeedbackBanner
           isCorrect={isCorrect}
           correctAnswer={
-            !isCorrect
-              ? currentQuestion.target_sentence || currentQuestion.correctAnswer
-              : null
+            currentQuestion.target_sentence || currentQuestion.correctAnswer || ""
           }
+          userAnswer={submittedAnswer}
+          questionContext={currentQuestion.source_sentence || currentQuestion.sourceText || ""}
           onContinue={handleContinue}
           message={feedbackMessage}
           continueLabel={
             currentIndex + 1 === questions.length ? "FINISH" : "CONTINUE"
           }
-        />
+        >
+          <TranslationExplainButton
+            sourceSentence={currentQuestion.source_sentence || currentQuestion.sourceText || ""}
+            correctAnswer={currentQuestion.target_sentence || currentQuestion.correctAnswer || ""}
+            userAnswer={submittedAnswer}
+            isCorrect={isCorrect}
+          />
+        </FeedbackBanner>
       )}
     </>
   );

@@ -144,14 +144,15 @@ export default function GenericSpeakingPage({
                     task_type: taskType,
                     transcript: spokenText,
                     reference: currentQuestion?.Answer || currentQuestion?.Translation || currentQuestion?.['Correct Answer'],
-                    context: currentQuestion?.Topic || currentQuestion?.Description || currentQuestion?.Scenario || title
+                    context: currentQuestion?.Topic || currentQuestion?.Description || currentQuestion?.Scenario || title,
+                    level: currentQuestion?.Level || currentQuestion?.level || "A1",
                 }),
             });
 
             if (!response.ok) throw new Error("Failed to evaluate");
             const result = await response.json();
             setEvaluation(result);
-            if (result.score >= 70) {
+            if (result.is_correct) {
                 setScore((prev) => prev + 1);
             }
         } catch (error) {
@@ -217,8 +218,8 @@ export default function GenericSpeakingPage({
             showSubmitButton={true}
             submitLabel={isSubmitting ? "Evaluating..." : evaluation ? "Continue" : "Submit"}
             showFeedback={!!evaluation}
-            isCorrect={evaluation?.score >= 70}
-            feedbackMessage={evaluation?.feedback || ""}
+            isCorrect={evaluation?.is_correct ?? false}
+            feedbackMessage={evaluation ? (evaluation.is_correct ? "Great job!" : "Not quite — keep practising!") : ""}
         >
             <div className="flex flex-col items-center justify-center max-w-3xl w-full gap-8">
                 {/* Task Content */}
@@ -252,20 +253,26 @@ export default function GenericSpeakingPage({
                 {evaluation && (
                     <div className={cn(
                         "w-full rounded-2xl p-4 md:p-6 border animate-in slide-in-from-bottom-4 duration-500",
-                        evaluation.score >= 70
+                        evaluation.is_correct
                             ? "bg-emerald-50 border-emerald-200 dark:bg-emerald-950/20 dark:border-emerald-800"
                             : "bg-amber-50 border-amber-200 dark:bg-amber-950/20 dark:border-amber-800"
                     )}>
-                        <div className="flex items-center gap-3 md:gap-4 mb-3">
+                        <div className="flex items-start gap-3 md:gap-4 mb-3">
                             <div className={cn(
-                                "w-10 h-10 md:w-12 md:h-12 rounded-full flex items-center justify-center text-base md:text-xl font-bold border-2 shrink-0",
-                                evaluation.score >= 70 ? "bg-emerald-500 text-white border-emerald-400" : "bg-amber-500 text-white border-amber-400"
+                                "w-8 h-8 rounded-full flex items-center justify-center shrink-0 mt-0.5",
+                                evaluation.is_correct
+                                    ? "bg-emerald-500 text-white"
+                                    : "bg-amber-500 text-white"
                             )}>
-                                {evaluation.score}
+                                <Sparkles className="w-4 h-4" />
                             </div>
                             <div>
-                                <h4 className="font-bold text-slate-900 dark:text-white text-sm md:text-base">AI Analysis</h4>
-                                <p className="text-xs md:text-sm text-slate-600 dark:text-slate-400">{evaluation.feedback}</p>
+                                <h4 className="font-bold text-slate-900 dark:text-white text-sm md:text-base">
+                                    {evaluation.is_correct ? "Well done!" : "Keep practising"}
+                                </h4>
+                                <p className="text-xs md:text-sm text-slate-600 dark:text-slate-400">
+                                    {evaluation.feedback}
+                                </p>
                             </div>
                         </div>
 
@@ -274,14 +281,16 @@ export default function GenericSpeakingPage({
                                 <div className="flex items-center gap-2 mb-1 text-xs font-bold text-slate-400 uppercase tracking-wider">
                                     <MessageCircle className="w-3 h-3" /> Recommended Phrasing
                                 </div>
-                                <p className="text-slate-800 dark:text-slate-200 font-medium">{evaluation.correction}</p>
+                                <p className="text-slate-800 dark:text-slate-200 font-medium">
+                                    {evaluation.correction}
+                                </p>
                             </div>
                         )}
 
-                        {evaluation.pronunciation_tips && (
+                        {(evaluation.pronunciation_tip || evaluation.pronunciation_tips) && (
                             <div className="mt-3 flex items-start gap-2 text-sm text-amber-700 dark:text-amber-300">
                                 <Info className="w-4 h-4 mt-0.5 flex-shrink-0" />
-                                <p><strong>Tip:</strong> {evaluation.pronunciation_tips}</p>
+                                <p><strong>Tip:</strong> {evaluation.pronunciation_tip || evaluation.pronunciation_tips}</p>
                             </div>
                         )}
                     </div>
