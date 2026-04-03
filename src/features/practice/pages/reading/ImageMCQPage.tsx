@@ -89,10 +89,7 @@ export default function ImageMCQPage() {
     };
   }, []);
 
-  const handlePlayAudio = (
-    e: React.MouseEvent<HTMLElement>,
-    text: string,
-  ) => {
+  const handlePlayAudio = (e: React.MouseEvent<HTMLElement>, text: string) => {
     e.stopPropagation();
     window.speechSynthesis.cancel();
     const utterance = new SpeechSynthesisUtterance(text);
@@ -166,7 +163,7 @@ export default function ImageMCQPage() {
       timerValue={timerString}
       showFeedback={showFeedback}
       isCorrect={isCorrect}
-      feedbackTone={isCorrect ? "correct" : "incorrect"}
+      feedbackTone={isCorrect ? "success" : "error"}
       correctAnswer={
         !isCorrect
           ? currentQuestion?.options?.[currentQuestion?.correctIndex ?? -1]
@@ -175,23 +172,23 @@ export default function ImageMCQPage() {
       feedbackMessage={feedbackMessage}
     >
       {/* Two-panel layout — stacked on mobile, side-by-side on md+ */}
-      <div className="flex flex-col md:flex-row gap-3 p-3 mx-auto w-full flex-1 pb-[108px] overflow-hidden">
+      <div className="practice-reading-page-shell flex flex-col gap-3 p-3 sm:gap-4 sm:p-4 mx-auto overflow-y-auto md:flex-row md:overflow-hidden">
         {/* ── Left Panel: Image ── */}
-        <div className="flex-1 h-[570px] bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 flex flex-col p-6 shrink-0">
+        <div className="w-full md:flex-none md:w-[70%] min-h-0 md:h-[570px] bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 flex flex-col p-4 md:p-6 shrink-0">
           {/* Image content */}
-          <div className="flex-1 flex justify-center">
-            <div className="relative w-full   flex items-center justify-center dark:bg-slate-800/40">
+          <div className="flex-1 flex justify-center min-h-0">
+            <div className="relative w-full aspect-[4/3] sm:aspect-[16/11] md:aspect-auto md:min-h-0 md:flex-1 flex items-center justify-center dark:bg-slate-800/40 rounded-xl overflow-hidden">
               <img
                 src={imgMcqImage.src}
                 alt={currentQuestion?.imageAlt || "Question visual"}
-                className="max-w-full max-h-full object-contain rounded-2xl -translate-y-2"
+                className="max-w-full max-h-full object-contain rounded-2xl"
               />
             </div>
           </div>
         </div>
 
         {/* ── Right Panel: Question + Options ── */}
-        <div className="flex-1 flex flex-col p-6 gap-4 overflow-y-auto rounded-2xl border border-slate-200 bg-white dark:bg-slate-900 dark:border-slate-700">
+        <div className="w-full md:flex-none md:w-[30%] min-h-0 flex flex-col p-4 md:p-6 gap-4 overflow-visible md:overflow-y-auto rounded-2xl border border-slate-200 bg-white dark:bg-slate-900 dark:border-slate-700">
           {/* Question */}
           <div className="px-2">
             <h1 className="text-lg md:text-xl font-semibold leading-relaxed flex items-center gap-2 text-slate-900 dark:text-slate-200">
@@ -208,8 +205,8 @@ export default function ImageMCQPage() {
             showFeedback={showFeedback}
             onSelect={handleOptionSelect}
             showCheckIcon
-            className="mt-2 sm:mt-5"
-            itemClassName="t font-semibold leading-relaxed"
+            className="mt-2 sm:mt-5 pb-2 sm:pb-4"
+            itemClassName="t font-semibold leading-relaxed break-words min-h-[64px]"
             renderLabel={(option, index) => (
               <>
                 <span>{option}</span>

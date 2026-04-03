@@ -188,16 +188,14 @@ export default function SummaryCompletionPage() {
         showSubmitButton={true}
         submitLabel={
           showFeedback
-            ? currentIndex + 1 === questionKeys.length
-              ? "FINISH"
-              : "CONTINUE"
+            ? "FINISH"
             : "Submit Answer"
         }
         timerValue={timerString}
       >
-        <div className="flex flex-col lg:flex-row w-full max-w-7xl mx-auto gap-6 p-4 h-full md:items-stretch overflow-hidden">
+        <div className="practice-reading-page-shell flex flex-col lg:flex-row w-full max-w-7xl mx-auto gap-6 p-3 md:p-4 md:items-stretch overflow-hidden">
           {/* Main Passage Area */}
-          <div className="flex-1 flex flex-col bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden min-h-[400px]">
+          <div className="flex-1 min-h-0 md:min-h-[400px] flex flex-col bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden">
             <div className="p-6 border-b border-slate-100 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50">
               <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100">
                 {passageTitle}
@@ -205,7 +203,7 @@ export default function SummaryCompletionPage() {
             </div>
 
             <div className="p-6 md:p-8 overflow-y-auto custom-scrollbar">
-              <div className="text-lg md:text-xl leading-loose text-slate-800 dark:text-slate-100 font-serif">
+              <div className="practice-reading-passage-text">
                 {passageSegments.map((segment, index) => {
                   if (typeof segment === "string") {
                     return <span key={index}>{segment}</span>;
@@ -314,6 +312,7 @@ export default function SummaryCompletionPage() {
       {showFeedback && (
         <FeedbackBanner
           isCorrect={isCorrect}
+          feedbackTone={isCorrect ? "success" : "error"}
           correctAnswer={null}
           onContinue={handleContinue}
           message={feedbackMessage}

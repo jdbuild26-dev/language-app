@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { usePracticeExit } from "@/hooks/usePracticeExit";
 import { useExerciseTimer } from "@/hooks/useExerciseTimer";
-import { GripVertical } from "lucide-react";
+import { GripVertical, Languages } from "lucide-react";
 import { Reorder } from "framer-motion";
 import { cn } from "@/lib/utils";
 import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
@@ -185,9 +185,10 @@ export default function ReorderPage() {
         submitLabel="Submit Answer"
         timerValue={timerString}
       >
-        <div className="flex flex-col items-center justify-center w-full max-w-7xl mx-auto px-4 flex-1 pb-[108px]">
-          <h1 className="w-full max-w-4xl mx-auto mb-8 text-center text-2xl md:text-3xl font-bold text-slate-900 dark:text-slate-100">
-            {currentQuestion?.title || "Reorder the Sentences"}
+        <div className="practice-reading-page-shell flex flex-col items-center justify-center w-full max-w-7xl mx-auto px-3 sm:px-4">
+          <h1 className="w-full max-w-4xl mx-auto mb-8 text-center text-2xl md:text-3xl font-bold text-slate-900 dark:text-slate-100 flex items-center justify-center gap-2">
+            <Languages className="w-5 h-5 text-blue-500 shrink-0" />
+            <span>{currentQuestion?.title || "Reorder the Sentences"}</span>
           </h1>
 
           {/* ✅ Removed the external static numbers column. Numbers now live inside each card. */}
@@ -333,7 +334,7 @@ const SortableItem = ({
       </div>
 
       {/* Sentence text */}
-      <span className="flex-1 text-slate-700 dark:text-slate-200 font-medium select-none truncate">
+      <span className="flex-1 text-slate-700 dark:text-slate-200 font-medium select-none break-words">
         {sentence}
       </span>
     </Reorder.Item>

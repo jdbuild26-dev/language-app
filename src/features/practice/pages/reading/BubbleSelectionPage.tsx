@@ -38,7 +38,7 @@ type BubbleQuestion = {
 };
 
 // Fisher-Yates shuffle algorithm
-function shuffleArray(array) {
+function shuffleArray(array: string[]): string[] {
   const shuffled = [...array];
   for (let i = shuffled.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
@@ -47,9 +47,9 @@ function shuffleArray(array) {
   return shuffled;
 }
 
-function normalizeBubbleTokens(tokens) {
+function normalizeBubbleTokens(tokens: unknown): string[] {
   if (Array.isArray(tokens)) {
-    return tokens.filter(Boolean);
+    return tokens.filter(Boolean).map(String);
   }
 
   if (typeof tokens === "string") {
@@ -60,7 +60,7 @@ function normalizeBubbleTokens(tokens) {
     if (trimmed.startsWith("[") || trimmed.startsWith("{")) {
       try {
         const parsed = JSON.parse(trimmed);
-        return Array.isArray(parsed) ? parsed.filter(Boolean) : [];
+        return Array.isArray(parsed) ? parsed.filter(Boolean).map(String) : [];
       } catch (error) {
         console.warn("Failed to parse bubble tokens:", error);
       }
@@ -75,7 +75,7 @@ function normalizeBubbleTokens(tokens) {
   return [];
 }
 
-function getBubbleTokens(question) {
+function getBubbleTokens(question?: BubbleQuestion): string[] {
   const tokenSources = [
     question?.bubble_tokens,
     question?.wordBubbles,
@@ -160,7 +160,7 @@ function BubbleSelectionPageContent() {
 
         if (!Array.isArray(data) || data.length === 0) {
           const fallback = await loadMockCSV(
-            "practice/reading/bubble_selection.csv",
+            "practice/reading/translate_bubbles.csv",
             {
               learningLang,
               knownLang,
@@ -229,7 +229,7 @@ function BubbleSelectionPageContent() {
     if (showFeedback || selectedWords.length === 0) return;
 
     // Normalize answers - remove punctuation and extra whitespace, lowercase
-    const normalize = (str) =>
+    const normalize = (str: string) =>
       str
         .toLowerCase()
         .replace(/[.,!?;:'"]/g, "")
@@ -303,7 +303,7 @@ function BubbleSelectionPageContent() {
         isGameOver={isCompleted}
         score={score}
         questionCounterValue={currentIndex + 1}
-        currentQuestionIndex={currentIndex + 1}
+        currentQuestionIndex={currentIndex}
         totalQuestions={questions.length}
         onExit={handleExit}
         onNext={handleSubmit}
@@ -316,7 +316,7 @@ function BubbleSelectionPageContent() {
         }
         timerValue={timerString}
       >
-        <div className="flex flex-1 flex-col items-center justify-center w-full max-w-5xl mx-auto px-4 py-8 pb-[108px]">
+        <div className="practice-reading-page-shell flex flex-col items-center justify-center max-w-5xl mx-auto px-3 sm:px-4 py-6 md:py-8">
           {/* Source Sentence */}
           <div className="w-full mb-8 md:mb-10 flex justify-center items-center">
             <p
@@ -419,7 +419,6 @@ function BubbleSelectionPageContent() {
           isCorrect={isCorrect}
           feedbackTone={isCorrect ? "success" : "error"}
           correctAnswer={!isCorrect ? correctSentence : null}
-          englishCorrectAnswer=""
           onContinue={handleContinue}
           message={feedbackMessage}
           continueLabel={

@@ -3,19 +3,13 @@
 import React, { useState, useEffect } from "react";
 import { usePracticeExit } from "@/hooks/usePracticeExit";
 import { useExerciseTimer } from "@/hooks/useExerciseTimer";
-import {
-  User,
-  Volume2,
-  XCircle,
-  Languages,
-} from "lucide-react";
+import { User, Volume2, XCircle, Languages, Loader2 } from "lucide-react";
 import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
 import FeedbackBanner from "@/components/ui/FeedbackBanner";
 import PracticeOptions from "@/components/ui/PracticeOptions";
 import { getFeedbackMessage } from "@/utils/feedbackMessages";
 import { useTextToSpeech } from "@/hooks/useTextToSpeech";
 import { loadMockCSV } from "@/utils/csvLoader";
-import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 type ConversationOption = { id: string | number; text: string };
@@ -41,16 +35,6 @@ type MistakeItem = { question: string; expected: string; actual: string };
 export default function ConversationPage() {
   const handleExit = usePracticeExit();
   const { speak, isSpeaking } = useTextToSpeech();
-  const PracticeOptionsTyped = PracticeOptions as unknown as React.ComponentType<{
-    options: string[];
-    selectedOption: number | null;
-    correctIndex: number;
-    showFeedback: boolean;
-    onSelect: (idx: number) => void;
-    renderLabel?: (option: string) => React.ReactNode;
-    renderSuffix?: () => React.ReactNode;
-    itemClassName?: string;
-  }>;
 
   // Current conversation data
   const [conversation, setConversation] = useState<ConversationData | null>(null);
@@ -88,11 +72,35 @@ export default function ConversationPage() {
     duration: timerDuration,
     mode: "timer",
     onExpire: () => {
-      if (!isCompleted && !showFeedback && !hasAnswered) {
-        setIsCorrect(false);
-        setFeedbackMessage("Time's up!");
-        setShowFeedback(true);
+      if (!currentExchange || isCompleted || showFeedback || hasAnswered) {
+        return;
       }
+
+      const correctOptionObj = currentExchange.options.find(
+        (opt) => opt.id === currentExchange.correctOptionId,
+      );
+
+      setMistakes((prev) => [
+        ...prev,
+        {
+          question: currentExchange.speakerText,
+          expected: correctOptionObj?.text || "",
+          actual: "",
+        },
+      ]);
+      setConversationHistory((prev) => [
+        ...prev,
+        {
+          speakerText: currentExchange.speakerText,
+          userText: "",
+          userOptionId: null,
+          wasCorrect: false,
+        },
+      ]);
+      setHasAnswered(true);
+      setIsCorrect(false);
+      setFeedbackMessage("Time's up!");
+      setShowFeedback(true);
     },
     isPaused: isCompleted || showFeedback || loading || hasAnswered,
   });
@@ -163,7 +171,7 @@ export default function ConversationPage() {
       ...prev,
       {
         speakerText: currentExchange.speakerText,
-        userText: correctOptionObj?.text || "",
+        userText: selectedOptionObj?.text || "",
         userOptionId: selectedOption,
         wasCorrect: correct,
       },
@@ -206,7 +214,7 @@ export default function ConversationPage() {
 
   const customEndGameContent =
     mistakes.length > 0 ? (
-      <div className="w-full max-w-2xl text-left bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm border border-slate-100 dark:border-slate-700 mt-4 max-h-[400px] overflow-y-auto mx-auto mb-8 relative z-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      <div className="w-full max-w-2xl text-left bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm border border-slate-100 dark:border-slate-700 mt-4 max-h-[60vh] md:max-h-[400px] overflow-y-auto mx-auto mb-8 relative z-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
         <h3 className="text-lg font-bold text-red-600 dark:text-red-400 mb-6 flex items-center gap-2 pb-3 border-b border-slate-100 dark:border-slate-700">
           <XCircle className="w-6 h-6" /> Let's review your mistakes
         </h3>
@@ -268,18 +276,18 @@ export default function ConversationPage() {
       showSubmitButton={!showFeedback && !hasAnswered}
       submitLabel="Submit Answer"
       timerValue={timerString}
-      customEndGameContent={customEndGameContent as unknown as undefined}
+      customEndGameContent={customEndGameContent}
     >
       {/* Two-column layout */}
-      <div className="flex flex-col md:flex-row gap-3 p-3 mx-auto w-full flex-1 pb-[108px] overflow-hidden">
+      <div className="practice-reading-page-shell flex flex-col md:flex-row gap-3 p-3 mx-auto overflow-hidden">
         {/* LEFT: Conversation bubbles */}
-        <div className="flex-1 flex flex-col bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden">
+        <div className="flex-1 min-h-0 flex flex-col bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden">
           <div className="px-5 py-3 border-b-[2px] border-slate-100 dark:border-slate-700">
             <span className="text-xs font-bold uppercase tracking-widest text-slate-600 dark:text-slate-300">
               Conversation
             </span>
           </div>
-          <div className="flex-1 overflow-y-auto p-4 space-y-4">
+          <div className="flex-1 min-h-0 overflow-y-auto p-4 space-y-4">
             {/* Past turns */}
             {conversationHistory.map((turn, index) => (
               <div key={index} className="space-y-3">
@@ -288,7 +296,7 @@ export default function ConversationPage() {
                   <div className="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center shrink-0 mt-1">
                     <User className="w-4 h-4 text-slate-500 dark:text-slate-300" />
                   </div>
-                  <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-4 py-2.5 rounded-2xl rounded-tl-sm shadow-sm max-w-[85%]">
+                  <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-4 py-2.5 rounded-2xl rounded-tl-sm shadow-sm max-w-[92%] md:max-w-[85%]">
                     <div className="flex items-center gap-2">
                       <p className="text-sm text-slate-700 dark:text-slate-200">
                         {turn.speakerText}
@@ -305,7 +313,7 @@ export default function ConversationPage() {
                 </div>
                 {/* User bubble */}
                 <div className="flex justify-end">
-                  <div className="bg-teal-700 text-white px-4 py-2.5 rounded-2xl rounded-br-sm shadow-sm max-w-[85%]">
+                  <div className="bg-teal-700 text-white px-4 py-2.5 rounded-2xl rounded-br-sm shadow-sm max-w-[92%] md:max-w-[85%]">
                     <p className="text-sm">{turn.userText}</p>
                   </div>
                 </div>
@@ -318,7 +326,7 @@ export default function ConversationPage() {
                 {/* <div className="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center shrink-0 mt-1">
                   <User className="w-4 h-4 text-slate-500" />
                 </div> */}
-                <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-4 py-2.5 rounded-2xl rounded-tl-sm shadow-sm max-w-[85%]">
+                <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-4 py-2.5 rounded-2xl rounded-tl-sm shadow-sm max-w-[92%] md:max-w-[85%]">
                   <div className="flex items-center gap-2">
                     <p className="text-sm text-slate-700 dark:text-slate-200">
                       {currentExchange.speakerText}
@@ -338,7 +346,7 @@ export default function ConversationPage() {
             {/* Placeholder for user's pending reply */}
             {!hasAnswered && (
               <div className="flex justify-end">
-                <div className="bg-slate-100 dark:bg-slate-800 border-2 border-dashed border-slate-300 dark:border-slate-600 px-4 py-2.5 rounded-2xl rounded-br-sm max-w-[85%] text-xs text-slate-400 dark:text-slate-500 italic">
+                <div className="bg-slate-100 dark:bg-slate-800 border-2 border-dashed border-slate-300 dark:border-slate-600 px-4 py-2.5 rounded-2xl rounded-br-sm max-w-[92%] md:max-w-[85%] text-xs text-slate-400 dark:text-slate-500 italic">
                   Your response…
                 </div>
               </div>
@@ -347,7 +355,7 @@ export default function ConversationPage() {
         </div>
 
         {/* RIGHT: Objective + question + options */}
-        <div className="flex-1 flex flex-col bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 overflow-y-auto">
+        <div className="flex-1 min-h-0 flex flex-col bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 overflow-y-auto">
           {/* Objective / context card */}
           <div className="m-4 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 shadow-sm p-5">
             <p className="text-xs font-bold border-b-2 border-gray-200 dark:border-slate-600 pb-1 uppercase tracking-widest text-slate-600 dark:text-slate-300 mb-2">
@@ -374,7 +382,7 @@ export default function ConversationPage() {
           {/* Options */}
           {!hasAnswered && currentExchange && (
             <div className="px-4 pb-6">
-              <PracticeOptionsTyped
+              <PracticeOptions
                 options={currentExchange.options.map((o) => o.text)}
                 selectedOption={
                   selectedOption !== null

@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils";
  */
 
 const PRACTICE_OPTION_TEXT_CLASS =
-  "font-sans text-base md:text-md font-medium leading-8 md:leading-9";
+  "practice-reading-option-text font-medium";
 
 /**
  * PracticeOptions — reusable animated MCQ options list.

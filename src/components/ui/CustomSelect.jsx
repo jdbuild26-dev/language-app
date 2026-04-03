@@ -63,7 +63,7 @@ export default function CustomSelect({
         type="button"
         onClick={() => !disabled && setOpen((v) => !v)}
         className={cn(
-          "w-full h-12 flex items-center justify-between px-3 pr-8 rounded-lg border text-sm font-medium transition-colors outline-none focus-visible:ring-2 focus-visible:ring-blue-500/30",
+          "w-full h-12 flex items-center justify-between px-3 pr-8 rounded-lg border font-sans text-base md:text-lg leading-7 font-medium transition-colors outline-none focus-visible:ring-2 focus-visible:ring-blue-500/30",
           "bg-white dark:bg-slate-900",
           "border-slate-200 dark:border-slate-700",
           isCorrect &&
@@ -152,7 +152,7 @@ export default function CustomSelect({
                     setOpen(false);
                   }}
                   className={cn(
-                    "relative mx-1.5 flex items-center justify-between px-3 py-2.5 mt-1 rounded-lg cursor-pointer text-sm font-medium select-none border",
+                    "relative mx-1.5 flex items-center justify-between px-3 py-2.5 mt-1 rounded-lg cursor-pointer font-sans text-base md:text-lg leading-7 font-medium select-none border",
                     isWrongSelectedOption
                       ? "border-red-300 dark:border-red-700"
                       : isCorrectOption
