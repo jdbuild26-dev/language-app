@@ -28,6 +28,10 @@ export default function AssignButton({
   // We check for 'teacher' role (case-insensitive)
   if (role?.toLowerCase() !== "teacher") return null;
 
+  const handleInterruption = (e: React.UIEvent) => {
+    e.stopPropagation();
+  };
+
   return (
     <>
       <button
@@ -36,7 +40,13 @@ export default function AssignButton({
           e.stopPropagation();
           setIsModalOpen(true);
         }}
-        className={`absolute top-3 right-3 z-20 flex items-center gap-1.5 px-3 py-1.5 
+        onPointerDown={handleInterruption}
+        onPointerUp={handleInterruption}
+        onMouseDown={handleInterruption}
+        onMouseUp={handleInterruption}
+        onClickCapture={handleInterruption}
+        onPointerDownCapture={handleInterruption}
+        className={`absolute top-3 right-3 z-30 flex items-center gap-1.5 px-3 py-1.5 
           bg-sky-500 hover:bg-sky-600 text-white text-xs font-bold rounded-full 
           shadow-lg shadow-sky-500/30 transition-all active:scale-95 
           group/assign border border-sky-400 opacity-0 group-hover:opacity-100 

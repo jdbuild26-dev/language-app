@@ -51,7 +51,7 @@ export default function CarouselCard({
   );
 
   const CardWithAssign = (
-    <div className="relative group/card h-full">
+    <div className="relative group h-full">
       <AssignButton 
         exerciseType="vocabulary"
         exerciseSlug={to || title}

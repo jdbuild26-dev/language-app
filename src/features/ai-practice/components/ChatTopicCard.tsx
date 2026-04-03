@@ -53,7 +53,7 @@ export default function ChatTopicCard({ topic }) {
         exerciseType="practice"
         exerciseSlug={topic.slug}
         exerciseTitle={topic.title}
-        className="opacity-100! top-4 right-4" 
+        className="top-4 right-4" 
       />
       {/* Image/Icon Header */}
       <div className="relative h-36 bg-gradient-to-br from-sky-50 to-indigo-100 dark:from-slate-700 dark:to-slate-600 flex items-center justify-center overflow-hidden">
