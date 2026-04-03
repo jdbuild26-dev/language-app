@@ -1,6 +1,7 @@
 import React from "react";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
+import AssignButton from "@/components/shared/AssignButton";
 
 export default function CarouselCard({
   title,
@@ -49,13 +50,23 @@ export default function CarouselCard({
     </div>
   );
 
-  if (to) {
-    return (
-      <Link href={to} className="block h-full">
-        {CardContent}
-      </Link>
-    );
-  }
+  const CardWithAssign = (
+    <div className="relative group h-full">
+      <AssignButton 
+        exerciseType="vocabulary"
+        exerciseSlug={to || title}
+        exerciseTitle={title}
+        className="top-3 right-3"
+      />
+      {to ? (
+        <Link href={to} className="block h-full">
+          {CardContent}
+        </Link>
+      ) : (
+        CardContent
+      )}
+    </div>
+  );
 
-  return CardContent;
+  return CardWithAssign;
 }

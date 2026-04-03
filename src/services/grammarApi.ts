@@ -31,7 +31,7 @@ export async function fetchGrammarNoteContent(noteId) {
  * Custom hook to manage grammar notes state
  */
 export function useGrammarNotes() {
-  const [notes, setNotes] = useState([]);
+  const [notes, setNotes] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
