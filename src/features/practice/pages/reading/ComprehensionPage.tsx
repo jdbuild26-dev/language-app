@@ -8,6 +8,7 @@ import FeedbackBanner from "@/components/ui/FeedbackBanner";
 import { getFeedbackMessage } from "@/utils/feedbackMessages";
 import { loadMockCSV } from "@/utils/csvLoader";
 import PracticeOptions from "@/components/ui/PracticeOptions";
+import { Languages } from "lucide-react";
 
 import { useLanguage } from "@/contexts/LanguageContext";
 
@@ -24,7 +25,10 @@ type ComprehensionQuestion = {
 
 export default function ComprehensionPage() {
   const handleExit = usePracticeExit();
-  const { learningLang, knownLang } = useLanguage();
+  const { learningLang = "", knownLang = "" } = useLanguage() as {
+    learningLang?: string;
+    knownLang?: string;
+  };
 
   const [questions, setQuestions] = useState<ComprehensionQuestion[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -42,9 +46,11 @@ export default function ComprehensionPage() {
         setIsLoading(true);
         const data = await loadMockCSV("practice/reading/comprehension.csv", {
           learningLang,
-          knownLang
+          knownLang,
         });
-        setQuestions(Array.isArray(data) ? (data as ComprehensionQuestion[]) : []);
+        setQuestions(
+          Array.isArray(data) ? (data as ComprehensionQuestion[]) : [],
+        );
       } catch (error) {
         console.error("Error loading mock data:", error);
       } finally {
@@ -53,7 +59,6 @@ export default function ComprehensionPage() {
     };
     fetchData();
   }, [learningLang, knownLang]);
-
 
   const currentQuestion = questions[currentIndex];
   const timerDuration = currentQuestion?.timeLimitSeconds || 60;
@@ -117,7 +122,9 @@ export default function ComprehensionPage() {
   if (questions.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-slate-50 dark:bg-slate-900">
-        <p className="text-xl text-slate-600 dark:text-slate-400">No questions available.</p>
+        <p className="text-xl text-slate-600 dark:text-slate-400">
+          No questions available.
+        </p>
         <button
           onClick={() => handleExit()}
           className="mt-4 rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
@@ -131,7 +138,6 @@ export default function ComprehensionPage() {
   const progress =
     questions.length > 0 ? ((currentIndex + 1) / questions.length) * 100 : 0;
 
-
   return (
     <>
       <PracticeGameLayout
@@ -139,8 +145,12 @@ export default function ComprehensionPage() {
         questionTypeFr="Compréhension de lecture"
         questionTypeEn="Reading Comprehension"
         localizedInstruction={currentQuestion?.localizedInstruction}
-        instructionFr={currentQuestion?.instructionFr || "Lisez le passage et répondez"}
-        instructionEn={currentQuestion?.instructionEn || "Read the passage and answer"}
+        instructionFr={
+          currentQuestion?.instructionFr || "Lisez le passage et répondez"
+        }
+        instructionEn={
+          currentQuestion?.instructionEn || "Read the passage and answer"
+        }
         progress={progress}
         isGameOver={isCompleted}
         score={score}
@@ -160,24 +170,31 @@ export default function ComprehensionPage() {
             : "Submit Answer"
         }
         timerValue={timerString}
-        feedbackTone={showFeedback ? (isCorrect ? "success" : "error") : "neutral"}
+        feedbackTone={
+          showFeedback ? (isCorrect ? "success" : "error") : "neutral"
+        }
       >
-        <div className="flex flex-col md:flex-row gap-3 p-3 mx-auto w-full flex-1 pb-[108px]">
+        <div className="practice-reading-page-shell flex flex-col md:flex-row gap-3 p-3 mx-auto overflow-hidden">
           {/* Left Column - Passage */}
-          <div className="flex-1 bg-white dark:bg-slate-800 p-8 pb-24 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 flex flex-col">
+          <div className="flex-1 min-h-0 bg-white dark:bg-slate-800 p-5 md:p-8 md:pb-24 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 flex flex-col overflow-hidden">
             <p className="text-sm font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-4">
               PASSAGE
             </p>
-            <p className="text-base leading-relaxed text-slate-600 dark:text-slate-300">
-              {currentQuestion?.passage}
-            </p>
+            <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar pr-1">
+              <p className="practice-reading-option-text font-medium text-slate-700 dark:text-slate-200">
+                {currentQuestion?.passage}
+              </p>
+            </div>
           </div>
 
           {/* Right Column - Question & Options */}
-          <div className="flex-1 flex flex-col dark:bg-slate-900 rounded-2xl border border-slate-200 bg-white dark:border-slate-700 p-8 pb-24 gap-5 overflow-y-auto">
+          <div className="flex-1 min-h-0 flex flex-col dark:bg-slate-900 rounded-2xl border border-slate-200 bg-white dark:border-slate-700 p-5 md:p-8 md:pb-24 gap-5 overflow-y-auto">
             {/* Question */}
-            <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100 mb-6">
-              {currentQuestion?.question}
+            <h3 className="mb-2 flex items-start gap-2">
+              <Languages className="w-5 h-5 text-blue-500 shrink-0 mt-1" />
+              <span className="practice-reading-option-text font-medium">
+                {currentQuestion?.question}
+              </span>
             </h3>
 
             {/* Options */}

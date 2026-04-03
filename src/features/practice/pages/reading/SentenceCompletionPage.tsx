@@ -130,9 +130,9 @@ export default function SentenceCompletionPage() {
         }
         timerValue={timerString}
       >
-        <div className="flex flex-col md:flex-row gap-3 p-3 md:p-4 mx-auto w-full flex-1 pb-[108px]">
+        <div className="practice-reading-page-shell flex flex-col md:flex-row gap-3 p-3 md:p-4 mx-auto min-h-0 overflow-hidden">
           {/* Left Column - Passage */}
-          <div className="flex-1 bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 p-6 md:p-8">
+          <div className="flex-1 min-h-0 bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 p-5 md:p-8 overflow-y-auto custom-scrollbar">
             <p className="text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-4">
               PASSAGE
             </p>
@@ -157,7 +157,7 @@ export default function SentenceCompletionPage() {
                           <button
                             key={index}
                             onClick={() => handleOptionSelect(index)}
-                            className="flex-shrink-0 w-64 snap-center p-3 rounded-xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm text-left shadow-sm active:scale-[0.98] transition-all"
+                            className="flex-shrink-0 w-[240px] sm:w-64 snap-center p-3 rounded-xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm text-left shadow-sm active:scale-[0.98] transition-all"
                           >
                             <div className="flex gap-2 items-start">
                               <span className="flex-shrink-0 w-5 h-5 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-[10px] font-bold text-slate-500 border border-slate-200 dark:border-slate-600">
@@ -212,7 +212,7 @@ export default function SentenceCompletionPage() {
           <div className="hidden lg:block w-px bg-cyan-400 dark:bg-cyan-500 self-stretch" />
 
           {/* Right Column - Question & Options (Hidden on Mobile) */}
-          <div className="hidden lg:block flex-1 lg:max-w-md overflow-y-auto">
+          <div className="hidden lg:block flex-1 lg:max-w-md min-h-0 overflow-y-auto">
             <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6 md:p-8">
               {/* Question */}
               <h3 className="text-base md:text-lg font-bold text-slate-800 dark:text-slate-100 mb-6">
@@ -286,6 +286,7 @@ export default function SentenceCompletionPage() {
       {showFeedback && (
         <FeedbackBanner
           isCorrect={isCorrect}
+          feedbackTone={isCorrect ? "success" : "error"}
           correctAnswer={
             !isCorrect
               ? currentQuestion.options[currentQuestion.correctIndex]

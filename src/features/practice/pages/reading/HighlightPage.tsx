@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import { usePracticeExit } from "@/hooks/usePracticeExit";
 import { useExerciseTimer } from "@/hooks/useExerciseTimer";
 import { useTextToSpeech } from "@/hooks/useTextToSpeech";
-import { Loader2, Volume2 } from "lucide-react";
+import { Loader2, Volume2, Languages } from "lucide-react";
 import { loadMockCSV } from "@/utils/csvLoader";
 import { cn } from "@/lib/utils";
 import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
@@ -157,13 +157,16 @@ export default function HighlightPage() {
         isCorrect={isCorrect}
         correctAnswer={!isCorrect ? currentQuestion.correctWord : null}
         feedbackMessage={feedbackMessage}
-        feedbackTone={showFeedback ? (isCorrect ? "success" : "error") : "neutral"}
+        feedbackTone={
+          showFeedback ? (isCorrect ? "success" : "error") : "neutral"
+        }
       >
-        <div className="flex flex-col items-center w-full max-w-2xl mx-auto px-4 py-6 pb-[108px]">
+        <div className="flex flex-col items-center w-full max-w-2xl mx-auto px-4 py-6 pb-[100px]">
           {/* Question */}
           <div className="w-full bg-gradient-to-r from-emerald-500 to-teal-600 rounded-2xl p-6 mb-6 shadow-lg">
-            <p className="text-lg md:text-xl text-white font-semibold text-center">
-              {currentQuestion?.question}
+            <p className="text-lg md:text-xl text-white font-semibold text-center flex items-center justify-center gap-2">
+              <Languages className="w-5 h-5 text-blue-100 shrink-0" />
+              <span>{currentQuestion?.question}</span>
             </p>
           </div>
 

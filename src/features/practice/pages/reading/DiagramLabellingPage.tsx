@@ -165,9 +165,9 @@ export default function DiagramLabellingPage() {
       feedbackMessage={feedbackMessage}
       disableContentScroll={true}
     >
-      <div className="flex flex-1 min-h-0 w-full flex-col md:flex-row gap-3 p-2 md:p-3 mx-auto overflow-hidden pb-[108px]">
+      <div className="practice-reading-page-shell flex min-h-0 w-full flex-col md:flex-row gap-3 p-2 md:p-3 mx-auto overflow-hidden">
         {/* Left Column: Reading Passage */}
-        <div className="flex-1 max-h-[570px] bg-white dark:bg-slate-800 p-6 pb-8 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 flex flex-col overflow-y-auto custom-scrollbar">
+        <div className="flex-1 min-h-0 md:max-h-[570px] bg-white dark:bg-slate-800 p-5 md:p-6 pb-8 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 flex flex-col overflow-y-auto custom-scrollbar">
           <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-700 pb-4">
             <h2 className="text-base font-bold text-slate-500 dark:text-slate-300 uppercase tracking-wider">
               {PASSAGE_TITLE}
@@ -180,14 +180,14 @@ export default function DiagramLabellingPage() {
           </div>
         </div>
         {/* Right Column: Diagram + Dropdowns */}
-        <div className="flex-1 max-h-[570px] flex flex-col justify-start dark:bg-slate-900 rounded-2xl border border-slate-200 bg-white dark:border-slate-700 p-4 pb-8 overflow-y-auto custom-scrollbar">
+        <div className="flex-1 min-h-0 md:max-h-[570px] flex flex-col justify-start dark:bg-slate-900 rounded-2xl border border-slate-200 bg-white dark:border-slate-700 p-4 pb-8 overflow-y-auto custom-scrollbar">
           <div className="px-2 space-y-4 py-2">
             {/* Card 1: Diagram Image */}
             <div className="bg-white dark:bg-slate-900 rounded-xl p-4 border border-slate-200 dark:border-slate-700 flex justify-center items-center shadow-sm">
               <img
                 src={eggDiagram}
                 alt="Egg Diagram"
-                className="max-h-[280px] w-auto object-contain"
+                className="max-h-[38vh] md:max-h-[280px] w-auto object-contain"
               />
             </div>
 
@@ -234,7 +234,7 @@ export default function DiagramLabellingPage() {
                         disabled={showFeedback}
                         isCorrect={isRight}
                         isWrong={isWrong}
-                        className="flex-1 min-w-0"
+                        className="flex-1 min-w-0 practice-reading-select"
                       />
                     </div>
                   );

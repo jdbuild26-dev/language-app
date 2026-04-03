@@ -20,7 +20,43 @@ import { cn } from "@/lib/utils";
 import { useAuth } from "@clerk/nextjs";
 import { completeAssignment } from "@/services/assignmentsApi";
 
-function AssignmentIdSync({ onChange }) {
+type FeedbackTone = "neutral" | "success" | "error" | "partial";
+
+type PracticeGameLayoutProps = {
+  questionType?: string;
+  questionTypeFr?: string;
+  questionTypeEn?: string;
+  instructionFr?: string;
+  instructionEn?: string;
+  localizedInstruction?: string;
+  progress?: number;
+  isGameOver?: boolean;
+  score?: number;
+  totalQuestions?: number;
+  onExit?: () => void;
+  onNext?: () => void;
+  onRestart?: () => void;
+  isSubmitEnabled?: boolean;
+  showSubmitButton?: boolean;
+  submitLabel?: string;
+  disableContentScroll?: boolean;
+  timerValue?: string;
+  currentQuestionIndex?: number;
+  questionCounterValue?: number;
+  showFeedback?: boolean;
+  isCorrect?: boolean;
+  feedbackTone?: FeedbackTone;
+  feedbackMessage?: string;
+  correctAnswer?: React.ReactNode;
+  customEndGameContent?: React.ReactNode;
+  children?: React.ReactNode;
+};
+
+function AssignmentIdSync({
+  onChange,
+}: {
+  onChange: (value: string | null) => void;
+}) {
   const searchParams = useSearchParams();
 
   useEffect(() => {
@@ -35,15 +71,13 @@ function AssignmentIdSync({ onChange }) {
  */
 export default function PracticeGameLayout({
   questionType,
-  questionTypeFr,
-  questionTypeEn,
   instructionFr,
   instructionEn,
   localizedInstruction,
-  progress,
-  isGameOver,
-  score,
-  totalQuestions,
+  progress = 0,
+  isGameOver = false,
+  score = 0,
+  totalQuestions = 0,
   onExit,
   onNext,
   onRestart,
@@ -51,7 +85,7 @@ export default function PracticeGameLayout({
   showSubmitButton = true,
   submitLabel = "Submit Answer",
   disableContentScroll = false,
-  timerValue,
+  timerValue = "",
   currentQuestionIndex,
   questionCounterValue,
   showFeedback = false,
@@ -63,7 +97,7 @@ export default function PracticeGameLayout({
   questionContext = "",
   customEndGameContent = null,
   children,
-}) {
+}: PracticeGameLayoutProps) {
   const [showTranslation, setShowTranslation] = useState(false);
   const [isSubmittingResult, setIsSubmittingResult] = useState(false);
   const [assignmentId, setAssignmentId] = useState<string | null>(null);
@@ -220,14 +254,21 @@ export default function PracticeGameLayout({
   const hasTranslation =
     (instructionFr && instructionEn) || (localizedInstruction && instructionEn);
 
-  const currentQ =
-    currentQuestionIndex !== undefined
-      ? currentQuestionIndex
-      : Math.round((progress / 100) * totalQuestions);
   const displayQuestionNumber =
     questionCounterValue !== undefined
       ? questionCounterValue
-      : Math.min(totalQuestions, currentQ + 1);
+      : currentQuestionIndex !== undefined
+        ? currentQuestionIndex + 1
+        : totalQuestions > 0
+          ? Math.min(
+              totalQuestions,
+              Math.max(1, Math.round((progress / 100) * totalQuestions)),
+            )
+          : 0;
+  const progressCurrent = Math.min(
+    totalQuestions,
+    Math.max(0, displayQuestionNumber),
+  );
 
   return (
     <div className="flex flex-col min-h-screen dark:bg-slate-950 overflow-hidden font-sans">
@@ -235,17 +276,21 @@ export default function PracticeGameLayout({
         <AssignmentIdSync onChange={setAssignmentId} />
       </Suspense>
       {/* ── HEADER ──────────────────────────────────────────────────────────── */}
-      <header className="shrink-0 flex flex-col h-20 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 z-10">
+      <header className="shrink-0 flex flex-col min-h-[68px] sm:min-h-[74px] lg:min-h-20 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 z-10">
         {/* Row 1: Speaker | Title + Lang icon | Settings */}
-        <div className="relative flex-1 flex items-center px-3 md:px-5 lg:px-6">
+        <div className="relative flex-1 flex items-center px-3 py-2 sm:px-4 sm:py-2.5 lg:px-6">
           {/* Speaker icon — left */}
-          <div className="flex items-center shrink-0 w-8 md:w-12 z-10">
-            <img src="/favicon.svg" alt="" className="w-5 h-5 md:w-7 md:h-7" />
+          <div className="flex items-center shrink-0 w-7 sm:w-8 lg:w-12 z-10">
+            <img
+              src="/favicon.svg"
+              alt=""
+              className="w-4 h-4 sm:w-5 sm:h-5 lg:w-7 lg:h-7"
+            />
           </div>
 
           {/* Title + Language toggle — perfectly centered */}
-          <div className="absolute inset-0 flex items-center justify-center pointer-events-none px-14 md:px-40">
-            <div className="flex items-center gap-2 pointer-events-auto">
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none px-10 sm:px-24 lg:px-40">
+            <div className="flex items-center gap-1.5 sm:gap-2 pointer-events-auto">
               <AnimatePresence mode="wait">
                 <motion.h1
                   key={instruction}
@@ -253,7 +298,7 @@ export default function PracticeGameLayout({
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: 6 }}
                   transition={{ duration: 0.18, ease: "easeInOut" }}
-                  className="text-2xl md:text-[2.05rem] font-bold text-slate-800 dark:text-white tracking-tight text-center leading-snug truncate max-w-[58vw] md:max-w-[46vw]"
+                  className="text-[13px] sm:text-base lg:text-[1.5rem] font-semibold lg:font-bold text-slate-800 dark:text-white tracking-[-0.01em] text-center leading-tight truncate max-w-[48vw] sm:max-w-[46vw] lg:max-w-[46vw]"
                 >
                   {instruction}
                 </motion.h1>
@@ -264,21 +309,21 @@ export default function PracticeGameLayout({
                   className="shrink-0 text-slate-400 hover:text-blue-500 transition-colors"
                   title="Toggle translation"
                 >
-                  <Languages className="w-4 h-4" />
+                  <Languages className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                 </button>
               )}
             </div>
           </div>
 
           {/* Top meta + controls — right */}
-          <div className="ml-auto flex items-center gap-2 shrink-0 z-10">
-            <div className="h-9 px-3 rounded-full border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 text-slate-700 dark:text-slate-200 text-sm font-semibold tabular-nums flex items-center gap-1.5">
+          <div className="ml-auto flex items-center gap-1.5 sm:gap-2 shrink-0 z-10">
+            <div className="hidden lg:flex h-9 px-3 rounded-full border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 text-slate-700 dark:text-slate-200 text-sm font-semibold tabular-nums items-center gap-1.5">
               <ListChecks className="w-4 h-4 text-blue-600 dark:text-blue-300" />
-              {displayQuestionNumber} / {totalQuestions}
+              {displayQuestionNumber}/{totalQuestions}
             </div>
 
             {timerValue && (
-              <div className="h-9 px-3 rounded-full border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 text-blue-700 dark:text-blue-300 text-sm font-semibold tabular-nums flex items-center gap-1.5">
+              <div className="hidden lg:flex h-9 px-3 rounded-full border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 text-blue-700 dark:text-blue-300 text-sm font-semibold tabular-nums items-center gap-1.5">
                 <Timer className="w-4 h-4" />
                 {timerValue}
               </div>
@@ -286,7 +331,7 @@ export default function PracticeGameLayout({
 
             <button
               type="button"
-              className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800 dark:hover:text-slate-200 transition-colors"
+              className="hidden lg:flex w-8 h-8 rounded-full items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800 dark:hover:text-slate-200 transition-colors"
               title="Settings"
             >
               <Settings className="w-4 h-4" />
@@ -295,7 +340,7 @@ export default function PracticeGameLayout({
             <button
               type="button"
               onClick={onExit}
-              className="w-9 h-9 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/70 flex items-center justify-center text-slate-500 hover:text-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 dark:text-slate-300 transition-colors"
+              className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/70 flex items-center justify-center text-slate-500 hover:text-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 dark:text-slate-300 transition-colors"
               title="Exit"
             >
               <X className="w-4 h-4" />
@@ -305,7 +350,7 @@ export default function PracticeGameLayout({
 
         {/* Row 2: Progress bar — pinned to bottom of header */}
         <ProgressBar
-          current={currentQ}
+          current={progressCurrent}
           total={totalQuestions}
           slim
           className="h-[3px] max-w-none"
@@ -315,23 +360,27 @@ export default function PracticeGameLayout({
       {/* ── CONTENT ─────────────────────────────────────────────────────────── */}
       <main
         className={cn(
-          "flex-1 overflow-y-auto flex  bg-neutral-50 flex-col",
+          "flex-1 min-h-0 overflow-y-auto overflow-x-hidden flex bg-neutral-50 flex-col",
+          showSubmitButton && !showFeedback && "pb-20 sm:pb-24 lg:pb-28",
+          showFeedback && "pb-[188px] sm:pb-[168px] lg:pb-[152px]",
           disableContentScroll ? "overflow-hidden pb-0" : "",
         )}
       >
-        <div className="w-full mx-auto flex-1 flex flex-col">{children}</div>
+        <div className="w-full mx-auto flex-1 min-h-0 flex flex-col">
+          {children}
+        </div>
       </main>
 
       {/* ── FOOTER BAR (fixed bottom, hidden when feedback is showing) ───── */}
       {showSubmitButton && !showFeedback && (
-        <div className="fixed bottom-0 left-0 right-0 h-20 bg-white/95 dark:bg-slate-900/95 backdrop-blur border-t border-slate-200 dark:border-slate-800">
-          <div className="mx-auto px-4 md:px-5 h-full flex items-center justify-end">
-            <div className="justify-self-end">
+        <div className="fixed bottom-0 left-0 right-0 h-16 sm:h-[72px] lg:h-20 bg-white/95 dark:bg-slate-900/95 backdrop-blur border-t border-slate-200 dark:border-slate-800">
+          <div className="mx-auto px-3 sm:px-4 md:px-5 h-full flex items-center justify-stretch sm:justify-end pb-[max(env(safe-area-inset-bottom,0px),0px)]">
+            <div className="w-full sm:w-auto justify-self-end">
               <button
                 onClick={onNext}
                 disabled={!isSubmitEnabled}
                 className={cn(
-                  "min-w-[132px] h-9 px-4 rounded-lg font-bold text-xs uppercase tracking-wide transition-all duration-200",
+                  "w-full sm:w-auto min-w-[120px] sm:min-w-[128px] lg:min-w-[132px] h-9 sm:h-9.5 lg:h-10 px-4 rounded-lg font-bold text-[11px] sm:text-xs uppercase tracking-wide transition-all duration-200",
                   isSubmitEnabled
                     ? "bg-blue-600 hover:bg-blue-700 text-white"
                     : "bg-slate-200 dark:bg-slate-700 text-slate-400 dark:text-slate-500 cursor-not-allowed",
@@ -353,6 +402,7 @@ export default function PracticeGameLayout({
           message={feedbackMessage}
           onContinue={onNext}
           continueLabel={submitLabel}
+          children={null}
         />
       )}
     </div>

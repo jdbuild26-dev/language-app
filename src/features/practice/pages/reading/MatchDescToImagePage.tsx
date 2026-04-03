@@ -163,16 +163,16 @@ export default function MatchDescToImagePage() {
         feedbackMessage={feedbackMessage}
         correctAnswer={undefined}
       >
-        <div className="flex flex-1 flex-col items-center justify-center w-full gap-10 p-6 pb-[108px]">
+        <div className="practice-reading-page-shell flex flex-col items-center justify-center gap-8 md:gap-10 p-4 md:p-6">
           {/* Description Text */}
-          <div className="text-center space-y-3">
-            <h2 className="text-3xl md:text-4xl font-bold text-slate-800 dark:text-white leading-relaxed">
+          <div className="text-center space-y-3 w-full max-w-4xl">
+            <h2 className="text-xl sm:text-2xl md:text-4xl font-bold text-slate-800 dark:text-white leading-relaxed break-words">
               {currentQuestion.description}
             </h2>
           </div>
 
           {/* Image Grid */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 lg:gap-8 w-full max-w-[90rem] px-4 md:px-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-5 lg:gap-8 w-full max-w-[90rem] px-1 sm:px-4 md:px-4">
             {(currentQuestion.images || []).map((image) => {
               const isSelected = selectedImageId === image.id;
               const isImageCorrect = image.isCorrect;
