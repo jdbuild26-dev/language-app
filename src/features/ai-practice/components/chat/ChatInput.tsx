@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { Send, Lightbulb, MoreVertical, BarChart2, FileDown, LogOut } from "lucide-react";
 import AudioRecorder from "@/features/ai-practice/components/AudioRecorder";
 
@@ -29,6 +29,8 @@ export default function ChatInput({
   const [isLoadingHint, setIsLoadingHint] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const [isMicActive, setIsMicActive] = useState(false);
+  const [shouldStopMic, setShouldStopMic] = useState(false);
 
   // Close menu on outside click
   useEffect(() => {
@@ -55,7 +57,16 @@ export default function ChatInput({
     if (message.trim()) {
       onSend?.(message);
       setMessage("");
+      // Stop any active mic session so transcript doesn't repopulate the cleared input
+      if (isMicActive) setShouldStopMic(true);
     }
+  };
+
+  const handleManualInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setMessage(e.target.value);
+    // If user manually edits while mic is active, stop the mic
+    // so the transcript doesn't override their typing/backspace
+    if (isMicActive) setShouldStopMic(true);
   };
 
   const handleHintClick = async () => {
@@ -141,6 +152,12 @@ export default function ChatInput({
             onTranscriptChange={(transcript) => {
               if (transcript) setMessage(transcript);
             }}
+            onRecordingStateChange={(active) => {
+              setIsMicActive(active);
+              // Reset the stop signal once recorder has acknowledged it
+              if (!active) setShouldStopMic(false);
+            }}
+            shouldStop={shouldStopMic}
             disabled={disabled}
           />
 
@@ -148,7 +165,7 @@ export default function ChatInput({
           <input
             type="text"
             value={message}
-            onChange={(e) => setMessage(e.target.value)}
+            onChange={handleManualInput}
             placeholder={disabled ? "AI is thinking..." : "Type your message in French..."}
             disabled={disabled}
             className={`flex-1 px-4 py-2.5 bg-gray-100 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent transition-all ${

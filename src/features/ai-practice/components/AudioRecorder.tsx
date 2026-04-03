@@ -1,78 +1,95 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Mic, Square, Loader2 } from "lucide-react";
+import { Mic, Square } from "lucide-react";
 import useSpeechRecognition from "@/hooks/useSpeechRecognition";
+
+interface AudioRecorderProps {
+  onRecordingComplete?: (blob: Blob) => void;
+  onTranscriptChange?: (transcript: string) => void;
+  onRecordingStateChange?: (isRecording: boolean) => void;
+  disabled?: boolean;
+  /** External signal to stop recording (e.g. after send) */
+  shouldStop?: boolean;
+}
 
 export default function AudioRecorder({
   onRecordingComplete,
   onTranscriptChange,
+  onRecordingStateChange,
   disabled,
-}) {
+  shouldStop,
+}: AudioRecorderProps) {
   const [isRecording, setIsRecording] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
-  const mediaRecorderRef = useRef(null);
-  const chunksRef = useRef([]);
-  const timerRef = useRef(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const chunksRef = useRef<Blob[]>([]);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  // Ref mirrors isRecording so effects/handlers always see the latest value
+  const isRecordingRef = useRef(false);
 
-  // Use our new hook
-  const {
-    startListening,
-    stopListening,
-    transcript,
-    isListening: isSpeechListening,
-    error: speechError,
-  } = useSpeechRecognition();
+  const { startListening, stopListening, transcript, resetTranscript } =
+    useSpeechRecognition();
 
-  // Propagate transcript changes to parent
+  // Only propagate transcript to parent while actively recording
   useEffect(() => {
-    if (onTranscriptChange) {
+    if (isRecordingRef.current && onTranscriptChange) {
       onTranscriptChange(transcript);
     }
   }, [transcript, onTranscriptChange]);
 
+  // React to external stop signal (e.g. send button clicked)
+  useEffect(() => {
+    if (shouldStop && isRecordingRef.current) {
+      stopRecording();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [shouldStop]);
+
+  // Cleanup on unmount
   useEffect(() => {
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
-      if (mediaRecorderRef.current && isRecording) {
-        mediaRecorderRef.current.stop();
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach((track) => track.stop());
       }
     };
-  }, [isRecording]);
+  }, []);
 
   const startRecording = async () => {
+    if (disabled) return;
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      streamRef.current = stream;
 
-      mediaRecorderRef.current = new MediaRecorder(stream);
+      const recorder = new MediaRecorder(stream);
+      mediaRecorderRef.current = recorder;
       chunksRef.current = [];
 
-      mediaRecorderRef.current.ondataavailable = (e) => {
-        if (e.data.size > 0) {
-          chunksRef.current.push(e.data);
-        }
+      recorder.ondataavailable = (e) => {
+        if (e.data.size > 0) chunksRef.current.push(e.data);
       };
 
-      mediaRecorderRef.current.onstop = () => {
+      recorder.onstop = () => {
         const blob = new Blob(chunksRef.current, { type: "audio/webm" });
-        onRecordingComplete(blob);
-        const tracks = stream.getTracks();
-        tracks.forEach((track) => track.stop());
+        onRecordingComplete?.(blob);
+        stream.getTracks().forEach((track) => track.stop());
+        streamRef.current = null;
       };
 
-      mediaRecorderRef.current.start();
+      recorder.start();
 
-      // Start speech recognition concurrently
+      // Reset stale transcript before listening
+      resetTranscript();
+      isRecordingRef.current = true;
+      setIsRecording(true);
+      onRecordingStateChange?.(true);
+      setRecordingTime(0);
       startListening();
 
-      setIsRecording(true);
-      setRecordingTime(0);
-
       timerRef.current = setInterval(() => {
-        setRecordingTime((prev) => {
-          // console.log("Timer tick:", prev + 1); // Commented out to avoid spam, but can uncomment if needed
-          return prev + 1;
-        });
+        setRecordingTime((prev) => prev + 1);
       }, 1000);
     } catch (err) {
       console.error("Error accessing microphone:", err);
@@ -81,18 +98,21 @@ export default function AudioRecorder({
   };
 
   const stopRecording = () => {
-    if (mediaRecorderRef.current && isRecording) {
+    if (!isRecordingRef.current) return;
+
+    if (mediaRecorderRef.current) {
       mediaRecorderRef.current.stop();
-
-      // Stop speech recognition
-      stopListening();
-
-      setIsRecording(false);
-      clearInterval(timerRef.current);
     }
+    stopListening();
+    resetTranscript();
+
+    isRecordingRef.current = false;
+    setIsRecording(false);
+    onRecordingStateChange?.(false);
+    if (timerRef.current) clearInterval(timerRef.current);
   };
 
-  const formatTime = (seconds) => {
+  const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${mins}:${secs.toString().padStart(2, "0")}`;
