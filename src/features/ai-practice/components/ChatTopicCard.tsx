@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { MessageCircle, Clock, Star } from "lucide-react";
+import AssignButton from "@/components/shared/AssignButton";
 
 // Difficulty badge colors
 const difficultyColors = {
@@ -44,10 +45,16 @@ export default function ChatTopicCard({ topic }) {
   };
 
   return (
-    <button
+    <div
       onClick={handleStart}
-      className="group text-left w-full bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-700 overflow-hidden hover:shadow-lg hover:border-sky-200 dark:hover:border-sky-800 transition-all duration-300"
+      className="group relative cursor-pointer text-left w-full bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-700 overflow-hidden hover:shadow-lg hover:border-sky-200 dark:hover:border-sky-800 transition-all duration-300"
     >
+      <AssignButton
+        exerciseType="practice"
+        exerciseSlug={topic.slug}
+        exerciseTitle={topic.title}
+        className="opacity-100! top-4 right-4" 
+      />
       {/* Image/Icon Header */}
       <div className="relative h-36 bg-gradient-to-br from-sky-50 to-indigo-100 dark:from-slate-700 dark:to-slate-600 flex items-center justify-center overflow-hidden">
         <div className="absolute -top-6 -right-6 w-24 h-24 bg-sky-200/50 dark:bg-sky-700/30 rounded-full" />
@@ -96,6 +103,6 @@ export default function ChatTopicCard({ topic }) {
           Start Conversation
         </div>
       </div>
-    </button>
+    </div>
   );
 }

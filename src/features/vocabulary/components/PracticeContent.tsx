@@ -18,6 +18,7 @@ import {
   Edit3,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import AssignButton from "@/components/shared/AssignButton";
 
 // Tab configuration
 const tabs = [
@@ -295,6 +296,12 @@ export default function PracticeContent() {
                 activity.shadow,
               )}
             >
+              <AssignButton 
+                exerciseType="practice"
+                exerciseSlug={activity.id}
+                exerciseTitle={activity.name}
+                className="top-2 right-2"
+              />
               {/* Decorative Circle */}
               <div
                 className={cn(

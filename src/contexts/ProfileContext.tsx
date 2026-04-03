@@ -4,7 +4,15 @@ import React, { createContext, useContext, useState, useEffect, useCallback } fr
 import { useAuth, useUser } from "@clerk/nextjs";
 import { checkOnboardingStatus } from "@/services/userApi";
 
-const ProfileContext = createContext();
+const ProfileContext = createContext<any>({
+    profiles: [],
+    activeProfile: null,
+    isLoading: true,
+    switchProfile: () => {},
+    refreshProfiles: async () => {},
+    role: null,
+    language: null,
+});
 
 export const ProfileProvider = ({ children }) => {
     const { isLoaded, user } = useUser();
@@ -60,7 +68,7 @@ export const ProfileProvider = ({ children }) => {
         }
     }, [isLoaded, user, refreshProfiles]);
 
-    const switchProfile = (profile) => {
+    const switchProfile = (profile: any) => {
         setActiveProfile(profile);
         localStorage.setItem("active_profile_id", profile.id);
 
@@ -77,8 +85,8 @@ export const ProfileProvider = ({ children }) => {
         isLoading,
         switchProfile,
         refreshProfiles,
-        role: activeProfile?.role || null,
-        language: activeProfile?.language || null,
+        role: (activeProfile as any)?.role || null,
+        language: (activeProfile as any)?.language || null,
     };
 
     return (
