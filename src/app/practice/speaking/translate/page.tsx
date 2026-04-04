@@ -19,13 +19,21 @@ import { cn } from "@/lib/utils";
 import { loadMockCSV } from "@/utils/csvLoader";
 import WritingFeedbackResult from "@/components/WritingFeedbackResult";
 import { useTextToSpeech } from "@/hooks/useTextToSpeech";
+import { motion, AnimatePresence } from "framer-motion";
+
+interface Question {
+  id: number;
+  Sentence: string;
+  Translation: string;
+  Scenario: string;
+}
 
 export default function TranslateBySpeakingPage() {
   const handleExit = usePracticeExit();
   const { speak } = useTextToSpeech();
 
   // Game State
-  const [questions, setQuestions] = useState([]);
+  const [questions, setQuestions] = useState<Question[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [score, setScore] = useState(0);
   const [isGameOver, setIsGameOver] = useState(false);
@@ -42,8 +50,8 @@ export default function TranslateBySpeakingPage() {
 
   // Initialize Speech Recognition
   useEffect(() => {
-    if (typeof window !== "undefined" && (window.SpeechRecognition || (window as any).webkitSpeechRecognition)) {
-      const SpeechRecognition = window.SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (typeof window !== "undefined" && ((window as any).SpeechRecognition || (window as any).webkitSpeechRecognition)) {
+      const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
       recognitionRef.current = new SpeechRecognition();
       recognitionRef.current.continuous = true;
       recognitionRef.current.lang = "fr-FR";
@@ -77,7 +85,7 @@ export default function TranslateBySpeakingPage() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const data = await loadMockCSV("practice/speaking/speak_translate.csv");
+        const data = await loadMockCSV("practice/speaking/speak_translate.csv") as Question[];
         setQuestions(data);
       } catch (error) {
         console.error("Error fetching speaking data:", error);
@@ -280,7 +288,12 @@ export default function TranslateBySpeakingPage() {
         {/* AI Evaluation Result Overlay */}
         {evaluation && (
           <div className="w-full animate-in slide-in-from-bottom-8 duration-700">
-            <WritingFeedbackResult evaluation={evaluation} mode="speaking" />
+            <WritingFeedbackResult 
+              evaluation={evaluation} 
+              mode="speaking" 
+              userText={spokenText}
+              onContinue={handleNext}
+            />
           </div>
         )}
       </div>

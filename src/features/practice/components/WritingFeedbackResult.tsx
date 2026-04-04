@@ -13,16 +13,25 @@ interface WritingFeedbackResultProps {
     mode?: "writing" | "speaking" | "interactive";
     userText?: string;
     originalImage?: string;
+    onContinue?: () => void;
 }
 
 export default function WritingFeedbackResult({ 
     evaluation, 
     mode = "writing",
     userText = "",
-    originalImage
+    originalImage,
+    onContinue
 }: WritingFeedbackResultProps) {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const { speak, isSpeaking } = useTextToSpeech();
+
+    // Auto-open modal when evaluation is provided
+    React.useEffect(() => {
+        if (evaluation) {
+            setIsModalOpen(true);
+        }
+    }, [evaluation]);
 
     if (!evaluation) return null;
 
@@ -131,6 +140,7 @@ export default function WritingFeedbackResult({
             <EnhancedFeedbackModal 
                 isOpen={isModalOpen}
                 onClose={() => setIsModalOpen(false)}
+                onContinue={onContinue}
                 data={evaluation}
                 mode={mode}
                 userText={userText}

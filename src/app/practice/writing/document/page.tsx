@@ -238,25 +238,16 @@ export default function WriteDocumentPage() {
           {/* AI Evaluation Result Overlay */}
           {evaluation && (
             <div className="mt-8 w-full animate-in slide-in-from-bottom-8 duration-700">
-              <WritingFeedbackResult evaluation={evaluation as any} mode="writing" userText={userAnswer} />
+              <WritingFeedbackResult 
+                evaluation={evaluation as any} 
+                mode="writing" 
+                userText={userAnswer} 
+                onContinue={handleContinue}
+              />
             </div>
           )}
         </div>
       </PracticeGameLayout>
-
-      {/* Feedback Banner */}
-      {showFeedback && (
-        <FeedbackBanner
-          isCorrect={isCorrect}
-          onContinue={handleContinue}
-          message={feedbackMessage}
-          feedbackTone={isCorrect ? "positive" : "neutral"}
-          correctAnswer={currentQuestion?.sampleAnswer}
-          continueLabel={
-            currentIndex + 1 === questions.length ? "FINISH" : "CONTINUE"
-          }
-        />
-      )}
     </>
   );
 }

@@ -15,6 +15,7 @@ import {
   RefreshCcw
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
 import { usePracticeExit } from "@/hooks/usePracticeExit";
 import { cn } from "@/lib/utils";
@@ -54,7 +55,7 @@ export default function InteractivePracticePage() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const data = await loadMockCSV("practice/writing/writing_conversation.csv");
+        const data = await loadMockCSV("practice/writing/writing_conversation.csv") as any[];
         setQuestions(data);
         if (data.length > 0) {
           const firstExchanges = JSON.parse(typeof data[0].exchanges === 'string' ? data[0].exchanges : JSON.stringify(data[0].exchanges));
@@ -118,7 +119,7 @@ export default function InteractivePracticePage() {
   const handleAnalyzeConversation = async () => {
     setIsEvaluating(true);
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"}/api/practice/analyze-conversation`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"}/api/practice/analyze-writing-conversation`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -244,12 +245,16 @@ export default function InteractivePracticePage() {
               className="pt-8 border-t border-slate-200 dark:border-slate-800"
             >
               <div className="text-center mb-8">
-                <Badge className="bg-indigo-600 hover:bg-indigo-600 text-white font-black px-6 py-2 rounded-full uppercase tracking-tighter mb-4 shadow-xl">
+                <Badge variant="default" className="bg-indigo-600 hover:bg-indigo-600 text-white font-black px-6 py-2 rounded-full uppercase tracking-tighter mb-4 shadow-xl">
                    Conversation Complete
                 </Badge>
                 <h3 className="text-2xl font-black text-slate-900 dark:text-white">Professional Review Performance</h3>
               </div>
-              <WritingFeedbackResult evaluation={evaluation} mode="interactive" />
+              <WritingFeedbackResult 
+                evaluation={evaluation} 
+                mode="interactive" 
+                onContinue={() => window.location.reload()}
+              />
               
               <div className="flex justify-center mt-8 pb-8">
                 <Button 

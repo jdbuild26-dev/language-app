@@ -280,6 +280,7 @@ export default function WriteImagePage() {
                 mode="writing"
                 userText={userAnswer}
                 originalImage={currentQuestion?.image}
+                onContinue={handleContinue}
               />
             </div>
           )}
@@ -287,20 +288,6 @@ export default function WriteImagePage() {
           {/* Sample answer side (only shown if needed, but the Result Modal handles it now) */}
         </div>
       </PracticeGameLayout>
-
-      {/* Feedback Banner */}
-      {showFeedback && (
-        <FeedbackBanner
-          isCorrect={isCorrect}
-          onContinue={handleContinue}
-          message={feedbackMessage}
-          feedbackTone={isCorrect ? "positive" : "neutral"}
-          correctAnswer={currentQuestion?.sampleAnswer || ""}
-          continueLabel={
-            currentIndex + 1 === questions.length ? "FINISH" : "CONTINUE"
-          }
-        />
-      )}
     </>
   );
 }

@@ -65,6 +65,7 @@ export interface EnhancedAnalysisData {
 interface EnhancedFeedbackModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onContinue?: () => void;
   data: EnhancedAnalysisData | null;
   mode: "writing" | "speaking" | "interactive";
   title?: string;
@@ -75,6 +76,7 @@ interface EnhancedFeedbackModalProps {
 export default function EnhancedFeedbackModal({
   isOpen,
   onClose,
+  onContinue,
   data,
   mode,
   title = "Evaluation Result",
@@ -355,7 +357,12 @@ ${data.detailed_tweaks?.map(t => `- Original: ${t.original}\n  Corrected: ${t.co
               Download Transcript (PDF)
             </Button>
             <Button 
-              onClick={onClose}
+              onClick={() => {
+                if (onContinue) {
+                  onContinue();
+                }
+                onClose();
+              }}
               className="w-full md:w-auto min-w-[240px] h-14 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-black text-lg shadow-xl shadow-blue-100 dark:shadow-none"
             >
               Continue
