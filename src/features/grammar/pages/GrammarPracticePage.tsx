@@ -16,6 +16,8 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+import AssignButton from "@/components/shared/AssignButton";
+import { useRouter } from "next/navigation";
 
 const practiceExercises = [
   {
@@ -141,6 +143,12 @@ const practiceExercises = [
 ];
 
 export default function GrammarPracticePage() {
+  const router = useRouter();
+
+  const handleCardClick = (path: string) => {
+    router.push(path);
+  };
+
   return (
     <div className="space-y-8 pb-10">
         <div className="flex flex-col gap-2">
@@ -151,11 +159,16 @@ export default function GrammarPracticePage() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {practiceExercises.map((exercise) => (
-            <Link
+            <div
               key={exercise.id}
-              href={exercise.path}
+              onClick={() => handleCardClick(exercise.path)}
               className="group relative block cursor-pointer"
             >
+              <AssignButton 
+                exerciseType="grammar"
+                exerciseSlug={exercise.id}
+                exerciseTitle={exercise.title}
+              />
               {/* Background Gradient & Shape */}
               <div
                 className={cn(
@@ -224,7 +237,7 @@ export default function GrammarPracticePage() {
                   )}
                 </div>
               </div>
-            </Link>
+            </div>
           ))}
         </div>
       </div>
