@@ -59,11 +59,23 @@ const MOCK_QUESTIONS = [
   },
 ];
 
+interface Question {
+  id: number;
+  image: string;
+  englishDescription: string;
+  hint: string;
+  sampleAnswer: string;
+  minWords: number;
+  timeLimitSeconds: number;
+  imageUrl?: string;
+  question?: string;
+}
+
 export default function WriteImagePage() {
   const handleExit = usePracticeExit();
   const { speak, isSpeaking } = useTextToSpeech();
 
-  const [questions, setQuestions] = useState([]);
+  const [questions, setQuestions] = useState<Question[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [userAnswer, setUserAnswer] = useState("");
   const [isCompleted, setIsCompleted] = useState(false);
@@ -94,7 +106,7 @@ export default function WriteImagePage() {
   useEffect(() => {
     const fetchQuestions = async () => {
       try {
-        const data = await loadMockCSV("practice/writing/write_image.csv");
+        const data = await loadMockCSV("practice/writing/write_image.csv") as Question[];
         // Map backend keys to component keys if necessary, or update component to use backend keys
         // Backend returns: imageUrl, question, hint, sampleAnswer
         // Component expects: image, englishDescription, hint, sampleAnswer
@@ -130,7 +142,7 @@ export default function WriteImagePage() {
     }
   };
 
-  const getWordCount = (text) => {
+  const getWordCount = (text: string) => {
     return text
       .trim()
       .split(/\s+/)
@@ -138,7 +150,7 @@ export default function WriteImagePage() {
   };
 
   const handleSubmit = async () => {
-    if (showFeedback || isSubmitting) return;
+    if (showFeedback || isSubmitting || !currentQuestion) return;
 
     const result = await evaluate({
       task_type: "image",
@@ -149,11 +161,12 @@ export default function WriteImagePage() {
     });
 
     if (result) {
-      setIsCorrect(result.score >= 70);
-      setFeedbackMessage(result.feedback);
+      const finalScore = (result as any).overall_score !== undefined ? (result as any).overall_score : (result as any).score;
+      setIsCorrect(finalScore >= 70);
+      setFeedbackMessage((result as any).executive_summary || (result as any).feedback);
       setShowFeedback(true);
       setShowSample(true);
-      if (result.score >= 70) {
+      if (finalScore >= 70) {
         setScore((prev) => prev + 1);
       }
     }
@@ -261,30 +274,17 @@ export default function WriteImagePage() {
 
           {/* AI Evaluation Result */}
           {evaluation && (
-            <div className="mt-8 w-full">
-              <WritingFeedbackResult evaluation={evaluation} />
+            <div className="mt-8 w-full animate-in slide-in-from-bottom-8 duration-700">
+              <WritingFeedbackResult 
+                evaluation={evaluation as any} 
+                mode="writing"
+                userText={userAnswer}
+                originalImage={currentQuestion?.image}
+              />
             </div>
           )}
 
-          {/* Sample answer */}
-          {showSample && !evaluation && (
-            <div className="w-full bg-emerald-50 dark:bg-emerald-900/20 rounded-xl p-4 mt-4 border border-emerald-200 dark:border-emerald-800">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-emerald-700 dark:text-emerald-300 font-semibold text-sm">
-                  Sample Answer:
-                </span>
-                <button
-                  onClick={handlePlaySample}
-                  className="text-emerald-600 hover:text-emerald-700"
-                >
-                  <Volume2 className="w-4 h-4" />
-                </button>
-              </div>
-              <p className="text-sm text-emerald-700 dark:text-emerald-300 italic">
-                {currentQuestion?.sampleAnswer}
-              </p>
-            </div>
-          )}
+          {/* Sample answer side (only shown if needed, but the Result Modal handles it now) */}
         </div>
       </PracticeGameLayout>
 
@@ -294,6 +294,8 @@ export default function WriteImagePage() {
           isCorrect={isCorrect}
           onContinue={handleContinue}
           message={feedbackMessage}
+          feedbackTone={isCorrect ? "positive" : "neutral"}
+          correctAnswer={currentQuestion?.sampleAnswer || ""}
           continueLabel={
             currentIndex + 1 === questions.length ? "FINISH" : "CONTINUE"
           }
