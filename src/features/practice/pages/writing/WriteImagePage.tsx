@@ -161,9 +161,9 @@ export default function WriteImagePage() {
     });
 
     if (result) {
-      const finalScore = (result as any).overall_score !== undefined ? (result as any).overall_score : (result as any).score;
+      const finalScore = result.overall_score ?? (result as any).overall_score ?? (result as any).score ?? 0;
       setIsCorrect(finalScore >= 70);
-      setFeedbackMessage((result as any).executive_summary || (result as any).feedback);
+      setFeedbackMessage(finalScore >= 70 ? "Great work!" : "Keep practising!");
       setShowFeedback(true);
       setShowSample(true);
       if (finalScore >= 70) {

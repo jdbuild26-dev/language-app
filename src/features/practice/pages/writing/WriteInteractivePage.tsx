@@ -223,7 +223,8 @@ export default function WriteInteractivePage() {
       });
 
       if (result) {
-        if (result.score >= 70) {
+        const score = result.overall_score ?? (result as any).score ?? 0;
+        if (score >= 70) {
           setScore((prev) => prev + 1);
         }
 
@@ -232,7 +233,7 @@ export default function WriteInteractivePage() {
           const newHistory = [...prev];
           const lastEntry = newHistory[newHistory.length - 1];
           lastEntry.isEvaluating = false;
-          lastEntry.wasCorrect = result.score >= 70;
+          lastEntry.wasCorrect = score >= 70;
           lastEntry.evaluation = result;
           return newHistory;
         });
@@ -376,7 +377,7 @@ export default function WriteInteractivePage() {
                                 : "Needs Improvement"}
                             </p>
                             <p className="text-sm mb-2 opacity-90">
-                              {turn.evaluation.feedback}
+                              {turn.evaluation.executive_summary || turn.evaluation.feedback}
                             </p>
                             <div className="bg-white/50 dark:bg-black/20 p-2 rounded-lg mt-2">
                               <p className="text-xs font-semibold mb-1 opacity-80">

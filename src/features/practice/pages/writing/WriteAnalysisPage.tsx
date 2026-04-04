@@ -145,11 +145,12 @@ export default function WriteAnalysisPage() {
     });
 
     if (result) {
-      setIsCorrect(result.score >= 70);
-      setFeedbackMessage(result.feedback);
+      const score = result.overall_score ?? (result as any).score ?? 0;
+      setIsCorrect(score >= 70);
+      setFeedbackMessage(score >= 70 ? "Great work!" : "Keep practising!");
       setShowFeedback(true);
       setShowSample(true);
-      if (result.score >= 70) {
+      if (score >= 70) {
         setScore((prev) => prev + 1);
       }
     }
