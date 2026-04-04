@@ -5,7 +5,7 @@ import { CheckCircle2, AlertCircle, Info, MessageCircle, Star, Search, Volume2, 
 import { cn } from '@/lib/utils';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import EnhancedFeedbackModal, { EnhancedAnalysisData } from "./EnhancedFeedbackModal";
+import EnhancedFeedbackView, { EnhancedAnalysisData } from "./EnhancedFeedbackView";
 import { useTextToSpeech } from "@/hooks/useTextToSpeech";
 
 interface WritingFeedbackResultProps {
@@ -137,7 +137,7 @@ export default function WritingFeedbackResult({
                         </button>
                     )}
 
-            <EnhancedFeedbackModal 
+            <EnhancedFeedbackView 
                 isOpen={isModalOpen}
                 onClose={() => setIsModalOpen(false)}
                 onContinue={onContinue}
