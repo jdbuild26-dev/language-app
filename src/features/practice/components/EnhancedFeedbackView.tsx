@@ -59,6 +59,54 @@ interface EnhancedFeedbackViewProps {
   originalImage?: string;
 }
 
+// ---------------------------------------------------------------------------
+// Annotated text renderer — highlights corrections inline in the user's text
+// ---------------------------------------------------------------------------
+function renderAnnotatedText(text: string, tweaks: FeedbackTweak[]) {
+  // Build a list of replacements sorted by position of first occurrence
+  type Segment = { start: number; end: number; original: string; corrected: string };
+  const segments: Segment[] = [];
+
+  for (const tweak of tweaks) {
+    if (!tweak.original) continue;
+    const idx = text.indexOf(tweak.original);
+    if (idx !== -1) {
+      // Avoid overlapping segments
+      const overlaps = segments.some((s) => idx < s.end && idx + tweak.original.length > s.start);
+      if (!overlaps) {
+        segments.push({ start: idx, end: idx + tweak.original.length, original: tweak.original, corrected: tweak.corrected });
+      }
+    }
+  }
+
+  segments.sort((a, b) => a.start - b.start);
+
+  // Build React nodes
+  const nodes: React.ReactNode[] = [];
+  let cursor = 0;
+
+  for (const seg of segments) {
+    if (seg.start > cursor) {
+      nodes.push(<span key={cursor}>{text.slice(cursor, seg.start)}</span>);
+    }
+    nodes.push(
+      <span key={seg.start}>
+        <span className="line-through text-red-500 decoration-red-500">{seg.original}</span>
+        <span className="text-emerald-600 dark:text-emerald-400 font-semibold"> {seg.corrected}</span>
+      </span>
+    );
+    cursor = seg.end;
+  }
+
+  if (cursor < text.length) {
+    nodes.push(<span key={cursor}>{text.slice(cursor)}</span>);
+  }
+
+  // Wrap in paragraphs by splitting on newlines
+  const fullText = nodes;
+  return <p className="leading-[1.9]">{fullText}</p>;
+}
+
 export default function EnhancedFeedbackView({
   isOpen,
   onClose,
@@ -260,11 +308,11 @@ export default function EnhancedFeedbackView({
                           <button className="text-blue-600 text-sm font-bold hover:underline">Edit Content</button>
                         </div>
                         
-                        <div className="text-slate-600 dark:text-slate-300 leading-relaxed font-medium text-lg">
-                          {userText.split('\n').map((para, i) => (
-                            <p key={i} className="mb-4 last:mb-0 leading-[1.8]">{para}</p>
-                          ))}
-                          {!userText && <p className="italic text-slate-400">No original text provided.</p>}
+                        <div className="text-slate-800 dark:text-slate-200 leading-relaxed font-medium text-lg">
+                          {userText
+                            ? renderAnnotatedText(userText, data.detailed_tweaks ?? [])
+                            : <p className="italic text-slate-400">No original text provided.</p>
+                          }
                         </div>
                       </div>
 

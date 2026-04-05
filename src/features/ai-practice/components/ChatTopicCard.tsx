@@ -1,8 +1,9 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { useState } from "react";
 import { MessageCircle, Clock, Star } from "lucide-react";
 import AssignButton from "@/components/shared/AssignButton";
+import LevelSelectModal from "@/features/ai-practice/components/LevelSelectModal";
 
 // Difficulty badge colors
 const difficultyColors = {
@@ -24,24 +25,11 @@ const difficultyColors = {
 };
 
 export default function ChatTopicCard({ topic }) {
-  const router = useRouter();
+  const [showLevelModal, setShowLevelModal] = useState(false);
   const colors = difficultyColors[topic.difficulty] || difficultyColors.beginner;
 
   const handleStart = () => {
-    // Store the full ScenarioInfo so ChatPage has mode + all fields
-    const scenario = {
-      title: topic.title,
-      level: topic.level,
-      formality: topic.formality || "casual",
-      mode: "chat",
-      aiRole: topic.aiRole || "Conversation Partner",
-      userRole: topic.userRole || "Learner",
-      aiPrompt: topic.aiPrompt || "",
-      objective: null,
-      icon: topic.icon,
-    };
-    sessionStorage.setItem("chatScenario", JSON.stringify(scenario));
-    router.push(`/ai-practice/scenarios/chats/${topic.slug}/chat`);
+    setShowLevelModal(true);
   };
 
   return (
@@ -49,6 +37,22 @@ export default function ChatTopicCard({ topic }) {
       onClick={handleStart}
       className="group relative cursor-pointer text-left w-full bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-700 overflow-hidden hover:shadow-lg hover:border-sky-200 dark:hover:border-sky-800 transition-all duration-300"
     >
+      {showLevelModal && (
+        <LevelSelectModal
+          topic={{
+            slug: topic.slug,
+            title: topic.title,
+            icon: topic.icon,
+            aiRole: topic.aiRole,
+            userRole: topic.userRole,
+            formality: topic.formality,
+          }}
+          onClose={(e?: React.MouseEvent) => {
+            e?.stopPropagation();
+            setShowLevelModal(false);
+          }}
+        />
+      )}
       <AssignButton
         exerciseType="practice"
         exerciseSlug={topic.slug}
