@@ -310,7 +310,7 @@ export default function ImageLabellingPage() {
       feedbackMessage={feedbackMessage}
       correctAnswer={undefined}
     >
-      <div className="practice-reading-page-shell grid grid-cols-1 md:grid-cols-10 gap-4 p-3 md:p-4 mx-auto overflow-hidden">
+      <div className="practice-reading-page-shell grid grid-cols-1 md:grid-cols-10 gap-4 p-3 md:p-4 mx-auto overflow-hidden flex-1 min-h-0">
         <div className="md:col-span-3 md:order-2 min-h-0 flex flex-col bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden shadow-[0_8px_26px_-18px_rgba(15,23,42,0.55)]">
           <div className="px-4 py-5 bg-slate-50/90 dark:bg-slate-800/60 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center">
             <h3 className="text-[11px] lg:text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-[0.18em]">

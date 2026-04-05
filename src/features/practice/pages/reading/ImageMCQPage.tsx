@@ -172,9 +172,9 @@ export default function ImageMCQPage() {
       feedbackMessage={feedbackMessage}
     >
       {/* Two-panel layout — stacked on mobile, side-by-side on md+ */}
-      <div className="practice-reading-page-shell flex flex-col gap-3 p-3 sm:gap-4 sm:p-4 mx-auto overflow-y-auto md:flex-row md:overflow-hidden">
+      <div className="practice-reading-page-shell flex flex-col gap-3 p-3 sm:gap-4 sm:p-4 mx-auto overflow-y-auto md:flex-row md:overflow-hidden flex-1 min-h-0">
         {/* ── Left Panel: Image ── */}
-        <div className="w-full md:flex-none md:w-[70%] min-h-0 md:h-[570px] bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 flex flex-col p-4 md:p-6 shrink-0">
+        <div className="w-full md:flex-none md:w-[70%] min-h-0 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 flex flex-col p-4 md:p-6 shrink-0">
           {/* Image content */}
           <div className="flex-1 flex justify-center min-h-0">
             <div className="relative w-full aspect-[4/3] sm:aspect-[16/11] md:aspect-auto md:min-h-0 md:flex-1 flex items-center justify-center dark:bg-slate-800/40 rounded-xl overflow-hidden">

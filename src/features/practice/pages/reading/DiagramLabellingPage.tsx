@@ -35,6 +35,7 @@ export default function DiagramLabellingPage() {
   const [isCompleted, setIsCompleted] = useState(false);
   const [feedbackMessage, setFeedbackMessage] = useState("");
   const [isCorrect, setIsCorrect] = useState(false);
+  const [correctAnswerText, setCorrectAnswerText] = useState("");
 
   useEffect(() => {
     const fetchData = async () => {
@@ -76,14 +77,25 @@ export default function DiagramLabellingPage() {
     const isPerfect = correctCount === total;
 
     setIsCorrect(isPerfect);
+
     if (isPerfect) {
       setFeedbackMessage("Perfect! You identified all parts correctly!");
+      setCorrectAnswerText("");
       setIsCompleted(true);
     } else {
       setFeedbackMessage(
-        `You got ${correctCount} out of ${total} correct. Check the red boxes.`,
+        `You got ${correctCount} out of ${total} correct. Check the highlighted boxes.`,
       );
+      // Build "Correct Answer:" text listing only the wrong ones
+      const wrongOnes = DIAGRAM_QUESTIONS.filter(
+        (q) => answers[q.id] !== q.correct,
+      );
+      const answerList = wrongOnes
+        .map((q) => `${q.id}: ${q.correct}`)
+        .join("   •   ");
+      setCorrectAnswerText(answerList);
     }
+
     setShowFeedback(true);
   };
 
@@ -105,6 +117,8 @@ export default function DiagramLabellingPage() {
     setIsCompleted(false);
     setScore(0);
     setIsCorrect(false);
+    setFeedbackMessage("");
+    setCorrectAnswerText("");
   };
 
   const allAnswered = DIAGRAM_QUESTIONS.every((q) => answers[q.id]);
@@ -163,11 +177,15 @@ export default function DiagramLabellingPage() {
       showFeedback={showFeedback}
       isCorrect={isCorrect}
       feedbackMessage={feedbackMessage}
-      disableContentScroll={true}
+      correctAnswer={correctAnswerText}
     >
-      <div className="practice-reading-page-shell flex min-h-0 w-full flex-col md:flex-row gap-3 p-2 md:p-3 mx-auto overflow-hidden">
+      <div
+        className={cn(
+          "practice-reading-page-shell flex min-h-0 w-full flex-col md:flex-row gap-3 md:gap-4 p-3 md:p-4 mx-auto overflow-y-auto md:overflow-hidden flex-1",
+        )}
+      >
         {/* Left Column: Reading Passage */}
-        <div className="flex-1 min-h-0 md:max-h-[570px] bg-white dark:bg-slate-800 p-5 md:p-6 pb-8 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 flex flex-col overflow-y-auto custom-scrollbar">
+        <div className="md:basis-[48%] md:max-w-[48%] min-h-0 bg-white dark:bg-slate-800 p-4 md:p-6 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 flex flex-col overflow-y-auto custom-scrollbar">
           <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-700 pb-4">
             <h2 className="text-base font-bold text-slate-500 dark:text-slate-300 uppercase tracking-wider">
               {PASSAGE_TITLE}
@@ -179,26 +197,27 @@ export default function DiagramLabellingPage() {
             ))}
           </div>
         </div>
+
         {/* Right Column: Diagram + Dropdowns */}
-        <div className="flex-1 min-h-0 md:max-h-[570px] flex flex-col justify-start dark:bg-slate-900 rounded-2xl border border-slate-200 bg-white dark:border-slate-700 p-4 pb-8 overflow-y-auto custom-scrollbar">
-          <div className="px-2 space-y-4 py-2">
+        <div className="md:basis-[52%] md:max-w-[52%] min-h-0 flex flex-col justify-start dark:bg-slate-900 rounded-2xl border border-slate-200 bg-white dark:border-slate-700 p-4 md:p-6 overflow-y-auto custom-scrollbar">
+          <div className="space-y-4">
             {/* Card 1: Diagram Image */}
-            <div className="bg-white dark:bg-slate-900 rounded-xl p-4 border border-slate-200 dark:border-slate-700 flex justify-center items-center shadow-sm">
+            <div className="bg-white dark:bg-slate-900 rounded-xl p-3 md:p-4 border border-slate-200 dark:border-slate-700 flex justify-center items-center shadow-sm min-h-[200px] md:min-h-[260px] lg:min-h-[300px]">
               <img
                 src={eggDiagram}
                 alt="Egg Diagram"
-                className="max-h-[38vh] md:max-h-[280px] w-auto object-contain"
+                className="max-h-[36vh] md:max-h-[300px] lg:max-h-[340px] w-auto max-w-full object-contain"
               />
             </div>
 
             {/* Card 2: Dropdown Questions */}
-            <div className="bg-white  dark:bg-slate-900 rounded-xl p-5 border border-dashed border-slate-300 dark:border-slate-700 flex flex-col gap-4">
+            <div className="bg-white dark:bg-slate-900 rounded-xl p-5 border border-dashed border-slate-300 dark:border-slate-700 flex flex-col gap-4">
               <h3 className="practice-reading-heading flex items-center gap-2">
                 <Languages className="w-5 h-5 text-blue-500" />
                 Select the best option for each missing word
               </h3>
 
-              <div className="grid grid-cols-1 gap-2">
+              <div className="grid grid-cols-1 gap-3">
                 {DIAGRAM_QUESTIONS.map((q) => {
                   const isWrong = showFeedback && answers[q.id] !== q.correct;
                   const isRight = showFeedback && answers[q.id] === q.correct;
@@ -207,12 +226,12 @@ export default function DiagramLabellingPage() {
                   return (
                     <div
                       key={q.id}
-                      className="flex items-center gap-2 flex-wrap"
+                      className="flex items-center gap-2 md:gap-3"
                     >
                       {/* Number Label */}
                       <div
                         className={cn(
-                          "w-10 h-10 rounded-lg flex items-center justify-center font-bold text-base shadow-sm border shrink-0 transition-colors",
+                          "w-10 h-10 md:w-11 md:h-11 rounded-lg flex items-center justify-center font-bold text-base shadow-sm border shrink-0 transition-colors",
                           isRight
                             ? "bg-green-100 text-green-700 border-green-300 dark:bg-green-950/40 dark:text-green-300 dark:border-green-700"
                             : isWrong
@@ -234,7 +253,7 @@ export default function DiagramLabellingPage() {
                         disabled={showFeedback}
                         isCorrect={isRight}
                         isWrong={isWrong}
-                        className="flex-1 min-w-0 practice-reading-select"
+                        className="flex-1 min-w-0 md:min-w-[220px] practice-reading-select"
                       />
                     </div>
                   );

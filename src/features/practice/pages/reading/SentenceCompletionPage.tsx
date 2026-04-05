@@ -130,7 +130,7 @@ export default function SentenceCompletionPage() {
         }
         timerValue={timerString}
       >
-        <div className="practice-reading-page-shell flex flex-col md:flex-row gap-3 p-3 md:p-4 mx-auto min-h-0 overflow-hidden">
+        <div className="practice-reading-page-shell flex flex-col md:flex-row gap-3 p-3 md:p-4 mx-auto min-h-0 overflow-hidden flex-1">
           {/* Left Column - Passage */}
           <div className="flex-1 min-h-0 bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 p-5 md:p-8 overflow-y-auto custom-scrollbar">
             <p className="text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-4">

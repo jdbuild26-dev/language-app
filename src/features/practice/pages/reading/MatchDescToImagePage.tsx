@@ -163,7 +163,7 @@ export default function MatchDescToImagePage() {
         feedbackMessage={feedbackMessage}
         correctAnswer={undefined}
       >
-        <div className="practice-reading-page-shell flex flex-col items-center justify-center gap-8 md:gap-10 p-4 md:p-6">
+        <div className="practice-reading-page-shell flex flex-col items-center justify-center gap-8 md:gap-10 p-4 md:p-6 flex-1 min-h-0">
           {/* Description Text */}
           <div className="text-center space-y-3 w-full max-w-4xl">
             <h2 className="text-xl sm:text-2xl md:text-4xl font-bold text-slate-800 dark:text-white leading-relaxed break-words">

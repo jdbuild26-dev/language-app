@@ -13,14 +13,11 @@ import { getFeedbackMessage } from "@/utils/feedbackMessages";
 import { fetchPracticeData } from "@/utils/practiceFetcher";
 import { loadMockCSV } from "@/utils/csvLoader";
 import { useSearchParams } from "next/navigation";
-
 import { useLanguage } from "@/contexts/LanguageContext";
-
 const PRACTICE_READING_SECTION_TEXT_CLASS =
-  "font-sans text-xl md:text-2xl font-medium leading-relaxed";
+  "font-sans text-2xl md:text-3xl font-medium leading-relaxed";
 const PRACTICE_READING_OPTION_TEXT_CLASS =
-  "font-sans text-base font-semibold leading-relaxed";
-
+  "font-sans text-lg md:text-xl font-semibold leading-relaxed";
 type BubbleQuestion = {
   bubble_tokens?: unknown;
   wordBubbles?: unknown;
@@ -65,7 +62,6 @@ function normalizeBubbleTokens(tokens: unknown): string[] {
         console.warn("Failed to parse bubble tokens:", error);
       }
     }
-
     return trimmed
       .split("|")
       .map((token) => token.trim())
@@ -316,9 +312,9 @@ function BubbleSelectionPageContent() {
         }
         timerValue={timerString}
       >
-        <div className="practice-reading-page-shell flex flex-col items-center justify-center max-w-5xl mx-auto px-3 sm:px-4 py-6 md:py-8">
+        <div className="practice-reading-page-shell flex flex-col items-center justify-center max-w-7xl mx-auto px-4 sm:px-6 py-8 md:py-10 flex-1 min-h-0">
           {/* Source Sentence */}
-          <div className="w-full mb-8 md:mb-10 flex justify-center items-center">
+          <div className="w-full mb-10 md:mb-12 flex justify-center items-center">
             <p
               className={`${PRACTICE_READING_SECTION_TEXT_CLASS} text-center text-slate-800 dark:text-slate-100`}
             >
@@ -334,9 +330,9 @@ function BubbleSelectionPageContent() {
                 animate={{ opacity: 1, y: 0, height: "auto" }}
                 exit={{ opacity: 0, y: -20, height: 0 }}
                 transition={{ duration: 0.3, ease: "easeOut" }}
-                className="w-full bg-white dark:bg-slate-800 rounded-2xl p-6 mb-6 border-2 border-emerald-500 shadow-lg overflow-hidden"
+                className="w-full max-w-4xl bg-white dark:bg-slate-800 rounded-2xl p-7 md:p-8 mb-8 border-2 border-emerald-500 shadow-lg overflow-hidden"
               >
-                <p className="text-sm text-slate-500 dark:text-slate-400 mb-1 font-medium">
+                <p className="text-base md:text-lg text-slate-500 dark:text-slate-400 mb-2 font-medium">
                   Correct Answer:
                 </p>
                 <p
@@ -348,11 +344,11 @@ function BubbleSelectionPageContent() {
             )}
           </AnimatePresence>
 
-          <div className="w-full max-w-xl border-t border-slate-200 dark:border-slate-700 py-6 flex flex-col gap-5">
+          <div className="w-full max-w-4xl border-t border-slate-200 dark:border-slate-700 py-8 flex flex-col gap-6">
             {/* Answer Area - Selected Words */}
-            <div className="w-full min-h-[64px] flex flex-wrap gap-2 justify-center items-center px-1">
+            <div className="w-full min-h-[92px] flex flex-wrap gap-3 justify-center items-center px-1">
               {selectedWords.length === 0 ? (
-                <span className="w-[2px] h-7 bg-slate-500 dark:bg-slate-300 rounded-full animate-blink" />
+                <span className="w-[2px] h-10 bg-slate-500 dark:bg-slate-300 rounded-full animate-caret-blink" />
               ) : (
                 <>
                   {selectedWords.map((word, index) => (
@@ -361,7 +357,7 @@ function BubbleSelectionPageContent() {
                       onClick={() => handleWordRemove(word, index)}
                       disabled={showFeedback}
                       className={cn(
-                        `px-4 py-2.5 rounded-xl transition-all duration-200 border ${PRACTICE_READING_OPTION_TEXT_CLASS}`,
+                        `px-6 py-3.5 rounded-2xl transition-all duration-200 border ${PRACTICE_READING_OPTION_TEXT_CLASS}`,
                         showFeedback && isCorrect
                           ? "bg-emerald-100 text-emerald-700 border-emerald-400 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-700"
                           : showFeedback && !isCorrect
@@ -373,19 +369,19 @@ function BubbleSelectionPageContent() {
                     </button>
                   ))}
                   {!showFeedback && (
-                    <span className="w-[2px] h-7 bg-slate-500 dark:bg-slate-300 rounded-full animate-blink" />
+                    <span className="w-[2px] h-10 bg-slate-500 dark:bg-slate-300 rounded-full animate-caret-blink" />
                   )}
                 </>
               )}
             </div>
 
             {/* Word Bank */}
-            <div className="w-full flex flex-wrap gap-2 border-t border-slate-200 dark:border-slate-700 pt-5 justify-center px-1">
+            <div className="w-full flex flex-wrap gap-3 border-t border-slate-200 dark:border-slate-700 pt-6 justify-center px-1">
               {wordBankSlots.map((word, index) =>
                 word === null ? (
                   <div
                     key={`ghost-${index}`}
-                    className="px-4 py-2.5 rounded-xl text-base font-semibold border border-dashed border-slate-300 dark:border-slate-600 bg-slate-100 dark:bg-slate-800/40 text-transparent select-none"
+                    className="px-6 py-3.5 rounded-2xl text-lg md:text-xl font-semibold border border-dashed border-slate-300 dark:border-slate-600 bg-slate-100 dark:bg-slate-800/40 text-transparent select-none"
                     aria-hidden="true"
                   >
                     &nbsp;&nbsp;&nbsp;&nbsp;
@@ -396,7 +392,7 @@ function BubbleSelectionPageContent() {
                     onClick={() => handleWordSelect(word, index)}
                     disabled={showFeedback}
                     className={cn(
-                      `px-4 py-2.5 rounded-xl transition-all duration-200 border ${PRACTICE_READING_OPTION_TEXT_CLASS}`,
+                      `px-6 py-3.5 rounded-2xl transition-all duration-200 border ${PRACTICE_READING_OPTION_TEXT_CLASS}`,
                       "bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-200",
                       "border-slate-300 dark:border-slate-600",
                       "hover:border-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700",

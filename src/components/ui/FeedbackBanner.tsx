@@ -46,7 +46,7 @@ export default function FeedbackBanner({
         },
       }}
       className={cn(
-        "fixed bottom-0 left-0 right-0 z-50 h-[120px] shadow-[0_-14px_32px_rgba(15,23,42,0.16)]",
+        "fixed bottom-0 left-0 right-0 z-50 min-h-[112px] sm:min-h-[120px] lg:min-h-[136px] shadow-[0_-14px_32px_rgba(15,23,42,0.16)]",
         isSuccess
           ? "bg-green-500 dark:bg-green-600"
           : isPartial
@@ -57,7 +57,7 @@ export default function FeedbackBanner({
       <motion.div
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0, transition: { duration: 0.1 } }}
-        className="mx-auto px-6 py-2 flex flex-col gap-1"
+        className="mx-auto px-4 sm:px-6 lg:px-8 py-2.5 sm:py-2 lg:py-3 flex flex-col gap-1.5"
       >
         <div className="flex flex-row items-center justify-between gap-4">
           <motion.div
@@ -67,21 +67,24 @@ export default function FeedbackBanner({
           >
             <div className="flex flex-col">
               <div className="flex gap-2 items-center">
-                <span className="text-base font-extrabold text-white">
+                <span className="text-xs sm:text-sm lg:text-xl font-extrabold text-white">
                   {message}
                 </span>
                 {isSuccess ? (
-                  <CheckCircle2 className="w-4 h-4 text-white" />
+                  <CheckCircle2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 lg:w-5 lg:h-5 text-white" />
                 ) : isPartial ? (
-                  <AlertCircle className="w-4 h-4 text-white" />
+                  <AlertCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4 lg:w-5 lg:h-5 text-white" />
                 ) : (
-                  <XCircle className="w-4 h-4 text-white" />
+                  <XCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4 lg:w-5 lg:h-5 text-white" />
                 )}
               </div>
 
-              <span className="font-bold text-sm tracking-wide text-white/80">
-                Correct Answer:
-              </span>
+              {/* Only show "Correct Answer:" label when there's actually something to show */}
+              {!isSuccess && correctAnswer && (
+                <span className="font-bold text-[10px] sm:text-xs lg:text-base tracking-wide text-white/80">
+                  Correct Answer:
+                </span>
+              )}
             </div>
           </motion.div>
 
@@ -90,21 +93,21 @@ export default function FeedbackBanner({
             animate={{ opacity: 1, y: 0, transition: { duration: 0.1 } }}
             className="flex items-center gap-2 shrink-0"
           >
-            <button className="w-7 h-7 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center transition-colors">
-              <Languages className="w-4 h-4 text-white" />
+            <button className="w-6 h-6 sm:w-7 sm:h-7 lg:w-8 lg:h-8 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center transition-colors">
+              <Languages className="w-3.5 h-3.5 sm:w-4 sm:h-4 lg:w-5 lg:h-5 text-white" />
             </button>
-            <button className="w-7 h-7 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center transition-colors">
-              <Share2 className="w-4 h-4 text-white" />
+            <button className="w-6 h-6 sm:w-7 sm:h-7 lg:w-8 lg:h-8 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center transition-colors">
+              <Share2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 lg:w-5 lg:h-5 text-white" />
             </button>
-            <button className="w-7 h-7 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center transition-colors">
-              <Flag className="w-4 h-4 text-white" />
+            <button className="w-6 h-6 sm:w-7 sm:h-7 lg:w-8 lg:h-8 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center transition-colors">
+              <Flag className="w-3.5 h-3.5 sm:w-4 sm:h-4 lg:w-5 lg:h-5 text-white" />
             </button>
 
             {!hideButton && (
               <button
                 onClick={onContinue}
                 className={cn(
-                  "px-6 py-1.5 rounded-lg font-bold text-xs uppercase tracking-widest transition-all duration-200 hover:scale-105 active:scale-95 shadow-md bg-white",
+                  "px-4 sm:px-6 lg:px-7 py-1.5 lg:py-2 rounded-lg font-bold text-[10px] sm:text-xs lg:text-sm uppercase tracking-widest transition-all duration-200 hover:scale-105 active:scale-95 shadow-md bg-white",
                   isSuccess
                     ? "text-green-600 hover:bg-green-50"
                     : isPartial
@@ -124,11 +127,11 @@ export default function FeedbackBanner({
             animate={{ opacity: 1, y: 0, transition: { duration: 0.1 } }}
             className="flex flex-col"
           >
-            <span className="text-sm font-semibold text-white">
+            <span className="text-xs sm:text-sm lg:text-lg font-semibold text-white">
               {correctAnswer}
             </span>
             {englishCorrectAnswer && (
-              <span className="text-xs text-white/80">
+              <span className="text-[10px] sm:text-xs lg:text-sm text-white/80">
                 {englishCorrectAnswer}
               </span>
             )}

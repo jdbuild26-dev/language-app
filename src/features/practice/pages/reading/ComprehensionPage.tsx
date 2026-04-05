@@ -174,9 +174,9 @@ export default function ComprehensionPage() {
           showFeedback ? (isCorrect ? "success" : "error") : "neutral"
         }
       >
-        <div className="practice-reading-page-shell flex flex-col md:flex-row gap-3 p-3 mx-auto overflow-hidden">
+        <div className="practice-reading-page-shell flex flex-col md:flex-row gap-3 p-3 mx-auto overflow-hidden flex-1 min-h-0">
           {/* Left Column - Passage */}
-          <div className="flex-1 min-h-0 bg-white dark:bg-slate-800 p-5 md:p-8 md:pb-24 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 flex flex-col overflow-hidden">
+          <div className="flex-1 min-h-0 bg-white dark:bg-slate-800 p-5 md:p-8 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 flex flex-col overflow-hidden">
             <p className="text-sm font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-4">
               PASSAGE
             </p>
@@ -188,7 +188,7 @@ export default function ComprehensionPage() {
           </div>
 
           {/* Right Column - Question & Options */}
-          <div className="flex-1 min-h-0 flex flex-col dark:bg-slate-900 rounded-2xl border border-slate-200 bg-white dark:border-slate-700 p-5 md:p-8 md:pb-24 gap-5 overflow-y-auto">
+          <div className="flex-1 min-h-0 flex flex-col dark:bg-slate-900 rounded-2xl border border-slate-200 bg-white dark:border-slate-700 p-5 md:p-8 gap-5 overflow-y-auto">
             {/* Question */}
             <h3 className="mb-2 flex items-start gap-2">
               <Languages className="w-5 h-5 text-blue-500 shrink-0 mt-1" />

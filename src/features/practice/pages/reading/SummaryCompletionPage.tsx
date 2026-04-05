@@ -193,7 +193,7 @@ export default function SummaryCompletionPage() {
         }
         timerValue={timerString}
       >
-        <div className="practice-reading-page-shell flex flex-col lg:flex-row w-full max-w-7xl mx-auto gap-6 p-3 md:p-4 md:items-stretch overflow-hidden">
+        <div className="practice-reading-page-shell flex flex-col lg:flex-row w-full max-w-7xl mx-auto gap-6 p-3 md:p-4 md:items-stretch overflow-hidden flex-1 min-h-0">
           {/* Main Passage Area */}
           <div className="flex-1 min-h-0 md:min-h-[400px] flex flex-col bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden">
             <div className="p-6 border-b border-slate-100 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50">

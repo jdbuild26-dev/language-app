@@ -290,7 +290,7 @@ export default function FillBlanksPage() {
       >
         <div
           className={cn(
-            "practice-reading-page-shell grid grid-cols-1 md:grid-cols-10 md:items-stretch gap-3 p-3 mx-auto overflow-hidden md:h-[calc(100dvh-176px)] md:min-h-[calc(100dvh-176px)] md:max-h-[calc(100dvh-176px)]",
+            "practice-reading-page-shell grid grid-cols-1 md:grid-cols-10 md:items-stretch gap-3 p-3 mx-auto overflow-hidden flex-1 min-h-0",
           )}
         >
           <div className="md:col-span-7 min-h-0 h-full self-stretch flex flex-col bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden">

@@ -21,6 +21,27 @@
   .story-content .text {
     @apply text-slate-700 dark:text-slate-300;
   }
+
+  /* Reading Practice Shared Styles */
+  .practice-reading-page-shell {
+    @apply w-full max-w-[106rem] mx-auto;
+  }
+
+  .practice-reading-heading {
+    @apply text-xl sm:text-xl md:text-2xl font-semibold text-slate-900 dark:text-slate-100 leading-snug;
+  }
+
+  .practice-reading-passage-text {
+    @apply text-lg sm:text-xl md:text-xl font-medium leading-8 md:leading-9 text-slate-700 dark:text-slate-200;
+  }
+
+  .practice-reading-option-text {
+    @apply text-lg sm:text-xl md:text-xl leading-8 text-slate-700 dark:text-slate-200;
+  }
+
+  .practice-reading-select > button {
+    min-height: 3.75rem;
+  }
 }
 
 @layer base {
@@ -121,6 +142,10 @@
     animation: fadeIn 0.6s ease-out;
   }
 
+  .animate-caret-blink {
+    animation: caretBlink 1s steps(1, end) infinite;
+  }
+
   @keyframes fadeIn {
     from {
       opacity: 0;
@@ -130,6 +155,17 @@
     to {
       opacity: 1;
       transform: translateY(0);
+    }
+  }
+
+  @keyframes caretBlink {
+    0%,
+    49% {
+      opacity: 1;
+    }
+    50%,
+    100% {
+      opacity: 0;
     }
   }
 
