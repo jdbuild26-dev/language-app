@@ -1,54 +1,26 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
-import { Send, Lightbulb, MoreVertical, BarChart2, FileDown, LogOut } from "lucide-react";
+import { useState } from "react";
+import { Send, Lightbulb } from "lucide-react";
 import AudioRecorder from "@/features/ai-practice/components/AudioRecorder";
 
 interface ChatInputProps {
   onSend: (text: string) => void;
   onHint: () => Promise<string>;
   disabled?: boolean;
-  onGetFeedback?: () => void;
-  onDownloadTranscript?: () => void;
-  onEndWithoutFeedback?: () => void;
-  isLoadingReport?: boolean;
 }
 
 export default function ChatInput({
   onSend,
   onHint,
   disabled = false,
-  onGetFeedback,
-  onDownloadTranscript,
-  onEndWithoutFeedback,
-  isLoadingReport = false,
 }: ChatInputProps) {
   const [message, setMessage] = useState("");
   const [showHint, setShowHint] = useState(false);
   const [hintText, setHintText] = useState("");
   const [isLoadingHint, setIsLoadingHint] = useState(false);
-  const [showMenu, setShowMenu] = useState(false);
   const [isMicActive, setIsMicActive] = useState(false);
   const [shouldStopMic, setShouldStopMic] = useState(false);
-  
-  const menuRef = useRef<HTMLDivElement>(null);
-
-  // Close menu on outside click or Escape
-  useEffect(() => {
-    const clickHandler = (e: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setShowMenu(false);
-    };
-    const keyHandler = (e: KeyboardEvent) => { if (e.key === "Escape") setShowMenu(false); };
-    
-    if (showMenu) {
-      document.addEventListener("mousedown", clickHandler);
-      document.addEventListener("keydown", keyHandler);
-    }
-    return () => {
-      document.removeEventListener("mousedown", clickHandler);
-      document.removeEventListener("keydown", keyHandler);
-    };
-  }, [showMenu]);
 
   const handleSubmit = (e?: React.FormEvent) => {
     e?.preventDefault();
@@ -170,55 +142,7 @@ export default function ChatInput({
             </button>
           </form>
 
-          {/* Action Menu button */}
-          <div className="relative" ref={menuRef}>
-            <button
-              type="button"
-              onClick={() => setShowMenu(!showMenu)}
-              className={`p-2.5 rounded-xl transition-colors ${
-                showMenu
-                  ? "bg-sky-100 dark:bg-sky-900/30 text-sky-600 dark:text-sky-400"
-                  : "bg-gray-100 dark:bg-slate-800 text-gray-500 dark:text-slate-400 hover:bg-gray-200 dark:hover:bg-slate-700"
-              }`}
-              title="More options"
-            >
-              <MoreVertical className="w-5 h-5" />
-            </button>
-
-            {showMenu && (
-              <div className="absolute bottom-full right-0 mb-2 w-64 flex flex-col gap-2 p-2 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl shadow-xl animate-in slide-in-from-bottom-2 fade-in duration-150 z-50">
-                <button
-                  type="button"
-                  onClick={() => { setShowMenu(false); onGetFeedback?.(); }}
-                  disabled={isLoadingReport}
-                  className="flex items-center gap-3 w-full px-4 py-3 rounded-xl bg-sky-500 hover:bg-sky-600 text-white font-medium text-sm transition-colors disabled:opacity-60"
-                >
-                  <BarChart2 className="w-4 h-4 shrink-0" />
-                  {isLoadingReport ? "Generating report..." : "Get my feedback report"}
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => { setShowMenu(false); onDownloadTranscript?.(); }}
-                  className="flex items-center gap-3 w-full px-4 py-3 rounded-xl bg-sky-700 hover:bg-sky-800 text-white font-medium text-sm transition-colors"
-                >
-                  <FileDown className="w-4 h-4 shrink-0" />
-                  Download transcript (PDF)
-                </button>
-
-                <div className="h-px bg-gray-200 dark:bg-slate-700 mx-1" />
-
-                <button
-                  type="button"
-                  onClick={() => { setShowMenu(false); onEndWithoutFeedback?.(); }}
-                  className="flex items-center gap-3 w-full px-4 py-3 rounded-xl bg-slate-700 hover:bg-slate-800 text-white font-medium text-sm transition-colors"
-                >
-                  <LogOut className="w-4 h-4 shrink-0" />
-                  End without feedback
-                </button>
-              </div>
-            )}
-          </div>
+          {/* Action Menu button — removed, options moved to End Session modal */}
         </div>
       </div>
     </div>

@@ -2,12 +2,11 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter, useParams } from "next/navigation";
-import { Loader2, AlertCircle } from "lucide-react";
+import { Loader2, AlertCircle, BarChart2, FileDown, LogOut, X } from "lucide-react";
 import ChatHeader from "@/features/ai-practice/components/chat/ChatHeader";
 import ChatInput from "@/features/ai-practice/components/chat/ChatInput";
 import MessageBubble from "@/features/ai-practice/components/chat/MessageBubble";
 import ConversationWarmup from "@/features/ai-practice/components/ConversationWarmup";
-import AnalyzeModal from "@/features/ai-practice/components/AnalyzeModal";
 import {
   fetchTopicBySlug,
   sendChatMessage,
@@ -52,7 +51,7 @@ export default function ChatPage() {
   const [sendError, setSendError] = useState<string | null>(null);
 
   const [showWarmup, setShowWarmup] = useState(true);
-  const [showAnalyze, setShowAnalyze] = useState(false);
+  const [showEndModal, setShowEndModal] = useState(false);
   const [analysisData, setAnalysisData] = useState<any>(null);
   const [isLoadingReport, setIsLoadingReport] = useState(false);
 
@@ -211,11 +210,46 @@ export default function ChatPage() {
     }
   };
 
-  // Legacy quick-analyze (kept for ChatHeader "End Session" button)
-  const handleEndSession = async () => {
+  // "End Session" button → show modal with analytics + action buttons
+  const handleEndSession = () => {
     if (!scenario) return;
     setAnalysisData(null);
-    setShowAnalyze(true);
+    setShowEndModal(true);
+
+    // Kick off analysis immediately in the background
+    const history = messages.map((m) => ({
+      sender: m.sender,
+      text: m.text,
+      correction: m.correction ?? null,
+    }));
+
+    analyzeSession(history, {
+      level: scenario.level,
+      formality: scenario.formality,
+      title: scenario.title,
+      aiPrompt: scenario.aiPrompt,
+      aiRole: scenario.aiRole,
+      userRole: scenario.userRole,
+      mode: scenario.mode || "chat",
+      objective: scenario.objective,
+    })
+      .then(setAnalysisData)
+      .catch(() => {
+        setAnalysisData({
+          cefr_assessment: scenario.level || "A1",
+          grammar_score: 0,
+          vocabulary_score: 0,
+          fluency_note: "Analysis failed. Please try again.",
+          feedback_points: [],
+        });
+      });
+  };
+
+  // Fallback quick-analyze (used as fallback from handleGetFeedback)
+  const handleQuickAnalyze = async () => {
+    if (!scenario) return;
+    setAnalysisData(null);
+    setShowEndModal(true);
 
     try {
       const history = messages.map((m) => ({
@@ -289,7 +323,7 @@ export default function ChatPage() {
     } catch (err) {
       console.error("Failed to get feedback report:", err);
       // Fallback: show quick analyze modal
-      handleEndSession();
+      handleQuickAnalyze();
     } finally {
       setIsLoadingReport(false);
     }
@@ -390,13 +424,140 @@ export default function ChatPage() {
     <div className="fixed inset-0 z-[60] flex flex-col bg-gray-50 dark:bg-slate-950">
       {showWarmup && <ConversationWarmup onComplete={handleWarmupComplete} />}
 
-      <AnalyzeModal
-        isOpen={showAnalyze}
-        onClose={() => router.push("/ai-practice")}
-        analysisData={analysisData}
-        mode={(scenario?.mode as any) ?? "chat"}
-        scenarioTitle={scenario?.title}
-      />
+      {/* End Session modal — analytics + action buttons */}
+      {showEndModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-lg flex flex-col max-h-[90vh] overflow-hidden">
+
+            {/* Header */}
+            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-slate-800 shrink-0">
+              <div>
+                <h2 className="text-lg font-bold text-gray-900 dark:text-white">End Session</h2>
+                {scenario?.title && (
+                  <p className="text-xs text-gray-500 dark:text-slate-400 mt-0.5">{scenario.title}</p>
+                )}
+              </div>
+              <button
+                onClick={() => setShowEndModal(false)}
+                className="p-1.5 text-gray-400 hover:text-gray-500 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-full transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Analytics section */}
+            <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
+              {!analysisData ? (
+                <div className="flex flex-col items-center justify-center py-10 gap-3">
+                  <div className="w-10 h-10 border-4 border-sky-500 border-t-transparent rounded-full animate-spin" />
+                  <p className="text-sm text-gray-500 dark:text-slate-400">Analysing your session...</p>
+                </div>
+              ) : (
+                <>
+                  {/* CEFR + scores */}
+                  <div className="grid grid-cols-3 gap-3">
+                    <div className="bg-gray-50 dark:bg-slate-800 p-3 rounded-xl text-center">
+                      <div className="text-xs text-gray-500 dark:text-slate-400 mb-1">CEFR Level</div>
+                      <div className="text-2xl font-bold text-sky-500">{analysisData.cefr_assessment}</div>
+                    </div>
+                    {/* Grammar */}
+                    <div className="bg-gray-50 dark:bg-slate-800 p-3 rounded-xl">
+                      <div className="flex justify-between items-center mb-1.5">
+                        <span className="text-xs text-gray-500 dark:text-slate-400">Grammar</span>
+                        <span className={`text-lg font-bold ${analysisData.grammar_score >= 80 ? "text-emerald-600 dark:text-emerald-400" : analysisData.grammar_score >= 60 ? "text-amber-600 dark:text-amber-400" : "text-red-500"}`}>
+                          {analysisData.grammar_score}%
+                        </span>
+                      </div>
+                      <div className="h-1.5 bg-gray-200 dark:bg-slate-700 rounded-full overflow-hidden">
+                        <div
+                          className={`h-full rounded-full transition-all duration-700 ${analysisData.grammar_score >= 80 ? "bg-emerald-500" : analysisData.grammar_score >= 60 ? "bg-amber-500" : "bg-red-500"}`}
+                          style={{ width: `${analysisData.grammar_score}%` }}
+                        />
+                      </div>
+                    </div>
+                    {/* Vocabulary */}
+                    <div className="bg-gray-50 dark:bg-slate-800 p-3 rounded-xl">
+                      <div className="flex justify-between items-center mb-1.5">
+                        <span className="text-xs text-gray-500 dark:text-slate-400">Vocabulary</span>
+                        <span className={`text-lg font-bold ${analysisData.vocabulary_score >= 80 ? "text-emerald-600 dark:text-emerald-400" : analysisData.vocabulary_score >= 60 ? "text-amber-600 dark:text-amber-400" : "text-red-500"}`}>
+                          {analysisData.vocabulary_score}%
+                        </span>
+                      </div>
+                      <div className="h-1.5 bg-gray-200 dark:bg-slate-700 rounded-full overflow-hidden">
+                        <div
+                          className={`h-full rounded-full transition-all duration-700 ${analysisData.vocabulary_score >= 80 ? "bg-emerald-500" : analysisData.vocabulary_score >= 60 ? "bg-amber-500" : "bg-red-500"}`}
+                          style={{ width: `${analysisData.vocabulary_score}%` }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Fluency note */}
+                  <div className="bg-sky-50 dark:bg-sky-900/20 border border-sky-100 dark:border-sky-800 rounded-xl p-3 flex items-start gap-2">
+                    <span className="text-sky-500 mt-0.5">★</span>
+                    <div>
+                      <div className="text-xs font-semibold text-sky-600 dark:text-sky-400 mb-0.5">Fluency Assessment</div>
+                      <p className="text-sm text-gray-700 dark:text-slate-300 leading-relaxed">{analysisData.fluency_note}</p>
+                    </div>
+                  </div>
+
+                  {/* Feedback points */}
+                  {analysisData.feedback_points?.length === 0 ? (
+                    <div className="text-center py-4 text-gray-500 dark:text-slate-400 text-sm">
+                      ✓ No major errors detected. Great job!
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      <div className="text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wide">Detailed Feedback</div>
+                      {analysisData.feedback_points?.map((point: any, i: number) => (
+                        <div key={i} className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl overflow-hidden text-sm">
+                          <div className="px-3 py-2 bg-red-50/60 dark:bg-red-900/10 border-b border-red-100 dark:border-red-900/20">
+                            <span className="text-xs font-semibold text-red-500 uppercase tracking-wide">Mistake </span>
+                            <span className="text-gray-700 dark:text-gray-300 line-through decoration-red-400/60">{point.error}</span>
+                          </div>
+                          <div className="px-3 py-2">
+                            <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 uppercase tracking-wide">Correction </span>
+                            <span className="text-gray-900 dark:text-white">{point.correction}</span>
+                            {point.explanation && (
+                              <p className="text-xs text-gray-500 dark:text-slate-400 italic mt-0.5">{point.explanation}</p>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+
+            {/* Action buttons */}
+            <div className="px-5 py-4 border-t border-gray-100 dark:border-slate-800 flex flex-col gap-2 shrink-0">
+              <button
+                onClick={handleGetFeedback}
+                disabled={isLoadingReport}
+                className="flex items-center gap-3 w-full px-4 py-3 rounded-xl bg-sky-500 hover:bg-sky-600 text-white font-medium text-sm transition-colors disabled:opacity-60"
+              >
+                <BarChart2 className="w-4 h-4 shrink-0" />
+                {isLoadingReport ? "Generating report..." : "Get my feedback report"}
+              </button>
+              <button
+                onClick={() => { setShowEndModal(false); handleDownloadTranscript(); }}
+                className="flex items-center gap-3 w-full px-4 py-3 rounded-xl bg-sky-700 hover:bg-sky-800 text-white font-medium text-sm transition-colors"
+              >
+                <FileDown className="w-4 h-4 shrink-0" />
+                Download transcript (PDF)
+              </button>
+              <button
+                onClick={() => { setShowEndModal(false); handleEndWithoutFeedback(); }}
+                className="flex items-center gap-3 w-full px-4 py-3 rounded-xl bg-slate-700 hover:bg-slate-800 text-white font-medium text-sm transition-colors"
+              >
+                <LogOut className="w-4 h-4 shrink-0" />
+                End without feedback
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <ChatHeader scenario={scenario} onEndSession={handleEndSession} />
 
@@ -437,10 +598,6 @@ export default function ChatPage() {
         onSend={handleSendMessage}
         onHint={handleHint}
         disabled={isSending || showWarmup}
-        onGetFeedback={handleGetFeedback}
-        onDownloadTranscript={handleDownloadTranscript}
-        onEndWithoutFeedback={handleEndWithoutFeedback}
-        isLoadingReport={isLoadingReport}
       />
 
       {/* Hidden transcript print container */}
