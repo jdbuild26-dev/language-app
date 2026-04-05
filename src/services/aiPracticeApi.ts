@@ -197,3 +197,59 @@ export async function getFeedbackReport(conversationHistory, scenario) {
   return response.json();
 }
 
+
+// ---------------------------------------------------------------------------
+// DB-backed prompt endpoints
+// ---------------------------------------------------------------------------
+
+/**
+ * Fetch all AI practice topics from the database (includes per-level prompts).
+ */
+export async function fetchDbTopics(): Promise<{ count: number; topics: DbTopic[] }> {
+  const response = await fetch(`${API_URL}/api/ai-practice/db/topics`);
+  if (!response.ok) throw new Error(`Failed to fetch DB topics: ${response.statusText}`);
+  return response.json();
+}
+
+/**
+ * Fetch a single topic with all level prompts from the database.
+ */
+export async function fetchDbTopicBySlug(slug: string): Promise<DbTopic> {
+  const response = await fetch(`${API_URL}/api/ai-practice/db/topics/${slug}`);
+  if (!response.ok) throw new Error(`Failed to fetch DB topic: ${response.statusText}`);
+  return response.json();
+}
+
+/**
+ * Fetch the instruction + AI prompt for a specific topic + CEFR level.
+ * Called after the user picks their level on the topic card.
+ */
+export async function fetchTopicForLevel(slug: string, level: string): Promise<TopicLevelData> {
+  const response = await fetch(`${API_URL}/api/ai-practice/db/topics/${slug}/level/${level}`);
+  if (!response.ok) throw new Error(`Failed to fetch topic for level: ${response.statusText}`);
+  return response.json();
+}
+
+// ---------------------------------------------------------------------------
+// Types
+// ---------------------------------------------------------------------------
+
+export interface DbTopic {
+  id: number;
+  slug: string;
+  topic: string;
+  ai_role: string;
+  user_role: string;
+  instructions: Record<string, string | null>;
+  ai_prompts: Record<string, string | null>;
+}
+
+export interface TopicLevelData {
+  slug: string;
+  topic: string;
+  ai_role: string;
+  user_role: string;
+  level: string;
+  instruction: string | null;
+  ai_prompt: string | null;
+}
