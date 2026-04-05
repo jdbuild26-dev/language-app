@@ -28,6 +28,7 @@ import {
   TrendingUp,
 } from "lucide-react";
 import { useStudentProfile } from "@/hooks/useStudentProfile";
+import AssignButton from "@/components/shared/AssignButton";
 
 // Tab configuration
 const tabs = [
@@ -649,6 +650,11 @@ function PracticeContent() {
               onClick={() => handleCardClick(activity)}
               className="group relative block cursor-pointer"
             >
+              <AssignButton 
+                exerciseType="practice"
+                exerciseSlug={activity.typeSlug}
+                exerciseTitle={activity.name}
+              />
               {/* Background Gradient & Shape */}
               <div
                 className={cn(

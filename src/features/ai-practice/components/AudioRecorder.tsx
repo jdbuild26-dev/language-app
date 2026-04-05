@@ -1,98 +1,79 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Mic, Square, Loader2 } from "lucide-react";
+import { Mic, Square } from "lucide-react";
 import useSpeechRecognition from "@/hooks/useSpeechRecognition";
 
-export default function AudioRecorder({
-  onRecordingComplete,
-  onTranscriptChange,
-  disabled,
-}) {
-  const [isRecording, setIsRecording] = useState(false);
-  const [recordingTime, setRecordingTime] = useState(0);
-  const mediaRecorderRef = useRef(null);
-  const chunksRef = useRef([]);
-  const timerRef = useRef(null);
+interface AudioRecorderProps {
+  onTranscriptChange: (transcript: string) => void;
+  onRecordingStateChange?: (isRecording: boolean) => void;
+  disabled?: boolean;
+  shouldStop?: boolean;
+}
 
-  // Use our new hook
-  const {
-    startListening,
-    stopListening,
-    transcript,
-    isListening: isSpeechListening,
-    error: speechError,
+/**
+ * A simplified Voice-to-Text trigger.
+ * Removed MediaRecorder (blobs) as the app only uses text transcripts.
+ */
+export default function AudioRecorder({
+  onTranscriptChange,
+  onRecordingStateChange,
+  disabled,
+  shouldStop,
+}: AudioRecorderProps) {
+  const [recordingTime, setRecordingTime] = useState(0);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  
+  const { 
+    startListening, 
+    stopListening, 
+    transcript, 
+    isListening, 
+    resetTranscript 
   } = useSpeechRecognition();
 
-  // Propagate transcript changes to parent
+  // Sync internal listening state with parent
   useEffect(() => {
-    if (onTranscriptChange) {
-      onTranscriptChange(transcript);
+    onRecordingStateChange?.(isListening);
+    
+    if (isListening) {
+      setRecordingTime(0);
+      timerRef.current = setInterval(() => {
+        setRecordingTime((prev) => prev + 1);
+      }, 1000);
+    } else {
+      if (timerRef.current) clearInterval(timerRef.current);
     }
-  }, [transcript, onTranscriptChange]);
 
-  useEffect(() => {
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
-      if (mediaRecorderRef.current && isRecording) {
-        mediaRecorderRef.current.stop();
-      }
     };
-  }, [isRecording]);
+  }, [isListening, onRecordingStateChange]);
 
-  const startRecording = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-
-      mediaRecorderRef.current = new MediaRecorder(stream);
-      chunksRef.current = [];
-
-      mediaRecorderRef.current.ondataavailable = (e) => {
-        if (e.data.size > 0) {
-          chunksRef.current.push(e.data);
-        }
-      };
-
-      mediaRecorderRef.current.onstop = () => {
-        const blob = new Blob(chunksRef.current, { type: "audio/webm" });
-        onRecordingComplete(blob);
-        const tracks = stream.getTracks();
-        tracks.forEach((track) => track.stop());
-      };
-
-      mediaRecorderRef.current.start();
-
-      // Start speech recognition concurrently
-      startListening();
-
-      setIsRecording(true);
-      setRecordingTime(0);
-
-      timerRef.current = setInterval(() => {
-        setRecordingTime((prev) => {
-          // console.log("Timer tick:", prev + 1); // Commented out to avoid spam, but can uncomment if needed
-          return prev + 1;
-        });
-      }, 1000);
-    } catch (err) {
-      console.error("Error accessing microphone:", err);
-      alert("Microphone access denied or not available.");
+  // Propagate transcript changes while active
+  useEffect(() => {
+    if (isListening) {
+      onTranscriptChange(transcript);
     }
-  };
+  }, [transcript, isListening, onTranscriptChange]);
 
-  const stopRecording = () => {
-    if (mediaRecorderRef.current && isRecording) {
-      mediaRecorderRef.current.stop();
-
-      // Stop speech recognition
+  // Handle external stop signal (e.g. from Send button or manual typing)
+  useEffect(() => {
+    if (shouldStop && isListening) {
       stopListening();
+    }
+  }, [shouldStop, isListening, stopListening]);
 
-      setIsRecording(false);
-      clearInterval(timerRef.current);
+  const toggleRecording = () => {
+    if (isListening) {
+      stopListening();
+    } else {
+      resetTranscript();
+      startListening();
     }
   };
 
-  const formatTime = (seconds) => {
+  const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${mins}:${secs.toString().padStart(2, "0")}`;
@@ -100,30 +81,23 @@ export default function AudioRecorder({
 
   return (
     <div className="flex items-center gap-2">
-      {isRecording ? (
-        <button
-          onClick={stopRecording}
-          className="p-2.5 bg-red-500 hover:bg-red-600 text-white rounded-xl transition-all animate-pulse shadow-lg"
-          title="Stop Recording"
-        >
-          <Square className="w-5 h-5 fill-current" />
-        </button>
-      ) : (
-        <button
-          onClick={startRecording}
-          disabled={disabled}
-          className={`p-2.5 rounded-xl transition-all shadow-sm ${
-            disabled
-              ? "bg-gray-100 dark:bg-slate-800 text-gray-400 cursor-not-allowed"
-              : "bg-sky-500 hover:bg-sky-600 text-white"
-          }`}
-          title="Start Recording"
-        >
-          <Mic className="w-5 h-5" />
-        </button>
-      )}
+      <button
+        type="button"
+        onClick={toggleRecording}
+        disabled={disabled}
+        className={`p-2.5 rounded-xl transition-all shadow-sm ${
+          isListening
+            ? "bg-red-500 hover:bg-red-600 text-white animate-pulse"
+            : disabled
+            ? "bg-gray-100 dark:bg-slate-800 text-gray-400 cursor-not-allowed"
+            : "bg-sky-500 hover:bg-sky-600 text-white"
+        }`}
+        title={isListening ? "Stop Recording" : "Start Recording"}
+      >
+        {isListening ? <Square className="w-5 h-5 fill-current" /> : <Mic className="w-5 h-5" />}
+      </button>
 
-      {isRecording && (
+      {isListening && (
         <div className="flex items-center gap-2 px-3 py-1.5 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-lg text-sm font-mono animate-in fade-in slide-in-from-left-2">
           <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
           {formatTime(recordingTime)}

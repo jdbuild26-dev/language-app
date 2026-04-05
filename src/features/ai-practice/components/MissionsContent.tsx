@@ -3,6 +3,7 @@
 
 import { useRouter } from "next/navigation";
 import { Target, ArrowRight, MapPin, ShoppingBag, Calendar, Plane } from "lucide-react";
+import AssignButton from "@/components/shared/AssignButton";
 
 const missions = [
     {
@@ -110,6 +111,12 @@ export default function MissionsContent() {
                         onClick={() => handleStartMission(mission)}
                         className="group relative bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-xl p-5 hover:shadow-md cursor-pointer transition-all border-l-4 border-l-transparent hover:border-l-indigo-500"
                     >
+                        <AssignButton
+                            exerciseType="practice"
+                            exerciseSlug={mission.slug}
+                            exerciseTitle={mission.title}
+                            className="top-3 right-3"
+                        />
                         <div className="flex items-start justify-between mb-3">
                             <div className={`p-2.5 rounded-lg ${mission.bg}`}>
                                 <mission.icon className={`w-6 h-6 ${mission.color}`} />

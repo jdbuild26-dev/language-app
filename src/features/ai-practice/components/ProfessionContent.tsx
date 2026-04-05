@@ -3,6 +3,7 @@
 
 import { useRouter } from "next/navigation";
 import { Briefcase, ArrowRight, Gavel, Stethoscope, DraftingCompass, ChefHat } from "lucide-react";
+import AssignButton from "@/components/shared/AssignButton";
 
 const professions = [
     {
@@ -106,6 +107,12 @@ export default function ProfessionContent() {
                         onClick={() => handleStartProfession(prof)}
                         className="group relative bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-xl p-5 hover:shadow-lg cursor-pointer transition-all hover:-translate-y-1"
                     >
+                        <AssignButton
+                            exerciseType="practice"
+                            exerciseSlug={prof.slug}
+                            exerciseTitle={prof.title}
+                            className="top-3 right-3"
+                        />
                         <div className={`w-12 h-12 rounded-xl ${prof.bg} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform`}>
                             <prof.icon className={`w-6 h-6 ${prof.color}`} />
                         </div>

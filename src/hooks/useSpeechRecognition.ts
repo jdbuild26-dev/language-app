@@ -2,63 +2,84 @@
 
 import { useState, useEffect, useRef } from "react";
 
+// Minimal type definition for the Web Speech API (not always present in TS DOM lib)
+type SpeechRecognitionInstance = {
+  continuous: boolean;
+  interimResults: boolean;
+  lang: string;
+  onstart: (() => void) | null;
+  onresult: ((event: any) => void) | null;
+  onerror: ((event: any) => void) | null;
+  onend: (() => void) | null;
+  start: () => void;
+  stop: () => void;
+};
+
+function getSpeechRecognitionAPI(): (new () => SpeechRecognitionInstance) | null {
+  if (typeof window === "undefined") return null;
+  const w = window as any;
+  return w.SpeechRecognition || w.webkitSpeechRecognition || null;
+}
+
 export default function useSpeechRecognition() {
   const [isListening, setIsListening] = useState(false);
   const [transcript, setTranscript] = useState("");
-  const [error, setError] = useState(null);
+  const [error, setError] = useState<string | null>(null);
 
-  const recognitionRef = useRef(null);
+  const recognitionRef = useRef<SpeechRecognitionInstance | null>(null);
 
   useEffect(() => {
-    // Check browser support
-    const SpeechRecognition =
-      window.SpeechRecognition || window.webkitSpeechRecognition;
+    const SpeechRecognitionAPI = getSpeechRecognitionAPI();
 
-    if (!SpeechRecognition) {
+    if (!SpeechRecognitionAPI) {
       setError("Speech recognition is not supported in this browser.");
       return;
     }
 
-    recognitionRef.current = new SpeechRecognition();
-    recognitionRef.current.continuous = true;
-    recognitionRef.current.interimResults = true;
-    recognitionRef.current.lang = "fr-FR"; // Default to French for this app
+    const recognition = new SpeechRecognitionAPI();
+    recognitionRef.current = recognition;
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.lang = "fr-FR";
 
-    recognitionRef.current.onstart = () => {
+    recognition.onstart = () => {
       setIsListening(true);
       setError(null);
     };
 
-    recognitionRef.current.onresult = (event) => {
-      let currentTranscript = "";
-      for (let i = event.resultIndex; i < event.results.length; i++) {
-        currentTranscript += event.results[i][0].transcript;
+    recognition.onresult = (event: any) => {
+      let fullTranscript = "";
+      for (let i = 0; i < event.results.length; i++) {
+        fullTranscript += event.results[i][0].transcript;
       }
-      setTranscript(currentTranscript);
+      setTranscript(fullTranscript);
     };
 
-    recognitionRef.current.onerror = (event) => {
+    recognition.onerror = (event: any) => {
       console.error("Speech recognition error", event.error);
       setError(`Error: ${event.error}`);
       setIsListening(false);
     };
 
-    recognitionRef.current.onend = () => {
+    recognition.onend = () => {
       setIsListening(false);
     };
 
     return () => {
-      if (recognitionRef.current) {
-        recognitionRef.current.stop();
-      }
+      recognition.stop();
     };
   }, []);
 
+  const resetTranscript = () => {
+    setTranscript("");
+  };
+
   const startListening = () => {
-    if (recognitionRef.current && !isListening) {
+    const recognition = recognitionRef.current;
+    if (recognition && !isListening) {
       setTranscript("");
       try {
-        recognitionRef.current.start();
+        recognition.start();
       } catch (err) {
         console.error("Failed to start recognition:", err);
       }
@@ -66,8 +87,9 @@ export default function useSpeechRecognition() {
   };
 
   const stopListening = () => {
-    if (recognitionRef.current && isListening) {
-      recognitionRef.current.stop();
+    const recognition = recognitionRef.current;
+    if (recognition && isListening) {
+      recognition.stop();
     }
   };
 
@@ -77,5 +99,6 @@ export default function useSpeechRecognition() {
     error,
     startListening,
     stopListening,
+    resetTranscript,
   };
 }

@@ -9,6 +9,25 @@ import { cn } from "@/lib/utils";
 
 import { loadMockCSV } from "@/utils/csvLoader";
 
+import WritingFeedbackResult from "@/components/WritingFeedbackResult";
+
+interface Question {
+  id: number;
+  Question?: string;
+  Prompt?: string;
+  Topic?: string;
+  Sentence?: string;
+  Answer?: string;
+  Translation?: string;
+  'Correct Answer'?: string;
+  Description?: string;
+  Scenario?: string;
+  Level?: string;
+  level?: string;
+  Image?: string;
+  correctAnswer?: string;
+}
+
 export default function GenericSpeakingPage({
     title,
     taskType,
@@ -22,7 +41,7 @@ export default function GenericSpeakingPage({
     const router = useRouter();
 
     // Game State
-    const [questions, setQuestions] = useState([]);
+    const [questions, setQuestions] = useState<Question[]>([]);
     const [currentIndex, setCurrentIndex] = useState(0);
     const [score, setScore] = useState(0);
     const [isGameOver, setIsGameOver] = useState(false);
@@ -31,23 +50,23 @@ export default function GenericSpeakingPage({
     // Interaction State
     const [isListening, setIsListening] = useState(false);
     const [spokenText, setSpokenText] = useState("");
-    const [evaluation, setEvaluation] = useState(null); // { score, feedback, correction, pronunciation_tips }
+    const [evaluation, setEvaluation] = useState<any>(null); // { score, feedback, correction, pronunciation_tips }
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    const recognitionRef = useRef(null);
+    const recognitionRef = useRef<any>(null);
 
     // Initialize Speech Recognition
     useEffect(() => {
-        if (window.SpeechRecognition || window.webkitSpeechRecognition) {
-            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if ((window as any).SpeechRecognition || (window as any).webkitSpeechRecognition) {
+            const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
             recognitionRef.current = new SpeechRecognition();
             recognitionRef.current.continuous = true;
             recognitionRef.current.lang = "fr-FR";
             recognitionRef.current.interimResults = true;
 
-            recognitionRef.current.onresult = (event) => {
-                const transcript = Array.from(event.results)
-                    .map((result) => result[0].transcript)
+            recognitionRef.current.onresult = (event: any) => {
+                const transcript = Array.from(event.results as any)
+                    .map((result: any) => result[0].transcript)
                     .join("");
                 setSpokenText(transcript);
             };
@@ -73,21 +92,21 @@ export default function GenericSpeakingPage({
     useEffect(() => {
         const fetchData = async () => {
             try {
-                let data = [];
+                let data: any[] = [];
                 if (csvName) {
-                    data = await loadMockCSV(csvName);
+                    data = await loadMockCSV(csvName) as any[];
                 } else if (mockData && mockData.length > 0) {
                     data = mockData;
                 } else {
                     const response = await fetch(
-                        `${process.env.NEXT_PUBLIC_API_URL}/api/practice/${sheetName}`
+                        `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"}/api/practice/${sheetName}`
                     );
                     if (!response.ok) throw new Error("Failed to fetch data");
                     const json = await response.json();
                     data = json.data || [];
                 }
 
-                const shuffled = [...data].sort(() => 0.5 - Math.random());
+                const shuffled = [...data].sort(() => 0.5 - Math.random()) as Question[];
                 setQuestions(shuffled);
             } catch (error) {
                 console.error("Error fetching speaking data:", error);
@@ -105,14 +124,14 @@ export default function GenericSpeakingPage({
         const textToSpeak = currentQuestion?.Question || currentQuestion?.Prompt || currentQuestion?.Topic || currentQuestion?.Sentence;
         if (!textToSpeak) return;
 
-        if ("speechSynthesis" in window) {
-            window.speechSynthesis.cancel();
+        if ("speechSynthesis" in (window as any)) {
+            (window as any).speechSynthesis.cancel();
             const utterance = new SpeechSynthesisUtterance(textToSpeak);
             // Try to detect if it's French or English (simplistic)
             // Usually the prompt/question is in French for speaking practice
             utterance.lang = "fr-FR";
             utterance.rate = 0.9;
-            window.speechSynthesis.speak(utterance);
+            (window as any).speechSynthesis.speak(utterance);
         }
     };
 
@@ -137,7 +156,7 @@ export default function GenericSpeakingPage({
 
         setIsSubmitting(true);
         try {
-            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/practice/evaluate-speaking`, {
+            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"}/api/practice/evaluate-speaking`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
@@ -152,7 +171,9 @@ export default function GenericSpeakingPage({
             if (!response.ok) throw new Error("Failed to evaluate");
             const result = await response.json();
             setEvaluation(result);
-            if (result.is_correct) {
+            
+            const finalScore = result.overall_score !== undefined ? result.overall_score : (result.is_correct ? 100 : 0);
+            if (finalScore >= 70) {
                 setScore((prev) => prev + 1);
             }
         } catch (error) {
@@ -203,7 +224,6 @@ export default function GenericSpeakingPage({
 
     return (
         <PracticeGameLayout
-            title={title}
             questionType={instructionEn}
             instructionFr={instructionFr}
             instructionEn={instructionEn}
@@ -217,9 +237,6 @@ export default function GenericSpeakingPage({
             isSubmitEnabled={Boolean(spokenText) && !isSubmitting}
             showSubmitButton={true}
             submitLabel={isSubmitting ? "Evaluating..." : evaluation ? "Continue" : "Submit"}
-            showFeedback={!!evaluation}
-            isCorrect={evaluation?.is_correct ?? false}
-            feedbackMessage={evaluation ? (evaluation.is_correct ? "Great job!" : "Not quite — keep practising!") : ""}
         >
             <div className="flex flex-col items-center justify-center max-w-3xl w-full gap-8">
                 {/* Task Content */}
@@ -251,49 +268,14 @@ export default function GenericSpeakingPage({
 
                 {/* Evaluation Result */}
                 {evaluation && (
-                    <div className={cn(
-                        "w-full rounded-2xl p-4 md:p-6 border animate-in slide-in-from-bottom-4 duration-500",
-                        evaluation.is_correct
-                            ? "bg-emerald-50 border-emerald-200 dark:bg-emerald-950/20 dark:border-emerald-800"
-                            : "bg-amber-50 border-amber-200 dark:bg-amber-950/20 dark:border-amber-800"
-                    )}>
-                        <div className="flex items-start gap-3 md:gap-4 mb-3">
-                            <div className={cn(
-                                "w-8 h-8 rounded-full flex items-center justify-center shrink-0 mt-0.5",
-                                evaluation.is_correct
-                                    ? "bg-emerald-500 text-white"
-                                    : "bg-amber-500 text-white"
-                            )}>
-                                <Sparkles className="w-4 h-4" />
-                            </div>
-                            <div>
-                                <h4 className="font-bold text-slate-900 dark:text-white text-sm md:text-base">
-                                    {evaluation.is_correct ? "Well done!" : "Keep practising"}
-                                </h4>
-                                <p className="text-xs md:text-sm text-slate-600 dark:text-slate-400">
-                                    {evaluation.feedback}
-                                </p>
-                            </div>
-                        </div>
-
-                        {evaluation.correction && (
-                            <div className="mt-4 p-4 bg-white/50 dark:bg-slate-900/50 rounded-xl border border-white dark:border-slate-800">
-                                <div className="flex items-center gap-2 mb-1 text-xs font-bold text-slate-400 uppercase tracking-wider">
-                                    <MessageCircle className="w-3 h-3" /> Recommended Phrasing
-                                </div>
-                                <p className="text-slate-800 dark:text-slate-200 font-medium">
-                                    {evaluation.correction}
-                                </p>
-                            </div>
-                        )}
-
-                        {(evaluation.pronunciation_tip || evaluation.pronunciation_tips) && (
-                            <div className="mt-3 flex items-start gap-2 text-sm text-amber-700 dark:text-amber-300">
-                                <Info className="w-4 h-4 mt-0.5 flex-shrink-0" />
-                                <p><strong>Tip:</strong> {evaluation.pronunciation_tip || evaluation.pronunciation_tips}</p>
-                            </div>
-                        )}
-                    </div>
+                  <div className="w-full animate-in slide-in-from-bottom-8 duration-700">
+                    <WritingFeedbackResult 
+                      evaluation={evaluation} 
+                      mode="speaking" 
+                      userText={spokenText}
+                      onContinue={handleNext}
+                    />
+                  </div>
                 )}
 
                 {/* Mic Button & Interaction */}
