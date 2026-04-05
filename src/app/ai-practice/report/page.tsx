@@ -359,8 +359,13 @@ export default function FeedbackReportPage() {
             </div>
           </div>
 
+          {/* Transcript */}
+          {report.messages && report.messages.length > 0 && (
+            <TranscriptSection messages={report.messages} />
+          )}
+
           {/* Sections */}
-          <div className="space-y-4">
+          <div className="space-y-4 mt-6">
             {sections.map((section, idx) => {
               const sectionNum = idx + 1;
               const Icon = SECTION_ICONS[sectionNum] ?? BookOpen;
@@ -381,10 +386,6 @@ export default function FeedbackReportPage() {
             })}
           </div>
 
-          {/* Transcript */}
-          {report.messages && report.messages.length > 0 && (
-            <TranscriptSection messages={report.messages} />
-          )}
         </div>
       </div>
 
