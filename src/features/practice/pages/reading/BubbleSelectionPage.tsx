@@ -293,7 +293,8 @@ function BubbleSelectionPageContent() {
           currentQuestion?.instructionFr || "Construisez la phrase en français"
         }
         instructionEn={
-          currentQuestion?.instructionEn || "Build the sentence in French"
+          currentQuestion?.instructionEn ||
+          "Build the sentence in French "
         }
         progress={progress}
         isGameOver={isCompleted}

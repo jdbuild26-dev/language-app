@@ -278,19 +278,21 @@ export default function PracticeGameLayout({
       {/* ── HEADER ──────────────────────────────────────────────────────────── */}
       <header className="shrink-0 flex flex-col min-h-[96px] sm:min-h-[84px] lg:min-h-[6rem] bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 z-10">
         {/* Row 1: Speaker | Title + Lang icon | Settings */}
-        <div className="relative flex-1 flex items-center px-3 py-2 sm:px-4 sm:py-2.5 lg:px-6">
+        <div className="relative flex-1 flex items-center justify-center px-3 py-3 sm:px-4 sm:py-4 lg:px-6 min-h-[96px] sm:min-h-[84px] lg:min-h-[6rem]">
           {/* Speaker icon — left */}
-          <div className="flex items-center shrink-0 w-7 sm:w-8 lg:w-12 z-10">
-            <img
-              src="/favicon.svg"
-              alt=""
-              className="w-4 h-4 sm:w-5 sm:h-5 lg:w-7 lg:h-7"
-            />
+          <div className="absolute left-3 sm:left-4 lg:left-6 inset-y-0 flex items-center z-10 pointer-events-auto">
+            <div className="flex items-center shrink-0 w-7 sm:w-8 lg:w-12">
+              <img
+                src="/favicon.svg"
+                alt=""
+                className="w-4 h-4 sm:w-5 sm:h-5 lg:w-7 lg:h-7"
+              />
+            </div>
           </div>
 
-          {/* Title + Language toggle — perfectly centered */}
-          <div className="absolute inset-0 flex items-center justify-center pointer-events-none px-10 sm:px-24 lg:px-40">
-            <div className="flex items-center gap-1.5 sm:gap-2 pointer-events-auto">
+          {/* Title + Language toggle — perfectly centered in flow */}
+          <div className="flex items-center justify-center z-0 w-full px-10 sm:px-20 lg:px-48 pointer-events-auto">
+            <div className="flex items-center justify-center gap-1.5 sm:gap-2 max-w-full">
               <AnimatePresence mode="wait">
                 <motion.h1
                   key={instruction}
@@ -298,7 +300,8 @@ export default function PracticeGameLayout({
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: 6 }}
                   transition={{ duration: 0.18, ease: "easeInOut" }}
-                  className="text-sm sm:text-base lg:text-[2rem] font-semibold lg:font-bold text-slate-800 dark:text-white tracking-[-0.01em] text-center leading-snug whitespace-normal break-words max-w-[68vw] sm:max-w-[58vw] lg:max-w-[46vw]"
+                  className="text-[clamp(1.1rem,2.2vw,1.9rem)] font-semibold lg:font-bold text-slate-800 dark:text-white tracking-[-0.01em] text-center leading-snug break-words"
+                  title={instruction}
                 >
                   {instruction}
                 </motion.h1>
@@ -309,14 +312,14 @@ export default function PracticeGameLayout({
                   className="shrink-0 text-slate-400 hover:text-blue-500 transition-colors"
                   title="Toggle translation"
                 >
-                  <Languages className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                  <Languages className="w-4 h-4 sm:w-5 sm:h-5" />
                 </button>
               )}
             </div>
           </div>
 
           {/* Top meta + controls — right */}
-          <div className="ml-auto flex items-center gap-1.5 sm:gap-2 shrink-0 z-10">
+          <div className="absolute right-3 sm:right-4 lg:right-6 inset-y-0 flex items-center gap-1.5 sm:gap-2 z-10 pointer-events-auto">
             <div className="hidden lg:flex h-9 px-3 rounded-full border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 text-slate-700 dark:text-slate-200 text-sm font-semibold tabular-nums items-center gap-1.5">
               <ListChecks className="w-4 h-4 text-blue-600 dark:text-blue-300" />
               {displayQuestionNumber}/{totalQuestions}
