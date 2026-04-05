@@ -289,7 +289,7 @@ export default function TrueFalsePage() {
       >
         <div
           className={cn(
-            "practice-reading-page-shell flex flex-col md:flex-row gap-3 p-3 mx-auto overflow-hidden md:h-[570px] md:min-h-[570px] md:max-h-[570px]",
+            "practice-reading-page-shell flex flex-col md:flex-row gap-3 p-3 mx-auto overflow-hidden flex-1 min-h-0",
           )}
         >
           <div className="flex-1 md:basis-[70%] md:max-w-[70%] min-h-0 md:h-full flex flex-col bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden">

@@ -279,7 +279,7 @@ export default function ConversationPage() {
       customEndGameContent={customEndGameContent}
     >
       {/* Two-column layout */}
-      <div className="practice-reading-page-shell flex flex-col md:flex-row gap-3 p-3 mx-auto overflow-hidden">
+      <div className="practice-reading-page-shell flex flex-col md:flex-row gap-3 p-3 mx-auto overflow-hidden flex-1 min-h-0">
         {/* LEFT: Conversation bubbles */}
         <div className="flex-1 min-h-0 flex flex-col bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden">
           <div className="px-5 py-3 border-b-[2px] border-slate-100 dark:border-slate-700">

@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useEffect } from "react";
@@ -234,6 +235,7 @@ export default function HighlightTextPage() {
   return (
     <>
       <PracticeGameLayout
+        disableContentScroll
         questionType="Highlight the Text"
         questionTypeFr="Surligner le texte"
         questionTypeEn="Highlight Text"
@@ -274,30 +276,29 @@ export default function HighlightTextPage() {
         correctAnswer={!isCorrect ? currentQuestion.correctAnswer : undefined}
         feedbackMessage={feedbackMessage}
       >
-        <div className="practice-reading-page-shell flex flex-col gap-3 p-3 sm:gap-4 sm:p-4 md:flex-row md:gap-4 md:overflow-hidden md:h-[calc(100vh-176px)] md:max-h-[calc(100vh-176px)] lg:gap-5">
+        <div className="practice-reading-page-shell flex flex-col flex-1 min-h-0 gap-4 p-3 sm:gap-5 sm:p-4 md:grid md:grid-cols-2 md:gap-5 md:overflow-hidden md:p-5 md:h-full">
           {/* Left Column: Passage*/}
-          <div className="w-full md:flex-1 md:min-h-0 bg-white dark:bg-slate-800 rounded-2xl p-4 sm:p-5 md:p-6 shadow-sm border border-slate-200 dark:border-slate-700 flex flex-col overflow-hidden min-h-[280px]">
-            <div className="flex flex-col gap-2 border-b border-slate-200 pb-3 mb-4 dark:border-slate-700 sm:flex-row sm:items-center sm:justify-between">
-              <h3 className="text-sm font-bold text-slate-500 uppercase tracking-wider">
+          <div className="w-full md:min-h-0 bg-white dark:bg-slate-800 rounded-xl p-4 sm:p-4 md:p-4 shadow-sm border border-slate-200 dark:border-slate-700 flex flex-col overflow-hidden min-h-[200px]">
+            <div className="flex flex-col gap-1.5 border-b border-slate-200 pb-2 mb-3 dark:border-slate-700 sm:flex-row sm:items-center sm:justify-between">
+              <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wide">
                 {currentQuestion.title}
               </h3>
-              <div className="text-xs text-slate-400 italic flex items-center gap-1.5 sm:justify-end">
+              <div className="text-sm text-slate-400 italic flex items-center gap-2 sm:justify-end">
                 <RefreshCw className="w-3 h-3" />
                 Drag text to answer
               </div>
             </div>
             <div
               ref={passageRef}
-              className="prose dark:prose-invert max-w-none text-base sm:text-lg leading-7 sm:leading-relaxed text-slate-800 dark:text-slate-200 select-text flex-1 min-h-[220px] md:min-h-0 overflow-y-auto custom-scrollbar"
+              className="practice-reading-passage-text prose dark:prose-invert max-w-none select-text flex-1 min-h-[120px] md:min-h-0 overflow-y-auto custom-scrollbar"
             >
               {currentQuestion.passage}
             </div>
           </div>
 
           {/* Right Column: Interaction */}
-          <div className="w-full md:flex-1 md:min-h-0 flex flex-col justify-start">
-            <div className="bg-white dark:bg-slate-800 rounded-2xl p-4 sm:p-6 md:p-8 shadow-sm border border-slate-200 dark:border-slate-700 flex flex-col overflow-y-auto custom-scrollbar md:flex-1 md:min-h-0 min-h-[220px]">
-              <div className="mb-5 sm:mb-6 flex items-start gap-2 sm:gap-3">
+          <div className="w-full md:min-h-0 bg-white dark:bg-slate-800 rounded-xl p-3 sm:p-4 md:p-4 shadow-sm border border-slate-200 dark:border-slate-700 flex flex-col overflow-y-auto custom-scrollbar min-h-[160px]">
+              <div className="mb-3 sm:mb-4 flex items-start gap-2 sm:gap-3">
                 <button
                   type="button"
                   onClick={handleTranslateQuestion}
@@ -316,7 +317,7 @@ export default function HighlightTextPage() {
                     <Languages className="w-5 h-5" />
                   )}
                 </button>
-                <h2 className="practice-reading-heading leading-tight">
+                <h2 className="practice-reading-heading leading-tight text-xl md:text-2xl">
                   {showTranslation && translatedQuestion
                     ? translatedQuestion
                     : currentQuestion.question}
@@ -326,7 +327,7 @@ export default function HighlightTextPage() {
               {/* Selection Box */}
               <div
                 className={cn(
-                  "border-2 rounded-xl p-4 sm:p-5 min-h-[96px] sm:min-h-[112px] flex items-center justify-center text-center text-sm sm:text-base transition-all bg-slate-50 dark:bg-slate-900/50 break-words",
+                  "border-2 rounded-xl p-3 mt-4 sm:p-4 min-h-[80px] sm:min-h-[96px] flex items-center justify-center text-center text-base sm:text-lg transition-all bg-slate-50 dark:bg-slate-900/50 break-words",
                   selectedText
                     ? "border-blue-500 bg-blue-50 dark:bg-blue-900/10 text-slate-800 dark:text-slate-200"
                     : "border-dashed border-slate-300 dark:border-slate-600 text-slate-400",
@@ -347,7 +348,6 @@ export default function HighlightTextPage() {
                   </Button>
                 </div>
               )}
-            </div>
           </div>
         </div>
       </PracticeGameLayout>

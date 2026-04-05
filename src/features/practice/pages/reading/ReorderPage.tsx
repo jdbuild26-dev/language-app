@@ -185,7 +185,7 @@ export default function ReorderPage() {
         submitLabel="Submit Answer"
         timerValue={timerString}
       >
-        <div className="practice-reading-page-shell flex flex-col items-center justify-center w-full max-w-7xl mx-auto px-3 sm:px-4">
+        <div className="practice-reading-page-shell flex flex-col items-center justify-center w-full max-w-7xl mx-auto px-3 sm:px-4 flex-1 min-h-0">
           <h1 className="w-full max-w-4xl mx-auto mb-8 text-center text-2xl md:text-3xl font-bold text-slate-900 dark:text-slate-100 flex items-center justify-center gap-2">
             <Languages className="w-5 h-5 text-blue-500 shrink-0" />
             <span>{currentQuestion?.title || "Reorder the Sentences"}</span>

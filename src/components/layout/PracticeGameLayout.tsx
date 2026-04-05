@@ -269,12 +269,12 @@ export default function PracticeGameLayout({
   );
 
   return (
-    <div className="flex flex-col min-h-screen dark:bg-slate-950 overflow-hidden font-sans">
+    <div className="flex flex-col h-dvh max-h-dvh dark:bg-slate-950 overflow-hidden font-sans">
       <Suspense fallback={null}>
         <AssignmentIdSync onChange={setAssignmentId} />
       </Suspense>
       {/* ── HEADER ──────────────────────────────────────────────────────────── */}
-      <header className="shrink-0 flex flex-col min-h-[68px] sm:min-h-[74px] lg:min-h-20 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 z-10">
+      <header className="shrink-0 flex flex-col min-h-[96px] sm:min-h-[84px] lg:min-h-[6rem] bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 z-10">
         {/* Row 1: Speaker | Title + Lang icon | Settings */}
         <div className="relative flex-1 flex items-center px-3 py-2 sm:px-4 sm:py-2.5 lg:px-6">
           {/* Speaker icon — left */}
@@ -296,7 +296,7 @@ export default function PracticeGameLayout({
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: 6 }}
                   transition={{ duration: 0.18, ease: "easeInOut" }}
-                  className="text-[13px] sm:text-base lg:text-[1.5rem] font-semibold lg:font-bold text-slate-800 dark:text-white tracking-[-0.01em] text-center leading-tight truncate max-w-[48vw] sm:max-w-[46vw] lg:max-w-[46vw]"
+                  className="text-sm sm:text-base lg:text-[2rem] font-semibold lg:font-bold text-slate-800 dark:text-white tracking-[-0.01em] text-center leading-snug whitespace-normal break-words max-w-[68vw] sm:max-w-[58vw] lg:max-w-[46vw]"
                 >
                   {instruction}
                 </motion.h1>
@@ -358,10 +358,8 @@ export default function PracticeGameLayout({
       {/* ── CONTENT ─────────────────────────────────────────────────────────── */}
       <main
         className={cn(
-          "flex-1 min-h-0 overflow-y-auto overflow-x-hidden flex bg-neutral-50 flex-col",
-          showSubmitButton && !showFeedback && "pb-20 sm:pb-24 lg:pb-28",
-          showFeedback && "pb-[188px] sm:pb-[168px] lg:pb-[152px]",
-          disableContentScroll ? "overflow-hidden pb-0" : "",
+          "flex-1 min-h-0 overflow-x-hidden flex bg-neutral-50 dark:bg-slate-950 flex-col",
+          disableContentScroll ? "overflow-hidden" : "overflow-y-auto",
         )}
       >
         <div className="w-full mx-auto flex-1 min-h-0 flex flex-col">
@@ -369,9 +367,9 @@ export default function PracticeGameLayout({
         </div>
       </main>
 
-      {/* ── FOOTER BAR (fixed bottom, hidden when feedback is showing) ───── */}
+      {/* ── FOOTER BAR (in-flow, hidden when feedback is showing) ───── */}
       {showSubmitButton && !showFeedback && (
-        <div className="fixed bottom-0 left-0 right-0 h-16 sm:h-[72px] lg:h-20 bg-white/95 dark:bg-slate-900/95 backdrop-blur border-t border-slate-200 dark:border-slate-800">
+        <div className="shrink-0 h-14 sm:h-16 lg:h-[4.5rem] bg-white/95 dark:bg-slate-900/95 backdrop-blur border-t border-slate-200 dark:border-slate-800">
           <div className="mx-auto px-3 sm:px-4 md:px-5 h-full flex items-center justify-stretch sm:justify-end pb-[max(env(safe-area-inset-bottom,0px),0px)]">
             <div className="w-full sm:w-auto justify-self-end">
               <button

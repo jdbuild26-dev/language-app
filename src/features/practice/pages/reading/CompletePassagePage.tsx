@@ -340,7 +340,7 @@ export default function CompletePassagePage() {
           : undefined
       }
     >
-      <div className="practice-reading-page-shell flex flex-col md:flex-row gap-3 p-3 mx-auto overflow-hidden md:h-[calc(100vh-176px)] md:max-h-[calc(100vh-176px)]">
+      <div className="practice-reading-page-shell flex flex-col md:flex-row gap-3 p-3 mx-auto overflow-hidden flex-1 min-h-0">
         <div className="flex-1 min-h-0 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 p-6 md:p-8 overflow-y-auto">
           <p className="text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-[0.14em] mb-5">
             PASSAGE

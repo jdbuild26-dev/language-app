@@ -161,7 +161,7 @@ export default function HighlightPage() {
           showFeedback ? (isCorrect ? "success" : "error") : "neutral"
         }
       >
-        <div className="flex flex-col items-center w-full max-w-2xl mx-auto px-4 py-6 pb-[100px]">
+        <div className="flex flex-col items-center w-full max-w-2xl mx-auto px-4 py-6 pb-[100px] flex-1 min-h-0">
           {/* Question */}
           <div className="w-full bg-gradient-to-r from-emerald-500 to-teal-600 rounded-2xl p-6 mb-6 shadow-lg">
             <p className="text-lg md:text-xl text-white font-semibold text-center flex items-center justify-center gap-2">
