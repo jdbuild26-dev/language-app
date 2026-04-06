@@ -6,7 +6,6 @@ import { Loader2, AlertCircle, BarChart2, FileDown, LogOut, X } from "lucide-rea
 import ChatHeader from "@/features/ai-practice/components/chat/ChatHeader";
 import ChatInput from "@/features/ai-practice/components/chat/ChatInput";
 import MessageBubble from "@/features/ai-practice/components/chat/MessageBubble";
-import ConversationWarmup from "@/features/ai-practice/components/ConversationWarmup";
 import {
   fetchTopicBySlug,
   sendChatMessage,
@@ -50,7 +49,6 @@ export default function ChatPage() {
   const [initError, setInitError] = useState<string | null>(null);
   const [sendError, setSendError] = useState<string | null>(null);
 
-  const [showWarmup, setShowWarmup] = useState(true);
   const [showEndModal, setShowEndModal] = useState(false);
   const [analysisData, setAnalysisData] = useState<any>(null);
   const [isLoadingReport, setIsLoadingReport] = useState(false);
@@ -118,7 +116,7 @@ export default function ChatPage() {
             id: "greeting",
             sender: "ai",
             text: greetingText,
-            autoPlay: false,
+            autoPlay: true,
           },
         ]);
       } catch (err) {
@@ -131,13 +129,6 @@ export default function ChatPage() {
 
     init();
   }, [topicSlug]);
-
-  const handleWarmupComplete = () => {
-    setShowWarmup(false);
-    setMessages((prev) =>
-      prev.map((m, i) => (i === 0 ? { ...m, autoPlay: true } : m))
-    );
-  };
 
   const handleSendMessage = async (text: string) => {
     if (!text.trim() || isSending || !scenario) return;
@@ -194,6 +185,7 @@ export default function ChatPage() {
             id: `ai-${Date.now()}`,
             sender: "ai" as const,
             text: response.ai_response,
+            autoPlay: true,
             timestamp: new Date().toLocaleTimeString([], {
               hour: "2-digit",
               minute: "2-digit",
@@ -233,13 +225,17 @@ export default function ChatPage() {
       mode: scenario.mode || "chat",
       objective: scenario.objective,
     })
-      .then(setAnalysisData)
-      .catch(() => {
+      .then((data) => { setAnalysisData(data); })
+      .catch((err) => {
+        console.error("Failed to analyze session:", err);
         setAnalysisData({
           cefr_assessment: scenario.level || "A1",
+          overall_score: 0,
+          overall_rating: "Very Weak",
           grammar_score: 0,
           vocabulary_score: 0,
           fluency_note: "Analysis failed. Please try again.",
+          parameters: [],
           feedback_points: [],
         });
       });
@@ -274,9 +270,12 @@ export default function ChatPage() {
       console.error("Failed to analyze session:", err);
       setAnalysisData({
         cefr_assessment: scenario.level || "A1",
+        overall_score: 0,
+        overall_rating: "Very Weak",
         grammar_score: 0,
         vocabulary_score: 0,
         fluency_note: "Analysis failed. Please try again.",
+        parameters: [],
         feedback_points: [],
       });
     }
@@ -422,8 +421,6 @@ export default function ChatPage() {
 
   return (
     <div className="fixed inset-0 z-[60] flex flex-col bg-gray-50 dark:bg-slate-950">
-      {showWarmup && <ConversationWarmup onComplete={handleWarmupComplete} />}
-
       {/* End Session modal — analytics + action buttons */}
       {showEndModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm animate-in fade-in duration-200">
@@ -453,80 +450,7 @@ export default function ChatPage() {
                   <p className="text-sm text-gray-500 dark:text-slate-400">Analysing your session...</p>
                 </div>
               ) : (
-                <>
-                  {/* CEFR + scores */}
-                  <div className="grid grid-cols-3 gap-3">
-                    <div className="bg-gray-50 dark:bg-slate-800 p-3 rounded-xl text-center">
-                      <div className="text-xs text-gray-500 dark:text-slate-400 mb-1">CEFR Level</div>
-                      <div className="text-2xl font-bold text-sky-500">{analysisData.cefr_assessment}</div>
-                    </div>
-                    {/* Grammar */}
-                    <div className="bg-gray-50 dark:bg-slate-800 p-3 rounded-xl">
-                      <div className="flex justify-between items-center mb-1.5">
-                        <span className="text-xs text-gray-500 dark:text-slate-400">Grammar</span>
-                        <span className={`text-lg font-bold ${analysisData.grammar_score >= 80 ? "text-emerald-600 dark:text-emerald-400" : analysisData.grammar_score >= 60 ? "text-amber-600 dark:text-amber-400" : "text-red-500"}`}>
-                          {analysisData.grammar_score}%
-                        </span>
-                      </div>
-                      <div className="h-1.5 bg-gray-200 dark:bg-slate-700 rounded-full overflow-hidden">
-                        <div
-                          className={`h-full rounded-full transition-all duration-700 ${analysisData.grammar_score >= 80 ? "bg-emerald-500" : analysisData.grammar_score >= 60 ? "bg-amber-500" : "bg-red-500"}`}
-                          style={{ width: `${analysisData.grammar_score}%` }}
-                        />
-                      </div>
-                    </div>
-                    {/* Vocabulary */}
-                    <div className="bg-gray-50 dark:bg-slate-800 p-3 rounded-xl">
-                      <div className="flex justify-between items-center mb-1.5">
-                        <span className="text-xs text-gray-500 dark:text-slate-400">Vocabulary</span>
-                        <span className={`text-lg font-bold ${analysisData.vocabulary_score >= 80 ? "text-emerald-600 dark:text-emerald-400" : analysisData.vocabulary_score >= 60 ? "text-amber-600 dark:text-amber-400" : "text-red-500"}`}>
-                          {analysisData.vocabulary_score}%
-                        </span>
-                      </div>
-                      <div className="h-1.5 bg-gray-200 dark:bg-slate-700 rounded-full overflow-hidden">
-                        <div
-                          className={`h-full rounded-full transition-all duration-700 ${analysisData.vocabulary_score >= 80 ? "bg-emerald-500" : analysisData.vocabulary_score >= 60 ? "bg-amber-500" : "bg-red-500"}`}
-                          style={{ width: `${analysisData.vocabulary_score}%` }}
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Fluency note */}
-                  <div className="bg-sky-50 dark:bg-sky-900/20 border border-sky-100 dark:border-sky-800 rounded-xl p-3 flex items-start gap-2">
-                    <span className="text-sky-500 mt-0.5">★</span>
-                    <div>
-                      <div className="text-xs font-semibold text-sky-600 dark:text-sky-400 mb-0.5">Fluency Assessment</div>
-                      <p className="text-sm text-gray-700 dark:text-slate-300 leading-relaxed">{analysisData.fluency_note}</p>
-                    </div>
-                  </div>
-
-                  {/* Feedback points */}
-                  {analysisData.feedback_points?.length === 0 ? (
-                    <div className="text-center py-4 text-gray-500 dark:text-slate-400 text-sm">
-                      ✓ No major errors detected. Great job!
-                    </div>
-                  ) : (
-                    <div className="space-y-2">
-                      <div className="text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wide">Detailed Feedback</div>
-                      {analysisData.feedback_points?.map((point: any, i: number) => (
-                        <div key={i} className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl overflow-hidden text-sm">
-                          <div className="px-3 py-2 bg-red-50/60 dark:bg-red-900/10 border-b border-red-100 dark:border-red-900/20">
-                            <span className="text-xs font-semibold text-red-500 uppercase tracking-wide">Mistake </span>
-                            <span className="text-gray-700 dark:text-gray-300 line-through decoration-red-400/60">{point.error}</span>
-                          </div>
-                          <div className="px-3 py-2">
-                            <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 uppercase tracking-wide">Correction </span>
-                            <span className="text-gray-900 dark:text-white">{point.correction}</span>
-                            {point.explanation && (
-                              <p className="text-xs text-gray-500 dark:text-slate-400 italic mt-0.5">{point.explanation}</p>
-                            )}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </>
+                <AnalyticsContent analysisData={analysisData} />
               )}
             </div>
 
@@ -597,11 +521,113 @@ export default function ChatPage() {
       <ChatInput
         onSend={handleSendMessage}
         onHint={handleHint}
-        disabled={isSending || showWarmup}
+        disabled={isSending}
       />
 
       {/* Hidden transcript print container */}
       <div id="transcript-print-container" className="hidden" aria-hidden="true" />
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// AnalyticsContent — parameter bars with click-to-reveal ⓘ tooltip
+// ---------------------------------------------------------------------------
+function ParameterRow({ param }: { param: any }) {
+  const [open, setOpen] = useState(false);
+  const barColor = param.score >= 75 ? "bg-emerald-500" : param.score >= 60 ? "bg-amber-500" : "bg-red-500";
+
+  return (
+    <div className="space-y-1">
+      <div className="flex items-center gap-3">
+        <span className="font-semibold text-sm text-gray-800 dark:text-slate-100 flex-1 leading-tight">
+          {param.name}
+        </span>
+        <div className="relative shrink-0">
+          <button
+            onClick={() => setOpen((v) => !v)}
+            className={`rounded-full transition-colors ${open ? "text-sky-500" : "text-gray-400 hover:text-gray-600 dark:hover:text-slate-300"}`}
+            aria-label="More info"
+          >
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+              <circle cx="12" cy="12" r="10" />
+              <path strokeLinecap="round" d="M12 16v-4M12 8h.01" />
+            </svg>
+          </button>
+          {open && (
+            <div className="absolute right-7 top-1/2 -translate-y-1/2 z-20 w-56 bg-slate-800 dark:bg-slate-700 text-white text-xs rounded-xl px-3 py-2.5 shadow-2xl border border-slate-600">
+              {/* Arrow pointing right toward the button */}
+              <span className="absolute right-[-6px] top-1/2 -translate-y-1/2 w-0 h-0 border-t-[6px] border-t-transparent border-b-[6px] border-b-transparent border-l-[6px] border-l-slate-800 dark:border-l-slate-700" />
+              {param.tooltip}
+            </div>
+          )}
+        </div>
+      </div>
+      <div className="flex-1 h-2 bg-gray-200 dark:bg-slate-700 rounded-full overflow-hidden">
+        <div
+          className={`h-full rounded-full transition-all duration-700 ${barColor}`}
+          style={{ width: `${param.score}%` }}
+        />
+      </div>
+    </div>
+  );
+}
+
+function AnalyticsContent({ analysisData }: { analysisData: any }) {
+  const scoreColor = (s: number) =>
+    s >= 75 ? "text-emerald-500" : s >= 60 ? "text-amber-500" : "text-red-500";
+
+  const overallScore = analysisData.overall_score
+    ?? (analysisData.parameters?.length > 0
+      ? Math.round(
+          analysisData.parameters.reduce((sum: number, p: any) => sum + (p.score * (p.weight ?? (1 / analysisData.parameters.length))), 0)
+        )
+      : Math.round(((analysisData.grammar_score ?? 0) + (analysisData.vocabulary_score ?? 0)) / 2));
+
+  const overallRating = analysisData.overall_rating || (
+    overallScore >= 90 ? "Excellent" :
+    overallScore >= 75 ? "Good" :
+    overallScore >= 60 ? "Fair" :
+    overallScore >= 40 ? "Weak" : "Very Weak"
+  );
+
+  // Use all 10 parameters from backend; fall back to grammar+vocab only if truly absent
+  const rawParams = Array.isArray(analysisData.parameters) ? analysisData.parameters : [];
+  const parameters: any[] = rawParams.length > 0
+    ? rawParams
+    : [
+        { name: "Grammar control", tooltip: "How well the learner managed sentence formation and grammar.", score: analysisData.grammar_score ?? 0 },
+        { name: "Vocabulary control", tooltip: "How well the learner used appropriate vocabulary for the situation.", score: analysisData.vocabulary_score ?? 0 },
+      ];
+
+  return (
+    <div className="space-y-4">
+      {/* CEFR + Overall + Rating */}
+      <div className="grid grid-cols-3 gap-3">
+        <div className="bg-gray-50 dark:bg-slate-800 p-3 rounded-xl text-center">
+          <div className="text-xs text-gray-500 dark:text-slate-400 mb-1">CEFR Level</div>
+          <div className="text-2xl font-bold text-sky-500">{analysisData.cefr_assessment}</div>
+        </div>
+        <div className="bg-gray-50 dark:bg-slate-800 p-3 rounded-xl text-center">
+          <div className="text-xs text-gray-500 dark:text-slate-400 mb-1">Overall</div>
+          <div className={`text-2xl font-bold ${scoreColor(overallScore)}`}>
+            {overallScore}%
+          </div>
+        </div>
+        <div className="bg-gray-50 dark:bg-slate-800 p-3 rounded-xl text-center">
+          <div className="text-xs text-gray-500 dark:text-slate-400 mb-1">Rating</div>
+          <div className={`text-sm font-bold ${scoreColor(overallScore)}`}>
+            {overallRating}
+          </div>
+        </div>
+      </div>
+
+      {/* Parameter bars */}
+      <div className="space-y-3">
+        {parameters.map((p: any, i: number) => (
+          <ParameterRow key={i} param={p} />
+        ))}
+      </div>
     </div>
   );
 }

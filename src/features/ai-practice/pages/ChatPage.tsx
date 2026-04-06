@@ -6,7 +6,6 @@ import { Loader2, AlertCircle } from "lucide-react";
 import ChatHeader from "@/features/ai-practice/components/chat/ChatHeader";
 import ChatInput from "@/features/ai-practice/components/chat/ChatInput";
 import MessageBubble from "@/features/ai-practice/components/chat/MessageBubble";
-import ConversationWarmup from "@/features/ai-practice/components/ConversationWarmup";
 import AnalyzeModal from "@/features/ai-practice/components/AnalyzeModal";
 import {
   fetchTopicBySlug,
@@ -50,7 +49,6 @@ export default function ChatPage() {
   const [initError, setInitError] = useState<string | null>(null);
   const [sendError, setSendError] = useState<string | null>(null);
 
-  const [showWarmup, setShowWarmup] = useState(true);
   const [showAnalyze, setShowAnalyze] = useState(false);
   const [analysisData, setAnalysisData] = useState<any>(null);
 
@@ -124,7 +122,7 @@ export default function ChatPage() {
             id: "greeting",
             sender: "ai",
             text: greetingText,
-            autoPlay: false,
+            autoPlay: true,
           },
         ]);
       } catch (err) {
@@ -137,13 +135,6 @@ export default function ChatPage() {
 
     init();
   }, [topicSlug]);
-
-  const handleWarmupComplete = () => {
-    setShowWarmup(false);
-    setMessages((prev) =>
-      prev.map((m, i) => (i === 0 ? { ...m, autoPlay: true } : m))
-    );
-  };
 
   const handleSendMessage = async (text: string) => {
     if (!text.trim() || isSending || !scenario) return;
@@ -201,6 +192,7 @@ export default function ChatPage() {
             id: `ai-${Date.now()}`,
             sender: "ai" as const,
             text: response.ai_response,
+            autoPlay: true,
             timestamp: new Date().toLocaleTimeString([], {
               hour: "2-digit",
               minute: "2-digit",
@@ -310,8 +302,6 @@ export default function ChatPage() {
 
   return (
     <div className="fixed inset-0 z-[60] flex flex-col bg-gray-50 dark:bg-slate-950">
-      {showWarmup && <ConversationWarmup onComplete={handleWarmupComplete} />}
-
       <AnalyzeModal
         isOpen={showAnalyze}
         onClose={() => router.push("/ai-practice")}
@@ -358,7 +348,7 @@ export default function ChatPage() {
       <ChatInput
         onSend={handleSendMessage}
         onHint={handleHint}
-        disabled={isSending || showWarmup}
+        disabled={isSending}
       />
     </div>
   );
