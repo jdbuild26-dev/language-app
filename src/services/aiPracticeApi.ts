@@ -169,7 +169,8 @@ export async function analyzeSession(conversationHistory, scenario) {
   if (!response.ok) {
     throw new Error(`Analysis request failed: ${response.statusText}`);
   }
-  return response.json();
+  const data = await response.json();
+  return data;
 }
 
 /**
