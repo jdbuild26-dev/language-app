@@ -4,14 +4,14 @@ import { useState } from "react";
 import { X, Loader2 } from "lucide-react";
 import { fetchTopicForLevel } from "@/services/aiPracticeApi";
 import { useRouter } from "next/navigation";
+import ConversationPreviewModal from "@/features/ai-practice/components/ConversationPreviewModal";
 
 const CEFR_LEVELS = [
   { code: "A1", label: "A1 – Beginner", color: "bg-emerald-100 text-emerald-700 border-emerald-300 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-700" },
   { code: "A2", label: "A2 – Elementary", color: "bg-teal-100 text-teal-700 border-teal-300 dark:bg-teal-900/30 dark:text-teal-300 dark:border-teal-700" },
   { code: "B1", label: "B1 – Intermediate", color: "bg-amber-100 text-amber-700 border-amber-300 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-700" },
   { code: "B2", label: "B2 – Upper Intermediate", color: "bg-orange-100 text-orange-700 border-orange-300 dark:bg-orange-900/30 dark:text-orange-300 dark:border-orange-700" },
-  { code: "C1", label: "C1 – Advanced", color: "bg-rose-100 text-rose-700 border-rose-300 dark:bg-rose-900/30 dark:text-rose-300 dark:border-rose-700" },
-  { code: "C2", label: "C2 – Mastery", color: "bg-purple-100 text-purple-700 border-purple-300 dark:bg-purple-900/30 dark:text-purple-300 dark:border-purple-700" },
+
 ];
 
 interface Props {
@@ -31,6 +31,8 @@ export default function LevelSelectModal({ topic, onClose }: Props) {
   const [selected, setSelected] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [previewScenario, setPreviewScenario] = useState<any>(null);
+  const [pendingSlug, setPendingSlug] = useState<string>("");
 
   const handleStart = async () => {
     if (!selected) return;
@@ -46,16 +48,31 @@ export default function LevelSelectModal({ topic, onClose }: Props) {
         aiRole: data.ai_role || topic.aiRole || "Conversation Partner",
         userRole: data.user_role || topic.userRole || "Learner",
         aiPrompt: data.ai_prompt || "",
-        objective: null,
+        objective: data.objective || null,
         icon: topic.icon,
       };
       sessionStorage.setItem("chatScenario", JSON.stringify(scenario));
-      router.push(`/ai-practice/scenarios/chats/${topic.slug}/chat`);
+      setPendingSlug(topic.slug);
+      setPreviewScenario(scenario);
     } catch (e) {
       setError("Could not load the prompt for this level. Please try again.");
       setLoading(false);
     }
   };
+
+  const handleConfirmStart = () => {
+    router.push(`/ai-practice/scenarios/chats/${pendingSlug}/chat`);
+  };
+
+  if (previewScenario) {
+    return (
+      <ConversationPreviewModal
+        scenario={previewScenario}
+        onStart={handleConfirmStart}
+        onClose={() => { setPreviewScenario(null); setLoading(false); }}
+      />
+    );
+  }
 
   return (
     <div
