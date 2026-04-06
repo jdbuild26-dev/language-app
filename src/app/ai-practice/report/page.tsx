@@ -14,6 +14,7 @@ import {
   TrendingUp,
   Layers,
 } from "lucide-react";
+import { InlineDiff } from "@/lib/inlineDiff";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -253,13 +254,12 @@ function TranscriptSection({ messages }: { messages: StoredMessage[] }) {
                     : "bg-gray-100 dark:bg-slate-800 text-gray-800 dark:text-slate-200 rounded-tl-sm"
                 }`}
               >
-                {msg.text}
+                {msg.sender === "user" && msg.correction ? (
+                  <InlineDiff original={msg.text} corrected={msg.correction} />
+                ) : (
+                  msg.text
+                )}
               </div>
-              {msg.sender === "user" && msg.correction && (
-                <div className="mt-1 max-w-[85%] px-3 py-1.5 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg text-xs text-amber-800 dark:text-amber-300">
-                  ✓ Correction: <span className="font-medium">{msg.correction}</span>
-                </div>
-              )}
               {msg.timestamp && (
                 <span className="text-xs text-gray-400 dark:text-slate-500 mt-1 px-1">
                   {msg.timestamp}
@@ -419,11 +419,10 @@ export default function FeedbackReportPage() {
               {report.messages.map((msg, i) => (
                 <div key={i} style={{ marginBottom: "10px" }}>
                   <strong>{msg.sender === "ai" ? "AI" : "You"}{msg.timestamp ? ` (${msg.timestamp})` : ""}:</strong>{" "}
-                  {msg.text}
-                  {msg.sender === "user" && msg.correction && (
-                    <div style={{ marginTop: "2px", color: "#b45309", fontSize: "10pt" }}>
-                      ✓ Correction: {msg.correction}
-                    </div>
+                  {msg.sender === "user" && msg.correction ? (
+                    <PrintInlineDiff original={msg.text} corrected={msg.correction} />
+                  ) : (
+                    msg.text
                   )}
                 </div>
               ))}
@@ -504,6 +503,36 @@ function PrintableSection({ content }: { content: string }) {
             {block.value}
           </p>
         ) : null;
+      })}
+    </>
+  );
+}
+
+// Print-safe inline diff (uses inline styles, no Tailwind)
+function PrintInlineDiff({ original, corrected }: { original: string; corrected: string }) {
+  const a = original.trim().split(/\s+/);
+  const b = corrected.trim().split(/\s+/);
+
+  // Build LCS dp table
+  const dp: number[][] = Array.from({ length: a.length + 1 }, () => new Array(b.length + 1).fill(0));
+  for (let i = 1; i <= a.length; i++)
+    for (let j = 1; j <= b.length; j++)
+      dp[i][j] = a[i-1] === b[j-1] ? dp[i-1][j-1] + 1 : Math.max(dp[i-1][j], dp[i][j-1]);
+
+  const ops: { type: "keep"|"remove"|"add"; word: string }[] = [];
+  let i = a.length, j = b.length;
+  while (i > 0 || j > 0) {
+    if (i > 0 && j > 0 && a[i-1] === b[j-1]) { ops.unshift({ type: "keep", word: a[i-1] }); i--; j--; }
+    else if (j > 0 && (i === 0 || dp[i][j-1] >= dp[i-1][j])) { ops.unshift({ type: "add", word: b[j-1] }); j--; }
+    else { ops.unshift({ type: "remove", word: a[i-1] }); i--; }
+  }
+
+  return (
+    <>
+      {ops.map((op, idx) => {
+        if (op.type === "keep") return <span key={idx}>{op.word} </span>;
+        if (op.type === "remove") return <span key={idx} style={{ textDecoration: "line-through", opacity: 0.55 }}>{op.word} </span>;
+        return <span key={idx} style={{ fontWeight: "bold", color: "#059669" }}>{op.word} </span>;
       })}
     </>
   );
