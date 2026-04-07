@@ -1,20 +1,24 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
-  Printer,
+  FileDown,
+  MessageCircle,
+  BookOpen,
+  Info,
+  ArrowRight,
+  Target,
   CheckCircle2,
   XCircle,
-  BookOpen,
-  BarChart2,
-  MessageSquare,
-  Target,
-  TrendingUp,
-  Layers,
 } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 import { InlineDiff } from "@/lib/inlineDiff";
+import { useTextToSpeech } from "@/hooks/useTextToSpeech";
+import { jsPDF } from "jspdf";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -34,10 +38,25 @@ interface ReportData {
   messages: StoredMessage[];
 }
 
+interface ParsedTweak {
+  original: string;
+  corrected: string;
+  explanation: string;
+}
+
+interface ParsedReport {
+  overall_score: number;
+  cefr_level: string;
+  executive_summary: string;
+  improved_version: string;
+  detailed_tweaks: ParsedTweak[];
+  sections: { title: string; content: string }[];
+}
+
 // ---------------------------------------------------------------------------
-// Markdown → sections parser
+// Markdown parser — extracts structured data from the AI report markdown
 // ---------------------------------------------------------------------------
-function parseSections(markdown: string): { title: string; content: string }[] {
+function parseReportMarkdown(markdown: string, level: string): ParsedReport {
   const lines = markdown.split("\n");
   const sections: { title: string; content: string }[] = [];
   let currentTitle = "";
@@ -48,7 +67,7 @@ function parseSections(markdown: string): { title: string; content: string }[] {
       if (currentTitle) {
         sections.push({ title: currentTitle, content: currentContent.join("\n").trim() });
       }
-      currentTitle = line.replace("## ", "").trim();
+      currentTitle = line.replace(/^##\s*/, "").trim();
       currentContent = [];
     } else {
       currentContent.push(line);
@@ -57,39 +76,85 @@ function parseSections(markdown: string): { title: string; content: string }[] {
   if (currentTitle) {
     sections.push({ title: currentTitle, content: currentContent.join("\n").trim() });
   }
-  return sections;
+
+  // Extract executive summary from section 1 (Overall Summary)
+  const summarySection = sections.find((s) =>
+    s.title.toLowerCase().includes("overall") || s.title.match(/^1\./)
+  );
+  const executive_summary = summarySection
+    ? summarySection.content.replace(/\|.*\n?/g, "").trim().split("\n")[0] || summarySection.content.slice(0, 300)
+    : "Session analysis complete.";
+
+  // Extract CEFR from summary text or use the level from report
+  const cefrMatch = executive_summary.match(/\b(A1|A2|B1|B2|C1|C2)\b/);
+  const cefr_level = cefrMatch ? cefrMatch[1] : level;
+
+  // Extract tweaks from mistakes table (section 5)
+  const mistakesSection = sections.find((s) =>
+    s.title.toLowerCase().includes("mistake") || s.title.match(/^5\./)
+  );
+  const detailed_tweaks: ParsedTweak[] = [];
+  if (mistakesSection) {
+    const tableRows = mistakesSection.content
+      .split("\n")
+      .filter((r) => r.trim().startsWith("|") && !r.match(/^\|[-\s|]+\|$/));
+    // Skip header row
+    for (const row of tableRows.slice(1)) {
+      const cells = row.split("|").slice(1, -1).map((c) => c.trim());
+      if (cells.length >= 2 && cells[0] && cells[1]) {
+        detailed_tweaks.push({
+          original: cells[0],
+          corrected: cells[1],
+          explanation: cells[2] || "",
+        });
+      }
+    }
+  }
+
+  // Extract improved version from section 9 or overall analysis
+  const overallSection = sections.find((s) =>
+    s.title.toLowerCase().includes("overall analysis") || s.title.match(/^9\./)
+  );
+  const improved_version = overallSection
+    ? overallSection.content.trim().split("\n")[0] || ""
+    : "";
+
+  // Derive a score: count strong/weak mentions in grammar section
+  const grammarSection = sections.find((s) =>
+    s.title.toLowerCase().includes("grammar") || s.title.match(/^8\./)
+  );
+  let overall_score = 70; // default
+  if (grammarSection) {
+    const strongCount = (grammarSection.content.match(/\bstrong\b/gi) || []).length;
+    const weakCount = (grammarSection.content.match(/\bweak\b/gi) || []).length;
+    const total = strongCount + weakCount;
+    if (total > 0) {
+      overall_score = Math.round((strongCount / total) * 100);
+    }
+  }
+
+  return { overall_score, cefr_level, executive_summary, improved_version, detailed_tweaks, sections };
 }
 
 // ---------------------------------------------------------------------------
-// Table renderer — parses markdown pipe tables
+// Table renderer
 // ---------------------------------------------------------------------------
 function MarkdownTable({ raw }: { raw: string }) {
   const rows = raw
     .split("\n")
     .map((r) => r.trim())
     .filter((r) => r.startsWith("|") && !r.match(/^\|[-\s|]+\|$/));
-
   if (rows.length === 0) return null;
-
-  const parseRow = (row: string) =>
-    row
-      .split("|")
-      .slice(1, -1)
-      .map((c) => c.trim());
-
+  const parseRow = (row: string) => row.split("|").slice(1, -1).map((c) => c.trim());
   const [header, ...body] = rows;
   const headers = parseRow(header);
-
   return (
-    <div className="overflow-x-auto rounded-xl border border-gray-200 dark:border-slate-700 mt-3">
+    <div className="overflow-x-auto rounded-xl border border-slate-100 dark:border-slate-800 mt-3">
       <table className="w-full text-sm">
         <thead>
-          <tr className="bg-gray-50 dark:bg-slate-800">
+          <tr className="bg-slate-50 dark:bg-slate-800">
             {headers.map((h, i) => (
-              <th
-                key={i}
-                className="px-4 py-2.5 text-left font-semibold text-gray-700 dark:text-slate-300 border-b border-gray-200 dark:border-slate-700"
-              >
+              <th key={i} className="px-4 py-2.5 text-left font-semibold text-slate-700 dark:text-slate-300 border-b border-slate-100 dark:border-slate-700">
                 {h}
               </th>
             ))}
@@ -98,48 +163,19 @@ function MarkdownTable({ raw }: { raw: string }) {
         <tbody>
           {body.map((row, ri) => {
             const cells = parseRow(row);
-            // Colour Strong/Weak rows
-            const isStrong = cells.some((c) =>
-              c.toLowerCase().includes("strong") || c.toLowerCase().includes("very strong")
-            );
-            const isWeak = cells.some((c) =>
-              c.toLowerCase().includes("weak") || c.toLowerCase().includes("very weak")
-            );
             return (
-              <tr
-                key={ri}
-                className={`border-b border-gray-100 dark:border-slate-800 last:border-0 ${
-                  ri % 2 === 0 ? "bg-white dark:bg-slate-900" : "bg-gray-50/50 dark:bg-slate-800/40"
-                }`}
-              >
+              <tr key={ri} className={`border-b border-slate-50 dark:border-slate-800 last:border-0 ${ri % 2 === 0 ? "bg-white dark:bg-slate-900" : "bg-slate-50/50 dark:bg-slate-800/40"}`}>
                 {cells.map((cell, ci) => {
-                  // Badge for Strong/Weak column
                   const lc = cell.toLowerCase();
                   let badge: React.ReactNode = null;
                   if (lc === "strong" || lc === "very strong") {
-                    badge = (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400">
-                        <CheckCircle2 className="w-3 h-3" /> {cell}
-                      </span>
-                    );
+                    badge = <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400"><CheckCircle2 className="w-3 h-3" />{cell}</span>;
                   } else if (lc === "weak" || lc === "very weak") {
-                    badge = (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400">
-                        <XCircle className="w-3 h-3" /> {cell}
-                      </span>
-                    );
+                    badge = <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400"><XCircle className="w-3 h-3" />{cell}</span>;
                   } else if (lc === "mixed") {
-                    badge = (
-                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400">
-                        {cell}
-                      </span>
-                    );
+                    badge = <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400">{cell}</span>;
                   }
-                  return (
-                    <td key={ci} className="px-4 py-2.5 text-gray-700 dark:text-slate-300 align-top">
-                      {badge || cell}
-                    </td>
-                  );
+                  return <td key={ci} className="px-4 py-2.5 text-slate-700 dark:text-slate-300 align-top">{badge || cell}</td>;
                 })}
               </tr>
             );
@@ -151,296 +187,13 @@ function MarkdownTable({ raw }: { raw: string }) {
 }
 
 // ---------------------------------------------------------------------------
-// Section content renderer (text + embedded tables)
+// Section content renderer
 // ---------------------------------------------------------------------------
 function SectionContent({ content }: { content: string }) {
-  // Split content into text and table blocks
   const blocks: { type: "text" | "table"; value: string }[] = [];
   const lines = content.split("\n");
   let buffer: string[] = [];
   let inTable = false;
-
-  for (const line of lines) {
-    const isTableRow = line.trim().startsWith("|");
-    if (isTableRow) {
-      if (!inTable) {
-        if (buffer.length) blocks.push({ type: "text", value: buffer.join("\n").trim() });
-        buffer = [];
-        inTable = true;
-      }
-      buffer.push(line);
-    } else {
-      if (inTable) {
-        blocks.push({ type: "table", value: buffer.join("\n") });
-        buffer = [];
-        inTable = false;
-      }
-      buffer.push(line);
-    }
-  }
-  if (buffer.length) {
-    blocks.push({ type: inTable ? "table" : "text", value: buffer.join("\n").trim() });
-  }
-
-  return (
-    <div className="space-y-3">
-      {blocks.map((block, i) =>
-        block.type === "table" ? (
-          <MarkdownTable key={i} raw={block.value} />
-        ) : block.value ? (
-          <div key={i} className="text-gray-700 dark:text-slate-300 leading-relaxed whitespace-pre-wrap text-sm">
-            {block.value}
-          </div>
-        ) : null
-      )}
-    </div>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Section icons
-// ---------------------------------------------------------------------------
-const SECTION_ICONS: Record<number, React.ElementType> = {
-  1: BarChart2,
-  2: MessageSquare,
-  3: CheckCircle2,
-  4: Target,
-  5: XCircle,
-  6: Layers,
-  7: BookOpen,
-  8: TrendingUp,
-  9: BarChart2,
-};
-
-// CEFR badge colours
-const CEFR_COLORS: Record<string, string> = {
-  A1: "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400",
-  A2: "bg-teal-100 dark:bg-teal-900/30 text-teal-700 dark:text-teal-400",
-  B1: "bg-sky-100 dark:bg-sky-900/30 text-sky-700 dark:text-sky-400",
-  B2: "bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400",
-  C1: "bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400",
-  C2: "bg-rose-100 dark:bg-rose-900/30 text-rose-700 dark:text-rose-400",
-};
-
-// ---------------------------------------------------------------------------
-// Transcript section
-// ---------------------------------------------------------------------------
-function TranscriptSection({ messages }: { messages: StoredMessage[] }) {
-  const [expanded, setExpanded] = useState(false);
-
-  return (
-    <div className="mt-8 border border-gray-200 dark:border-slate-700 rounded-2xl overflow-hidden">
-      <button
-        onClick={() => setExpanded((v) => !v)}
-        className="w-full flex items-center justify-between px-6 py-4 bg-gray-50 dark:bg-slate-800/60 hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors"
-      >
-        <span className="font-semibold text-gray-800 dark:text-white flex items-center gap-2">
-          <MessageSquare className="w-4 h-4 text-sky-500" />
-          Conversation Transcript
-        </span>
-        <span className="text-sm text-gray-500 dark:text-slate-400">
-          {expanded ? "Collapse ▲" : "Expand ▼"}
-        </span>
-      </button>
-
-      {expanded && (
-        <div className="p-6 space-y-4 bg-white dark:bg-slate-900">
-          {messages.map((msg, i) => (
-            <div key={i} className={`flex flex-col ${msg.sender === "user" ? "items-end" : "items-start"}`}>
-              <div
-                className={`max-w-[85%] px-4 py-3 rounded-2xl text-sm leading-relaxed ${
-                  msg.sender === "user"
-                    ? "bg-sky-500 text-white rounded-tr-sm"
-                    : "bg-gray-100 dark:bg-slate-800 text-gray-800 dark:text-slate-200 rounded-tl-sm"
-                }`}
-              >
-                {msg.sender === "user" && msg.correction ? (
-                  <InlineDiff original={msg.text} corrected={msg.correction} />
-                ) : (
-                  msg.text
-                )}
-              </div>
-              {msg.timestamp && (
-                <span className="text-xs text-gray-400 dark:text-slate-500 mt-1 px-1">
-                  {msg.timestamp}
-                </span>
-              )}
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Main page
-// ---------------------------------------------------------------------------
-export default function FeedbackReportPage() {
-  const router = useRouter();
-  const printAreaRef = useRef<HTMLDivElement>(null);
-  const [report, setReport] = useState<ReportData | null>(null);
-  const [sections, setSections] = useState<{ title: string; content: string }[]>([]);
-
-  useEffect(() => {
-    const stored = sessionStorage.getItem("feedbackReport");
-    if (!stored) {
-      router.replace("/ai-practice");
-      return;
-    }
-    try {
-      const data: ReportData = JSON.parse(stored);
-      setReport(data);
-      setSections(parseSections(data.report_markdown));
-    } catch {
-      router.replace("/ai-practice");
-    }
-  }, []);
-
-  const handlePrint = () => window.print();
-
-  if (!report) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-slate-950">
-        <div className="animate-spin w-8 h-8 border-4 border-sky-500 border-t-transparent rounded-full" />
-      </div>
-    );
-  }
-
-  const cefrColor = CEFR_COLORS[report.level] ?? CEFR_COLORS["B1"];
-  const formattedDate = new Date(report.date).toLocaleDateString("en-GB", {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  });
-
-  return (
-    <>
-      {/* ------------------------------------------------------------------ */}
-      {/* Screen view                                                          */}
-      {/* ------------------------------------------------------------------ */}
-      <div className="min-h-screen bg-gray-50 dark:bg-slate-950 print:hidden">
-        {/* Sticky Header */}
-        <div className="sticky top-0 z-10 bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-slate-700 px-4 py-3">
-          <div className="max-w-4xl mx-auto flex items-center justify-between">
-            <button
-              onClick={() => router.push("/ai-practice")}
-              className="flex items-center gap-2 text-gray-600 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white transition-colors text-sm font-medium"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              Back to Practice
-            </button>
-            <button
-              onClick={handlePrint}
-              className="flex items-center gap-2 px-4 py-2 bg-sky-500 hover:bg-sky-600 text-white text-sm font-semibold rounded-xl transition-colors"
-            >
-              <Printer className="w-4 h-4" />
-              Download PDF
-            </button>
-          </div>
-        </div>
-
-        {/* Report body */}
-        <div className="max-w-4xl mx-auto px-4 py-8">
-          {/* Report header card */}
-          <div className="bg-white dark:bg-slate-900 rounded-2xl border border-gray-200 dark:border-slate-700 p-8 mb-6 shadow-sm">
-            <div className="flex items-start justify-between flex-wrap gap-4">
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-1">
-                  Session Feedback Report
-                </h1>
-                <p className="text-gray-500 dark:text-slate-400 text-sm">
-                  {report.title} · {formattedDate}
-                </p>
-              </div>
-              <span className={`px-4 py-1.5 rounded-full text-sm font-bold ${cefrColor}`}>
-                {report.level} Level
-              </span>
-            </div>
-          </div>
-
-          {/* Transcript */}
-          {report.messages && report.messages.length > 0 && (
-            <TranscriptSection messages={report.messages} />
-          )}
-
-          {/* Sections */}
-          <div className="space-y-4 mt-6">
-            {sections.map((section, idx) => {
-              const sectionNum = idx + 1;
-              const Icon = SECTION_ICONS[sectionNum] ?? BookOpen;
-              return (
-                <div
-                  key={idx}
-                  className="bg-white dark:bg-slate-900 rounded-2xl border border-gray-200 dark:border-slate-700 p-6 shadow-sm"
-                >
-                  <h2 className="text-base font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-                    <span className="flex items-center justify-center w-7 h-7 rounded-lg bg-sky-100 dark:bg-sky-900/30 shrink-0">
-                      <Icon className="w-4 h-4 text-sky-600 dark:text-sky-400" />
-                    </span>
-                    {section.title}
-                  </h2>
-                  <SectionContent content={section.content} />
-                </div>
-              );
-            })}
-          </div>
-
-        </div>
-      </div>
-
-      {/* ------------------------------------------------------------------ */}
-      {/* Print-only version                                                   */}
-      {/* ------------------------------------------------------------------ */}
-      <div ref={printAreaRef} id="report-print-area" style={{ display: 'none' }}>
-        <div style={{ fontFamily: "Georgia, serif", fontSize: "11pt", lineHeight: 1.6, padding: "20mm" }}>
-          <div style={{ borderBottom: "2px solid #333", paddingBottom: "12px", marginBottom: "24px" }}>
-            <h1 style={{ fontSize: "18pt", margin: 0 }}>Session Feedback Report</h1>
-            <p style={{ margin: "4px 0 0", color: "#555" }}>
-              {report.title} · {report.level} Level · {formattedDate}
-            </p>
-          </div>
-
-          {sections.map((section, idx) => (
-            <div key={idx} style={{ marginBottom: "20px", pageBreakInside: "avoid" }}>
-              <h2 style={{ fontSize: "13pt", borderBottom: "1px solid #ccc", paddingBottom: "4px", marginBottom: "8px" }}>
-                {section.title}
-              </h2>
-              <PrintableSection content={section.content} />
-            </div>
-          ))}
-
-          {/* Transcript in print */}
-          {report.messages && report.messages.length > 0 && (
-            <div style={{ marginTop: "24px", pageBreakBefore: "auto" }}>
-              <h2 style={{ fontSize: "13pt", borderBottom: "1px solid #ccc", paddingBottom: "4px", marginBottom: "12px" }}>
-                Conversation Transcript
-              </h2>
-              {report.messages.map((msg, i) => (
-                <div key={i} style={{ marginBottom: "10px" }}>
-                  <strong>{msg.sender === "ai" ? "AI" : "You"}{msg.timestamp ? ` (${msg.timestamp})` : ""}:</strong>{" "}
-                  {msg.sender === "user" && msg.correction ? (
-                    <PrintInlineDiff original={msg.text} corrected={msg.correction} />
-                  ) : (
-                    msg.text
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-    </>
-  );
-}
-
-// Minimal print-mode section renderer (plain text + tables)
-function PrintableSection({ content }: { content: string }) {
-  const blocks: { type: "text" | "table"; value: string }[] = [];
-  const lines = content.split("\n");
-  let buffer: string[] = [];
-  let inTable = false;
-
   for (const line of lines) {
     const isTableRow = line.trim().startsWith("|");
     if (isTableRow) {
@@ -460,80 +213,391 @@ function PrintableSection({ content }: { content: string }) {
     }
   }
   if (buffer.length) blocks.push({ type: inTable ? "table" : "text", value: buffer.join("\n").trim() });
-
   return (
-    <>
-      {blocks.map((block, i) => {
-        if (block.type === "table") {
-          const rows = block.value
-            .split("\n")
-            .map((r) => r.trim())
-            .filter((r) => r.startsWith("|") && !r.match(/^\|[-\s|]+\|$/));
-          if (!rows.length) return null;
-          const parseRow = (row: string) =>
-            row.split("|").slice(1, -1).map((c) => c.trim());
-          const [header, ...body] = rows;
-          return (
-            <table key={i} style={{ width: "100%", borderCollapse: "collapse", marginTop: "8px", fontSize: "10pt" }}>
-              <thead>
-                <tr style={{ background: "#f3f4f6" }}>
-                  {parseRow(header).map((h, hi) => (
-                    <th key={hi} style={{ border: "1px solid #d1d5db", padding: "5px 8px", textAlign: "left" }}>
-                      {h}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {body.map((row, ri) => (
-                  <tr key={ri}>
-                    {parseRow(row).map((cell, ci) => (
-                      <td key={ci} style={{ border: "1px solid #d1d5db", padding: "5px 8px", verticalAlign: "top" }}>
-                        {cell}
-                      </td>
-                    ))}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          );
-        }
-        return block.value ? (
-          <p key={i} style={{ margin: "6px 0", whiteSpace: "pre-wrap" }}>
+    <div className="space-y-3">
+      {blocks.map((block, i) =>
+        block.type === "table" ? (
+          <MarkdownTable key={i} raw={block.value} />
+        ) : block.value ? (
+          <div key={i} className="text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-wrap text-sm">
             {block.value}
-          </p>
-        ) : null;
-      })}
-    </>
+          </div>
+        ) : null
+      )}
+    </div>
   );
 }
 
-// Print-safe inline diff (uses inline styles, no Tailwind)
-function PrintInlineDiff({ original, corrected }: { original: string; corrected: string }) {
-  const a = original.trim().split(/\s+/);
-  const b = corrected.trim().split(/\s+/);
+// ---------------------------------------------------------------------------
+// Analysis row with animated progress bar
+// ---------------------------------------------------------------------------
+function AnalysisRow({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="space-y-3">
+      <div className="flex justify-between items-center px-1">
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-xl bg-emerald-50 dark:bg-emerald-950/20 flex items-center justify-center text-emerald-500">
+            <BookOpen className="w-4 h-4" />
+          </div>
+          <span className="text-base font-bold text-slate-900 dark:text-white leading-none">{label}</span>
+        </div>
+        <Info className="w-5 h-5 text-slate-300" />
+      </div>
+      <div className="relative h-2 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+        <motion.div
+          initial={{ width: 0 }}
+          animate={{ width: `${value}%` }}
+          transition={{ duration: 1, ease: "easeOut" }}
+          className="h-full bg-emerald-500 rounded-full"
+        />
+      </div>
+      <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest pl-12">
+        {value}th Percentile
+      </div>
+    </div>
+  );
+}
 
-  // Build LCS dp table
-  const dp: number[][] = Array.from({ length: a.length + 1 }, () => new Array(b.length + 1).fill(0));
-  for (let i = 1; i <= a.length; i++)
-    for (let j = 1; j <= b.length; j++)
-      dp[i][j] = a[i-1] === b[j-1] ? dp[i-1][j-1] + 1 : Math.max(dp[i-1][j], dp[i][j-1]);
+// ---------------------------------------------------------------------------
+// Transcript section (collapsible)
+// ---------------------------------------------------------------------------
+function TranscriptSection({ messages }: { messages: StoredMessage[] }) {
+  const [expanded, setExpanded] = useState(false);
+  return (
+    <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 overflow-hidden">
+      <button
+        onClick={() => setExpanded((v) => !v)}
+        className="w-full flex items-center justify-between px-6 py-4 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+      >
+        <span className="font-bold text-slate-800 dark:text-white flex items-center gap-2 text-sm uppercase tracking-tight">
+          <MessageCircle className="w-4 h-4 text-blue-500" />
+          Conversation Transcript
+        </span>
+        <span className="text-sm text-slate-400">{expanded ? "Collapse ▲" : "Expand ▼"}</span>
+      </button>
+      {expanded && (
+        <div className="p-6 space-y-4 border-t border-slate-100 dark:border-slate-800">
+          {messages.map((msg, i) => (
+            <div key={i} className={`flex flex-col ${msg.sender === "user" ? "items-end" : "items-start"}`}>
+              <div className={`max-w-[85%] px-4 py-3 rounded-2xl text-sm leading-relaxed ${msg.sender === "user" ? "bg-blue-600 text-white rounded-tr-sm" : "bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 rounded-tl-sm"}`}>
+                {msg.sender === "user" && msg.correction ? (
+                  <InlineDiff original={msg.text} corrected={msg.correction} />
+                ) : msg.text}
+              </div>
+              {msg.timestamp && <span className="text-xs text-slate-400 mt-1 px-1">{msg.timestamp}</span>}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
-  const ops: { type: "keep"|"remove"|"add"; word: string }[] = [];
-  let i = a.length, j = b.length;
-  while (i > 0 || j > 0) {
-    if (i > 0 && j > 0 && a[i-1] === b[j-1]) { ops.unshift({ type: "keep", word: a[i-1] }); i--; j--; }
-    else if (j > 0 && (i === 0 || dp[i][j-1] >= dp[i-1][j])) { ops.unshift({ type: "add", word: b[j-1] }); j--; }
-    else { ops.unshift({ type: "remove", word: a[i-1] }); i--; }
+// ---------------------------------------------------------------------------
+// Main page
+// ---------------------------------------------------------------------------
+export default function FeedbackReportPage() {
+  const router = useRouter();
+  const [report, setReport] = useState<ReportData | null>(null);
+  const [parsed, setParsed] = useState<ParsedReport | null>(null);
+  const [activeTab, setActiveTab] = useState<"overview" | "tweaks" | "sample">("overview");
+  const { speak, isSpeaking } = useTextToSpeech();
+
+  useEffect(() => {
+    const stored = sessionStorage.getItem("feedbackReport");
+    if (!stored) { router.replace("/ai-practice"); return; }
+    try {
+      const data: ReportData = JSON.parse(stored);
+      setReport(data);
+      setParsed(parseReportMarkdown(data.report_markdown, data.level));
+    } catch {
+      router.replace("/ai-practice");
+    }
+  }, []);
+
+  const handleDownloadPDF = () => {
+    if (!parsed || !report) return;
+    const doc = new jsPDF();
+    const timestamp = new Date().toLocaleString();
+    doc.setFillColor(79, 70, 229);
+    doc.rect(0, 0, 210, 40, "F");
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(22);
+    doc.setFont("helvetica", "bold");
+    doc.text("AI PRACTICE FEEDBACK REPORT", 20, 20);
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+    doc.text(`${report.title} · ${report.level} Level · ${timestamp}`, 20, 30);
+    doc.setTextColor(0, 0, 0);
+    doc.setFontSize(14);
+    doc.setFont("helvetica", "bold");
+    doc.text("Executive Summary", 20, 55);
+    doc.setFontSize(11);
+    doc.setFont("helvetica", "italic");
+    doc.setTextColor(51, 65, 85);
+    const summaryLines = doc.splitTextToSize(`"${parsed.executive_summary}"`, 170);
+    doc.text(summaryLines, 20, 65);
+    let y = 65 + summaryLines.length * 7 + 10;
+    if (parsed.detailed_tweaks.length > 0) {
+      doc.setTextColor(0, 0, 0);
+      doc.setFontSize(14);
+      doc.setFont("helvetica", "bold");
+      doc.text("Corrections", 20, y);
+      y += 10;
+      parsed.detailed_tweaks.forEach((t) => {
+        if (y > 260) { doc.addPage(); y = 20; }
+        doc.setFontSize(10);
+        doc.setFont("helvetica", "bold");
+        doc.setTextColor(239, 68, 68);
+        doc.text(`ORIGINAL: ${t.original}`, 25, y);
+        y += 5;
+        doc.setTextColor(16, 185, 129);
+        doc.text(`CORRECTION: ${t.corrected}`, 25, y);
+        y += 5;
+        doc.setFont("helvetica", "normal");
+        doc.setTextColor(100, 116, 139);
+        const expl = doc.splitTextToSize(`Note: ${t.explanation}`, 160);
+        doc.text(expl, 30, y);
+        y += expl.length * 5 + 8;
+      });
+    }
+    doc.setFontSize(8);
+    doc.setTextColor(148, 163, 184);
+    doc.text("Generated by Antigravity AI - Personalized Language Learning Platform", 105, 285, { align: "center" });
+    doc.save(`AIReport-${report.level}-${Date.now()}.pdf`);
+  };
+
+  if (!report || !parsed) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950">
+        <div className="animate-spin w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full" />
+      </div>
+    );
   }
 
+  const tabs = [
+    { id: "overview", label: "Overview & Insights" },
+    { id: "tweaks", label: "Grammar and Vocabulary Tweaks" },
+    { id: "sample", label: "Full Analysis" },
+  ] as const;
+
+  // Derive analysis scores from sections
+  const grammarSection = parsed.sections.find((s) => s.title.toLowerCase().includes("grammar") || s.title.match(/^8\./));
+  const vocabSection = parsed.sections.find((s) => s.title.toLowerCase().includes("vocab") || s.title.match(/^7\./));
+  const commSection = parsed.sections.find((s) => s.title.toLowerCase().includes("communication") || s.title.match(/^3\./));
+
+  const scoreFromSection = (section?: { content: string }) => {
+    if (!section) return 65;
+    const strong = (section.content.match(/\bstrong\b/gi) || []).length;
+    const weak = (section.content.match(/\bweak\b/gi) || []).length;
+    const total = strong + weak;
+    return total > 0 ? Math.round((strong / total) * 100) : 65;
+  };
+
+  const grammarScore = scoreFromSection(grammarSection);
+  const vocabScore = scoreFromSection(vocabSection);
+  const commScore = scoreFromSection(commSection);
+
   return (
-    <>
-      {ops.map((op, idx) => {
-        if (op.type === "keep") return <span key={idx}>{op.word} </span>;
-        if (op.type === "remove") return <span key={idx} style={{ textDecoration: "line-through", opacity: 0.55 }}>{op.word} </span>;
-        return <span key={idx} style={{ fontWeight: "bold", color: "#059669" }}>{op.word} </span>;
-      })}
-    </>
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 overflow-y-auto">
+      <div className="max-w-7xl mx-auto p-4 md:p-8 space-y-6">
+
+        {/* Top Navigation Tabs */}
+        <div className="border-b border-slate-200 dark:border-slate-800">
+          <div className="flex gap-8">
+            {tabs.map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={cn(
+                  "pb-4 px-1 text-sm font-black uppercase tracking-tighter transition-all relative",
+                  activeTab === tab.id
+                    ? "text-blue-600 dark:text-blue-400"
+                    : "text-slate-400 hover:text-slate-600"
+                )}
+              >
+                {tab.label}
+                {activeTab === tab.id && (
+                  <motion.div
+                    layoutId="activeTabUnderline"
+                    className="absolute bottom-0 left-0 right-0 h-1 bg-blue-600 rounded-t-full"
+                  />
+                )}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Tab Content */}
+        <div className="min-h-[600px]">
+          <AnimatePresence mode="wait">
+
+            {/* ---- OVERVIEW TAB ---- */}
+            {activeTab === "overview" && (
+              <motion.div
+                key="overview"
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 20 }}
+                className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start"
+              >
+                {/* Left column */}
+                <div className="lg:col-span-7 space-y-6">
+                  {/* Session info card */}
+                  <div className="bg-white dark:bg-slate-900 rounded-2xl p-8 border border-slate-100 dark:border-slate-800 shadow-sm">
+                    <div className="flex justify-between items-center mb-6">
+                      <h3 className="text-xl font-black text-slate-900 dark:text-white tracking-tight">Session Report</h3>
+                      <button
+                        onClick={() => router.push("/ai-practice")}
+                        className="flex items-center gap-1 text-blue-600 text-sm font-bold hover:underline"
+                      >
+                        <ArrowLeft className="w-3 h-3" /> Back
+                      </button>
+                    </div>
+                    <div className="text-slate-500 dark:text-slate-400 text-sm mb-4">
+                      {report.title} · {new Date(report.date).toLocaleDateString("en-GB", { year: "numeric", month: "long", day: "numeric" })}
+                    </div>
+                    {/* Summary section content */}
+                    {parsed.sections[0] && (
+                      <div className="text-slate-800 dark:text-slate-200 leading-relaxed font-medium text-base">
+                        <SectionContent content={parsed.sections[0].content} />
+                      </div>
+                    )}
+                  </div>
+
+                  {/* AI Executive Summary */}
+                  <div className="bg-blue-50/50 dark:bg-blue-900/10 rounded-2xl p-8 border border-blue-100 dark:border-blue-900/30">
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="text-blue-600"><MessageCircle className="w-6 h-6" /></div>
+                      <h3 className="text-lg font-black text-blue-900 dark:text-blue-100 uppercase tracking-tight">AI Executive Summary</h3>
+                    </div>
+                    <p className="text-lg font-medium text-blue-800 dark:text-blue-200 italic leading-relaxed">
+                      "{parsed.executive_summary}"
+                    </p>
+                  </div>
+
+                  {/* Transcript */}
+                  {report.messages && report.messages.length > 0 && (
+                    <TranscriptSection messages={report.messages} />
+                  )}
+                </div>
+
+                {/* Right column */}
+                <div className="lg:col-span-5 space-y-6">
+                  {/* Score & CEFR cards */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-100 dark:border-slate-800 shadow-sm relative flex flex-col items-center justify-center min-h-[140px]">
+                      <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest absolute top-6 left-6">Overall Score</p>
+                      <div className="bg-emerald-500 text-white font-black text-3xl px-6 py-2 rounded-lg shadow-lg mt-4">
+                        {parsed.overall_score}
+                      </div>
+                    </div>
+                    <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-100 dark:border-slate-800 shadow-sm relative flex flex-col items-center justify-center min-h-[140px]">
+                      <div className="absolute top-6 right-6"><Info className="w-4 h-4 text-slate-300" /></div>
+                      <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest absolute top-6 left-6">CEFR Level Detected</p>
+                      <div className="text-5xl font-black text-slate-900 dark:text-white mt-4">{parsed.cefr_level}</div>
+                    </div>
+                  </div>
+
+                  {/* Writing Analysis */}
+                  <div className="bg-white dark:bg-slate-900 rounded-2xl p-8 border border-slate-100 dark:border-slate-800 shadow-sm">
+                    <h4 className="text-lg font-black text-slate-900 dark:text-white uppercase tracking-tight mb-8">Session Analysis</h4>
+                    <div className="space-y-10">
+                      <AnalysisRow label="Vocabulary Range" value={vocabScore} />
+                      <AnalysisRow label="Grammar Accuracy" value={grammarScore} />
+                      <AnalysisRow label="Communication Success" value={commScore} />
+                    </div>
+                  </div>
+
+                  {/* Action buttons */}
+                  <div className="space-y-3 pt-2">
+                    <Button
+                      onClick={() => router.push("/ai-practice")}
+                      className="w-full h-12 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-black text-base shadow-xl shadow-blue-100 dark:shadow-none"
+                    >
+                      Continue Practicing
+                    </Button>
+                    <Button
+                      onClick={handleDownloadPDF}
+                      variant="outline"
+                      className="w-full h-12 rounded-xl bg-white dark:bg-slate-900 border-2 border-slate-100 dark:border-slate-800 font-bold text-slate-700 dark:text-white flex items-center justify-center gap-2"
+                    >
+                      <FileDown className="w-5 h-5" />
+                      Download Report (PDF)
+                    </Button>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+
+            {/* ---- TWEAKS TAB ---- */}
+            {activeTab === "tweaks" && (
+              <motion.div
+                key="tweaks"
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                className="space-y-6"
+              >
+                <h3 className="text-2xl font-black text-slate-900 dark:text-white uppercase tracking-tight">Grammar & Vocabulary Tweaks</h3>
+                {parsed.detailed_tweaks.length === 0 ? (
+                  <div className="bg-white dark:bg-slate-900 rounded-2xl p-12 border border-slate-100 dark:border-slate-800 text-center">
+                    <CheckCircle2 className="w-12 h-12 text-emerald-500 mx-auto mb-4" />
+                    <p className="text-lg font-bold text-slate-700 dark:text-slate-300">No corrections found — great session!</p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 gap-4">
+                    {parsed.detailed_tweaks.map((tweak, i) => (
+                      <div key={i} className="bg-white dark:bg-slate-900 rounded-2xl p-8 border border-slate-100 dark:border-slate-800 flex gap-6 hover:border-indigo-100 transition-all group">
+                        <div className="w-12 h-12 rounded-full bg-emerald-50 dark:bg-emerald-950/20 flex items-center justify-center shrink-0">
+                          <Target className="w-6 h-6 text-emerald-500" />
+                        </div>
+                        <div className="flex-1 space-y-3">
+                          <div className="flex items-center gap-4 flex-wrap">
+                            <span className="text-lg line-through text-slate-300 font-medium">{tweak.original}</span>
+                            <ArrowRight className="w-4 h-4 text-slate-400" />
+                            <span className="text-lg font-black text-emerald-600">{tweak.corrected}</span>
+                          </div>
+                          {tweak.explanation && (
+                            <p className="text-slate-600 dark:text-slate-400 leading-relaxed italic border-l-4 border-blue-500 pl-4 py-1">
+                              {tweak.explanation}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </motion.div>
+            )}
+
+            {/* ---- FULL ANALYSIS TAB ---- */}
+            {activeTab === "sample" && (
+              <motion.div
+                key="sample"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                className="space-y-4"
+              >
+                <h3 className="text-2xl font-black text-slate-900 dark:text-white uppercase tracking-tight">Full Analysis</h3>
+                {parsed.sections.map((section, idx) => (
+                  <div key={idx} className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 p-6 shadow-sm">
+                    <h2 className="text-base font-black text-slate-900 dark:text-white mb-4 uppercase tracking-tight flex items-center gap-2">
+                      <span className="flex items-center justify-center w-7 h-7 rounded-lg bg-blue-100 dark:bg-blue-900/30 shrink-0 text-blue-600 dark:text-blue-400 text-xs font-black">
+                        {idx + 1}
+                      </span>
+                      {section.title}
+                    </h2>
+                    <SectionContent content={section.content} />
+                  </div>
+                ))}
+              </motion.div>
+            )}
+
+          </AnimatePresence>
+        </div>
+      </div>
+    </div>
   );
 }
