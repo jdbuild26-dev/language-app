@@ -304,11 +304,32 @@ export default function ChatPage() {
         objective: scenario.objective,
       });
 
+      // Also fetch analysis parameters if not already available
+      let analysis = analysisData;
+      if (!analysis) {
+        try {
+          analysis = await analyzeSession(history, {
+            level: scenario.level,
+            formality: scenario.formality,
+            title: scenario.title,
+            aiPrompt: scenario.aiPrompt,
+            aiRole: scenario.aiRole,
+            userRole: scenario.userRole,
+            mode: scenario.mode || "chat",
+            objective: scenario.objective,
+          });
+        } catch {
+          analysis = null;
+        }
+      }
+
       // Store report + transcript in sessionStorage for the report page
       sessionStorage.setItem(
         "feedbackReport",
         JSON.stringify({
           ...report,
+          parameters: analysis?.parameters ?? [],
+          overall_score: analysis?.overall_score ?? null,
           messages: messages.map((m) => ({
             sender: m.sender,
             text: m.text,

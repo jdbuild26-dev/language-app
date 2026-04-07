@@ -8,8 +8,6 @@ import {
   MessageCircle,
   BookOpen,
   Info,
-  ArrowRight,
-  Target,
   CheckCircle2,
   XCircle,
 } from "lucide-react";
@@ -30,18 +28,35 @@ interface StoredMessage {
   timestamp?: string;
 }
 
+interface CefrParameter {
+  name: string;
+  tooltip: string;
+  weight: number;
+  score: number;
+}
+
 interface ReportData {
   level: string;
   title: string;
   date: string;
   report_markdown: string;
   messages: StoredMessage[];
+  parameters?: CefrParameter[];
+  overall_score?: number | null;
 }
 
 interface ParsedTweak {
   original: string;
   corrected: string;
   explanation: string;
+  native_version: string;
+}
+
+// Grammar table row (used by A1-B2 level prompts)
+interface GrammarRow {
+  area: string;
+  rating: string;
+  comment: string;
 }
 
 interface ParsedReport {
@@ -50,6 +65,7 @@ interface ParsedReport {
   executive_summary: string;
   improved_version: string;
   detailed_tweaks: ParsedTweak[];
+  grammar_rows: GrammarRow[];
   sections: { title: string; content: string }[];
 }
 
@@ -89,16 +105,26 @@ function parseReportMarkdown(markdown: string, level: string): ParsedReport {
   const cefrMatch = executive_summary.match(/\b(A1|A2|B1|B2|C1|C2)\b/);
   const cefr_level = cefrMatch ? cefrMatch[1] : level;
 
-  // Extract tweaks from mistakes table (section 5)
-  const mistakesSection = sections.find((s) =>
-    s.title.toLowerCase().includes("mistake") || s.title.match(/^5\./)
-  );
+  // Extract tweaks from sentence corrections table
+  // Primary: top-level section with "correction"/"mistake"/"error" in title, or numbered 5/6
+  // Fallback: scan ALL section contents for a 4-column pipe table (the corrections table)
+  const mistakesSection =
+    sections.find((s) => {
+      const t = s.title.toLowerCase();
+      return t.includes("mistake") || t.includes("correction") || t.includes("error") ||
+        s.title.match(/^5\./) || s.title.match(/^6\./);
+    }) ||
+    sections.find((s) => {
+      const rows = s.content.split("\n").filter((r) => r.trim().startsWith("|") && !r.match(/^\|[-\s|]+\|$/));
+      if (rows.length < 2) return false;
+      return rows[0].split("|").slice(1, -1).length >= 4;
+    });
+
   const detailed_tweaks: ParsedTweak[] = [];
   if (mistakesSection) {
     const tableRows = mistakesSection.content
       .split("\n")
       .filter((r) => r.trim().startsWith("|") && !r.match(/^\|[-\s|]+\|$/));
-    // Skip header row
     for (const row of tableRows.slice(1)) {
       const cells = row.split("|").slice(1, -1).map((c) => c.trim());
       if (cells.length >= 2 && cells[0] && cells[1]) {
@@ -106,6 +132,7 @@ function parseReportMarkdown(markdown: string, level: string): ParsedReport {
           original: cells[0],
           corrected: cells[1],
           explanation: cells[2] || "",
+          native_version: cells[3] || "",
         });
       }
     }
@@ -119,21 +146,20 @@ function parseReportMarkdown(markdown: string, level: string): ParsedReport {
     ? overallSection.content.trim().split("\n")[0] || ""
     : "";
 
-  // Derive a score: count strong/weak mentions in grammar section
-  const grammarSection = sections.find((s) =>
-    s.title.toLowerCase().includes("grammar") || s.title.match(/^8\./)
+  // Derive a score from parameter ratings section if present
+  let overall_score = 70;
+  const ratingsSection = sections.find((s) =>
+    s.title.toLowerCase().includes("parameter rating") || s.title.match(/^3\./)
   );
-  let overall_score = 70; // default
-  if (grammarSection) {
-    const strongCount = (grammarSection.content.match(/\bstrong\b/gi) || []).length;
-    const weakCount = (grammarSection.content.match(/\bweak\b/gi) || []).length;
-    const total = strongCount + weakCount;
-    if (total > 0) {
-      overall_score = Math.round((strongCount / total) * 100);
-    }
+  if (ratingsSection) {
+    const overallMatch = ratingsSection.content.match(/overall rating[:\s]+(\d+)/i);
+    if (overallMatch) overall_score = parseInt(overallMatch[1], 10);
   }
 
-  return { overall_score, cefr_level, executive_summary, improved_version, detailed_tweaks, sections };
+  // grammar_rows kept for type compatibility but no longer used
+  const grammar_rows: GrammarRow[] = [];
+
+  return { overall_score, cefr_level, executive_summary, improved_version, detailed_tweaks, grammar_rows, sections };
 }
 
 // ---------------------------------------------------------------------------
@@ -231,7 +257,7 @@ function SectionContent({ content }: { content: string }) {
 // ---------------------------------------------------------------------------
 // Analysis row with animated progress bar
 // ---------------------------------------------------------------------------
-function AnalysisRow({ label, value }: { label: string; value: number }) {
+function AnalysisRow({ label, value, tooltip }: { label: string; value: number; tooltip?: string }) {
   return (
     <div className="space-y-3">
       <div className="flex justify-between items-center px-1">
@@ -241,7 +267,11 @@ function AnalysisRow({ label, value }: { label: string; value: number }) {
           </div>
           <span className="text-base font-bold text-slate-900 dark:text-white leading-none">{label}</span>
         </div>
-        <Info className="w-5 h-5 text-slate-300" />
+        {tooltip ? (
+          <div title={tooltip}><Info className="w-5 h-5 text-slate-300 cursor-help" /></div>
+        ) : (
+          <Info className="w-5 h-5 text-slate-300" />
+        )}
       </div>
       <div className="relative h-2 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
         <motion.div
@@ -381,7 +411,9 @@ export default function FeedbackReportPage() {
     { id: "sample", label: "Full Analysis" },
   ] as const;
 
-  // Derive analysis scores from sections
+  const cefrScore = report.overall_score ?? parsed.overall_score;
+
+  // Fallback derived scores (used only if no parameters from analyzeSession)
   const grammarSection = parsed.sections.find((s) => s.title.toLowerCase().includes("grammar") || s.title.match(/^8\./));
   const vocabSection = parsed.sections.find((s) => s.title.toLowerCase().includes("vocab") || s.title.match(/^7\./));
   const commSection = parsed.sections.find((s) => s.title.toLowerCase().includes("communication") || s.title.match(/^3\./));
@@ -489,7 +521,7 @@ export default function FeedbackReportPage() {
                     <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-100 dark:border-slate-800 shadow-sm relative flex flex-col items-center justify-center min-h-[140px]">
                       <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest absolute top-6 left-6">Overall Score</p>
                       <div className="bg-emerald-500 text-white font-black text-3xl px-6 py-2 rounded-lg shadow-lg mt-4">
-                        {parsed.overall_score}
+                        {cefrScore}
                       </div>
                     </div>
                     <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-100 dark:border-slate-800 shadow-sm relative flex flex-col items-center justify-center min-h-[140px]">
@@ -499,13 +531,22 @@ export default function FeedbackReportPage() {
                     </div>
                   </div>
 
-                  {/* Writing Analysis */}
+                  {/* Session Analysis */}
                   <div className="bg-white dark:bg-slate-900 rounded-2xl p-8 border border-slate-100 dark:border-slate-800 shadow-sm">
                     <h4 className="text-lg font-black text-slate-900 dark:text-white uppercase tracking-tight mb-8">Session Analysis</h4>
                     <div className="space-y-10">
-                      <AnalysisRow label="Vocabulary Range" value={vocabScore} />
-                      <AnalysisRow label="Grammar Accuracy" value={grammarScore} />
-                      <AnalysisRow label="Communication Success" value={commScore} />
+                      {report.parameters && report.parameters.length > 0
+                        ? report.parameters.map((p) => (
+                            <AnalysisRow key={p.name} label={p.name} value={p.score} tooltip={p.tooltip} />
+                          ))
+                        : (
+                          <>
+                            <AnalysisRow label="Vocabulary Range" value={vocabScore} />
+                            <AnalysisRow label="Grammar Accuracy" value={grammarScore} />
+                            <AnalysisRow label="Communication Success" value={commScore} />
+                          </>
+                        )
+                      }
                     </div>
                   </div>
 
@@ -540,32 +581,108 @@ export default function FeedbackReportPage() {
                 className="space-y-6"
               >
                 <h3 className="text-2xl font-black text-slate-900 dark:text-white uppercase tracking-tight">Grammar & Vocabulary Tweaks</h3>
-                {parsed.detailed_tweaks.length === 0 ? (
-                  <div className="bg-white dark:bg-slate-900 rounded-2xl p-12 border border-slate-100 dark:border-slate-800 text-center">
-                    <CheckCircle2 className="w-12 h-12 text-emerald-500 mx-auto mb-4" />
-                    <p className="text-lg font-bold text-slate-700 dark:text-slate-300">No corrections found — great session!</p>
+
+                {/* Grammar control table (A1–B2 level prompts) */}
+                {(parsed?.grammar_rows?.length ?? 0) > 0 && (
+                  <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm overflow-hidden">
+                    <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-800">
+                      <p className="text-xs font-black uppercase tracking-widest text-slate-400">Grammar Control Analysis</p>
+                    </div>
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="bg-slate-50 dark:bg-slate-800 border-b border-slate-100 dark:border-slate-700">
+                            <th className="px-5 py-4 text-left text-[11px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400 w-[25%]">Grammar Area</th>
+                            <th className="px-5 py-4 text-left text-[11px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400 w-[20%]">Rating</th>
+                            <th className="px-5 py-4 text-left text-[11px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400">Comment</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {parsed.grammar_rows.map((row, i) => {
+                            const rl = row.rating.toLowerCase();
+                            const ratingBadge = rl.includes("strong") ? (
+                              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400">
+                                <CheckCircle2 className="w-3 h-3" />{row.rating}
+                              </span>
+                            ) : rl.includes("weak") ? (
+                              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400">
+                                <XCircle className="w-3 h-3" />{row.rating}
+                              </span>
+                            ) : rl.includes("medium") || rl.includes("mixed") ? (
+                              <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400">
+                                {row.rating}
+                              </span>
+                            ) : rl.includes("not shown") || rl.includes("n/a") ? (
+                              <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-400">
+                                {row.rating}
+                              </span>
+                            ) : (
+                              <span className="text-slate-600 dark:text-slate-400">{row.rating}</span>
+                            );
+                            return (
+                              <tr key={i} className={`border-b border-slate-50 dark:border-slate-800 last:border-0 align-top hover:bg-slate-50/60 dark:hover:bg-slate-800/40 transition-colors ${i % 2 === 0 ? "bg-white dark:bg-slate-900" : "bg-slate-50/30 dark:bg-slate-800/20"}`}>
+                                <td className="px-5 py-4 font-semibold text-slate-800 dark:text-slate-200">{row.area}</td>
+                                <td className="px-5 py-4">{ratingBadge}</td>
+                                <td className="px-5 py-4 text-slate-500 dark:text-slate-400 leading-relaxed italic">{row.comment}</td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
                   </div>
-                ) : (
-                  <div className="grid grid-cols-1 gap-4">
-                    {parsed.detailed_tweaks.map((tweak, i) => (
-                      <div key={i} className="bg-white dark:bg-slate-900 rounded-2xl p-8 border border-slate-100 dark:border-slate-800 flex gap-6 hover:border-indigo-100 transition-all group">
-                        <div className="w-12 h-12 rounded-full bg-emerald-50 dark:bg-emerald-950/20 flex items-center justify-center shrink-0">
-                          <Target className="w-6 h-6 text-emerald-500" />
-                        </div>
-                        <div className="flex-1 space-y-3">
-                          <div className="flex items-center gap-4 flex-wrap">
-                            <span className="text-lg line-through text-slate-300 font-medium">{tweak.original}</span>
-                            <ArrowRight className="w-4 h-4 text-slate-400" />
-                            <span className="text-lg font-black text-emerald-600">{tweak.corrected}</span>
-                          </div>
-                          {tweak.explanation && (
-                            <p className="text-slate-600 dark:text-slate-400 leading-relaxed italic border-l-4 border-blue-500 pl-4 py-1">
-                              {tweak.explanation}
-                            </p>
-                          )}
-                        </div>
-                      </div>
-                    ))}
+                )}
+
+                {/* Mistakes table (generic / C1–C2 prompts) */}
+                {(parsed?.detailed_tweaks?.length ?? 0) > 0 && (
+                  <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm overflow-hidden">
+                    <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-800">
+                      <p className="text-xs font-black uppercase tracking-widest text-slate-400">Sentence Corrections</p>
+                    </div>
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="bg-slate-50 dark:bg-slate-800 border-b border-slate-100 dark:border-slate-700">
+                            <th className="px-5 py-4 text-left text-[11px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400 w-[22%]">Your Sentence</th>
+                            <th className="px-5 py-4 text-left text-[11px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400 w-[22%]">Correction</th>
+                            <th className="px-5 py-4 text-left text-[11px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400 w-[20%]">Explanation</th>
+                            <th className="px-5 py-4 text-left text-[11px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400 w-[36%]">More natural way a native would say it</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {parsed.detailed_tweaks.map((tweak, i) => (
+                            <tr key={i} className={`border-b border-slate-50 dark:border-slate-800 last:border-0 align-top hover:bg-slate-50/60 dark:hover:bg-slate-800/40 transition-colors ${i % 2 === 0 ? "bg-white dark:bg-slate-900" : "bg-slate-50/30 dark:bg-slate-800/20"}`}>
+                              <td className="px-5 py-4 text-slate-600 dark:text-slate-400 leading-relaxed">{tweak.original}</td>
+                              <td className="px-5 py-4 leading-relaxed"><span className="text-emerald-600 dark:text-emerald-400 font-semibold">{tweak.corrected}</span></td>
+                              <td className="px-5 py-4 text-slate-500 dark:text-slate-400 leading-relaxed italic">{tweak.explanation}</td>
+                              <td className="px-5 py-4 leading-relaxed">
+                                {tweak.native_version ? (
+                                  <span className="inline-flex items-start gap-2">
+                                    <span className="mt-1.5 shrink-0 w-1.5 h-1.5 rounded-full bg-blue-500" />
+                                    <span className="text-slate-800 dark:text-slate-200 font-medium">{tweak.native_version}</span>
+                                  </span>
+                                ) : <span className="text-slate-300 dark:text-slate-600">—</span>}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+
+                {(parsed?.grammar_rows?.length ?? 0) === 0 && (parsed?.detailed_tweaks?.length ?? 0) === 0 && (
+                  <div className="space-y-4">
+                    <div className="bg-white dark:bg-slate-900 rounded-2xl p-12 border border-slate-100 dark:border-slate-800 text-center">
+                      <CheckCircle2 className="w-12 h-12 text-emerald-500 mx-auto mb-4" />
+                      <p className="text-lg font-bold text-slate-700 dark:text-slate-300">No corrections found — great session!</p>
+                    </div>
+                    {process.env.NODE_ENV === "development" && (
+                      <details className="text-xs text-slate-400 bg-slate-100 dark:bg-slate-800 rounded-xl p-4">
+                        <summary className="cursor-pointer font-bold mb-2">Debug: section titles</summary>
+                        <pre>{parsed.sections.map((s, i) => `${i}: "${s.title}"`).join("\n")}</pre>
+                      </details>
+                    )}
                   </div>
                 )}
               </motion.div>
