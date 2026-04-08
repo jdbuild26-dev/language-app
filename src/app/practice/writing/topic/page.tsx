@@ -22,6 +22,7 @@ interface Question {
   sampleAnswer: string;
   timeLimitSeconds?: number;
   minWords?: number;
+  level?: string;
 }
 
 export default function WriteTopicPage() {
@@ -101,6 +102,7 @@ export default function WriteTopicPage() {
       topic: currentQuestion.englishTopic,
       reference: currentQuestion.sampleAnswer,
       context: `The user is writing about the topic: ${currentQuestion.topic} (${currentQuestion.englishTopic}). Prompt: ${currentQuestion.prompt}`,
+      level: currentQuestion.level || "A1",
     });
 
     if (result) {

@@ -3,9 +3,39 @@
 import { useState, useEffect } from "react";
 import { Search, Filter, SlidersHorizontal, Loader2 } from "lucide-react";
 import ChatTopicCard from "@/features/ai-practice/components/ChatTopicCard";
-import { fetchChatTopics } from "@/services/aiPracticeApi";
+import { fetchChatTopics, fetchDbTopics } from "@/services/aiPracticeApi";
 
 const difficultyFilters = ["all", "beginner", "intermediate", "advanced"];
+
+// Map CEFR level → difficulty label used by the card
+const levelToDifficulty = (level: string) => {
+  const l = (level || "").toUpperCase();
+  if (l === "A1" || l === "A2") return "beginner";
+  if (l === "B1" || l === "B2") return "intermediate";
+  return "advanced";
+};
+
+// Transform a DB topic row into the shape ChatTopicCard expects
+function dbTopicToCard(t: any, index: number) {
+  // Pick the first non-null level to determine difficulty
+  const levels = ["A1", "A2", "B1", "B2", "C1", "C2"];
+  const firstLevel = levels.find((l) => t.instructions?.[l] || t.ai_prompts?.[l]) || "A1";
+  const icons = ["☕", "🛒", "🏥", "✈️", "🏨", "📞", "🍽️", "🏦", "📚", "🎭"];
+  return {
+    id: t.id ?? index,
+    slug: t.slug,
+    title: t.topic,
+    description: `Practice French conversation as ${t.user_role || "yourself"} with ${t.ai_role || "an AI partner"}.`,
+    icon: icons[index % icons.length],
+    difficulty: levelToDifficulty(firstLevel),
+    estimatedTime: "10-15 min",
+    messageCount: "10+",
+    aiRole: t.ai_role || "Conversation Partner",
+    userRole: t.user_role || "Learner",
+    formality: "casual",
+    rating: null,
+  };
+}
 
 export default function ChatsContent() {
   const [topics, setTopics] = useState([]);
@@ -14,17 +44,29 @@ export default function ChatsContent() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedDifficulty, setSelectedDifficulty] = useState("all");
 
-  // Fetch topics from API
   useEffect(() => {
     async function loadTopics() {
       try {
         setIsLoading(true);
         setError(null);
+
+        // Try DB topics first (no external dependency)
+        try {
+          const dbData = await fetchDbTopics();
+          if (dbData.topics && dbData.topics.length > 0) {
+            setTopics(dbData.topics.map(dbTopicToCard));
+            return;
+          }
+        } catch {
+          // DB unavailable, fall through to Google Sheets
+        }
+
+        // Fallback: Google Sheets
         const data = await fetchChatTopics();
         setTopics(data.topics || []);
       } catch (err) {
         console.error("Failed to fetch chat topics:", err);
-        setError("Failed to load topics. Please try again.");
+        setError("Could not load topics right now. Please try again in a moment.");
       } finally {
         setIsLoading(false);
       }
