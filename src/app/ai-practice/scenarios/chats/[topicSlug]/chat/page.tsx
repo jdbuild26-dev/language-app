@@ -50,6 +50,7 @@ export default function ChatPage() {
   const [sendError, setSendError] = useState<string | null>(null);
 
   const [showEndModal, setShowEndModal] = useState(false);
+  const [showEndConfirm, setShowEndConfirm] = useState(false);
   const [analysisData, setAnalysisData] = useState<any>(null);
   const [isLoadingReport, setIsLoadingReport] = useState(false);
 
@@ -442,6 +443,37 @@ export default function ChatPage() {
 
   return (
     <div className="fixed inset-0 z-[60] flex flex-col bg-gray-50 dark:bg-slate-950">
+      {/* ── End Session confirmation ── */}
+      {showEndConfirm && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm animate-in fade-in duration-150">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-sm p-6 flex flex-col gap-4">
+            <div className="text-center">
+              <div className="w-12 h-12 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center mx-auto mb-3">
+                <LogOut className="w-6 h-6 text-amber-600 dark:text-amber-400" />
+              </div>
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white">End session?</h3>
+              <p className="text-sm text-gray-500 dark:text-slate-400 mt-1">
+                Are you sure you want to end this session? You'll get your feedback report.
+              </p>
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowEndConfirm(false)}
+                className="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 dark:border-slate-700 text-gray-700 dark:text-slate-300 font-medium text-sm hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors"
+              >
+                Keep chatting
+              </button>
+              <button
+                onClick={() => { setShowEndConfirm(false); handleEndSession(); }}
+                className="flex-1 px-4 py-2.5 rounded-xl bg-sky-500 hover:bg-sky-600 text-white font-medium text-sm transition-colors"
+              >
+                End session
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* End Session modal — analytics + action buttons */}
       {showEndModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm animate-in fade-in duration-200">
@@ -504,7 +536,7 @@ export default function ChatPage() {
         </div>
       )}
 
-      <ChatHeader scenario={scenario} onEndSession={handleEndSession} />
+      <ChatHeader scenario={scenario} onEndSession={() => setShowEndConfirm(true)} />
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto px-4 py-6">
