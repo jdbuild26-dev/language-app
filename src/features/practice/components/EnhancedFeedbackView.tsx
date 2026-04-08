@@ -3,9 +3,7 @@
 import React, { useState } from "react";
 import { 
   X, 
-  ArrowRight, 
   Search, 
-  Target, 
   Star, 
   MessageCircle, 
   Info, 
@@ -24,6 +22,7 @@ interface FeedbackTweak {
   original: string;
   corrected: string;
   explanation: string;
+  native_version?: string;
 }
 
 interface ProfessionalChecks {
@@ -46,6 +45,7 @@ export interface EnhancedAnalysisData {
   intent_prediction?: string;
   message_success?: boolean;
   pronunciation_tip?: string;
+  parameters?: { name: string; tooltip: string; score: number }[];
 }
 
 interface EnhancedFeedbackViewProps {
@@ -358,9 +358,18 @@ export default function EnhancedFeedbackView({
                         <h4 className="text-lg font-black text-slate-900 dark:text-white uppercase tracking-tight mb-8">Writing Analysis</h4>
                         
                         <div className="space-y-10">
-                          <AnalysisRow label="Vocabulary Diversity" value={data.vocab_diversity} />
-                          <AnalysisRow label="Grammar Diversity" value={data.grammar_diversity} />
-                          <AnalysisRow label="Contextual match" value={85} />
+                          {data.parameters && data.parameters.length > 0
+                            ? data.parameters.map((p) => (
+                                <AnalysisRow key={p.name} label={p.name} value={p.score} tooltip={p.tooltip} />
+                              ))
+                            : (
+                              <>
+                                <AnalysisRow label="Vocabulary Diversity" value={data.vocab_diversity} />
+                                <AnalysisRow label="Grammar Diversity" value={data.grammar_diversity} />
+                                <AnalysisRow label="Contextual match" value={85} />
+                              </>
+                            )
+                          }
                         </div>
                       </div>
 
@@ -391,28 +400,105 @@ export default function EnhancedFeedbackView({
                     initial={{ opacity: 0, x: 20 }}
                     animate={{ opacity: 1, x: 0 }}
                     exit={{ opacity: 0, x: -20 }}
-                    className="space-y-6"
+                    className="space-y-0"
                   >
-                    <h3 className="text-2xl font-black text-slate-900 dark:text-white uppercase tracking-tight">Grammar Tweaks</h3>
-                    <div className="grid grid-cols-1 gap-4">
-                      {data.detailed_tweaks?.map((tweak, i) => (
-                          <div key={i} className="bg-white dark:bg-slate-900 rounded-2xl p-8 border border-slate-100 dark:border-slate-800 flex gap-6 hover:border-indigo-100 transition-all group">
-                            <div className="w-12 h-12 rounded-full bg-emerald-50 dark:bg-emerald-950/20 flex items-center justify-center shrink-0">
-                                <Target className="w-6 h-6 text-emerald-500" />
-                            </div>
-                            <div className="flex-1 space-y-3">
-                                <div className="flex items-center gap-4">
-                                  <span className="text-lg line-through text-slate-300 font-medium">{tweak.original}</span>
-                                  <ArrowRight className="w-4 h-4 text-slate-400" />
-                                  <span className="text-lg font-black text-emerald-600">{tweak.corrected}</span>
-                                </div>
-                                <p className="text-slate-600 dark:text-slate-400 leading-relaxed italic border-l-4 border-blue-500 pl-4 py-1">
-                                  {tweak.explanation}
-                                </p>
-                            </div>
+                    <h3 className="text-2xl font-black text-slate-900 dark:text-white uppercase tracking-tight mb-6">Grammar & Vocabulary Tweaks</h3>
+
+                    {!data.detailed_tweaks || data.detailed_tweaks.filter(t => (t.original ?? "").trim() !== (t.corrected ?? "").trim()).length === 0 ? (
+                      <div className="bg-white dark:bg-slate-900 rounded-2xl p-12 border border-slate-100 dark:border-slate-800 text-center">
+                        <p className="text-lg font-bold text-slate-500 dark:text-slate-400">No corrections — great writing!</p>
+                      </div>
+                    ) : (
+                      <div className="rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm overflow-hidden">
+
+                        {/* ── Sticky annotated submission pane ── */}
+                        {userText && (
+                          <div className="sticky top-0 z-10 bg-white dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800 px-6 py-5">
+                            <p className="text-xs font-black uppercase tracking-widest text-slate-400 mb-3">Original Submission</p>
+                            <p className="text-base leading-[2] text-slate-800 dark:text-slate-200 font-medium">
+                              {(() => {
+                                type Seg = { start: number; end: number; idx: number; original: string; corrected: string };
+                                const segs: Seg[] = [];
+                                const tweaks = (data.detailed_tweaks ?? []).filter(t => (t.original ?? "").trim() !== (t.corrected ?? "").trim());
+                                for (let i = 0; i < tweaks.length; i++) {
+                                  const t = tweaks[i];
+                                  if (!t.original) continue;
+                                  const pos = userText.indexOf(t.original);
+                                  if (pos === -1) continue;
+                                  const overlaps = segs.some(s => pos < s.end && pos + t.original.length > s.start);
+                                  if (!overlaps) segs.push({ start: pos, end: pos + t.original.length, idx: i + 1, original: t.original, corrected: t.corrected });
+                                }
+                                segs.sort((a, b) => a.start - b.start);
+                                const nodes: React.ReactNode[] = [];
+                                let cursor = 0;
+                                for (const seg of segs) {
+                                  if (seg.start > cursor) nodes.push(<span key={`t${cursor}`}>{userText.slice(cursor, seg.start)}</span>);
+                                  nodes.push(
+                                    <span key={`s${seg.start}`} className="inline">
+                                      <span className="line-through text-red-400 dark:text-red-500">{seg.original}</span>
+                                      {" "}
+                                      <span className="text-emerald-600 dark:text-emerald-400 font-semibold">{seg.corrected}</span>
+                                      <sup className="ml-0.5 text-[10px] font-black text-blue-500 dark:text-blue-400">{seg.idx}</sup>
+                                    </span>
+                                  );
+                                  cursor = seg.end;
+                                }
+                                if (cursor < userText.length) nodes.push(<span key={`t${cursor}`}>{userText.slice(cursor)}</span>);
+                                return nodes;
+                              })()}
+                            </p>
                           </div>
-                      ))}
-                    </div>
+                        )}
+
+                        {/* ── Scrollable corrections table ── */}
+                        <div className="overflow-x-auto">
+                          <table className="w-full text-sm">
+                            <thead>
+                              <tr className="bg-slate-50 dark:bg-slate-800 border-b border-slate-100 dark:border-slate-700">
+                                <th className="px-4 py-3 text-left text-[11px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400 w-8">#</th>
+                                <th className="px-5 py-3 text-left text-[11px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400 w-[22%]">Your sentence</th>
+                                <th className="px-5 py-3 text-left text-[11px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400 w-[22%]">Correction</th>
+                                <th className="px-5 py-3 text-left text-[11px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400 w-[20%]">Explanation</th>
+                                <th className="px-5 py-3 text-left text-[11px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400">More natural way a native would say it</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {(data.detailed_tweaks ?? []).filter(t => (t.original ?? "").trim() !== (t.corrected ?? "").trim()).map((tweak, i) => (
+                                <tr
+                                  key={i}
+                                  className={`border-b border-slate-50 dark:border-slate-800 last:border-0 align-top hover:bg-blue-50/30 dark:hover:bg-blue-900/10 transition-colors ${
+                                    i % 2 === 0 ? "bg-white dark:bg-slate-900" : "bg-slate-50/30 dark:bg-slate-800/20"
+                                  }`}
+                                >
+                                  <td className="px-4 py-4">
+                                    <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 text-[10px] font-black">
+                                      {i + 1}
+                                    </span>
+                                  </td>
+                                  <td className="px-5 py-4 text-slate-600 dark:text-slate-400 leading-relaxed">
+                                    <span className="line-through text-red-400 dark:text-red-500">{tweak.original}</span>
+                                  </td>
+                                  <td className="px-5 py-4 leading-relaxed">
+                                    <span className="text-emerald-600 dark:text-emerald-400 font-semibold">{tweak.corrected}</span>
+                                  </td>
+                                  <td className="px-5 py-4 text-slate-500 dark:text-slate-400 leading-relaxed italic">{tweak.explanation}</td>
+                                  <td className="px-5 py-4 leading-relaxed">
+                                    {tweak.native_version ? (
+                                      <span className="inline-flex items-start gap-2">
+                                        <span className="mt-1.5 shrink-0 w-1.5 h-1.5 rounded-full bg-blue-500" />
+                                        <span className="text-slate-800 dark:text-slate-200 font-medium">{tweak.native_version}</span>
+                                      </span>
+                                    ) : (
+                                      <span className="text-slate-300 dark:text-slate-600">—</span>
+                                    )}
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    )}
                   </motion.div>
                 )}
 
@@ -454,7 +540,7 @@ export default function EnhancedFeedbackView({
   );
 }
 
-function AnalysisRow({ label, value }: { label: string; value: number }) {
+function AnalysisRow({ label, value, tooltip }: { label: string; value: number; tooltip?: string }) {
   return (
     <div className="space-y-3">
       <div className="flex justify-between items-center px-1">
@@ -464,7 +550,10 @@ function AnalysisRow({ label, value }: { label: string; value: number }) {
             </div>
             <span className="text-base font-bold text-slate-900 dark:text-white leading-none">{label}</span>
          </div>
-         <Info className="w-5 h-5 text-slate-300" />
+         {tooltip
+           ? <div title={tooltip}><Info className="w-5 h-5 text-slate-300 cursor-help" /></div>
+           : <Info className="w-5 h-5 text-slate-300" />
+         }
       </div>
       <div className="relative h-2 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
         <motion.div 
@@ -474,8 +563,8 @@ function AnalysisRow({ label, value }: { label: string; value: number }) {
           className="h-full bg-emerald-500 rounded-full"
         />
       </div>
-      <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest pl-12 flex items-center gap-1">
-        <span>85th Percentile</span>
+      <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest pl-12">
+        {value}th Percentile
       </div>
     </div>
   );

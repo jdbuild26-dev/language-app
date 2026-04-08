@@ -16,6 +16,7 @@ interface EvaluationResult {
     original: string;
     corrected: string;
     explanation: string;
+    native_version?: string;
   }[];
   professional_checks: {
     register: string;
@@ -23,8 +24,9 @@ interface EvaluationResult {
     politeness: boolean;
     task_fulfillment: boolean;
   };
-  score?: number; // fallback
-  feedback?: string; // fallback
+  parameters?: { name: string; tooltip: string; score: number }[];
+  score?: number;
+  feedback?: string;
 }
 
 interface EvaluateParams {
@@ -33,6 +35,7 @@ interface EvaluateParams {
   topic?: string;
   reference?: string;
   context?: string;
+  level?: string;
 }
 
 export function useWritingEvaluation() {
@@ -51,10 +54,12 @@ export function useWritingEvaluation() {
       if (!response.ok) throw new Error("Evaluation failed");
 
       const result: EvaluationResult = await response.json();
+      console.log("[useWritingEvaluation] Result:", { score: result.overall_score, tweaks: result.detailed_tweaks?.length, params: result.parameters?.length });
       setEvaluation(result);
       return result;
     } catch (error) {
       console.error("[useWritingEvaluation] Failed:", error);
+      console.error("[useWritingEvaluation] Params were:", params);
       // Return a graceful fallback so the UI doesn't break when backend is down
       const fallback: EvaluationResult = {
         overall_score: 75,
