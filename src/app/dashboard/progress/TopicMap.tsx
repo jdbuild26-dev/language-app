@@ -68,7 +68,7 @@ export default function TopicMap({ topics }: { topics: Topic[] }) {
         y: HEIGHT / 2 + Math.sin(angle) * radius + (Math.random() - 0.5) * 60,
       };
     });
-  }, []);
+  }, [topics]);
 
   // Calculate Voronoi cells
   const voronoi = useMemo(() => {

@@ -174,8 +174,29 @@ export async function getTopicMap(token) {
     },
   });
 
+  return response.json();
+}
+
+/**
+ * Record result of a practice session (AI chat, grammar, etc.)
+ */
+export async function recordPracticeResult(token, { score, type, exerciseId, tagSlugs }) {
+  const response = await fetch(`${API_BASE_URL}/api/progress/practice/record`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({
+      score,
+      type,
+      exerciseId,
+      tagSlugs
+    }),
+  });
+
   if (!response.ok) {
-    throw new Error("Failed to fetch topic map");
+    throw new Error("Failed to record practice result");
   }
 
   return response.json();
