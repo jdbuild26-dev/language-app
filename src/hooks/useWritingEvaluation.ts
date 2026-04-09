@@ -87,5 +87,20 @@ export function useWritingEvaluation() {
     setEvaluation(null);
   }, []);
 
-  return { evaluation, isSubmitting, evaluate, resetEvaluation };
+  const analyzeConversation = useCallback(async (history: { speakerText?: string | null; userText?: string | null }[]): Promise<any> => {
+    try {
+      const response = await fetch(`${API_URL}/api/practice/analyze-writing-conversation`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ conversation_history: history }),
+      });
+      if (!response.ok) throw new Error("Analysis failed");
+      return await response.json();
+    } catch (error) {
+      console.error("[useWritingEvaluation] analyzeConversation failed:", error);
+      return { score: 0, overall_feedback: "Analysis unavailable.", key_mistakes: [], suggestions: [] };
+    }
+  }, []);
+
+  return { evaluation, isSubmitting, evaluate, resetEvaluation, analyzeConversation };
 }

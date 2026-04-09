@@ -2387,6 +2387,37 @@ export async function fetchFriends(token) {
 }
 
 /**
+ * Get pending friend requests (where current user is the receiver)
+ */
+export async function fetchFriendRequests(token) {
+  const response = await fetch(
+    `${API_BASE_URL}/api/relationships/friend-requests`,
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    },
+  );
+
+  if (!response.ok) {
+    throw new Error("Failed to fetch friend requests");
+  }
+
+  return response.json();
+}
+
+/**
+ * Accept or reject a friend request
+ */
+export async function respondToFriendRequest(
+  relationshipId: string,
+  status: "active" | "rejected",
+  token: string,
+) {
+  return updateRelationshipStatus(relationshipId, status, token);
+}
+
+/**
  * Link a student to a teacher (legacy wrapper)
  */
 export async function linkStudentToTeacher(studentId, teacherId, token) {

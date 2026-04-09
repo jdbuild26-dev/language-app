@@ -19,6 +19,7 @@ import {
   CircleAlert,
   Loader2,
 } from "lucide-react";
+import { resolveAssignmentPath } from "@/lib/assignmentSlugUtils";
 
 export default function AssignmentsPage() {
   const router = useRouter();
@@ -77,85 +78,12 @@ export default function AssignmentsPage() {
   };
 
   const handleViewTask = (assignment) => {
-    const slug = assignment.slug;
-    let path = "";
+    const path = resolveAssignmentPath(assignment.slug, assignment.type);
 
-    // 1. Precise Slug to Path Mapping
-    const slugMap = {
-      // Vocabulary
-      choose_options: "/vocabulary/practice/choose-options",
-      highlight_word: "/vocabulary/practice/highlight-word",
-      odd_one_out: "/vocabulary/practice/odd-one-out",
-      group_words: "/vocabulary/practice/group-words",
-      fill_blank_typed: "/vocabulary/practice/fill-in-blank",
-      correct_spelling: "/vocabulary/practice/correct-spelling",
-      is_french_word: "/vocabulary/practice/is-french-word",
-      spell_word: "/vocabulary/practice/correct-spelling",
-
-      // Grammar
-      four_options: "/grammar/practice/four-options",
-      three_options: "/grammar/practice/three-options",
-      two_options: "/grammar/practice/two-options",
-      fill_blanks_options: "/grammar/practice/fill-blanks-options",
-      grammar_find_error: "/grammar/practice/find-error",
-      grammar_reorder: "/grammar/practice/reorder-words",
-      grammar_transformation: "/grammar/practice/transformation",
-      grammar_combination: "/grammar/practice/combination",
-      grammar_rewrite: "/grammar/practice/rewrite",
-      listen_fill_blanks: "/grammar/practice/fill-blanks",
-      fill_blanks: "/grammar/practice/fill-blanks",
-
-      // Reading Practice
-      match_pairs: "/practice/reading/match-pairs",
-      bubble_selection: "/practice/reading/bubble-selection",
-      highlight_text: "/practice/reading/highlight-text",
-      passage_mcq: "/practice/reading/comprehension",
-      complete_passage_dropdown: "/practice/reading/fill-blanks-passage",
-      sentence_completion: "/practice/reading/sentence-completion",
-      summary_completion: "/practice/reading/summary-completion",
-      true_false: "/practice/reading/true-false",
-      reorder_sentences: "/practice/reading/reorder",
-      match_sentence_ending: "/practice/reading/complete-passage",
-
-      // Listening/Speaking Practice
-      phonetics__what_do_you_hear: "/vocabulary/practice/listening/phonetics",
-      listen_phonetics: "/vocabulary/practice/listening/phonetics",
-      type_what_you_hear: "/practice/listening/type",
-      repeat_word: "/vocabulary/practice/repeat-word",
-      repeat_sentence: "/vocabulary/practice/repeat-sentence",
-      what_do_you_see: "/vocabulary/practice/what-do-you-see",
-      dictation_image: "/vocabulary/practice/dictation-image",
-      speak_topic: "/practice/speaking/topic",
-      speak_image: "/practice/speaking/image",
-    };
-
-    // 2. If we have a direct mapping, use it
-    if (slugMap[slug]) {
-      path = slugMap[slug];
-    } else {
-      // 3. Fallback logic for unmapped slugs
-      const normalizedSlug = slug.replace(/_/g, "-");
-      if (assignment.type === "vocabulary") {
-        path = `/vocabulary/practice/${normalizedSlug}`;
-      } else if (assignment.type === "grammar") {
-        // Handle grammar prefixes
-        const cleanGrammarSlug = normalizedSlug.replace(/^grammar-/, "");
-        path = `/grammar/practice/${cleanGrammarSlug}`;
-      } else {
-        path = `/practice/reading/${normalizedSlug}`;
-      }
-    }
-
-    // 4. Append Query Parameters
     const params = new URLSearchParams();
     params.set("assignmentId", assignment.id);
-
-    // Add "from" param as per user request for main practice
-    if (assignment.type === "practice") {
-      params.set("from", "reading");
-    } else if (assignment.type === "vocabulary") {
-      params.set("from", "vocabulary");
-    }
+    if (assignment.type === "practice") params.set("from", "reading");
+    else if (assignment.type === "vocabulary") params.set("from", "vocabulary");
 
     router.push(`${path}?${params.toString()}`);
   };

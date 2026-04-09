@@ -8,6 +8,7 @@ import { LANGUAGES, EXAM_MAP } from "@/features/auth/components/onboarding/onboa
 
 // Step components
 import WelcomeNameStep from "@/features/auth/components/onboarding/steps/WelcomeNameStep";
+import UsernameStep from "@/features/auth/components/onboarding/steps/UsernameStep";
 import RoleStep from "@/features/auth/components/onboarding/steps/RoleStep";
 import TargetLanguageStep from "@/features/auth/components/onboarding/steps/TargetLanguageStep";
 import TranslationLanguageStep from "@/features/auth/components/onboarding/steps/TranslationLanguageStep";
@@ -23,25 +24,27 @@ import CompletingStep from "@/features/auth/components/onboarding/steps/Completi
  * Exam steps (7a, 7b, …) are dynamically inserted.
  */
 const STEP_IDS = {
-  WELCOME: "welcome", // Step 1
-  ROLE: "role", // Step 2
-  TARGET_LANG: "target_lang", // Step 3
-  TRANSLATION: "translation", // Step 4
-  MAIN_REASON: "main_reason", // Step 5
-  EXAM: "exam", // Step 6 (dynamic per-language)
-  INTERESTS: "interests", // Step 7
-  REFERRAL: "referral", // Step 8
-  PRICING: "pricing", // Step 9
-  COMPLETING: "completing", // Step 10
+  WELCOME: "welcome",   // Step 1
+  USERNAME: "username", // Step 2
+  ROLE: "role",         // Step 3
+  TARGET_LANG: "target_lang",
+  TRANSLATION: "translation",
+  MAIN_REASON: "main_reason",
+  EXAM: "exam",
+  INTERESTS: "interests",
+  REFERRAL: "referral",
+  PRICING: "pricing",
+  COMPLETING: "completing",
 };
 
 const INITIAL_FORM_DATA = {
   name: "",
-  role: "", // "student" or "teacher"
-  targetLanguages: [], // [{ language: string, dialect: string|null }]
+  username: "",
+  role: "",
+  targetLanguages: [],
   translationLanguage: "",
   mainReason: "",
-  examIntents: [], // [{ language, hasExam, examType }]
+  examIntents: [],
   interests: [],
   referralSource: "",
   pricingPlan: "",
@@ -71,6 +74,7 @@ export default function StudentOnboardingModal({ onComplete }) {
   const stepSequence = useMemo(() => {
     const base = [
       STEP_IDS.WELCOME,
+      STEP_IDS.USERNAME,
       STEP_IDS.ROLE,
       STEP_IDS.TARGET_LANG,
       STEP_IDS.TRANSLATION,
@@ -156,6 +160,8 @@ export default function StudentOnboardingModal({ onComplete }) {
       const profileData = {
         clerkUserId: user.id,
         name: formData.name,
+        username: formData.username.toLowerCase(),
+        primaryLanguage: formData.targetLanguages[0]?.language || "",
         targetLanguages: formData.targetLanguages,
         // Legacy fields for backward compatibility with current backend
         targetLanguage: formData.targetLanguages[0]?.language || "",
@@ -227,6 +233,15 @@ export default function StudentOnboardingModal({ onComplete }) {
                 <WelcomeNameStep
                   formData={formData}
                   setFormData={setFormData}
+                  onContinue={() => setStep(STEP_IDS.USERNAME)}
+                />
+              )}
+
+              {step === STEP_IDS.USERNAME && (
+                <UsernameStep
+                  formData={formData}
+                  setFormData={setFormData}
+                  onBack={() => setStep(STEP_IDS.WELCOME)}
                   onContinue={() => setStep(STEP_IDS.ROLE)}
                 />
               )}
@@ -235,7 +250,7 @@ export default function StudentOnboardingModal({ onComplete }) {
                 <RoleStep
                   formData={formData}
                   setFormData={setFormData}
-                  onBack={() => setStep(STEP_IDS.WELCOME)}
+                  onBack={() => setStep(STEP_IDS.USERNAME)}
                   onContinue={() => setStep(STEP_IDS.TARGET_LANG)}
                 />
               )}

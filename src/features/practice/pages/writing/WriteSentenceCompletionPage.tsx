@@ -16,6 +16,8 @@ import {
 } from "lucide-react";
 import { fetchPracticeQuestions } from "@/services/vocabularyApi";
 import AccentKeyboard from "@/components/ui/AccentKeyboard";
+import { useWritingEvaluation } from "@/hooks/useWritingEvaluation";
+import WritingFeedbackResult from "@/components/WritingFeedbackResult";
 
 // Fallback mock data for Write Sentence Completion (Passage-based)
 const MOCK_DATA = {
@@ -63,6 +65,8 @@ export default function WriteSentenceCompletionPage() {
   const [isCompleted, setIsCompleted] = useState(false);
   const [isPassageOpen, setIsPassageOpen] = useState(false);
   const [focusedQuestionId, setFocusedQuestionId] = useState(null);
+
+  const { evaluation, isSubmitting, evaluate, resetEvaluation } = useWritingEvaluation();
 
   // Fetch data from backend, fallback to mock
   useEffect(() => {
@@ -138,7 +142,7 @@ export default function WriteSentenceCompletionPage() {
     setUserInputs((prev) => ({ ...prev, [id]: value }));
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (showFeedback) return;
 
     let correctCount = 0;
@@ -165,6 +169,22 @@ export default function WriteSentenceCompletionPage() {
     }
 
     setShowFeedback(true);
+
+    // Build combined user text for AI evaluation
+    const combinedText = exerciseData.questions
+      .map((q) => `${q.sentenceStart}${userInputs[q.id] || ""}`)
+      .join(". ");
+    const referenceText = exerciseData.questions
+      .map((q) => `${q.sentenceStart}${q.correctEnding}`)
+      .join(". ");
+
+    await evaluate({
+      task_type: "sentence_completion",
+      user_text: combinedText,
+      topic: exerciseData.passageTitle,
+      reference: referenceText,
+      context: `Passage: ${exerciseData.passageContent?.join(" ")}`,
+    });
   };
 
   const handleContinue = () => {
@@ -201,9 +221,9 @@ export default function WriteSentenceCompletionPage() {
         totalQuestions={exerciseData.questions.length}
         onExit={handleExit}
         onNext={handleSubmit}
-        isSubmitEnabled={allAnswered && !showFeedback}
+        isSubmitEnabled={allAnswered && !showFeedback && !isSubmitting}
         showSubmitButton={!showFeedback}
-        submitLabel="Check"
+        submitLabel={isSubmitting ? "Evaluating..." : "Check"}
         timerValue={timerString}
       >
         <div className="flex flex-col lg:flex-row w-full max-w-7xl mx-auto gap-6 p-4 h-full md:items-stretch overflow-hidden">
@@ -303,6 +323,18 @@ export default function WriteSentenceCompletionPage() {
                   );
                 })}
               </div>
+
+              {/* AI Evaluation Result */}
+              {evaluation && (
+                <div className="mt-6 w-full">
+                  <WritingFeedbackResult
+                    evaluation={evaluation}
+                    mode="writing"
+                    userText={exerciseData.questions.map((q) => `${q.sentenceStart}${userInputs[q.id] || ""}`).join(". ")}
+                    onContinue={handleContinue}
+                  />
+                </div>
+              )}
 
               {/* Accent Keyboard */}
               {!showFeedback && (

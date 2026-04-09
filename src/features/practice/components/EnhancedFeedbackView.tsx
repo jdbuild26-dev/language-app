@@ -337,7 +337,14 @@ export default function EnhancedFeedbackView({
                       <div className="grid grid-cols-2 gap-4">
                         <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-100 dark:border-slate-800 shadow-sm relative flex flex-col items-center justify-center min-h-[140px]">
                           <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest absolute top-6 left-6">Overall SCORE</p>
-                          <div className="bg-emerald-500 text-white font-black text-3xl px-6 py-2 rounded-lg shadow-lg mt-4">
+                          <div className={cn(
+                            "text-white font-black text-3xl px-6 py-2 rounded-lg shadow-lg mt-4",
+                            data.overall_score >= 70
+                              ? "bg-emerald-500"
+                              : data.overall_score >= 40
+                              ? "bg-amber-500"
+                              : "bg-red-500"
+                          )}>
                             {data.overall_score}
                           </div>
                         </div>
@@ -541,11 +548,18 @@ export default function EnhancedFeedbackView({
 }
 
 function AnalysisRow({ label, value, tooltip }: { label: string; value: number; tooltip?: string }) {
+  const color =
+    value >= 70
+      ? { icon: "bg-emerald-50 dark:bg-emerald-950/20 text-emerald-500", bar: "bg-emerald-500" }
+      : value >= 40
+      ? { icon: "bg-amber-50 dark:bg-amber-950/20 text-amber-500", bar: "bg-amber-500" }
+      : { icon: "bg-red-50 dark:bg-red-950/20 text-red-500", bar: "bg-red-500" };
+
   return (
     <div className="space-y-3">
       <div className="flex justify-between items-center px-1">
          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-emerald-50 dark:bg-emerald-950/20 flex items-center justify-center text-emerald-500">
+            <div className={cn("w-9 h-9 rounded-xl flex items-center justify-center", color.icon)}>
                <BookOpen className="w-4 h-4" />
             </div>
             <span className="text-base font-bold text-slate-900 dark:text-white leading-none">{label}</span>
@@ -560,7 +574,7 @@ function AnalysisRow({ label, value, tooltip }: { label: string; value: number; 
           initial={{ width: 0 }}
           animate={{ width: `${value}%` }}
           transition={{ duration: 1, ease: "easeOut" }}
-          className="h-full bg-emerald-500 rounded-full"
+          className={cn("h-full rounded-full", color.bar)}
         />
       </div>
       <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest pl-12">

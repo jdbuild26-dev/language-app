@@ -10,7 +10,8 @@ import { getFeedbackMessage } from "@/utils/feedbackMessages";
 import { loadMockCSV } from "@/utils/csvLoader";
 import { Button } from "@/components/ui/button";
 import AccentKeyboard from "@/components/ui/AccentKeyboard";
-import WritingTranslateResult from "@/components/ui/WritingTranslateResult";
+import { useWritingEvaluation } from "@/hooks/useWritingEvaluation";
+import WritingFeedbackResult from "@/components/WritingFeedbackResult";
 
 export default function TranslateTypedPage() {
   const handleExit = usePracticeExit();
@@ -25,7 +26,8 @@ export default function TranslateTypedPage() {
   const [feedbackMessage, setFeedbackMessage] = useState("");
   const [score, setScore] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
-  const [showResult, setShowResult] = useState(false);
+
+  const { evaluation, isSubmitting, evaluate, resetEvaluation } = useWritingEvaluation();
 
   useEffect(() => {
     const fetchData = async () => {
@@ -55,31 +57,35 @@ export default function TranslateTypedPage() {
   useEffect(() => {
     if (currentQuestion && !isCompleted) {
       setUserInput("");
-      setShowResult(false);
+      resetEvaluation();
       resetTimer();
     }
-  }, [currentIndex, currentQuestion, isCompleted, resetTimer]);
+  }, [currentIndex, currentQuestion, isCompleted, resetTimer, resetEvaluation]);
 
-  // Normalize for comparison
-  const normalize = (str) =>
-    str
-      .toLowerCase()
-      .replace(/[.,!?;:'"«»]/g, "")
-      .replace(/\s+/g, " ")
-      .trim();
+  const handleSubmit = async () => {
+    if (showFeedback || !userInput.trim() || isSubmitting) return;
 
-  const handleSubmit = () => {
-    if (showFeedback || !userInput.trim()) return;
-    // Show the result area — WritingTranslateResult handles LLM validation
-    setShowResult(true);
-    setShowFeedback(true);
+    const result = await evaluate({
+      task_type: "translation",
+      user_text: userInput,
+      topic: currentQuestion?.sourceText || "",
+      reference: Array.isArray(currentQuestion?.acceptableAnswers)
+        ? currentQuestion.acceptableAnswers[0]
+        : currentQuestion?.correctAnswer || "",
+      context: `Translate into French: "${currentQuestion?.sourceText}"`,
+      level: currentQuestion?.level || "A1",
+    });
+
+    if (result) {
+      const finalScore = result.overall_score !== undefined ? result.overall_score : (result as any).score ?? 0;
+      setIsCorrect(finalScore >= 70);
+      setFeedbackMessage(result.executive_summary || result.feedback || "");
+      setShowFeedback(true);
+      if (finalScore >= 70) setScore((prev) => prev + 1);
+    }
   };
 
-  const handleResult = (correct: boolean, _correctAnswer: string) => {
-    setIsCorrect(correct);
-    setFeedbackMessage(getFeedbackMessage(correct));
-    if (correct) setScore((prev) => prev + 1);
-  };
+  const handleResult = (_correct: boolean, _correctAnswer: string) => {};
 
   const handleContinue = () => {
     setShowFeedback(false);
@@ -135,9 +141,9 @@ export default function TranslateTypedPage() {
         onExit={handleExit}
         onNext={handleSubmit}
         onRestart={() => window.location.reload()}
-        isSubmitEnabled={userInput.trim().length > 0 && !showFeedback}
+        isSubmitEnabled={userInput.trim().length > 0 && !showFeedback && !isSubmitting}
         showSubmitButton={!showFeedback}
-        submitLabel="Check"
+        submitLabel={isSubmitting ? "Evaluating..." : "Check"}
         timerValue={timerString}
       >
         <div className="flex flex-col items-center w-full max-w-4xl mx-auto px-4 py-4 lg:py-8 gap-6 lg:gap-8">
@@ -196,19 +202,14 @@ export default function TranslateTypedPage() {
             </div>
           </div>
 
-          {/* Result area — Check & Explain (replaces static correct answer display) */}
-          {showResult && currentQuestion && (
-            <div className="w-full max-w-4xl mx-auto px-4 -mt-2 space-y-3">
-              <WritingTranslateResult
-                sourceSentence={currentQuestion.sourceText || ""}
-                userAnswer={userInput}
-                acceptableAnswers={
-                  Array.isArray(currentQuestion.acceptableAnswers)
-                    ? currentQuestion.acceptableAnswers
-                    : [currentQuestion.correctAnswer || ""]
-                }
-                level={currentQuestion.level || "A1"}
-                onResult={handleResult}
+          {/* Result area — AI Feedback Modal */}
+          {evaluation && (
+            <div className="w-full max-w-4xl mx-auto px-4 -mt-2">
+              <WritingFeedbackResult
+                evaluation={evaluation}
+                mode="writing"
+                userText={userInput}
+                onContinue={handleContinue}
               />
             </div>
           )}

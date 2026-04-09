@@ -7,8 +7,8 @@ import {
     searchProfiles,
     requestConnection,
     fetchFriends,
-    fetchTeacherStudents,
-    fetchStudentTeachers,
+    fetchFriendRequests,
+    respondToFriendRequest,
     updateRelationshipStatus
 } from "@/services/vocabularyApi";
 import {
@@ -26,14 +26,15 @@ import {
     CheckIcon,
     XMarkIcon,
     ClockIcon,
-    AcademicCapIcon
+    AcademicCapIcon,
+    LockClosedIcon
 } from "@heroicons/react/24/outline";
 import { Loader2 } from "lucide-react";
 import toast from "react-hot-toast";
 
 export default function FriendsPage() {
     const { getToken } = useAuth();
-    const { activeProfile } = useProfile();
+    const { activeProfile, isLoading: profileLoading } = useProfile();
     const [friends, setFriends] = useState([]);
     const [pendingRequests, setPendingRequests] = useState([]);
     const [searchQuery, setSearchQuery] = useState("");
@@ -46,32 +47,26 @@ export default function FriendsPage() {
     const [showRequestModal, setShowRequestModal] = useState(false);
 
     useEffect(() => {
-        fetchSocialData();
-    }, [getToken, activeProfile]);
+        // Wait for profile context to finish loading before fetching social data
+        if (!profileLoading) {
+            fetchSocialData();
+        }
+    }, [getToken, profileLoading]);
 
     const fetchSocialData = async () => {
-        if (!activeProfile) return;
         try {
             setIsLoading(true);
             const token = await getToken();
+            if (!token) return;
 
-            // 1. Fetch Friends (Type: 'friend', Status: 'active')
-            const friendsData = await fetchFriends(token);
+            const [friendsData, requestsData] = await Promise.all([
+                fetchFriends(token),
+                fetchFriendRequests(token),
+            ]);
+
             setFriends(friendsData);
-
-            // 2. Fetch Pending Requests
-            // We need to fetch from both teacher and student perspectives
-            let requests = [];
-            if (activeProfile.role === 'student') {
-                const studentReqs = await fetchStudentTeachers(activeProfile.profileId, "pending", token);
-                requests = studentReqs.map(r => ({ ...r, perspective: 'sent' }));
-            } else {
-                const teacherReqs = await fetchTeacherStudents(activeProfile.profileId, "pending", token);
-                requests = teacherReqs.map(r => ({ ...r, perspective: 'received' }));
-            }
-
-            // Note: This needs the backend to return 'type' in those fetchers, which it now does.
-            setPendingRequests(requests);
+            // Mark all incoming requests as 'received' so the UI shows accept/decline
+            setPendingRequests(requestsData.map(r => ({ ...r, perspective: 'received' })));
 
         } catch (error) {
             console.error("Failed to fetch social data:", error);
@@ -105,9 +100,27 @@ export default function FriendsPage() {
         try {
             const token = await getToken();
 
-            // Logic: sender is current active profile, receiver is the selectedUser role
-            // But we need a profile ID for the receiver.
-            // selectedUser.roles has the list of profiles for that person.
+            // Get sender profile ID — prefer activeProfile, fall back to API
+            let senderProfileId = activeProfile?.profileId || activeProfile?.id;
+
+            if (!senderProfileId) {
+                // Fallback: fetch directly from the check endpoint
+                const res = await fetch(
+                    `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"}/api/students/check`,
+                    { headers: { Authorization: `Bearer ${token}` } }
+                );
+                if (res.ok) {
+                    const data = await res.json();
+                    // Prefer student profile, fall back to any profile
+                    const firstProfile = data.profiles?.find(p => p.role === "student") || data.profiles?.[0];
+                    senderProfileId = firstProfile?.profileId || firstProfile?.id;
+                }
+            }
+
+            if (!senderProfileId) {
+                toast.error("Could not determine your profile. Please refresh.");
+                return;
+            }
 
             const targetRole = selectedUser.roles.find(r =>
                 r.type === roleType && (language ? r.language === language : true)
@@ -119,8 +132,8 @@ export default function FriendsPage() {
             }
 
             await requestConnection({
-                studentId: activeProfile.profileId,
-                teacherId: targetRole.profileId, // Using teacherId field as generic receiverId in backend
+                studentId: senderProfileId,
+                teacherId: targetRole.profileId,
                 type: roleType,
                 language: language
             }, token);
@@ -138,7 +151,7 @@ export default function FriendsPage() {
     const handleResponse = async (reqId, status) => {
         try {
             const token = await getToken();
-            await updateRelationshipStatus(reqId, status, token);
+            await respondToFriendRequest(reqId, status, token);
             toast.success(status === 'active' ? "Request accepted!" : "Request declined");
             fetchSocialData();
         } catch (error) {
@@ -146,10 +159,31 @@ export default function FriendsPage() {
         }
     };
 
-    if (isLoading) {
+    if (isLoading || profileLoading) {
         return (
             <div className="h-96 flex items-center justify-center">
                 <Loader2 className="h-8 w-8 animate-spin text-brand-blue-1" />
+            </div>
+        );
+    }
+
+    // Profile incomplete — no student profile exists yet
+    if (!activeProfile) {
+        return (
+            <div className="h-96 flex flex-col items-center justify-center text-center gap-4">
+                <div className="h-16 w-16 rounded-full bg-slate-800 flex items-center justify-center">
+                    <LockClosedIcon className="h-8 w-8 text-slate-500" />
+                </div>
+                <h2 className="text-xl font-bold text-white">Complete your profile first</h2>
+                <p className="text-slate-400 text-sm max-w-xs">
+                    Please complete the profile to make friends. Head to your dashboard and click "Edit Profile" to get started.
+                </p>
+                <Button
+                    className="bg-brand-blue-1 hover:bg-brand-blue-2 text-white font-bold mt-2"
+                    onClick={() => window.location.href = "/dashboard"}
+                >
+                    Go to Dashboard
+                </Button>
             </div>
         );
     }
