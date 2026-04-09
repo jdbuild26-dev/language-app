@@ -1,30 +1,63 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { UserButton } from "@clerk/nextjs";
+import { UserButton, useAuth } from "@clerk/nextjs";
 import { SignedIn, SignedOut } from "@/components/shared/ClerkGates";
 import { Bars3Icon } from "@heroicons/react/24/outline";
 import { Button } from "@/components/ui/button";
 import { LogoSVG } from "@/components/layout/header/NavbarIcons";
-import {
-  streaks,
-  friends,
-  friendRequests,
-  notifications,
-} from "@/constants/nav-items";
+import { streaks } from "@/constants/nav-items";
 import StreaksDropdown from "@/components/layout/header/StreaksDropdown";
 import ActionsGroup from "@/components/layout/header/ActionsGroup";
 import LanguageSelector from "@/components/layout/header/LanguageSelector";
 import MobileMenu from "@/components/layout/header/MobileMenu";
 import { DarkModeToggle } from "@/components/shared/DarkModeToggle";
 import ProfileMenu from "@/components/layout/header/ProfileMenu";
+import { fetchFriends, fetchFriendRequests, respondToFriendRequest } from "@/services/vocabularyApi";
 
 export default function Header() {
   const pathname = usePathname();
+  const { getToken } = useAuth();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [activeMobileSection, setActiveMobileSection] = useState(null);
+  const [friends, setFriends] = useState([]);
+  const [friendRequests, setFriendRequests] = useState([]);
+
+  useEffect(() => {
+    async function loadSocialData() {
+      try {
+        const token = await getToken();
+        if (!token) return;
+        const [friendsData, requestsData] = await Promise.all([
+          fetchFriends(token),
+          fetchFriendRequests(token),
+        ]);
+        setFriends(friendsData);
+        setFriendRequests(requestsData);
+      } catch (err) {
+        // silently fail — social data is non-critical
+      }
+    }
+    loadSocialData();
+  }, [getToken]);
+
+  async function handleRespondToRequest(relationshipId: string, status: "active" | "rejected") {
+    try {
+      const token = await getToken();
+      await respondToFriendRequest(relationshipId, status, token);
+      setFriendRequests((prev) => prev.filter((r) => r.id !== relationshipId));
+      if (status === "active") {
+        // Refresh friends list
+        const token2 = await getToken();
+        const updated = await fetchFriends(token2);
+        setFriends(updated);
+      }
+    } catch (err) {
+      console.error("Failed to respond to friend request", err);
+    }
+  }
 
   const isPracticeExercise =
     pathname.startsWith("/practice/") &&
@@ -55,7 +88,7 @@ export default function Header() {
             <ActionsGroup
               friends={friends}
               friendRequests={friendRequests}
-              notifications={notifications}
+              onRespondToRequest={handleRespondToRequest}
             />
 
             <div className="h-6 w-px bg-white/20 dark:bg-slate-600" />
@@ -109,8 +142,9 @@ export default function Header() {
         setActiveSection={setActiveMobileSection}
         streaks={streaks}
         friends={friends}
-        notifications={notifications}
+        notifications={[]}
       />
     </nav>
   );
 }
+

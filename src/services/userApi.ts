@@ -40,7 +40,9 @@ export async function createStudentProfile(profileData, token) {
   });
 
   if (!response.ok) {
-    throw new Error("Failed to create student profile");
+    const errorText = await response.text();
+    console.error("Failed to create student profile:", response.status, errorText);
+    throw new Error(`Failed to create student profile: ${response.status} - ${errorText}`);
   }
   return response.json();
 }

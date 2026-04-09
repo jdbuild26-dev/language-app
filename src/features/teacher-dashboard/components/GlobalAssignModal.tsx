@@ -25,6 +25,7 @@ import { useClasses } from "@/hooks/useClasses";
 import { useToast } from "@/hooks/use-toast";
 import { useProfile } from "@/contexts/ProfileContext";
 import { Loader2, Calendar, ClipboardCheck } from "lucide-react";
+import { normalizeSlug } from "@/lib/assignmentSlugUtils";
 
 interface GlobalAssignModalProps {
   isOpen: boolean;
@@ -90,7 +91,7 @@ export function GlobalAssignModal({
       const payload = {
         studentIds: selectedClass.studentIds,
         type: exerciseType,
-        slug: exerciseSlug,
+        slug: normalizeSlug(exerciseSlug),
         title: formData.title,
         dueDate: formData.dueDate ? new Date(formData.dueDate).toISOString() : null,
       };

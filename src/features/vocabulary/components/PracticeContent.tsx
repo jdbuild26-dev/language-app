@@ -297,7 +297,7 @@ export default function PracticeContent() {
               )}
             >
               <AssignButton 
-                exerciseType="practice"
+                exerciseType="vocabulary"
                 exerciseSlug={activity.id}
                 exerciseTitle={activity.name}
                 className="top-2 right-2"

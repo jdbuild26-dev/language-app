@@ -6,6 +6,7 @@ import { useUser } from "@clerk/nextjs";
 import { useStudentProfile } from "@/hooks/useStudentProfile";
 import { useTeacherProfile } from "@/hooks/useTeacherProfile";
 import TeacherOnboardingModal from "@/features/auth/components/TeacherOnboardingModal";
+import StudentOnboardingModal from "@/features/auth/components/StudentOnboardingModal";
 import ConnectTeacher from "@/components/shared/ConnectTeacher";
 import {
   Card,
@@ -45,6 +46,8 @@ export default function ProfilePage() {
   } = useTeacherProfile();
 
   const [showTeacherOnboarding, setShowTeacherOnboarding] = useState(false);
+  const [showEditProfile, setShowEditProfile] = useState(false);
+  const [currentTime, setCurrentTime] = useState("");
 
   // Privacy State
   const [isPublic, setIsPublic] = useState(profile?.isPublic || false);
@@ -54,6 +57,9 @@ export default function ProfilePage() {
   const [isUpdatingPrivacy, setIsUpdatingPrivacy] = useState(false);
 
   // Update local state when profile loads
+  useEffect(() => {
+    setCurrentTime(new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }));
+  }, []);
   useEffect(() => {
     if (profile) {
       setIsPublic(profile.isPublic);
@@ -203,10 +209,7 @@ export default function ProfilePage() {
               Today
             </div>
             <p className="text-xs text-gray-400 dark:text-secondary-dark mt-1">
-              {new Date().toLocaleTimeString([], {
-                hour: "2-digit",
-                minute: "2-digit",
-              })}
+              {currentTime}
             </p>
           </CardContent>
         </Card>
@@ -254,12 +257,16 @@ export default function ProfilePage() {
                   {user?.primaryEmailAddress?.emailAddress}
                 </p>
               </div>
-              {/* Dummy Profile Details */}
-              <div className="mt-2 text-sm text-gray-500 dark:text-secondary-dark flex gap-4">
-                <span>📞 +1 (555) 123-4567</span>
-                <span>📍 New York, USA</span>
-                <span>🕒 GMT-5</span>
-              </div>
+              {profile?.username && (
+                <div className="mt-1 flex items-center gap-1.5 text-brand-blue-1">
+                  <span className="text-sm font-semibold">@{profile.username}</span>
+                </div>
+              )}
+              {!profile?.username && (
+                <div className="mt-1 text-xs text-gray-400 dark:text-slate-500 italic">
+                  No username set — complete your profile to add one
+                </div>
+              )}
             </div>
           </div>
 
@@ -271,6 +278,14 @@ export default function ProfilePage() {
                 </p>
                 <p className="font-mono text-xs bg-gray-50 dark:bg-elevated-2 p-2 rounded-md text-gray-600 dark:text-secondary-dark break-all border border-gray-100 dark:border-subtle-dark">
                   {profile?.profileId || "N/A"}
+                </p>
+              </div>
+              <div className="space-y-1">
+                <p className="text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-muted-dark">
+                  Username
+                </p>
+                <p className="text-sm font-semibold text-brand-blue-1">
+                  {profile?.username ? `@${profile.username}` : <span className="text-gray-400 dark:text-slate-500 font-normal italic">Not set</span>}
                 </p>
               </div>
             </div>
@@ -410,6 +425,7 @@ export default function ProfilePage() {
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
           <Button
             variant="outline"
+            onClick={() => setShowEditProfile(true)}
             className="h-auto p-6 flex flex-col items-start gap-4 hover:border-brand-blue-1 hover:bg-brand-blue-3/10 transition-all border-dashed dark:border-subtle-dark dark:hover:border-accent-primary"
           >
             <div className="p-2 rounded-full bg-brand-blue-3/30 text-brand-blue-1">
@@ -481,6 +497,12 @@ export default function ProfilePage() {
             setShowTeacherOnboarding(false);
             refreshTeacherProfile();
           }}
+        />
+      )}
+
+      {showEditProfile && (
+        <StudentOnboardingModal
+          onComplete={() => setShowEditProfile(false)}
         />
       )}
     </div>

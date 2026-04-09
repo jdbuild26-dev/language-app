@@ -6,24 +6,35 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
   ClipboardCheck,
-  CheckCircle,
   Clock,
-  CircleAlert,
   Loader2,
-  Calendar,
   User,
-  Plus
+  Plus,
+  ChevronDown,
+  Users,
 } from "lucide-react";
 import { useAuth } from "@clerk/nextjs";
 import { getTeacherAssignments } from "@/services/assignmentsApi";
-import { useRouter } from "next/navigation";
+import { AssignTaskModal } from "@/features/teacher-dashboard/components/AssignTaskModal";
+import { AssignClassModal } from "@/features/teacher-dashboard/components/AssignClassModal";
+import { AssignmentDetailsModal } from "@/features/teacher-dashboard/components/AssignmentDetailsModal";
+import { useTeacherStudents } from "@/hooks/useTeacherStudents";
 
 export default function TeacherAssignmentsPage() {
   const [filter, setFilter] = useState("all");
   const [assignments, setAssignments] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [showStudentPicker, setShowStudentPicker] = useState(false);
+  const [assignModal, setAssignModal] = useState<{
+    isOpen: boolean;
+    studentId: string | null;
+    studentName: string;
+  }>({ isOpen: false, studentId: null, studentName: "" });
+  const [classModalOpen, setClassModalOpen] = useState(false);
+  const [detailsAssignment, setDetailsAssignment] = useState<any>(null);
+
   const { getToken } = useAuth();
-  const router = useRouter();
+  const { data: students } = useTeacherStudents("active");
 
   useEffect(() => {
     async function fetchAssignments() {
@@ -55,6 +66,15 @@ export default function TeacherAssignmentsPage() {
     }
   };
 
+  const openAssignForStudent = (student: any) => {
+    setShowStudentPicker(false);
+    setAssignModal({
+      isOpen: true,
+      studentId: student.studentId,
+      studentName: student.name || "Student",
+    });
+  };
+
   if (isLoading) {
     return (
       <div className="h-96 flex items-center justify-center">
@@ -74,29 +94,92 @@ export default function TeacherAssignmentsPage() {
             Track and monitor the progress of tasks you've assigned to students.
           </p>
         </div>
-        <Button
-          onClick={() => router.push("/teacher-dashboard/students")}
-          className="bg-brand-blue-1 hover:bg-brand-blue-2 text-white font-bold h-12 px-6 rounded-xl shadow-lg shadow-brand-blue-1/20 transition-all active:scale-95"
-        >
-          <Plus className="w-5 h-5 mr-2" /> Assign New Task
-        </Button>
+
+        {/* Assign New Task — student picker dropdown */}
+        <div className="relative">
+          <Button
+            onClick={() => setShowStudentPicker((v) => !v)}
+            className="bg-brand-blue-1 hover:bg-brand-blue-2 text-white font-bold h-12 px-6 rounded-xl shadow-lg shadow-brand-blue-1/20 transition-all active:scale-95 flex items-center gap-2"
+          >
+            <Plus className="w-5 h-5" />
+            Assign New Task
+            <ChevronDown className={`w-4 h-4 transition-transform ${showStudentPicker ? "rotate-180" : ""}`} />
+          </Button>
+
+          {showStudentPicker && (
+            <div className="absolute right-0 top-14 z-50 w-64 bg-[#0f172a] border border-slate-700 rounded-2xl shadow-2xl overflow-hidden">
+              {/* By Class */}
+              <div className="px-4 pt-3 pb-1">
+                <p className="text-xs font-bold uppercase tracking-widest text-slate-500 mb-1">
+                  Assign to a class
+                </p>
+                <button
+                  onClick={() => { setShowStudentPicker(false); setClassModalOpen(true); }}
+                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-slate-800 transition-colors text-left"
+                >
+                  <div className="h-8 w-8 rounded-full bg-sky-500/10 text-sky-400 flex items-center justify-center shrink-0">
+                    <Users className="h-4 w-4" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-white">Whole Class</p>
+                    <p className="text-xs text-slate-500">All students at once</p>
+                  </div>
+                </button>
+              </div>
+
+              <div className="mx-4 my-1 border-t border-slate-800" />
+
+              {/* By Student */}
+              <div className="px-4 pb-1">
+                <p className="text-xs font-bold uppercase tracking-widest text-slate-500 mb-1">
+                  Assign to a student
+                </p>
+              </div>
+              {!students?.length ? (
+                <p className="text-sm text-slate-400 px-4 pb-4">No active students found.</p>
+              ) : (
+                <ul className="max-h-52 overflow-y-auto pb-2">
+                  {students.map((s: any) => (
+                    <li key={s.studentId}>
+                      <button
+                        onClick={() => openAssignForStudent(s)}
+                        className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-slate-800 transition-colors text-left"
+                      >
+                        <div className="h-8 w-8 rounded-full bg-brand-blue-1/10 text-brand-blue-1 flex items-center justify-center font-bold text-sm shrink-0">
+                          {(s.name || "S").charAt(0)}
+                        </div>
+                        <div>
+                          <p className="text-sm font-semibold text-white">{s.name || "Student"}</p>
+                          <p className="text-xs text-slate-500 font-mono">{s.studentId}</p>
+                        </div>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          )}
+        </div>
       </div>
 
+      {/* Filter tabs */}
       <div className="flex p-1 bg-[#0f172a] rounded-xl border border-slate-800 w-fit">
         {["all", "active", "completed"].map((tab) => (
           <button
             key={tab}
             onClick={() => setFilter(tab)}
-            className={`px-6 py-2 text-sm font-bold rounded-lg capitalize transition-all ${filter === tab
+            className={`px-6 py-2 text-sm font-bold rounded-lg capitalize transition-all ${
+              filter === tab
                 ? "bg-brand-blue-1 text-white shadow-[0_0_15px_rgba(59,130,246,0.5)]"
                 : "text-slate-500 hover:text-slate-300"
-              }`}
+            }`}
           >
             {tab}
           </button>
         ))}
       </div>
 
+      {/* Assignments list */}
       <div className="grid gap-4">
         {filteredAssignments.length > 0 ? (
           filteredAssignments.map((assign) => (
@@ -117,7 +200,12 @@ export default function TeacherAssignmentsPage() {
                       <div className="flex flex-wrap gap-4 text-xs">
                         <span className="flex items-center gap-1.5 text-slate-400">
                           <User className="w-3.5 h-3.5 text-slate-500" />
-                          <span className="font-medium text-slate-300">{assign.studentId}</span>
+                          <span className="font-medium text-slate-300">
+                            {assign.studentName && (
+                              <span className="text-white">{assign.studentName} · </span>
+                            )}
+                            {assign.studentId}
+                          </span>
                         </span>
                         <span className="flex items-center gap-1.5 text-slate-400">
                           <Clock className="w-3.5 h-3.5 text-slate-500" />
@@ -146,6 +234,7 @@ export default function TeacherAssignmentsPage() {
                     <Button
                       variant="outline"
                       size="sm"
+                      onClick={() => setDetailsAssignment(assign)}
                       className="ml-auto md:ml-0 border-slate-800 text-slate-300 hover:bg-slate-800 hover:text-white"
                     >
                       View Details
@@ -165,6 +254,32 @@ export default function TeacherAssignmentsPage() {
           </div>
         )}
       </div>
+
+      {/* Click-outside to close student picker */}
+      {showStudentPicker && (
+        <div
+          className="fixed inset-0 z-40"
+          onClick={() => setShowStudentPicker(false)}
+        />
+      )}
+
+      <AssignTaskModal
+        isOpen={assignModal.isOpen}
+        onClose={() => setAssignModal({ ...assignModal, isOpen: false })}
+        studentId={assignModal.studentId}
+        studentName={assignModal.studentName}
+      />
+
+      <AssignClassModal
+        isOpen={classModalOpen}
+        onClose={() => setClassModalOpen(false)}
+      />
+
+      <AssignmentDetailsModal
+        isOpen={!!detailsAssignment}
+        onClose={() => setDetailsAssignment(null)}
+        assignment={detailsAssignment}
+      />
     </div>
   );
 }

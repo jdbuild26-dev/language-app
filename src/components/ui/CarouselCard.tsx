@@ -2,6 +2,7 @@ import React from "react";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import AssignButton from "@/components/shared/AssignButton";
+import { normalizeSlug } from "@/lib/assignmentSlugUtils";
 
 export default function CarouselCard({
   title,
@@ -9,12 +10,14 @@ export default function CarouselCard({
   image,
   to,
   className = "",
+  assignable = false,
+  exerciseType = "vocabulary",
+  exerciseSlug,
 }) {
   const CardContent = (
     <div
       className={`group relative flex flex-col overflow-hidden rounded-2xl bg-white shadow-sm hover:shadow-md transition-shadow dark:bg-slate-800 border border-gray-100 dark:border-slate-700 h-full w-[280px] shrink-0 ${className}`}
     >
-      {/* Image Container */}
       <div className="relative h-48 w-full overflow-hidden bg-gray-100 dark:bg-slate-700">
         {image ? (
           <img
@@ -29,7 +32,6 @@ export default function CarouselCard({
         )}
       </div>
 
-      {/* Content */}
       <div className="flex flex-1 flex-col justify-between p-4">
         <div>
           {subtitle && (
@@ -50,14 +52,19 @@ export default function CarouselCard({
     </div>
   );
 
-  const CardWithAssign = (
+  // Derive a clean slug: prefer explicit exerciseSlug, then normalize from path/title
+  const resolvedSlug = exerciseSlug ?? normalizeSlug(to || title);
+
+  return (
     <div className="relative group h-full">
-      <AssignButton 
-        exerciseType="vocabulary"
-        exerciseSlug={to || title}
-        exerciseTitle={title}
-        className="top-3 right-3"
-      />
+      {assignable && (
+        <AssignButton
+          exerciseType={exerciseType}
+          exerciseSlug={resolvedSlug}
+          exerciseTitle={title}
+          className="top-3 right-3"
+        />
+      )}
       {to ? (
         <Link href={to} className="block h-full">
           {CardContent}
@@ -67,6 +74,4 @@ export default function CarouselCard({
       )}
     </div>
   );
-
-  return CardWithAssign;
 }
