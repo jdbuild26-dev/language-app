@@ -31,9 +31,8 @@ const STATUS_COLORS = {
   locked: "#1e293b", // Dark
 };
 
-export default function TopicMap() {
+export default function TopicMap({ topics }: { topics: Topic[] }) {
   const [zoom, setZoom] = useState(1);
-  const [offset, setOffset] = useState({ x: 0, y: 0 });
   const [selectedTopic, setSelectedTopic] = useState<Topic | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -49,11 +48,11 @@ export default function TopicMap() {
   const points = useMemo(() => {
     const levels = ["A1", "A2", "B1", "B2", "C1", "C2"];
     
-    return MOCK_TOPICS.map((topic) => {
+    return topics.map((topic) => {
       const levelIndex = levels.indexOf(topic.level);
       
       // Categorical clustering
-      const categories = Array.from(new Set(MOCK_TOPICS.map(t => t.category)));
+      const categories = Array.from(new Set(topics.map(t => t.category)));
       const catIndex = categories.indexOf(topic.category);
       
       // Spiral placement based on level

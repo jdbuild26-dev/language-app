@@ -1,6 +1,7 @@
-"use client";
-
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { useAuth } from "@clerk/nextjs";
+import { getTopicMap } from "@/services/progressApi";
+import { Topic, MOCK_TOPICS } from "./mockData";
 import {
   Card,
   CardContent,
@@ -20,7 +21,6 @@ import {
   LineChart,
   Line,
 } from "recharts";
-// import PageTabs from "@/components/ui/PageTabs";
 import {
   CheckCircleIcon,
   BoltIcon,
@@ -52,7 +52,27 @@ const MOCK_PRACTICE_DATA = [
 import TopicMap from "./TopicMap";
 
 export default function StudentProgressPage() {
+  const { getToken } = useAuth();
   const [activeTab, setActiveTab] = useState("vocabulary");
+  const [mapTopics, setMapTopics] = useState<Topic[]>(MOCK_TOPICS);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function loadMapData() {
+      try {
+        const token = await getToken();
+        if (token) {
+          const data = await getTopicMap(token);
+          setMapTopics(data);
+        }
+      } catch (err) {
+        console.error("Failed to load map data:", err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadMapData();
+  }, [getToken]);
 
   interface DataItem {
     name: string;
@@ -188,7 +208,7 @@ export default function StudentProgressPage() {
           <BoltIcon className="w-5 h-5 text-yellow-500" />
           Skill Mastery Map
         </h2>
-        <TopicMap />
+        <TopicMap topics={mapTopics} />
       </div>
 
       <div className="flex border-b border-gray-200 dark:border-slate-700 mb-6">

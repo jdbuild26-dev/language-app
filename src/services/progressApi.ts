@@ -75,7 +75,7 @@ export async function getLessonProgress(token, langCode, level, category) {
 export async function getWordlist(token, langCode, { limit = 50, cursor = null } = {}) {
   const params = new URLSearchParams();
   params.append("langCode", langCode);
-  params.append("limit", limit);
+  params.append("limit", limit.toString());
   if (cursor) params.append("cursor", cursor);
 
   const response = await fetch(
@@ -162,4 +162,21 @@ export async function getTotalLearnedCount(token, langCode) {
 
   const data = await response.json();
   return data.count;
+}
+
+/**
+ * Get user topic map data for progress visualization
+ */
+export async function getTopicMap(token) {
+  const response = await fetch(`${API_BASE_URL}/api/progress/topic-map`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error("Failed to fetch topic map");
+  }
+
+  return response.json();
 }
