@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import React, { useState } from "react";
 import {
   Card,
   CardContent,
@@ -22,7 +22,6 @@ import {
 } from "recharts";
 // import PageTabs from "@/components/ui/PageTabs";
 import {
-  ChartBarIcon,
   CheckCircleIcon,
   BoltIcon,
   CodeBracketIcon,
@@ -50,50 +49,27 @@ const MOCK_PRACTICE_DATA = [
   { name: "Speaking", score: 70, completed: 5 },
 ];
 
+import TopicMap from "./TopicMap";
+
 export default function StudentProgressPage() {
   const [activeTab, setActiveTab] = useState("vocabulary");
 
-  const renderChart = (data, type) => {
-    if (type === "bar") {
-      return (
-        <ResponsiveContainer width="100%" height={300}>
-          <BarChart data={data}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="name" />
-            <YAxis />
-            <Tooltip />
-            <Legend />
-            <Bar dataKey="score" fill="#8884d8" name="Avg. Score (%)" />
-            <Bar
-              dataKey="completed"
-              fill="#82ca9d"
-              name="Exercises Completed"
-            />
-          </BarChart>
-        </ResponsiveContainer>
-      );
-    }
-    return (
-      <ResponsiveContainer width="100%" height={300}>
-        <LineChart data={data}>
-          <CartesianGrid strokeDasharray="3 3" />
-          <XAxis dataKey="name" />
-          <YAxis />
-          <Tooltip />
-          <Legend />
-          <Line
-            type="monotone"
-            dataKey="score"
-            stroke="#8884d8"
-            activeDot={{ r: 8 }}
-            name="Score Trend"
-          />
-        </LineChart>
-      </ResponsiveContainer>
-    );
-  };
+  interface DataItem {
+    name: string;
+    score: number;
+    completed: number;
+  }
 
-  const getTabData = () => {
+  interface TabData {
+    title: string;
+    description: string;
+    data: DataItem[];
+    chartType: "line" | "bar";
+    icon: React.ReactNode;
+    stats: { label: string; value: string; change: string }[];
+  }
+
+  const getTabData = (): TabData => {
     switch (activeTab) {
       case "vocabulary":
         return {
@@ -137,8 +113,59 @@ export default function StudentProgressPage() {
           ],
         };
       default:
-        return {};
+        // Fallback to vocabulary data if something goes wrong
+        return {
+          title: "Vocabulary Progress",
+          description: "Track your word mastery over time.",
+          data: MOCK_VOCAB_DATA,
+          chartType: "line",
+          icon: <BookOpenIcon className="w-6 h-6 text-brand-blue-1" />,
+          stats: [
+            { label: "Words Learned", value: "350", change: "+45 this week" },
+            { label: "Mastery Level", value: "B1", change: "Intermediate" },
+          ],
+        };
     }
+  };
+
+  const renderChart = (data: DataItem[], type: "line" | "bar") => {
+    if (type === "bar") {
+      return (
+        <ResponsiveContainer width="100%" height={300}>
+          <BarChart data={data}>
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis dataKey="name" />
+            <YAxis />
+            <Tooltip />
+            <Legend />
+            <Bar dataKey="score" fill="#8884d8" name="Avg. Score (%)" />
+            <Bar
+              dataKey="completed"
+              fill="#82ca9d"
+              name="Exercises Completed"
+            />
+          </BarChart>
+        </ResponsiveContainer>
+      );
+    }
+    return (
+      <ResponsiveContainer width="100%" height={300}>
+        <LineChart data={data}>
+          <CartesianGrid strokeDasharray="3 3" />
+          <XAxis dataKey="name" />
+          <YAxis />
+          <Tooltip />
+          <Legend />
+          <Line
+            type="monotone"
+            dataKey="score"
+            stroke="#8884d8"
+            activeDot={{ r: 8 }}
+            name="Score Trend"
+          />
+        </LineChart>
+      </ResponsiveContainer>
+    );
   };
 
   const { title, description, data, chartType, icon, stats } = getTabData();
@@ -154,6 +181,14 @@ export default function StudentProgressPage() {
             Analyze your learning journey with detailed metrics.
           </p>
         </div>
+      </div>
+
+      <div className="mb-8">
+        <h2 className="text-xl font-bold text-gray-900 dark:text-primary-dark mb-4 flex items-center gap-2">
+          <BoltIcon className="w-5 h-5 text-yellow-500" />
+          Skill Mastery Map
+        </h2>
+        <TopicMap />
       </div>
 
       <div className="flex border-b border-gray-200 dark:border-slate-700 mb-6">
