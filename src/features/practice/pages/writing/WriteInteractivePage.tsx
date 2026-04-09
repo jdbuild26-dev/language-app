@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { usePracticeExit } from "@/hooks/usePracticeExit";
 import { useExerciseTimer } from "@/hooks/useExerciseTimer";
-import { MessageSquare, User, MessageCircle, Send } from "lucide-react";
+import { MessageSquare, User, MessageCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
 import { useTextToSpeech } from "@/hooks/useTextToSpeech";
@@ -11,6 +11,7 @@ import { useWritingEvaluation } from "@/hooks/useWritingEvaluation";
 import { loadMockCSV } from "@/utils/csvLoader";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import WritingFeedbackResult from "@/components/WritingFeedbackResult";
 
 export default function WriteInteractivePage() {
   const handleExit = usePracticeExit();
@@ -165,7 +166,28 @@ export default function WriteInteractivePage() {
     ) {
       setIsAnalyzing(true);
       analyzeConversation(conversationHistory).then((res) => {
-        setFinalAnalysis(res);
+        // Normalize to EnhancedAnalysisData shape for WritingFeedbackResult
+        const normalized = {
+          overall_score: res.score ?? res.overall_score ?? 0,
+          cefr_level: res.cefr_level || "A1",
+          vocab_diversity: res.vocab_diversity ?? 50,
+          grammar_diversity: res.grammar_diversity ?? 50,
+          executive_summary: res.overall_feedback || res.executive_summary || "",
+          improved_version: res.improved_version || "",
+          detailed_tweaks: (res.key_mistakes || []).map((m: any) => ({
+            original: m.mistake || "",
+            corrected: m.correction || "",
+            explanation: m.explanation || m.correction || "",
+          })),
+          professional_checks: res.professional_checks || {
+            register: "informal",
+            tone_appropriatness: true,
+            politeness: true,
+            task_fulfillment: true,
+          },
+          parameters: res.parameters,
+        };
+        setFinalAnalysis(normalized);
         setIsAnalyzing(false);
       });
     }
@@ -486,8 +508,8 @@ export default function WriteInteractivePage() {
       {/* Final Summary Overlay */}
       {isCompleted && (
         <div className="fixed inset-0 z-[100] bg-slate-50 dark:bg-slate-900 flex flex-col items-center p-6 overflow-y-auto">
-          <div className="w-full max-w-2xl bg-white dark:bg-slate-800 rounded-2xl shadow-xl p-8 mt-10 space-y-6 mb-10">
-            <h2 className="text-2xl font-bold text-center text-slate-800 dark:text-white">
+          <div className="w-full max-w-2xl mt-10 mb-10">
+            <h2 className="text-2xl font-bold text-center text-slate-800 dark:text-white mb-6">
               Conversation Complete!
             </h2>
 
@@ -499,91 +521,16 @@ export default function WriteInteractivePage() {
                 </p>
               </div>
             ) : finalAnalysis ? (
-              <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                <div className="flex flex-col items-center justify-center bg-slate-50 dark:bg-slate-900/50 rounded-xl p-6 border border-slate-100 dark:border-slate-700/50">
-                  <span className="text-sm uppercase tracking-wider text-slate-500 dark:text-slate-400 font-semibold mb-2">
-                    Overall Score
-                  </span>
-                  <div className="w-24 h-24 rounded-full flex items-center justify-center border-4 border-emerald-500 bg-white dark:bg-slate-800 shadow-sm relative overflow-hidden">
-                    <span className="text-3xl font-bold text-emerald-600 dark:text-emerald-400 z-10">
-                      {finalAnalysis.score}%
-                    </span>
-                    <div
-                      className="absolute bottom-0 left-0 right-0 bg-emerald-100 dark:bg-emerald-900/30"
-                      style={{ height: `${finalAnalysis.score}%` }}
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <h3 className="font-semibold text-slate-700 dark:text-slate-200 flex items-center gap-2">
-                    <MessageSquare className="w-4 h-4 text-sky-500" />
-                    Overall Feedback
-                  </h3>
-                  <p className="text-slate-600 dark:text-slate-300 bg-sky-50 dark:bg-sky-900/10 p-4 rounded-xl border border-sky-100 dark:border-sky-800/30">
-                    {finalAnalysis.overall_feedback}
-                  </p>
-                </div>
-
-                {finalAnalysis.key_mistakes?.length > 0 && (
-                  <div className="space-y-3 mt-6">
-                    <h3 className="font-semibold text-slate-700 dark:text-slate-200 flex items-center gap-2">
-                      <MessageCircle className="w-4 h-4 text-red-500" />
-                      Key Mistakes to Review
-                    </h3>
-                    <div className="space-y-3">
-                      {finalAnalysis.key_mistakes.map((mistake, i) => (
-                        <div
-                          key={i}
-                          className="bg-red-50 dark:bg-red-900/5 p-4 rounded-xl border border-red-100 dark:border-red-900/20"
-                        >
-                          <p className="text-sm text-red-800 dark:text-red-300 mb-2">
-                            <span className="font-semibold text-red-900 dark:text-red-200">
-                              Mistake:
-                            </span>{" "}
-                            {mistake.mistake}
-                          </p>
-                          <div className="bg-white dark:bg-slate-800 p-2 rounded-lg border border-emerald-100 dark:border-emerald-800/30 flex items-start gap-2">
-                            <span className="text-xs font-semibold text-emerald-700 dark:text-emerald-400 uppercase tracking-widest mt-0.5">
-                              Correction:
-                            </span>
-                            <span className="text-sm text-emerald-800 dark:text-emerald-300">
-                              {mistake.correction}
-                            </span>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {finalAnalysis.suggestions?.length > 0 && (
-                  <div className="space-y-3 mt-6">
-                    <h3 className="font-semibold text-slate-700 dark:text-slate-200 flex items-center gap-2">
-                      <Send className="w-4 h-4 text-purple-500" />
-                      Suggestions for Improvement
-                    </h3>
-                    <ul className="space-y-2 bg-purple-50 dark:bg-purple-900/5 p-4 rounded-xl border border-purple-100 dark:border-purple-900/20">
-                      {finalAnalysis.suggestions.map((sug, i) => (
-                        <li
-                          key={i}
-                          className="text-sm text-purple-800 dark:text-purple-300 flex items-start gap-2"
-                        >
-                          <span className="text-purple-400 mt-1">•</span>
-                          {sug}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-
-                <Button
-                  onClick={handleExit}
-                  className="w-full mt-6 py-6 text-lg rounded-xl"
-                  size="lg"
-                >
-                  Return to Dashboard
-                </Button>
+              <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                <WritingFeedbackResult
+                  evaluation={finalAnalysis}
+                  mode="interactive"
+                  userText={conversationHistory
+                    .filter((t) => t.userText)
+                    .map((t) => t.userText)
+                    .join(" | ")}
+                  onContinue={handleExit}
+                />
               </div>
             ) : null}
           </div>
