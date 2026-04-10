@@ -853,48 +853,32 @@ const CSV_TRANSFORMERS = {
         : "",
     },
   }),
-  image_mcq: (row) => ({
-    external_id: row.ExerciseID || `image_mcq_${Math.random()}`,
-    instruction_en: row.Instruction_EN || "",
-    instruction_fr: row.Instruction_FR || "",
-    level: row.Level || "",
-    content: {
-      options: row["options"]
-        ? row["options"].startsWith("[") || row["options"].startsWith("{")
-          ? JSON.parse(row["options"])
-          : row["options"]
-        : "",
-      imageAlt: row["imageAlt"]
-        ? row["imageAlt"].startsWith("[") || row["imageAlt"].startsWith("{")
-          ? JSON.parse(row["imageAlt"])
-          : row["imageAlt"]
-        : "",
-      question: row["question"]
-        ? row["question"].startsWith("[") || row["question"].startsWith("{")
-          ? JSON.parse(row["question"])
-          : row["question"]
-        : "",
-      imageEmoji: row["imageEmoji"]
-        ? row["imageEmoji"].startsWith("[") || row["imageEmoji"].startsWith("{")
-          ? JSON.parse(row["imageEmoji"])
-          : row["imageEmoji"]
-        : "",
-      englishOptions: row["englishOptions"]
-        ? row["englishOptions"].startsWith("[") ||
-          row["englishOptions"].startsWith("{")
-          ? JSON.parse(row["englishOptions"])
-          : row["englishOptions"]
-        : "",
-    },
-    evaluation: {
-      correctIndex: row["eval_correctIndex"]
-        ? row["eval_correctIndex"].startsWith("[") ||
-          row["eval_correctIndex"].startsWith("{")
-          ? JSON.parse(row["eval_correctIndex"])
-          : row["eval_correctIndex"]
-        : "",
-    },
-  }),
+  image_mcq: (row) => {
+    const parseArr = (v: any): string[] => {
+      if (Array.isArray(v)) return v;
+      if (typeof v === 'string' && v) {
+        try { return JSON.parse(v); } catch { return v.split('|').map((s: string) => s.trim()).filter(Boolean); }
+      }
+      return [];
+    };
+    return {
+      external_id:    row.ExerciseID || `image_mcq_${Math.random()}`,
+      instruction_en: row.Instruction_EN || "",
+      instruction_fr: row.Instruction_FR || "",
+      level:          row.Level || "",
+      question_fr:    row["question_fr"] || row["Question_FR"] || "",
+      question_en:    row["question_en"] || row["Question_EN"] || row["question"] || "",
+      question:       row["question_en"] || row["question"] || "",
+      options_fr:     parseArr(row["options_fr"] || row["options"]),
+      options_en:     parseArr(row["options_en"] || row["englishOptions"]),
+      options:        parseArr(row["options_fr"] || row["options"]),
+      englishOptions: parseArr(row["options_en"] || row["englishOptions"]),
+      imageUrl:       row["imageUrl"] || row["Image link from Cloudinary"] || "",
+      imageAlt:       row["imageAlt"] || row["Heading_EN"] || "",
+      correctIndex:   Number(row["correctIndex"] ?? row["eval_correctIndex"] ?? 0),
+      timeLimitSeconds: Number(row["timeLimitSeconds"] || 120),
+    };
+  },
   is_french_word: (row) => ({
     external_id: row.ExerciseID || `is_french_word_${Math.random()}`,
     instruction_en: row.Instruction_EN || "",
