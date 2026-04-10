@@ -8,6 +8,7 @@ import PracticeOptions from "@/components/ui/PracticeOptions";
 import { getFeedbackMessage } from "@/utils/feedbackMessages";
 import { loadMockCSV } from "@/utils/csvLoader";
 import { Loader2, Volume2, Languages } from "lucide-react";
+import { useQuestionLanguage } from "@/hooks/useQuestionLanguage";
 import imgMcqImage from "@/assets/kitchen.jpg";
 
 type ImageMCQQuestion = {
@@ -15,6 +16,12 @@ type ImageMCQQuestion = {
   options: string[];
   imageAlt?: string;
   question?: string;
+  question_fr?: string;
+  question_en?: string;
+  heading?: string;
+  heading_fr?: string;
+  heading_en?: string;
+  level?: string;
   englishOptions?: string[];
   correctIndex: number;
 };
@@ -57,8 +64,33 @@ export default function ImageMCQPage() {
   const [isCorrect, setIsCorrect] = useState(false);
   const [feedbackMessage, setFeedbackMessage] = useState("");
   const [score, setScore] = useState(0);
+  const [translatedQuestion, setTranslatedQuestion] = useState("");
+  const [showTranslation, setShowTranslation] = useState(false);
+  const [isTranslating, setIsTranslating] = useState(false);
 
   const currentQuestion = questions[currentIndex];
+  const { pick, pickTranslation, learningLang } = useQuestionLanguage(currentQuestion?.level);
+  const questionText = pick(currentQuestion?.question_fr, currentQuestion?.question_en) || currentQuestion?.question || "";
+  const questionTranslationSource = pickTranslation(currentQuestion?.question_fr, currentQuestion?.question_en) || currentQuestion?.question || "";
+
+  const handleTranslateQuestion = async () => {
+    if (!questionTranslationSource) return;
+    if (showTranslation) { setShowTranslation(false); return; }
+    if (translatedQuestion) { setShowTranslation(true); return; }
+    try {
+      setIsTranslating(true);
+      const res = await fetch("/api/translate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: questionTranslationSource, target_lang: learningLang }),
+      });
+      if (!res.ok) throw new Error();
+      const data = (await res.json()) as { translation?: string };
+      setTranslatedQuestion(data.translation || "");
+      setShowTranslation(true);
+    } catch { setTranslatedQuestion(""); setShowTranslation(false); }
+    finally { setIsTranslating(false); }
+  };
   const timerDuration = currentQuestion?.timeLimitSeconds || 30;
 
   const { timerString, resetTimer } = useExerciseTimer({
@@ -77,6 +109,8 @@ export default function ImageMCQPage() {
   useEffect(() => {
     if (currentQuestion && !isCompleted) {
       setSelectedOption(null);
+      setTranslatedQuestion("");
+      setShowTranslation(false);
       resetTimer();
     }
   }, [currentIndex, currentQuestion, isCompleted, resetTimer]);
@@ -191,9 +225,19 @@ export default function ImageMCQPage() {
         <div className="w-full md:flex-none md:w-[30%] min-h-0 flex flex-col p-4 md:p-6 gap-4 overflow-visible md:overflow-y-auto rounded-2xl border border-slate-200 bg-white dark:bg-slate-900 dark:border-slate-700">
           {/* Question */}
           <div className="px-2">
-            <h1 className="text-lg md:text-xl font-semibold leading-relaxed flex items-center gap-2 text-slate-900 dark:text-slate-200">
-              <Languages className="w-5 h-5 text-blue-500 shrink-0" />
-              {currentQuestion?.question}
+            <h1 className="text-lg md:text-xl font-semibold leading-relaxed flex items-start gap-2 text-slate-900 dark:text-slate-200">
+              <button
+                type="button"
+                onClick={handleTranslateQuestion}
+                disabled={isTranslating}
+                aria-label={showTranslation ? "Show original" : "Translate question"}
+                className="inline-flex items-center justify-center shrink-0 mt-0.5 text-blue-500 hover:text-blue-600 disabled:opacity-60"
+              >
+                {isTranslating
+                  ? <span className="w-5 h-5 animate-spin rounded-full border-2 border-blue-400 border-t-transparent" />
+                  : <Languages className="w-5 h-5" />}
+              </button>
+              {showTranslation && translatedQuestion ? translatedQuestion : questionText}
             </h1>
           </div>
 

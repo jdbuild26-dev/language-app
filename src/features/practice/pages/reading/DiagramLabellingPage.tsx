@@ -9,6 +9,7 @@ import { Languages, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { loadMockCSV } from "@/utils/csvLoader";
 import { Button } from "@/components/ui/button";
+import { useQuestionLanguage } from "@/hooks/useQuestionLanguage";
 
 type DiagramQuestion = {
   id: number | string;
@@ -17,6 +18,9 @@ type DiagramQuestion = {
 
 type DiagramLabellingItem = {
   title?: string;
+  title_fr?: string;
+  title_en?: string;
+  level?: string;
   paragraphs?: string[];
   options?: string[];
   questions?: DiagramQuestion[];
@@ -47,7 +51,8 @@ export default function DiagramLabellingPage() {
   }, []);
 
   const currentQuestion = questions[0];
-  const PASSAGE_TITLE = currentQuestion?.title || "";
+  const { pick } = useQuestionLanguage(currentQuestion?.level);
+  const PASSAGE_TITLE = pick(currentQuestion?.title_fr, currentQuestion?.title_en) || currentQuestion?.title || "";
   const PASSAGE_PARAGRAPHS = currentQuestion?.paragraphs || [];
   const OPTIONS = currentQuestion?.options || [];
   const DIAGRAM_QUESTIONS = currentQuestion?.questions || [];

@@ -771,52 +771,37 @@ const CSV_TRANSFORMERS = {
     },
   }),
   highlight_text: (row) => ({
-    external_id: row.ExerciseID || `highlight_text_${Math.random()}`,
-    instruction_en: row.Instruction_EN || "",
-    instruction_fr: row.Instruction_FR || "",
-    level: row.Level || "",
+    external_id: row.ExerciseID || row.external_id || `highlight_text_${Math.random()}`,
+    instruction_en: row.Instruction_EN || row.instruction_en || row.Instructions_EN || "",
+    instruction_fr: row.Instruction_FR || row.instruction_fr || "",
+    level: row.Level || row.level || "",
     content: {
-      title: row["title"]
-        ? row["title"].startsWith("[") || row["title"].startsWith("{")
-          ? JSON.parse(row["title"])
-          : row["title"]
-        : "",
-      passage: row["passage"]
-        ? row["passage"].startsWith("[") || row["passage"].startsWith("{")
-          ? JSON.parse(row["passage"])
-          : row["passage"]
-        : "",
-      question: row["question"]
-        ? row["question"].startsWith("[") || row["question"].startsWith("{")
-          ? JSON.parse(row["question"])
-          : row["question"]
-        : "",
-      questionTitle: row["questionTitle"]
-        ? row["questionTitle"].startsWith("[") ||
-          row["questionTitle"].startsWith("{")
-          ? JSON.parse(row["questionTitle"])
-          : row["questionTitle"]
-        : "",
+      // Bilingual titles — prefer _EN for display, fall back to legacy single-lang
+      title: row["title_en"] || row["Heading_EN"] || row["title"] || "",
+      title_fr: row["title_fr"] || row["Heading_FR"] || "",
+      title_en: row["title_en"] || row["Heading_EN"] || "",
+      // Bilingual passages
+      passage: row["passage_en"] || row["Complete Paragraph_EN"] || row["passage"] || "",
+      passage_fr: row["passage_fr"] || row["Complete Paragraph_FR"] || "",
+      passage_en: row["passage_en"] || row["Complete Paragraph_EN"] || "",
+      // Question (single question per row in new format)
+      question: row["question_en"] || row["Question_1_EN"] || row["question"] || "",
+      question_fr: row["question_fr"] || row["Question_1_FR"] || "",
+      question_en: row["question_en"] || row["Question_1_EN"] || "",
+      question_number: row["question_number"] || 1,
+      questionTitle: row["questionTitle"] || "",
     },
     evaluation: {
-      requiredCore: row["eval_requiredCore"]
-        ? row["eval_requiredCore"].startsWith("[") ||
-          row["eval_requiredCore"].startsWith("{")
-          ? JSON.parse(row["eval_requiredCore"])
-          : row["eval_requiredCore"]
-        : "",
-      correctAnswer: row["eval_correctAnswer"]
-        ? row["eval_correctAnswer"].startsWith("[") ||
-          row["eval_correctAnswer"].startsWith("{")
-          ? JSON.parse(row["eval_correctAnswer"])
-          : row["eval_correctAnswer"]
-        : "",
-      acceptableBoundary: row["eval_acceptableBoundary"]
-        ? row["eval_acceptableBoundary"].startsWith("[") ||
-          row["eval_acceptableBoundary"].startsWith("{")
-          ? JSON.parse(row["eval_acceptableBoundary"])
-          : row["eval_acceptableBoundary"]
-        : "",
+      requiredCore: row["correct_answer_en"] || row["Correct Answer_1_EN"] || row["eval_requiredCore"] || "",
+      requiredCore_fr: row["correct_answer_fr"] || row["Correct Answer_1_FR"] || "",
+      correctAnswer: row["correct_answer_en"] || row["eval_correctAnswer"] || "",
+      acceptableBoundary: row["acceptable_answer_texts"] || row["AcceptableAnswerTexts"] || row["eval_acceptableBoundary"] || "",
+    },
+    config: {
+      timeLimitSeconds: row["timeLimitSeconds"] || row["TimeLimitSeconds"] || 360,
+      minHighlightChars: row["minHighlightChars"] || row["MinHighlightChars"] || 20,
+      maxHighlightChars: row["maxHighlightChars"] || row["MaxHighlightChars"] || 160,
+      caseSensitive: row["caseSensitive"] ?? row["CaseSensitive"] ?? false,
     },
   }),
   highlight_word: (row) => ({

@@ -10,12 +10,14 @@ import { fetchCompletePassageData } from "@/services/vocabularyApi";
 import { loadMockCSV } from "@/utils/csvLoader";
 import { getFeedbackMessage } from "@/utils/feedbackMessages";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useQuestionLanguage } from "@/hooks/useQuestionLanguage";
 
 type CompletePassageQuestion = {
   passageBefore: string;
   passageAfter: string;
   options: string[];
   correctIndex: number;
+  level?: string;
   instructionFr?: string;
   instructionEn?: string;
   localizedInstruction?: string;
@@ -205,6 +207,11 @@ export default function CompletePassagePage() {
   }, [learningLang, knownLang]);
 
   const currentQuestion = questions[currentIndex];
+  const { pick, showQuestionInKnown } = useQuestionLanguage(currentQuestion?.level);
+  // Heading shown in known lang at A1/A2, learning lang at B1+
+  const selectHeading = showQuestionInKnown
+    ? "Select the best sentence to complete the passage"
+    : "Choisissez la meilleure phrase pour compléter le passage";
 
   const timerDuration = useMemo(
     () => currentQuestion?.timeLimitSeconds || 120,
@@ -376,7 +383,7 @@ export default function CompletePassagePage() {
         <div className="flex-1 min-h-0 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 p-6 md:p-8 overflow-y-auto">
           <h3 className="practice-reading-heading mb-6 flex items-center gap-2">
             <Languages className="w-5 h-5 text-blue-500" />
-            Select the best sentence to complete the passage
+            {selectHeading}
           </h3>
 
           <div className="space-y-3">

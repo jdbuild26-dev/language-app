@@ -9,12 +9,18 @@ import { getFeedbackMessage } from "@/utils/feedbackMessages";
 import { loadMockCSV } from "@/utils/csvLoader";
 import PracticeOptions from "@/components/ui/PracticeOptions";
 import { Languages } from "lucide-react";
-
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useQuestionLanguage } from "@/hooks/useQuestionLanguage";
 
 type ComprehensionQuestion = {
   passage?: string;
   question?: string;
+  question_fr?: string;
+  question_en?: string;
+  heading?: string;
+  heading_fr?: string;
+  heading_en?: string;
+  level?: string;
   options: string[];
   correctIndex: number;
   localizedInstruction?: string;
@@ -39,6 +45,9 @@ export default function ComprehensionPage() {
   const [feedbackMessage, setFeedbackMessage] = useState("");
   const [score, setScore] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
+  const [translatedQuestion, setTranslatedQuestion] = useState("");
+  const [showTranslation, setShowTranslation] = useState(false);
+  const [isTranslating, setIsTranslating] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -61,6 +70,29 @@ export default function ComprehensionPage() {
   }, [learningLang, knownLang]);
 
   const currentQuestion = questions[currentIndex];
+  const { pick, pickTranslation, learningLang } = useQuestionLanguage(currentQuestion?.level);
+  const questionText = pick(currentQuestion?.question_fr, currentQuestion?.question_en) || currentQuestion?.question || "";
+  const questionTranslationSource = pickTranslation(currentQuestion?.question_fr, currentQuestion?.question_en) || currentQuestion?.question || "";
+
+  const handleTranslateQuestion = async () => {
+    if (!questionTranslationSource) return;
+    if (showTranslation) { setShowTranslation(false); return; }
+    if (translatedQuestion) { setShowTranslation(true); return; }
+    try {
+      setIsTranslating(true);
+      const res = await fetch("/api/translate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: questionTranslationSource, target_lang: learningLang }),
+      });
+      if (!res.ok) throw new Error();
+      const data = (await res.json()) as { translation?: string };
+      setTranslatedQuestion(data.translation || "");
+      setShowTranslation(true);
+    } catch { setTranslatedQuestion(""); setShowTranslation(false); }
+    finally { setIsTranslating(false); }
+  };
+
   const timerDuration = currentQuestion?.timeLimitSeconds || 60;
 
   const { timerString, resetTimer } = useExerciseTimer({
@@ -79,6 +111,8 @@ export default function ComprehensionPage() {
   useEffect(() => {
     if (currentQuestion && !isCompleted) {
       setSelectedOption(null);
+      setTranslatedQuestion("");
+      setShowTranslation(false);
       resetTimer();
     }
   }, [currentIndex, currentQuestion, isCompleted, resetTimer]);
@@ -191,9 +225,19 @@ export default function ComprehensionPage() {
           <div className="flex-1 min-h-0 flex flex-col dark:bg-slate-900 rounded-2xl border border-slate-200 bg-white dark:border-slate-700 p-5 md:p-8 gap-5 overflow-y-auto">
             {/* Question */}
             <h3 className="mb-2 flex items-start gap-2">
-              <Languages className="w-5 h-5 text-blue-500 shrink-0 mt-1" />
+              <button
+                type="button"
+                onClick={handleTranslateQuestion}
+                disabled={isTranslating}
+                aria-label={showTranslation ? "Show original" : "Translate question"}
+                className="inline-flex items-center justify-center shrink-0 mt-1 text-blue-500 hover:text-blue-600 disabled:opacity-60"
+              >
+                {isTranslating
+                  ? <span className="w-5 h-5 animate-spin rounded-full border-2 border-blue-400 border-t-transparent" />
+                  : <Languages className="w-5 h-5 text-blue-500 shrink-0 mt-1" />}
+              </button>
               <span className="practice-reading-option-text font-medium">
-                {currentQuestion?.question}
+                {showTranslation && translatedQuestion ? translatedQuestion : questionText}
               </span>
             </h3>
 

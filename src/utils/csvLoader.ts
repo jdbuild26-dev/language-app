@@ -80,11 +80,12 @@ export const loadMockCSV = async (fileName, options = {}) => {
 
   if (slug) {
     try {
-      const { level, learningLang, knownLang } = options;
+      const { level, learningLang, knownLang, tag } = options;
       const params = new URLSearchParams();
       if (level) params.append("level", level);
       if (learningLang) params.append("learning_lang", learningLang);
       if (knownLang) params.append("known_lang", knownLang);
+      if (tag) params.append("tag", tag);
 
       const response = await fetch(
         `${API_URL}/api/practice/${slug}${params.toString() ? `?${params}` : ""}`,
