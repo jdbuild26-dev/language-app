@@ -12,9 +12,11 @@ interface AssignButtonProps {
   className?: string;
 }
 
-/**
- * A floating button that appears only for teachers to assign an exercise to their classes.
- */
+const stopAll = (e: React.SyntheticEvent) => {
+  e.preventDefault();
+  e.stopPropagation();
+};
+
 export default function AssignButton({
   exerciseType,
   exerciseSlug,
@@ -24,31 +26,30 @@ export default function AssignButton({
   const { role } = useProfile();
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  // Only show for teachers
-  // We check for 'teacher' role (case-insensitive)
   if (role?.toLowerCase() !== "teacher") return null;
 
-  const handleInterruption = (e: React.UIEvent) => {
-    e.stopPropagation();
-  };
-
   return (
-    <>
+    // Wrapper div intercepts ALL events so nothing leaks to the parent card
+    <div
+      className={`absolute top-3 right-3 z-30 ${className}`}
+      onClick={(e) => e.stopPropagation()}
+      onMouseDown={stopAll}
+      onMouseUp={stopAll}
+      onPointerDown={stopAll}
+      onPointerUp={stopAll}
+      onTouchStart={stopAll}
+      onTouchEnd={stopAll}
+    >
       <button
         onClick={(e) => {
-          e.preventDefault();
-          e.stopPropagation();
+          stopAll(e);
           setIsModalOpen(true);
         }}
-        onPointerDown={handleInterruption}
-        onPointerUp={handleInterruption}
-        onMouseDown={handleInterruption}
-        onMouseUp={handleInterruption}
-        className={`absolute top-3 right-3 z-30 flex items-center gap-1.5 px-3 py-1.5 
-          bg-sky-500 hover:bg-sky-600 text-white text-xs font-bold rounded-full 
-          shadow-lg shadow-sky-500/30 transition-all active:scale-95 
-          group/assign border border-sky-400 opacity-0 group-hover:opacity-100 
-          translate-y-[-4px] group-hover:translate-y-0 ${className}`}
+        className="flex items-center gap-1.5 px-3 py-1.5
+          bg-sky-500 hover:bg-sky-600 text-white text-xs font-bold rounded-full
+          shadow-lg shadow-sky-500/30 transition-all active:scale-95
+          border border-sky-400 opacity-0 group-hover:opacity-100
+          translate-y-[-4px] group-hover:translate-y-0"
         title={`Assign ${exerciseTitle}`}
       >
         <Plus className="w-3.5 h-3.5" />
@@ -64,6 +65,6 @@ export default function AssignButton({
           exerciseTitle={exerciseTitle}
         />
       )}
-    </>
+    </div>
   );
 }
