@@ -119,3 +119,20 @@ export async function getTaskOptions(token) {
   }
   return response.json();
 }
+
+/**
+ * Fetch aggregated dashboard stats for the authenticated teacher.
+ */
+export async function getTeacherDashboardStats(token: string): Promise<{
+  totalStudents: number;
+  totalClasses: number;
+  pendingReviews: number;
+}> {
+  const response = await fetch(`${API_URL}/api/teachers/dashboard/stats`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!response.ok) {
+    throw new Error("Failed to fetch dashboard stats");
+  }
+  return response.json();
+}

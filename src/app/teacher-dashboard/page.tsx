@@ -17,6 +17,7 @@ import { Label } from "@/components/ui/label";
 import { useProfile } from "@/contexts/ProfileContext";
 import { useAuth } from "@clerk/nextjs";
 import { updateTeacherProfile } from "@/services/userApi";
+import { getTeacherDashboardStats } from "@/services/assignmentsApi";
 import questionnaireData from "@/features/auth/constants/teacherQuestionnaire.json";
 import toast from "react-hot-toast";
 
@@ -61,11 +62,30 @@ export default function OverviewPage() {
   const [errors, setErrors] = useState<Record<number, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const [stats, setStats] = useState<{ totalStudents: number; totalClasses: number; pendingReviews: number } | null>(null);
+  const [statsLoading, setStatsLoading] = useState(true);
+
   useEffect(() => {
     if (activeProfile?.questionnaireResponses) {
       setResponses(activeProfile.questionnaireResponses);
     }
   }, [activeProfile]);
+
+  useEffect(() => {
+    async function fetchStats() {
+      try {
+        setStatsLoading(true);
+        const token = await getToken();
+        const data = await getTeacherDashboardStats(token);
+        setStats(data);
+      } catch (err) {
+        console.error("Failed to load dashboard stats", err);
+      } finally {
+        setStatsLoading(false);
+      }
+    }
+    fetchStats();
+  }, [getToken]);
 
   const questions = questionnaireData.questions;
   const totalPages = Math.ceil(questions.length / QUESTIONS_PER_PAGE);
@@ -371,11 +391,10 @@ export default function OverviewPage() {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">12</div>
-            <p className="text-xs text-green-500 mt-1 flex items-center gap-1">
-              <span className="h-1 w-1 rounded-full bg-green-500"></span>
-              +2 from last week
-            </p>
+            <div className="text-2xl font-bold">
+              {statsLoading ? <span className="animate-pulse text-gray-300">—</span> : stats?.totalStudents ?? 0}
+            </div>
+            <p className="text-xs text-gray-400 mt-1">Active students</p>
           </CardContent>
         </Card>
 
@@ -387,8 +406,10 @@ export default function OverviewPage() {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">4</div>
-            <p className="text-xs text-gray-400 mt-1">2 scheduled today</p>
+            <div className="text-2xl font-bold">
+              {statsLoading ? <span className="animate-pulse text-gray-300">—</span> : stats?.totalClasses ?? 0}
+            </div>
+            <p className="text-xs text-gray-400 mt-1">Classes created</p>
           </CardContent>
         </Card>
 
@@ -400,7 +421,9 @@ export default function OverviewPage() {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">7</div>
+            <div className="text-2xl font-bold">
+              {statsLoading ? <span className="animate-pulse text-gray-300">—</span> : stats?.pendingReviews ?? 0}
+            </div>
             <p className="text-xs text-gray-400 mt-1">Practice submissions</p>
           </CardContent>
         </Card>
