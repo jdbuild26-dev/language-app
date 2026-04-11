@@ -9,8 +9,8 @@ import { Button } from "@/components/ui/button";
 import { loadMockCSV } from "@/utils/csvLoader";
 import { CheckCircle2, Languages, Loader2, Sparkles } from "lucide-react";
 import { useQuestionLanguage } from "@/hooks/useQuestionLanguage";
+import { usePracticeComplete } from "@/hooks/usePracticeComplete";
 import { useSearchParams } from "next/navigation";
-
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 type LabelItem = {
@@ -126,6 +126,7 @@ function ImageLabellingContent() {
 
   const ex = exercises[currentIndex];
   const { pick, showQuestionInKnown, learningLang } = useQuestionLanguage(ex?.level);
+  usePracticeComplete({ isGameOver: isCompleted, score: totalScore, totalQuestions: exercises.length, exerciseType: "image_labelling", level: ex?.level });
 
   // ── Derive items in learning language ─────────────────────────────────────
   const items: LabelItem[] = useMemo(() => {

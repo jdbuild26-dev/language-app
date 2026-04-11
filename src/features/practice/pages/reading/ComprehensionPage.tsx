@@ -11,8 +11,8 @@ import PracticeOptions from "@/components/ui/PracticeOptions";
 import { Languages, Loader2 } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useQuestionLanguage } from "@/hooks/useQuestionLanguage";
+import { usePracticeComplete } from "@/hooks/usePracticeComplete";
 import { useSearchParams } from "next/navigation";
-
 type ComprehensionQuestion = {
   passage?: string;
   passage_fr?: string;
@@ -118,6 +118,7 @@ function ComprehensionContent() {
 
   const currentQuestion = questions[currentIndex];
   const { pick, pickTranslation, showQuestionInKnown } = useQuestionLanguage(currentQuestion?.level);
+  usePracticeComplete({ isGameOver: isCompleted, score, totalQuestions: questions.length, exerciseType: "passage_mcq", level: currentQuestion?.level });
 
   // Passage always in learning language
   const passageText  = learningLang === "fr"

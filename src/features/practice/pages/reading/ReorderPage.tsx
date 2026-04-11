@@ -12,8 +12,8 @@ import { getFeedbackMessage } from "@/utils/feedbackMessages";
 import { loadMockCSV } from "@/utils/csvLoader";
 import { Button } from "@/components/ui/button";
 import { useQuestionLanguage } from "@/hooks/useQuestionLanguage";
+import { usePracticeComplete } from "@/hooks/usePracticeComplete";
 import { useSearchParams } from "next/navigation";
-import { useLanguage } from "@/contexts/LanguageContext";
 
 type ReorderQuestion = {
   id: string | number;
@@ -140,6 +140,7 @@ function ReorderContent() {
 
   const currentQuestion = questions[currentIndex];
   const { pick, learningLang } = useQuestionLanguage(currentQuestion?.level);
+  usePracticeComplete({ isGameOver: isCompleted, score, totalQuestions: questions.length, exerciseType: "reorder_sentences", level: currentQuestion?.level });
   const headingText = pick(currentQuestion?.title_fr, currentQuestion?.title_en)
     || currentQuestion?.title || "Reorder the Sentences";
   const timerDuration = currentQuestion?.timeLimitSeconds || 360;

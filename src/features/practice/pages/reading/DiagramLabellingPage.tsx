@@ -10,8 +10,8 @@ import { cn } from "@/lib/utils";
 import { loadMockCSV } from "@/utils/csvLoader";
 import { Button } from "@/components/ui/button";
 import { useQuestionLanguage } from "@/hooks/useQuestionLanguage";
+import { usePracticeComplete } from "@/hooks/usePracticeComplete";
 import { useSearchParams } from "next/navigation";
-
 // ── Types ────────────────────────────────────────────────────────────────────
 
 type DiagramQuestion = {
@@ -163,6 +163,7 @@ function DiagramLabellingContent() {
   const ex = exercises[currentIndex];
 
   const { pick, showQuestionInKnown, learningLang } = useQuestionLanguage(ex?.level);
+  usePracticeComplete({ isGameOver: isCompleted, score: totalScore, totalQuestions: exercises.length, exerciseType: "diagram_mapping", level: ex?.level });
 
   // ── Derive display values ──────────────────────────────────────────────────
   const passageTitle = pick(ex?.title_fr, ex?.title_en) || ex?.title || "";

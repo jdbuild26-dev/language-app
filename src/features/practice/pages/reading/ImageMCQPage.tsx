@@ -9,6 +9,7 @@ import { getFeedbackMessage } from "@/utils/feedbackMessages";
 import { loadMockCSV } from "@/utils/csvLoader";
 import { Loader2, Volume2, Languages } from "lucide-react";
 import { useQuestionLanguage } from "@/hooks/useQuestionLanguage";
+import { usePracticeComplete } from "@/hooks/usePracticeComplete";
 import { useSearchParams } from "next/navigation";
 import kitchenImg from "@/assets/kitchen.jpg";
 
@@ -115,6 +116,7 @@ function ImageMCQContent() {
 
   const currentQuestion = questions[currentIndex];
   const { pick, pickTranslation, learningLang, showQuestionInKnown } = useQuestionLanguage(currentQuestion?.level);
+  usePracticeComplete({ isGameOver: isCompleted, score, totalQuestions: questions.length, exerciseType: "image_mcq", level: currentQuestion?.level });
 
   // Question text: level-based language
   const questionText = pick(currentQuestion?.question_fr, currentQuestion?.question_en) || currentQuestion?.question || "";

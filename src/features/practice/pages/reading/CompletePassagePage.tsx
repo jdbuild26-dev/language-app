@@ -10,8 +10,8 @@ import { loadMockCSV } from "@/utils/csvLoader";
 import { getFeedbackMessage } from "@/utils/feedbackMessages";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useQuestionLanguage } from "@/hooks/useQuestionLanguage";
+import { usePracticeComplete } from "@/hooks/usePracticeComplete";
 import { useSearchParams } from "next/navigation";
-
 type CompletePassageQuestion = {
   // bilingual
   passage_before_fr?: string;
@@ -126,6 +126,7 @@ function CompletePassageContent() {
 
   const currentQuestion = questions[currentIndex];
   const { pick, showQuestionInKnown } = useQuestionLanguage(currentQuestion?.level);
+  usePracticeComplete({ isGameOver: isCompleted, score, totalQuestions: questions.length, exerciseType: "sentence_completion", level: currentQuestion?.level });
 
   // Passage always in learning language
   const passageBefore = learningLang === "fr"

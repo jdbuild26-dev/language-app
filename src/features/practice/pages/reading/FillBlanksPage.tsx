@@ -10,8 +10,8 @@ import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
 import CustomSelect from "@/components/ui/CustomSelect";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useQuestionLanguage } from "@/hooks/useQuestionLanguage";
+import { usePracticeComplete } from "@/hooks/usePracticeComplete";
 import { useSearchParams } from "next/navigation";
-
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 type PassageSegment = { type: "text"; text: string } | { type: "blank"; id: number };
@@ -150,6 +150,7 @@ function FillBlanksContent() {
 
   const ex = exercises[currentIndex];
   const { showQuestionInKnown } = useQuestionLanguage(ex?.level);
+  usePracticeComplete({ isGameOver: isCompleted, score: totalScore, totalQuestions: exercises.length, exerciseType: "fill_blanks", level: ex?.level });
 
   // Reset answers when exercise changes
   useEffect(() => {

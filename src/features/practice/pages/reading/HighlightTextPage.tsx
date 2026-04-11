@@ -10,8 +10,8 @@ import { cn } from "@/lib/utils";
 import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
 import { Button } from "@/components/ui/button";
 import { useQuestionLanguage } from "@/hooks/useQuestionLanguage";
+import { usePracticeComplete } from "@/hooks/usePracticeComplete";
 import { useSearchParams } from "next/navigation";
-
 type HighlightTextQuestion = {
   title?: string;
   title_fr?: string;
@@ -120,6 +120,7 @@ function HighlightTextContent() {
   const currentQuestion = questions[currentIndex];
   // Level-based language: A1/A2 → question in known lang; B1+ → question in learning lang
   const { pick, pickTranslation, learningLang } = useQuestionLanguage(currentQuestion?.level);
+  usePracticeComplete({ isGameOver: isCompleted, score, totalQuestions: questions.length, exerciseType: "highlight_text", level: currentQuestion?.level });
 
   // Passage is always in learning language
   const passageText  = currentQuestion?.passage_fr && learningLang === "fr"
