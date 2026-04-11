@@ -1,7 +1,7 @@
 
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, Suspense } from "react";
 import { usePracticeExit } from "@/hooks/usePracticeExit";
 import { useExerciseTimer } from "@/hooks/useExerciseTimer";
 import { RefreshCw, Loader2, Languages } from "lucide-react";
@@ -9,25 +9,46 @@ import { loadMockCSV } from "@/utils/csvLoader";
 import { cn } from "@/lib/utils";
 import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
 import { Button } from "@/components/ui/button";
-import { useLanguage } from "@/contexts/LanguageContext";
-
+import { useQuestionLanguage } from "@/hooks/useQuestionLanguage";
+import { usePracticeComplete } from "@/hooks/usePracticeComplete";
+import { useSearchParams } from "next/navigation";
 type HighlightTextQuestion = {
   title?: string;
+  title_fr?: string;
+  title_en?: string;
   passage: string;
+  passage_fr?: string;
+  passage_en?: string;
   questionTitle?: string;
   question: string;
+  question_fr?: string;
+  question_en?: string;
+  question_number?: number;
   requiredCore: string;
+  requiredCore_fr?: string;
   acceptableBoundary: string;
   correctAnswer?: string;
   timeLimitSeconds?: number;
+  minHighlightChars?: number;
+  maxHighlightChars?: number;
+  caseSensitive?: boolean;
   instructionFr?: string;
   instructionEn?: string;
   localizedInstruction?: string;
 };
 
 export default function HighlightTextPage() {
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center min-h-screen bg-slate-50 dark:bg-slate-900"><Loader2 className="w-8 h-8 animate-spin text-blue-500" /></div>}>
+      <HighlightTextContent />
+    </Suspense>
+  );
+}
+
+function HighlightTextContent() {
   const handleExit = usePracticeExit();
-  const { knownLang = "en" } = useLanguage() as { knownLang?: string };
+  const searchParams = useSearchParams();
+  const tag = searchParams?.get("tag") ?? undefined;
 
   const [questions, setQuestions] = useState<HighlightTextQuestion[]>([]);
   const [loading, setLoading] = useState(true);
@@ -35,10 +56,39 @@ export default function HighlightTextPage() {
   useEffect(() => {
     const fetchQuestions = async () => {
       try {
-        const data = await loadMockCSV("practice/reading/highlight_text.csv");
-        setQuestions(
-          Array.isArray(data) ? (data as HighlightTextQuestion[]) : [],
-        );
+        const data = await loadMockCSV("practice/reading/highlight_text.csv", { tag });
+        const mapped = (Array.isArray(data) ? data : []).map((item: any) => {
+          // Backend returns nested content/evaluation/config; flatten for the component
+          const c = item.content || item;
+          const e = item.evaluation || item;
+          const cfg = item.config || item;
+          return {
+            external_id: item.external_id,
+            instruction_en: item.instruction_en || item.instructionEn || "",
+            instruction_fr: item.instruction_fr || item.instructionFr || "",
+            level: item.level || "",
+            title:    c.title_en || c.title || "",
+            title_fr: c.title_fr || "",
+            title_en: c.title_en || c.title || "",
+            passage:    c.passage_en || c.passage || "",
+            passage_fr: c.passage_fr || "",
+            passage_en: c.passage_en || c.passage || "",
+            question:    c.question_en || c.question || "",
+            question_fr: c.question_fr || "",
+            question_en: c.question_en || c.question || "",
+            question_number: c.question_number || 1,
+            questionTitle: c.questionTitle || "",
+            requiredCore:    e.requiredCore || e.correct_answer_en || "",
+            requiredCore_fr: e.requiredCore_fr || e.correct_answer_fr || "",
+            correctAnswer:   e.correctAnswer || e.correct_answer_en || e.requiredCore || "",
+            acceptableBoundary: e.acceptableBoundary || e.acceptable_answer_texts || e.passage_en || c.passage_en || c.passage || "",
+            timeLimitSeconds: cfg.timeLimitSeconds || cfg.TimeLimitSeconds || 360,
+            minHighlightChars: cfg.minHighlightChars || cfg.MinHighlightChars || 20,
+            maxHighlightChars: cfg.maxHighlightChars || cfg.MaxHighlightChars || 160,
+            caseSensitive: cfg.caseSensitive ?? cfg.CaseSensitive ?? false,
+          } as HighlightTextQuestion;
+        });
+        setQuestions(mapped);
       } catch (error) {
         console.error("Error loading mock data:", error);
       } finally {
@@ -68,6 +118,19 @@ export default function HighlightTextPage() {
   };
 
   const currentQuestion = questions[currentIndex];
+  // Level-based language: A1/A2 → question in known lang; B1+ → question in learning lang
+  const { pick, pickTranslation, learningLang } = useQuestionLanguage(currentQuestion?.level);
+  usePracticeComplete({ isGameOver: isCompleted, score, totalQuestions: questions.length, exerciseType: "highlight_text", level: currentQuestion?.level });
+
+  // Passage is always in learning language
+  const passageText  = currentQuestion?.passage_fr && learningLang === "fr"
+    ? currentQuestion.passage_fr
+    : currentQuestion?.passage_en || currentQuestion?.passage || "";
+  const titleText    = pick(currentQuestion?.title_fr, currentQuestion?.title_en) || currentQuestion?.title || "";
+  const questionText = pick(currentQuestion?.question_fr, currentQuestion?.question_en) || currentQuestion?.question || "";
+  // Translation target is always the opposite language
+  const questionTranslationSource = pickTranslation(currentQuestion?.question_fr, currentQuestion?.question_en);
+
   // More time for reading
   const timerDuration = currentQuestion?.timeLimitSeconds || 120;
 
@@ -122,39 +185,33 @@ export default function HighlightTextPage() {
     };
   }, [showFeedback]);
 
-  // Helper to normalize strings for comparison (ignores case and simple punctuation differences)
-  const normalize = (str: string | undefined) => {
-    if (!str) return "";
-    return str
-      .toLowerCase()
-      .replace(/[.,;:"']/g, "")
-      .replace(/\s+/g, " ")
-      .trim();
-  };
-
   const handleSubmit = () => {
     if (showFeedback || !selectedText) return;
 
-    const userNorm = normalize(selectedText);
-    const coreNorm = normalize(currentQuestion.requiredCore);
-    const boundaryNorm = normalize(currentQuestion.acceptableBoundary);
-    const passageNorm = normalize(currentQuestion.passage);
+    const caseSensitive = currentQuestion.caseSensitive ?? false;
+    const normalize = (str: string | undefined) => {
+      if (!str) return "";
+      let s = str.replace(/[.,;:"']/g, "").replace(/\s+/g, " ").trim();
+      return caseSensitive ? s : s.toLowerCase();
+    };
 
-    // Algorithm implementation:
-    // 1. Must contain the required core part of the answer
-    const containsCore = userNorm.includes(coreNorm);
+    const userNorm     = normalize(selectedText);
+    const coreNorm     = normalize(currentQuestion.requiredCore);
+    // Use the full passage as the acceptable boundary if not explicitly set
+    const boundaryNorm = normalize(currentQuestion.acceptableBoundary || passageText);
+    const passageNorm  = normalize(passageText);
 
-    // 2. Must be within the larger acceptable boundary (context)
-    const withinBoundary = boundaryNorm.includes(userNorm);
+    const minChars = currentQuestion.minHighlightChars ?? 20;
+    const maxChars = currentQuestion.maxHighlightChars ?? 160;
 
-    // 3. Must not be the entire passage/paragraph
-    const isNotFullPassage = userNorm.length < passageNorm.length * 0.9;
-
-    // 4. Must have a reasonable length (avoid tiny fragments that just happen to match)
+    const containsCore      = userNorm.includes(coreNorm);
+    const withinBoundary    = boundaryNorm.includes(userNorm);
+    const isNotFullPassage  = userNorm.length < passageNorm.length * 0.9;
     const isReasonableLength = userNorm.length >= coreNorm.length * 0.8;
+    const withinCharLimits  = userNorm.length >= minChars && userNorm.length <= maxChars;
 
     const correct =
-      containsCore && withinBoundary && isNotFullPassage && isReasonableLength;
+      containsCore && withinBoundary && isNotFullPassage && isReasonableLength && withinCharLimits;
 
     setIsCorrect(correct);
     setFeedbackMessage(getFeedbackMessage(correct));
@@ -176,7 +233,7 @@ export default function HighlightTextPage() {
   };
 
   const handleTranslateQuestion = async () => {
-    if (!currentQuestion?.question) return;
+    if (!questionTranslationSource) return;
 
     if (showTranslation) {
       setShowTranslation(false);
@@ -194,8 +251,8 @@ export default function HighlightTextPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          text: currentQuestion.question,
-          target_lang: knownLang || "en",
+          text: questionTranslationSource,
+          target_lang: learningLang || "fr",
         }),
       });
 
@@ -281,7 +338,7 @@ export default function HighlightTextPage() {
           <div className="w-full md:min-h-0 bg-white dark:bg-slate-800 rounded-xl p-4 sm:p-4 md:p-4 shadow-sm border border-slate-200 dark:border-slate-700 flex flex-col overflow-hidden min-h-[200px]">
             <div className="flex flex-col gap-1.5 border-b border-slate-200 pb-2 mb-3 dark:border-slate-700 sm:flex-row sm:items-center sm:justify-between">
               <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wide">
-                {currentQuestion.title}
+                {titleText}
               </h3>
               <div className="text-sm text-slate-400 italic flex items-center gap-2 sm:justify-end">
                 <RefreshCw className="w-3 h-3" />
@@ -292,7 +349,7 @@ export default function HighlightTextPage() {
               ref={passageRef}
               className="practice-reading-passage-text prose dark:prose-invert max-w-none select-text flex-1 min-h-[120px] md:min-h-0 overflow-y-auto custom-scrollbar"
             >
-              {currentQuestion.passage}
+              {passageText}
             </div>
           </div>
 
@@ -320,7 +377,7 @@ export default function HighlightTextPage() {
                 <h2 className="practice-reading-heading leading-tight text-xl md:text-2xl">
                   {showTranslation && translatedQuestion
                     ? translatedQuestion
-                    : currentQuestion.question}
+                    : questionText}
                 </h2>
               </div>
 
