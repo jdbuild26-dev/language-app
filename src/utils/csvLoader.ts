@@ -25,6 +25,7 @@ const FILE_TO_SLUG = {
   // "practice/reading/reading_conversation.csv": "reading_conversation",
   "practice/reading/diagram_labelling.csv": "diagram_mapping",
   "practice/reading/fill_blanks.csv": "fill_blanks",
+  "practice/reading/fill_blanks_passage.csv": "fill_blanks",
   "practice/reading/highlight.csv": "highlight_word",
   "practice/reading/highlight_text.csv": "highlight_text",
   "practice/reading/image_labelling.csv": "image_labelling",
