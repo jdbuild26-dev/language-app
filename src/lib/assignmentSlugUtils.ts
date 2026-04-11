@@ -94,6 +94,7 @@ const PRACTICE_SLUG_MAP: Record<string, string> = {
   "fill_blanks_passage":       "/practice/reading/fill-blanks-passage",
   "fill_blanks":               "/practice/reading/fill-blanks-passage",
   "reorder_sentences":         "/practice/reading/reorder",
+  "reorder_sentence":          "/practice/reading/reorder",
   "true_false":                "/practice/reading/true-false",
   "conversation_dialogue":     "/practice/reading/conversation",
   "summary_completion":        "/practice/reading/summary-completion",
