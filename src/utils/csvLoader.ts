@@ -5,7 +5,6 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 // Mapping of CSV file paths to backend practice slugs
 const FILE_TO_SLUG = {
   "practice/reading/bubble_selection.csv": "translate_bubbles",
-  "practice/reading/match_pairs.csv": "match_pairs",
   "practice/speaking/repeat_sentence.csv": "repeat_sentence",
   "practice/speaking/what_do_you_see.csv": "what-do-you-see",
   "practice/writing/dictation_image.csv": "dictation_image",
@@ -16,8 +15,6 @@ const FILE_TO_SLUG = {
   "practice/listening/audio_fill_blanks.csv": "listen_fill_blanks",
   "practice/speaking/topic.csv": "speak_topic",
   "practice/writing/spelling.csv": "correct_spelling",
-  "practice/reading/true_false.csv": "true_false",
-  "practice/reading/summary_completion.csv": "summary_completion",
   "practice/reading/sentence_completion.csv": "sentence_completion",
   "practice/reading/match_sentence_ending.csv": "match_sentence_ending",
   "practice/reading/reorder.csv": "reorder_sentences",

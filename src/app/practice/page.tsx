@@ -65,18 +65,6 @@ const practiceActivities = [
     shadow: "shadow-cyan-200 dark:shadow-cyan-900/20",
     isLive: true,
   },
-  // {
-  //   id: "G1B",
-  //   name: "Match Pairs",
-  //   typeSlug: "match_pairs",
-  //   icon: ListTodo,
-  //   desc: "Match corresponding words together",
-  //   path: "/practice/reading/match-pairs",
-  //   category: "reading",
-  //   color: "from-indigo-400 to-violet-500",
-  //   shadow: "shadow-indigo-200 dark:shadow-indigo-900/20",
-  //   isLive: true,
-  // },
   {
     id: "G11",
     name: "Highlight the Sentence",
@@ -185,18 +173,6 @@ const practiceActivities = [
     shadow: "shadow-teal-200 dark:shadow-teal-900/20",
     isLive: true,
   },
-  // {
-  //   id: "G9",
-  //   name: "Identify Information",
-  //   typeSlug: "true_false",
-  //   icon: HelpCircle,
-  //   desc: "Evaluate statements from passages",
-  //   path: "/practice/reading/true-false",
-  //   category: "reading",
-  //   color: "from-pink-400 to-rose-500",
-  //   shadow: "shadow-pink-200 dark:shadow-pink-900/20",
-  //   isLive: true,
-  // },
   {
     id: "G10",
     name: "Running Conversation",
@@ -209,18 +185,6 @@ const practiceActivities = [
     shadow: "shadow-indigo-200 dark:shadow-indigo-900/20",
     isLive: true,
   },
-  // {
-  //   id: "G17",
-  //   name: "Summary Completion",
-  //   typeSlug: "summary_completion",
-  //   icon: ListTodo,
-  //   desc: "Complete the summary of a passage",
-  //   path: "/practice/reading/summary-completion",
-  //   category: "reading",
-  //   color: "from-blue-400 to-indigo-500",
-  //   shadow: "shadow-blue-200 dark:shadow-blue-900/20",
-  //   isLive: true,
-  // },
   // ========================================
   // LISTENING Activities (E1-E7)
   // ========================================
