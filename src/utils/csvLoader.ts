@@ -19,7 +19,7 @@ const FILE_TO_SLUG = {
   "practice/reading/match_sentence_ending.csv": "match_sentence_ending",
   "practice/reading/reorder.csv": "reorder_sentences",
   "practice/speaking/image.csv": "speak_image",
-  // "practice/reading/reading_conversation.csv": "reading_conversation",
+  "practice/reading/reading_conversation.csv": "conversation_dialogue",
   "practice/reading/diagram_labelling.csv": "diagram_mapping",
   "practice/reading/fill_blanks.csv": "fill_blanks",
   "practice/reading/fill_blanks_passage.csv": "fill_blanks",

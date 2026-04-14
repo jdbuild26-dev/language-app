@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, Suspense } from "react";
 import { usePracticeExit } from "@/hooks/usePracticeExit";
 import { useExerciseTimer } from "@/hooks/useExerciseTimer";
 import { User, Volume2, XCircle, Languages, Loader2 } from "lucide-react";
@@ -11,6 +11,10 @@ import { getFeedbackMessage } from "@/utils/feedbackMessages";
 import { useTextToSpeech } from "@/hooks/useTextToSpeech";
 import { loadMockCSV } from "@/utils/csvLoader";
 import { Button } from "@/components/ui/button";
+import { useQuestionLanguage } from "@/hooks/useQuestionLanguage";
+import { usePracticeComplete } from "@/hooks/usePracticeComplete";
+import { useSearchParams } from "next/navigation";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 type ConversationOption = { id: string | number; text: string };
 type ConversationExchange = {
@@ -33,12 +37,25 @@ type ConversationHistoryItem = {
 type MistakeItem = { question: string; expected: string; actual: string };
 
 export default function ConversationPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-900"><Loader2 className="animate-spin text-indigo-500 w-8 h-8" /></div>}>
+      <ConversationContent />
+    </Suspense>
+  );
+}
+
+function ConversationContent() {
   const handleExit = usePracticeExit();
   const { speak, isSpeaking } = useTextToSpeech();
+  const searchParams = useSearchParams();
+  const tag = searchParams?.get("tag") ?? undefined;
+  const { learningLang = "fr" } = useLanguage() as { learningLang?: string };
 
   // Current conversation data
   const [conversation, setConversation] = useState<ConversationData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [allConversations, setAllConversations] = useState<ConversationData[]>([]);
+  const [convIndex, setConvIndex] = useState(0);
 
   // Current turn/exchange index (0-based)
   const [currentTurnIndex, setCurrentTurnIndex] = useState(0);
@@ -64,6 +81,14 @@ export default function ConversationPage() {
 
   const currentExchange = conversation?.exchanges?.[currentTurnIndex];
   const totalExchanges = conversation?.exchanges?.length || 0;
+
+  const { pick, showQuestionInKnown } = useQuestionLanguage((conversation as any)?.level);
+  // Question shown in level-based language
+  const questionText = showQuestionInKnown
+    ? ((currentExchange as any)?.questionText_en || currentExchange?.questionText || "Select the best response")
+    : (currentExchange?.questionText || "Sélectionnez la meilleure réponse");
+
+  usePracticeComplete({ isGameOver: isCompleted, score, totalQuestions: totalExchanges, exerciseType: "conversation_dialogue", level: (conversation as any)?.level });
 
   // Timer logic
   const timerDuration = 45;
@@ -108,20 +133,61 @@ export default function ConversationPage() {
   useEffect(() => {
     const fetchConversation = async () => {
       try {
-        const data = await loadMockCSV(
-          "practice/reading/reading_conversation.csv",
-        );
-        if (Array.isArray(data) && data.length > 0) {
-          setConversation(data[0] as ConversationData);
-        }
+        const data = await loadMockCSV("practice/reading/reading_conversation.csv", { tag });
+        const raw = Array.isArray(data) ? data : [];
+        const mapped: ConversationData[] = raw.map((item: any) => {
+          const c = item.content || item;
+          // Parse exchanges — may be JSON string or already parsed
+          let exchanges = c.exchanges || item.exchanges || [];
+          if (typeof exchanges === 'string') {
+            try { exchanges = JSON.parse(exchanges); } catch { exchanges = []; }
+          }
+          // Normalise each exchange for the component
+          const normExchanges: ConversationExchange[] = (Array.isArray(exchanges) ? exchanges : []).map((ex: any) => {
+            // speakerText: use learning lang version
+            const speakerText = learningLang === 'fr'
+              ? (ex.speakerText || ex.speakerText_fr || '')
+              : (ex.speakerText_en || ex.speakerText || '');
+            // questionText: level-based (handled below via useQuestionLanguage)
+            const questionText = ex.questionText || ex.questionText_fr || '';
+            const questionText_en = ex.questionText_en || ex.questionText || '';
+            // options: always in learning lang (FR), with EN for translation
+            const options: ConversationOption[] = (ex.options || []).map((o: any) => ({
+              id: o.id ?? o.index ?? 0,
+              text: learningLang === 'fr' ? (o.text_fr || o.text || '') : (o.text_en || o.text || ''),
+              text_fr: o.text_fr || o.text || '',
+              text_en: o.text_en || '',
+            }));
+            return {
+              speakerText,
+              speakerText_en: ex.speakerText_en || ex.speakerText || '',
+              questionText,
+              questionText_en,
+              correctOptionId: ex.correctOptionId ?? ex.correctIndex ?? 0,
+              options,
+            };
+          });
+          return {
+            title: learningLang === 'fr' ? (c.title_fr || item.title_fr || '') : (c.title_en || item.title_en || ''),
+            title_fr: c.title_fr || item.title_fr || '',
+            title_en: c.title_en || item.title_en || '',
+            scenario: learningLang === 'fr' ? (c.context_fr || item.context_fr || '') : (c.context_en || item.context_en || ''),
+            objectives: learningLang === 'fr' ? (c.objectives_fr || item.objectives_fr || '') : (c.objectives_en || item.objectives_en || ''),
+            level: item.Level || item.level || 'B1',
+            exchanges: normExchanges,
+          } as ConversationData;
+        }).filter(c => c.exchanges.length > 0);
+
+        setAllConversations(mapped);
+        setConversation(mapped[0] || null);
       } catch (error) {
-        console.error("Error loading mock data:", error);
+        console.error("Error loading conversation data:", error);
       } finally {
         setLoading(false);
       }
     };
     fetchConversation();
-  }, []);
+  }, [tag, learningLang]);
 
   // Reset states when turn changes
   useEffect(() => {
@@ -183,6 +249,15 @@ export default function ConversationPage() {
 
     if (currentTurnIndex < totalExchanges - 1) {
       setCurrentTurnIndex((prev) => prev + 1);
+    } else if (convIndex < allConversations.length - 1) {
+      // Move to next conversation
+      const nextIdx = convIndex + 1;
+      setConvIndex(nextIdx);
+      setConversation(allConversations[nextIdx]);
+      setCurrentTurnIndex(0);
+      setConversationHistory([]);
+      setMistakes([]);
+      setScore(0);
     } else {
       setIsCompleted(true);
     }
@@ -362,9 +437,7 @@ export default function ConversationPage() {
               Objective
             </p>
             <p className="text-sm leading-relaxed text-slate-700 dark:text-slate-300">
-              {conversation?.scenario || conversation?.title}
-
-              <span className="lorem"></span>
+              {(conversation as any)?.objectives || conversation?.scenario || conversation?.title}
             </p>
           </div>
 
@@ -373,8 +446,7 @@ export default function ConversationPage() {
             <div className="px-4 py-5">
               <h3 className="practice-reading-heading flex items-center gap-2">
                 <Languages className="w-4 h-4 text-orange-500 shrink-0" />
-
-                {currentExchange.questionText || "Select the best response"}
+                {questionText}
               </h3>
             </div>
           )}
