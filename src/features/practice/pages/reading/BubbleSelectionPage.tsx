@@ -14,6 +14,7 @@ import { fetchPracticeData } from "@/utils/practiceFetcher";
 import { loadMockCSV } from "@/utils/csvLoader";
 import { useSearchParams } from "next/navigation";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { usePracticeComplete } from "@/hooks/usePracticeComplete";
 const PRACTICE_READING_SECTION_TEXT_CLASS =
   "font-sans text-2xl md:text-3xl font-medium leading-relaxed";
 const PRACTICE_READING_OPTION_TEXT_CLASS =
@@ -25,12 +26,17 @@ type BubbleQuestion = {
   localizedInstruction?: string;
   instructionFr?: string;
   instructionEn?: string;
+  // new bilingual fields
   source_sentence?: string;
   sourceSentence?: string;
   sourceText?: string;
+  SourceSentence?: string;
   target_sentence?: string;
   targetSentence?: string;
   correctAnswer?: string;
+  TargetSentence?: string;
+  CorrectAnswer?: string;
+  level?: string;
   timeLimitSeconds?: number;
 };
 
@@ -114,12 +120,17 @@ function BubbleSelectionPageContent() {
   const sourceSentence =
     currentQuestion?.source_sentence ||
     currentQuestion?.sourceSentence ||
-    currentQuestion?.sourceText;
+    currentQuestion?.sourceText ||
+    currentQuestion?.SourceSentence;
   const correctSentence =
     currentQuestion?.target_sentence ||
     currentQuestion?.targetSentence ||
-    currentQuestion?.correctAnswer;
-  const timerDuration = currentQuestion?.timeLimitSeconds || 45;
+    currentQuestion?.correctAnswer ||
+    currentQuestion?.TargetSentence ||
+    currentQuestion?.CorrectAnswer;
+  const timerDuration = currentQuestion?.timeLimitSeconds || 360;
+
+  usePracticeComplete({ isGameOver: isCompleted, score, totalQuestions: questions.length, exerciseType: "translate_bubbles", level: currentQuestion?.level });
 
   const { timerString, resetTimer } = useExerciseTimer({
     duration: timerDuration,
@@ -146,26 +157,53 @@ function BubbleSelectionPageContent() {
             knownLang,
             tag,
           });
-          data = Array.isArray(fetched) ? (fetched as BubbleQuestion[]) : [];
+          // Map backend nested structure to flat BubbleQuestion shape
+          const raw = Array.isArray(fetched) ? fetched : [];
+          data = raw.map((item: any) => {
+            const c = item.content || item;
+            const e = item.evaluation || item;
+            const cfg = item.config || item;
+            return {
+              level:              item.Level || item.level || '',
+              instructionEn:      item.instructionEn || item.Instruction_EN || 'Translate the sentence',
+              instructionFr:      item.instructionFr || item.Instruction_FR || 'Traduire la phrase',
+              // Source (EN) — what learner reads
+              source_sentence:    c.source_sentence || item.source_sentence || item.SourceSentence || item.sourceText || '',
+              // Target (FR) — correct answer
+              target_sentence:    c.target_sentence || item.target_sentence || item.TargetSentence || '',
+              correctAnswer:      e.correctAnswer || item.correctAnswer || item.CorrectAnswer || c.target_sentence || '',
+              // Bubble tokens — already shuffled by backend
+              bubble_tokens:      c.bubble_tokens || item.bubble_tokens || item.BubbleTokens || item.wordBubbles || [],
+              timeLimitSeconds:   Number(cfg.timeLimitSeconds || item.timeLimitSeconds || item.TimeLimitSeconds || 360),
+            } as BubbleQuestion;
+          });
         } catch (error) {
-          console.warn(
-            "Bubble selection backend fetch failed, falling back to CSV:",
-            error,
-          );
+          console.warn("Bubble selection backend fetch failed, falling back to CSV:", error);
         }
 
         if (!Array.isArray(data) || data.length === 0) {
           const fallback = await loadMockCSV(
             "practice/reading/translate_bubbles.csv",
-            {
-              learningLang,
-              knownLang,
-            },
+            { learningLang, knownLang },
           );
-          data = Array.isArray(fallback) ? (fallback as BubbleQuestion[]) : [];
+          // Map flat CSV format
+          const raw = Array.isArray(fallback) ? fallback : [];
+          data = raw.map((item: any) => ({
+            level:           item.Level || item.level || '',
+            instructionEn:   item.Instruction_EN || 'Translate the sentence',
+            instructionFr:   item.Instruction_FR || 'Traduire la phrase',
+            source_sentence: item.SourceSentence || item.source_sentence || item.SourceText || '',
+            target_sentence: item.TargetSentence || item.target_sentence || item.CorrectAnswer || '',
+            correctAnswer:   item.CorrectAnswer || item.correctAnswer || item.TargetSentence || '',
+            bubble_tokens:   item.BubbleTokens || item.bubble_tokens || item.wordBubbles || [],
+            timeLimitSeconds: Number(item.timeLimitSeconds || item.TimeLimitSeconds || 360),
+          } as BubbleQuestion));
         }
 
-        setQuestions(Array.isArray(data) ? data : []);
+        setQuestions(data.filter(q =>
+          (q.source_sentence || q.sourceSentence || q.sourceText) &&
+          (q.bubble_tokens || q.wordBubbles || q.BubbleTokens)
+        ));
       } catch (error) {
         console.error("Error loading practice data:", error);
         setQuestions([]);
