@@ -15,6 +15,7 @@ import {
   getFeedbackReport,
 } from "@/services/aiPracticeApi";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { getLangName } from "@/utils/languages";
 
 interface Scenario {
   title: string;
@@ -100,8 +101,8 @@ export default function ChatPage() {
         }
 
         setScenario(scenarioData);
-
-        let greetingText = "Bonjour ! Comment puis-je vous aider ?";
+ 
+        let greetingText = `Hello! How can I help you? (Greeting in ${getLangName(scenarioData.learning_lang)})`;
         try {
           const greeting = await getInitialGreeting({
             level: scenarioData.level,
@@ -137,7 +138,7 @@ export default function ChatPage() {
     }
 
     init();
-  }, [topicSlug]);
+  }, [topicSlug, learningLang, knownLang]);
 
   const handleSendMessage = async (text: string) => {
     if (!text.trim() || isSending || !scenario) return;
@@ -405,7 +406,7 @@ export default function ChatPage() {
   };
 
   const handleHint = async (): Promise<string> => {
-    if (!scenario) return "Je ne sais pas quoi dire...";
+    if (!scenario) return `I'm not sure what to say... (Hint in ${getLangName(learningLang)})`;
     try {
       const history = messages.map((m) => ({
         sender: m.sender,
@@ -426,7 +427,7 @@ export default function ChatPage() {
       });
       return response.hint;
     } catch {
-      return "Je ne sais pas quoi dire...";
+      return `I'm not sure what to say... (Hint in ${getLangName(learningLang)})`;
     }
   };
 
