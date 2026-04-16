@@ -3,9 +3,16 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { useProfile } from "@/contexts/ProfileContext";
 
-const LanguageContext = createContext();
+interface LanguageContextType {
+    learningLang: string;
+    setLearningLang: (lang: string) => void;
+    knownLang: string;
+    setKnownLang: (lang: string) => void;
+}
 
-export const LanguageProvider = ({ children }) => {
+const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
+
+export const LanguageProvider = ({ children }: { children: React.ReactNode }) => {
     const { activeProfile } = useProfile();
 
     // Default values
