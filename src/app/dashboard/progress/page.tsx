@@ -1,9 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { useAuth } from "@clerk/nextjs";
-import { getTopicMap } from "@/services/progressApi";
-import { Topic, MOCK_TOPICS } from "./mockData";
+import { useState } from "react";
 import {
   Card,
   CardContent,
@@ -23,7 +20,9 @@ import {
   LineChart,
   Line,
 } from "recharts";
+// import PageTabs from "@/components/ui/PageTabs";
 import {
+  ChartBarIcon,
   CheckCircleIcon,
   BoltIcon,
   CodeBracketIcon,
@@ -51,47 +50,50 @@ const MOCK_PRACTICE_DATA = [
   { name: "Speaking", score: 70, completed: 5 },
 ];
 
-import TopicMap from "./TopicMap";
-
 export default function StudentProgressPage() {
-  const { getToken } = useAuth();
   const [activeTab, setActiveTab] = useState("vocabulary");
-  const [mapTopics, setMapTopics] = useState<Topic[]>(MOCK_TOPICS);
-  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    async function loadMapData() {
-      try {
-        const token = await getToken();
-        if (token) {
-          const data = await getTopicMap(token);
-          setMapTopics(data);
-        }
-      } catch (err) {
-        console.error("Failed to load map data:", err);
-      } finally {
-        setLoading(false);
-      }
+  const renderChart = (data, type) => {
+    if (type === "bar") {
+      return (
+        <ResponsiveContainer width="100%" height={300}>
+          <BarChart data={data}>
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis dataKey="name" />
+            <YAxis />
+            <Tooltip />
+            <Legend />
+            <Bar dataKey="score" fill="#8884d8" name="Avg. Score (%)" />
+            <Bar
+              dataKey="completed"
+              fill="#82ca9d"
+              name="Exercises Completed"
+            />
+          </BarChart>
+        </ResponsiveContainer>
+      );
     }
-    loadMapData();
-  }, [getToken]);
+    return (
+      <ResponsiveContainer width="100%" height={300}>
+        <LineChart data={data}>
+          <CartesianGrid strokeDasharray="3 3" />
+          <XAxis dataKey="name" />
+          <YAxis />
+          <Tooltip />
+          <Legend />
+          <Line
+            type="monotone"
+            dataKey="score"
+            stroke="#8884d8"
+            activeDot={{ r: 8 }}
+            name="Score Trend"
+          />
+        </LineChart>
+      </ResponsiveContainer>
+    );
+  };
 
-  interface DataItem {
-    name: string;
-    score: number;
-    completed: number;
-  }
-
-  interface TabData {
-    title: string;
-    description: string;
-    data: DataItem[];
-    chartType: "line" | "bar";
-    icon: React.ReactNode;
-    stats: { label: string; value: string; change: string }[];
-  }
-
-  const getTabData = (): TabData => {
+  const getTabData = () => {
     switch (activeTab) {
       case "vocabulary":
         return {
@@ -135,59 +137,8 @@ export default function StudentProgressPage() {
           ],
         };
       default:
-        // Fallback to vocabulary data if something goes wrong
-        return {
-          title: "Vocabulary Progress",
-          description: "Track your word mastery over time.",
-          data: MOCK_VOCAB_DATA,
-          chartType: "line",
-          icon: <BookOpenIcon className="w-6 h-6 text-brand-blue-1" />,
-          stats: [
-            { label: "Words Learned", value: "350", change: "+45 this week" },
-            { label: "Mastery Level", value: "B1", change: "Intermediate" },
-          ],
-        };
+        return {};
     }
-  };
-
-  const renderChart = (data: DataItem[], type: "line" | "bar") => {
-    if (type === "bar") {
-      return (
-        <ResponsiveContainer width="100%" height={300}>
-          <BarChart data={data}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="name" />
-            <YAxis />
-            <Tooltip />
-            <Legend />
-            <Bar dataKey="score" fill="#8884d8" name="Avg. Score (%)" />
-            <Bar
-              dataKey="completed"
-              fill="#82ca9d"
-              name="Exercises Completed"
-            />
-          </BarChart>
-        </ResponsiveContainer>
-      );
-    }
-    return (
-      <ResponsiveContainer width="100%" height={300}>
-        <LineChart data={data}>
-          <CartesianGrid strokeDasharray="3 3" />
-          <XAxis dataKey="name" />
-          <YAxis />
-          <Tooltip />
-          <Legend />
-          <Line
-            type="monotone"
-            dataKey="score"
-            stroke="#8884d8"
-            activeDot={{ r: 8 }}
-            name="Score Trend"
-          />
-        </LineChart>
-      </ResponsiveContainer>
-    );
   };
 
   const { title, description, data, chartType, icon, stats } = getTabData();
@@ -203,14 +154,6 @@ export default function StudentProgressPage() {
             Analyze your learning journey with detailed metrics.
           </p>
         </div>
-      </div>
-
-      <div className="mb-8">
-        <h2 className="text-xl font-bold text-gray-900 dark:text-primary-dark mb-4 flex items-center gap-2">
-          <BoltIcon className="w-5 h-5 text-yellow-500" />
-          Skill Mastery Map
-        </h2>
-        <TopicMap topics={mapTopics} />
       </div>
 
       <div className="flex border-b border-gray-200 dark:border-slate-700 mb-6">

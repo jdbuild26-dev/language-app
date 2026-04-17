@@ -1,313 +1,330 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { usePracticeExit } from "@/hooks/usePracticeExit";
 import { useExerciseTimer } from "@/hooks/useExerciseTimer";
-import { Volume2, Lightbulb, MessageCircle, Loader2 } from "lucide-react";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { usePracticeComplete } from "@/hooks/usePracticeComplete";
 import { cn } from "@/lib/utils";
 import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
-import FeedbackBanner from "@/components/ui/FeedbackBanner";
-import { getFeedbackMessage } from "@/utils/feedbackMessages";
-import { useTextToSpeech } from "@/hooks/useTextToSpeech";
 import { useWritingEvaluation } from "@/hooks/useWritingEvaluation";
 import WritingFeedbackResult from "@/components/WritingFeedbackResult";
-import { Button } from "@/components/ui/button";
 import { loadMockCSV } from "@/utils/csvLoader";
+import { Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import AccentKeyboard from "@/components/ui/AccentKeyboard";
+import { useSearchParams } from "next/navigation";
 
-// Mock data for Write on Topic exercise
-const MOCK_QUESTIONS = [
-  {
-    id: 1,
-    topic: "Ma famille",
-    englishTopic: "My Family",
-    prompt: "Write 2-3 sentences about your family in French.",
-    hints: [
-      "J'ai... (I have...)",
-      "Ma mère s'appelle... (My mother's name is...)",
-      "Mon père travaille comme... (My father works as...)",
-    ],
-    sampleAnswer:
-      "J'ai une petite famille. Ma mère s'appelle Marie et mon père s'appelle Pierre. J'ai un frère qui a dix ans.",
-    minWords: 10,
-    timeLimitSeconds: 180,
-  },
-  {
-    id: 2,
-    topic: "Mon week-end",
-    englishTopic: "My Weekend",
-    prompt: "Describe what you did last weekend in French.",
-    hints: [
-      "Le samedi, je... (On Saturday, I...)",
-      "J'ai visité... (I visited...)",
-      "C'était... (It was...)",
-    ],
-    sampleAnswer:
-      "Le samedi, j'ai visité le musée avec mes amis. Le dimanche, j'ai regardé un film à la maison. C'était un bon week-end.",
-    minWords: 12,
-    timeLimitSeconds: 180,
-  },
-  {
-    id: 3,
-    topic: "Ma ville",
-    englishTopic: "My City",
-    prompt: "Write about your city or town in French.",
-    hints: [
-      "J'habite à... (I live in...)",
-      "Il y a... (There is/are...)",
-      "C'est une ville... (It's a... city)",
-    ],
-    sampleAnswer:
-      "J'habite à Paris. C'est une grande ville avec beaucoup de musées. Il y a des restaurants et des parcs magnifiques.",
-    minWords: 10,
-    timeLimitSeconds: 180,
-  },
-];
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+type WriteTopicQuestion = {
+  title_fr: string;
+  title_en: string;
+  heading_fr: string;
+  heading_en: string;
+  main_instruction_fr: string;
+  main_instruction_en: string;
+  topic_bullets_fr: string[];
+  topic_bullets_en: string[];
+  instruction_box_fr: string;
+  instruction_box_en: string;
+  sample_answers_fr: string[];
+  sample_answers_en: string[];
+  timeLimitSeconds: number;
+  charLimit: number;
+  level: string;
+};
+
+// ─── Component ────────────────────────────────────────────────────────────────
 
 export default function WriteTopicPage() {
   const handleExit = usePracticeExit();
-  const { speak, isSpeaking } = useTextToSpeech();
+  const { learningLang, knownLang } = useLanguage();
+  const searchParams = useSearchParams();
+  const tag = searchParams?.get("tag") ?? undefined;
+  const levelParam = searchParams?.get("level") ?? undefined;
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  const [questions, setQuestions] = useState([]);
+  const [questions, setQuestions] = useState<WriteTopicQuestion[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [userAnswer, setUserAnswer] = useState("");
   const [isCompleted, setIsCompleted] = useState(false);
   const [showFeedback, setShowFeedback] = useState(false);
-  const [showHints, setShowHints] = useState(false);
-  const [showSample, setShowSample] = useState(false);
   const [isCorrect, setIsCorrect] = useState(false);
-  const [feedbackMessage, setFeedbackMessage] = useState("");
   const [score, setScore] = useState(0);
-  const [isLoading, setIsLoading] = useState(true);
 
-  const { evaluation, isSubmitting, evaluate, resetEvaluation } =
-    useWritingEvaluation();
+  const { evaluation, isSubmitting, evaluate, resetEvaluation } = useWritingEvaluation();
 
-  const currentQuestion = questions[currentIndex];
-  const timerDuration = currentQuestion?.timeLimitSeconds || 180;
+  const currentQ = questions[currentIndex];
 
   const { timerString, resetTimer } = useExerciseTimer({
-    duration: timerDuration,
+    duration: currentQ?.timeLimitSeconds || 360,
     mode: "timer",
-    onExpire: () => {
-      if (!isCompleted && !showFeedback) {
-        handleSubmit();
-      }
-    },
-    isPaused: isCompleted || showFeedback || isLoading,
+    onExpire: () => { if (!isCompleted && !showFeedback) handleSubmit(); },
+    isPaused: isLoading || isCompleted || showFeedback,
   });
 
+  usePracticeComplete({
+    isGameOver: isCompleted,
+    score,
+    totalQuestions: questions.length,
+    exerciseType: "write_topic",
+    level: currentQ?.level,
+  });
+
+  // ── Load ───────────────────────────────────────────────────────────────────
   useEffect(() => {
-    const fetchQuestions = async () => {
+    (async () => {
       try {
-        const data = await loadMockCSV("practice/writing/write_topic.csv");
-        setQuestions(data);
-      } catch (error) {
-        console.error("Error loading mock data:", error);
+        const data = await loadMockCSV("practice/writing/write_topic.csv", {
+          level: levelParam,
+          learningLang: learningLang || "fr",
+          knownLang: knownLang || "en",
+          tag,
+        });
+        const raw = Array.isArray(data) ? data : [];
+
+        // Separate new-format (from uploaded CSV) and old-format items
+        const newFormat = raw.filter((item: any) =>
+          (item.main_instruction_fr || item.main_instruction_en ||
+           (Array.isArray(item.topic_bullets_fr) && item.topic_bullets_fr.length > 0)) &&
+          item.ExerciseID && item.ExerciseID !== '' && item.ExerciseID !== null &&
+          (item.Category === "main" || !item.Category)
+        );
+        const oldFormat = raw.filter((item: any) =>
+          (item.prompt || item.topic) &&
+          (!item.ExerciseID || item.ExerciseID === '' || item.ExerciseID === null) &&
+          (item.Category === "main" || !item.Category)
+        );
+
+        // Prefer new-format if available, fall back to old
+        const source = newFormat.length > 0 ? newFormat : oldFormat;
+
+        const normalized: WriteTopicQuestion[] = source
+          .filter((item: any) =>
+            // Accept new format OR old format (has topic/prompt fields)
+            (item.main_instruction_fr || item.main_instruction_en ||
+             (Array.isArray(item.topic_bullets_fr) && item.topic_bullets_fr.length > 0) ||
+             item.prompt || item.topic) &&
+            (item.Category === "main" || !item.Category)
+          )
+          .map((item: any) => {
+            // Handle old format: { topic, englishTopic, prompt, hints, sampleAnswer }
+            const isOldFormat = !item.main_instruction_fr && !item.topic_bullets_fr && item.topic;
+            const hintsArray = isOldFormat
+              ? (typeof item.hints === 'string'
+                  ? item.hints.split(/[,+]/).map((h: string) => h.trim()).filter(Boolean)
+                  : Array.isArray(item.hints) ? item.hints : [])
+              : [];
+            return {
+              title_fr: item.title_fr || item.passage_title_fr || item.topic || "",
+              title_en: item.title_en || item.passage_title_en || item.englishTopic || "",
+              heading_fr: item.heading_fr || "",
+              heading_en: item.heading_en || "",
+              main_instruction_fr: item.main_instruction_fr || item.prompt || "",
+              main_instruction_en: item.main_instruction_en || item.prompt || "",
+              topic_bullets_fr: Array.isArray(item.topic_bullets_fr) && item.topic_bullets_fr.length > 0
+                ? item.topic_bullets_fr
+                : hintsArray,
+              topic_bullets_en: Array.isArray(item.topic_bullets_en) && item.topic_bullets_en.length > 0
+                ? item.topic_bullets_en
+                : hintsArray,
+              instruction_box_fr: item.instruction_box_fr || "Écrivez sur le sujet",
+              instruction_box_en: item.instruction_box_en || "Write about the topic",
+              sample_answers_fr: Array.isArray(item.sample_answers_fr) ? item.sample_answers_fr
+                : item.sampleAnswer ? [item.sampleAnswer] : [],
+              sample_answers_en: Array.isArray(item.sample_answers_en) ? item.sample_answers_en : [],
+              timeLimitSeconds: item.timeLimitSeconds || item.TimeLimitSeconds || 360,
+              charLimit: item.maxHighlightChars || item.charLimit || 1000,
+              level: item.level || item.Level || "",
+            };
+          });
+        setQuestions(normalized);
+      } catch (e) {
+        console.error("WriteTopicPage load error:", e);
       } finally {
         setIsLoading(false);
       }
-    };
-    fetchQuestions();
-  }, []);
+    })();
+  }, [levelParam, learningLang, knownLang, tag]);
 
   useEffect(() => {
-    if (currentQuestion && !isCompleted) {
+    if (currentQ && !isCompleted) {
       setUserAnswer("");
-      setShowHints(false);
-      setShowSample(false);
+      setShowFeedback(false);
       resetTimer();
       resetEvaluation();
     }
-  }, [currentIndex, currentQuestion, isCompleted, resetTimer, resetEvaluation]);
+  }, [currentIndex, currentQ, isCompleted, resetTimer, resetEvaluation]);
 
-  const handlePlaySample = () => {
-    if (currentQuestion) {
-      speak(currentQuestion.sampleAnswer, "fr-FR");
-    }
-  };
-
-  const getWordCount = (text) => {
-    return text
-      .trim()
-      .split(/\s+/)
-      .filter((word) => word.length > 0).length;
-  };
-
-  const wordCount = getWordCount(userAnswer);
-
+  // ── Submit ─────────────────────────────────────────────────────────────────
   const handleSubmit = async () => {
-    if (showFeedback || isSubmitting) return;
-
+    if (showFeedback || isSubmitting || !currentQ) return;
     const result = await evaluate({
       task_type: "topic",
       user_text: userAnswer,
-      topic: currentQuestion.topic,
-      reference: currentQuestion.sampleAnswer,
-      context: currentQuestion.prompt,
+      topic: currentQ.title_en || currentQ.title_fr,
+      reference: currentQ.sample_answers_fr[0] || currentQ.sample_answers_en[0] || "",
+      context: currentQ.main_instruction_en || currentQ.main_instruction_fr,
+      level: currentQ.level || levelParam || "A1",
     });
-
     if (result) {
-      setIsCorrect(result.score >= 70);
-      setFeedbackMessage(result.feedback);
+      const finalScore = (result as any).overall_score ?? (result as any).score ?? 0;
+      setIsCorrect(finalScore >= 70);
       setShowFeedback(true);
-      setShowSample(true);
-      if (result.score >= 70) {
-        setScore((prev) => prev + 1);
-      }
+      if (finalScore >= 70) setScore(s => s + 1);
     }
   };
 
   const handleContinue = () => {
     setShowFeedback(false);
-
-    if (currentIndex < questions.length - 1) {
-      setCurrentIndex((prev) => prev + 1);
-    } else {
-      setIsCompleted(true);
-    }
+    resetEvaluation();
+    if (currentIndex < questions.length - 1) setCurrentIndex(i => i + 1);
+    else setIsCompleted(true);
   };
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-slate-50 dark:bg-slate-900">
-        <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
-      </div>
-    );
-  }
+  // ── States ─────────────────────────────────────────────────────────────────
+  if (isLoading) return (
+    <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-900">
+      <Loader2 className="animate-spin text-sky-500 w-8 h-8" />
+    </div>
+  );
 
-  if (questions.length === 0) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-slate-50 dark:bg-slate-900">
-        <p className="text-xl text-slate-600 dark:text-slate-400">
-          No content available.
-        </p>
-        <Button onClick={() => handleExit()} variant="outline" className="mt-4">
-          Back
-        </Button>
-      </div>
-    );
-  }
+  if (questions.length === 0) return (
+    <div className="flex flex-col items-center justify-center min-h-screen bg-slate-50 dark:bg-slate-900">
+      <p className="text-xl text-slate-600 dark:text-slate-400">No content available.</p>
+      <Button onClick={() => handleExit()} variant="outline" className="mt-4">Back</Button>
+    </div>
+  );
+
+  const progress = ((currentIndex + 1) / questions.length) * 100;
+  const charCount = userAnswer.length;
+  const charLimit = currentQ?.charLimit || 1000;
+
+  // Resolve display language (always show FR for learning content)
+  const mainInstruction = currentQ.main_instruction_fr || currentQ.main_instruction_en || "";
+  const bullets = currentQ.topic_bullets_fr.length > 0
+    ? currentQ.topic_bullets_fr
+    : currentQ.topic_bullets_en;
+  const instructionBox = currentQ.instruction_box_en || currentQ.instruction_box_fr || "Write about the topic";
 
   return (
     <>
       <PracticeGameLayout
-        questionType="Write on Topic"
-        instructionFr="Écrivez sur le sujet donné"
-        instructionEn="Write about the given topic"
-        progress={
-          questions.length > 0
-            ? ((currentIndex + 1) / questions.length) * 100
-            : 0
-        }
+        questionType="Write About Topic"
+        instructionFr="Écrivez sur le sujet"
+        instructionEn="Write About Topic"
+        localizedInstruction="Écrivez sur le sujet"
+        progress={progress}
         isGameOver={isCompleted}
         score={score}
         totalQuestions={questions.length}
         onExit={handleExit}
         onNext={handleSubmit}
         onRestart={() => window.location.reload()}
-        isSubmitEnabled={wordCount >= 5 && !showFeedback && !isSubmitting}
-        showSubmitButton={!showFeedback}
-        submitLabel={isSubmitting ? "Evaluating..." : "Submit"}
+        isSubmitEnabled={userAnswer.trim().length > 10 && !showFeedback && !isSubmitting}
+        showSubmitButton={!showFeedback && !evaluation}
+        submitLabel={isSubmitting ? "Evaluating…" : "Submit Answer"}
         timerValue={timerString}
+        currentQuestionIndex={currentIndex}
       >
-        <div className="flex flex-col items-center w-full max-w-2xl mx-auto px-4 py-6">
-          {/* Topic card */}
-          <div className="w-full bg-gradient-to-r from-violet-500 to-purple-600 rounded-2xl p-5 mb-4 shadow-lg">
-            <h3 className="text-xl font-bold text-white text-center">
-              {currentQuestion?.topic}
-            </h3>
-            <p className="text-white/80 text-center text-sm mt-1">
-              {currentQuestion?.englishTopic}
+        <div className="w-full max-w-3xl mx-auto px-4 py-8 flex flex-col gap-5">
+
+          {/* ── Top card: main instruction + bullet points ── */}
+          <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-6 flex flex-col gap-4">
+
+            {/* Main instruction sentence */}
+            <p className="text-sm text-slate-700 dark:text-slate-200 leading-relaxed">
+              {mainInstruction}
             </p>
+
+            {bullets.length > 0 && (
+              <>
+                <hr className="border-slate-100 dark:border-slate-800" />
+                <ul className="flex flex-col gap-1.5">
+                  {bullets.map((b, i) => (
+                    <li key={i} className="flex items-start gap-2 text-sm text-slate-600 dark:text-slate-300">
+                      <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-slate-400 dark:bg-slate-500 shrink-0" />
+                      {b}
+                    </li>
+                  ))}
+                </ul>
+              </>
+            )}
           </div>
 
-          {/* Prompt */}
-          <p className="text-slate-700 dark:text-slate-200 text-center mb-4">
-            {currentQuestion?.prompt}
-          </p>
+          {/* ── Bottom card: textarea ── */}
+          <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-6 flex flex-col gap-3">
 
-          {/* Hints toggle */}
-          <button
-            onClick={() => setShowHints(!showHints)}
-            className="flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 hover:bg-amber-200 mb-4"
-          >
-            <Lightbulb className="w-4 h-4" />
-            {showHints ? "Hide Hints" : "Show Hints"}
-          </button>
+            {/* Textarea label */}
+            <p className="text-sm text-slate-500 dark:text-slate-400">
+              {instructionBox}
+            </p>
 
-          {/* Hints */}
-          {showHints && (
-            <div className="w-full bg-amber-50 dark:bg-amber-900/20 rounded-xl p-4 mb-4 border border-amber-200 dark:border-amber-800">
-              <ul className="space-y-1 text-sm text-amber-700 dark:text-amber-300">
-                {currentQuestion?.hints.map((hint, index) => (
-                  <li key={index}>• {hint}</li>
-                ))}
-              </ul>
-            </div>
-          )}
-
-          {/* Text area */}
-          <div className="w-full relative">
             <textarea
+              ref={textareaRef}
               value={userAnswer}
-              onChange={(e) => setUserAnswer(e.target.value)}
-              placeholder="Write your answer in French..."
-              disabled={showFeedback}
+              onChange={e => setUserAnswer(e.target.value)}
+              placeholder="Écrivez ici…"
+              disabled={showFeedback || !!evaluation}
+              maxLength={charLimit}
+              rows={8}
+              autoFocus
               className={cn(
-                "w-full h-40 p-4 rounded-xl border-2 resize-none text-base",
-                "bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200",
-                "placeholder-slate-400 focus:outline-none focus:ring-2",
-                showFeedback
-                  ? "border-slate-300 dark:border-slate-600"
-                  : "border-slate-200 dark:border-slate-700 focus:border-violet-500 focus:ring-violet-200",
+                "w-full resize-none rounded-xl border text-sm font-medium p-4 outline-none transition-all",
+                "bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-slate-100",
+                "placeholder:text-slate-400 dark:placeholder:text-slate-500",
+                showFeedback || evaluation
+                  ? "border-slate-200 dark:border-slate-700"
+                  : "border-slate-200 dark:border-slate-700 focus:border-sky-400 focus:ring-2 focus:ring-sky-400/20",
               )}
             />
-            <div className="absolute bottom-3 right-3 text-sm text-slate-400">
-              {wordCount} / {currentQuestion?.minWords} words min
+
+            {/* Char counter */}
+            <div className="flex justify-end">
+              <span className={cn(
+                "text-xs font-medium tabular-nums",
+                charCount >= charLimit * 0.9 ? "text-red-500" : "text-slate-400",
+              )}>
+                {charCount} / {charLimit}
+              </span>
             </div>
+
+            {/* Accent keyboard */}
+            {!showFeedback && !evaluation && (
+              <AccentKeyboard
+                disabled={false}
+                onAccentClick={(char) => {
+                  const el = textareaRef.current;
+                  if (!el) return;
+                  const start = el.selectionStart;
+                  const end = el.selectionEnd;
+                  const newVal = userAnswer.slice(0, start) + char + userAnswer.slice(end);
+                  setUserAnswer(newVal);
+                  requestAnimationFrame(() => {
+                    el.focus();
+                    el.setSelectionRange(start + 1, start + 1);
+                  });
+                }}
+              />
+            )}
           </div>
 
-          {/* AI Evaluation Result */}
+          {/* ── AI Evaluation result ── */}
           {evaluation && (
-            <div className="mt-8 w-full">
-              <WritingFeedbackResult evaluation={evaluation} />
+            <div className="animate-in slide-in-from-bottom-4 duration-500">
+              <WritingFeedbackResult
+                evaluation={evaluation as any}
+                mode="writing"
+                userText={userAnswer}
+                onContinue={handleContinue}
+              />
             </div>
           )}
 
-          {/* Sample answer (shown after feedback) */}
-          {showSample && !evaluation && (
-            <div className="w-full bg-emerald-50 dark:bg-emerald-900/20 rounded-xl p-4 mt-4 border border-emerald-200 dark:border-emerald-800">
-              <div className="flex items-center justify-between mb-2">
-                <span className="flex items-center gap-2 text-emerald-700 dark:text-emerald-300 font-semibold text-sm">
-                  <MessageCircle className="w-4 h-4" />
-                  Sample Answer:
-                </span>
-                <button
-                  onClick={handlePlaySample}
-                  className="text-emerald-600 hover:text-emerald-700"
-                >
-                  <Volume2 className="w-4 h-4" />
-                </button>
-              </div>
-              <p className="text-sm text-emerald-700 dark:text-emerald-300 italic">
-                {currentQuestion?.sampleAnswer}
-              </p>
-            </div>
-          )}
         </div>
       </PracticeGameLayout>
-
-      {/* Feedback Banner */}
-      {showFeedback && (
-        <FeedbackBanner
-          isCorrect={isCorrect}
-          onContinue={handleContinue}
-          message={feedbackMessage}
-          continueLabel={
-            currentIndex + 1 === questions.length ? "FINISH" : "CONTINUE"
-          }
-        />
-      )}
     </>
   );
 }

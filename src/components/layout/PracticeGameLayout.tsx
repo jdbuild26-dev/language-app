@@ -19,7 +19,6 @@ import FeedbackBanner from "@/components/ui/FeedbackBanner";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@clerk/nextjs";
 import { completeAssignment } from "@/services/assignmentsApi";
-import { recordPracticeResult } from "@/services/progressApi";
 
 type FeedbackTone = "neutral" | "success" | "error" | "partial";
 
@@ -49,13 +48,8 @@ type PracticeGameLayoutProps = {
   feedbackTone?: FeedbackTone;
   feedbackMessage?: string;
   correctAnswer?: React.ReactNode;
-  userAnswer?: React.ReactNode;
-  questionContext?: string;
   customEndGameContent?: React.ReactNode;
   children?: React.ReactNode;
-  exerciseId?: string;
-  tagSlugs?: string[];
-  title?: string;
 };
 
 function AssignmentIdSync({
@@ -103,8 +97,6 @@ export default function PracticeGameLayout({
   questionContext = "",
   customEndGameContent = null,
   children,
-  exerciseId,
-  tagSlugs = [],
 }: PracticeGameLayoutProps) {
   const [showTranslation, setShowTranslation] = useState(false);
   const [isSubmittingResult, setIsSubmittingResult] = useState(false);
@@ -113,7 +105,7 @@ export default function PracticeGameLayout({
   const hasSubmitted = useRef(false);
 
   useEffect(() => {
-    if (isGameOver && !hasSubmitted.current) {
+    if (isGameOver && assignmentId && !hasSubmitted.current) {
       const submitResult = async () => {
         try {
           hasSubmitted.current = true;
@@ -121,30 +113,15 @@ export default function PracticeGameLayout({
           const token = await getToken();
           const percentage =
             totalQuestions > 0 ? Math.round((score / totalQuestions) * 100) : 0;
-
-          // 1. If it's an assignment, complete it
-          if (assignmentId) {
-            await completeAssignment(
-              assignmentId,
-              percentage,
-              { rawScore: score, total: totalQuestions, type: questionType },
-              token,
-            );
-            console.log("✅ Assignment auto-completed:", assignmentId);
-          }
-
-          // 2. Always record general practice progress for the mastery map
-          // (The backend record_practice endpoint handles both exerciseId lookups and direct tagSlugs)
-          await recordPracticeResult(token, {
-            score: percentage,
-            type: questionType || "practice",
-            exerciseId: exerciseId,
-            tagSlugs: tagSlugs
-          });
-          console.log("✅ Practice progress recorded");
-
+          await completeAssignment(
+            assignmentId,
+            percentage,
+            { rawScore: score, total: totalQuestions, type: questionType },
+            token,
+          );
+          console.log("✅ Assignment auto-completed:", assignmentId);
         } catch (error) {
-          console.error("❌ Failed to record results:", error);
+          console.error("❌ Failed to auto-complete assignment:", error);
           hasSubmitted.current = false;
         } finally {
           setIsSubmittingResult(false);
@@ -152,7 +129,7 @@ export default function PracticeGameLayout({
       };
       submitResult();
     }
-  }, [isGameOver, assignmentId, score, totalQuestions, getToken, questionType, exerciseId, tagSlugs]);
+  }, [isGameOver, assignmentId, score, totalQuestions, getToken, questionType]);
 
   /* ─── GAME OVER SCREEN ─────────────────────────────────────────────────── */
   if (isGameOver) {

@@ -1,342 +1,475 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { usePracticeExit } from "@/hooks/usePracticeExit";
 import { useExerciseTimer } from "@/hooks/useExerciseTimer";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { usePracticeComplete } from "@/hooks/usePracticeComplete";
 import { cn } from "@/lib/utils";
 import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
 import FeedbackBanner from "@/components/ui/FeedbackBanner";
 import { getFeedbackMessage } from "@/utils/feedbackMessages";
-import { Languages } from "lucide-react";
 import { loadMockCSV } from "@/utils/csvLoader";
 import AccentKeyboard from "@/components/ui/AccentKeyboard";
+import { Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { useSearchParams } from "next/navigation";
+
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+type BlankEntry = {
+  correct_fr: string;
+  correct_en: string;
+  masked_fr: string;
+  masked_en: string;
+};
+
+type FillBlanksQuestion = {
+  title_fr: string;
+  title_en: string;
+  heading_fr: string;
+  heading_en: string;
+  complete_passage_en: string;
+  fill_paragraph_fr: string;
+  blanksData: Record<string, BlankEntry>;
+  timeLimitSeconds: number;
+  level: string;
+};
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+/** Parse "[1] __________" passage into text + blank segments */
+type Segment = { type: "text"; text: string } | { type: "blank"; blankId: number };
+
+function parsePassage(paragraph: string): Segment[] {
+  const segments: Segment[] = [];
+  const re = /\[(\d+)\]\s*_{2,}/g;
+  let last = 0;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(paragraph)) !== null) {
+    if (m.index > last) segments.push({ type: "text", text: paragraph.slice(last, m.index) });
+    segments.push({ type: "blank", blankId: parseInt(m[1]) });
+    last = m.index + m[0].length;
+  }
+  if (last < paragraph.length) segments.push({ type: "text", text: paragraph.slice(last) });
+  return segments;
+}
+
+/**
+ * Build a masked pattern from a word: keep first half of chars, blank the rest.
+ * e.g. "passé" → "p_s_é", "journée" → "j__r_é_"
+ */
+function buildMask(word: string): string {
+  const keep = Math.ceil(word.length / 2);
+  return word.split('').map((ch, i) => i < keep ? ch : '_').join('');
+}
+
+/**
+ * Convert old-format passage + targetWords into new-format fill_paragraph_fr + blanksData.
+ * Replaces each target word occurrence (in order) with [N] __________.
+ */
+function convertOldFormat(passage: string, targetWordsRaw: any): {
+  fill_paragraph_fr: string;
+  blanksData: Record<string, BlankEntry>;
+} {
+  // targetWords may arrive as an array or a space-separated string
+  const targets: string[] = Array.isArray(targetWordsRaw)
+    ? targetWordsRaw.filter(Boolean)
+    : String(targetWordsRaw).split(/\s+/).filter(Boolean);
+  const blanksData: Record<string, BlankEntry> = {};
+  let result = passage;
+  let blankId = 1;
+
+  for (const word of targets) {
+    // Case-insensitive replace of first occurrence
+    const re = new RegExp(word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+    const match = result.match(re);
+    if (match) {
+      const actualWord = match[0]; // preserve original casing
+      blanksData[String(blankId)] = {
+        correct_fr: actualWord,
+        correct_en: actualWord,
+        masked_fr: buildMask(actualWord),
+        masked_en: buildMask(actualWord),
+      };
+      result = result.replace(re, `[${blankId}] __________`);
+      blankId++;
+    }
+  }
+
+  return { fill_paragraph_fr: result, blanksData };
+}
+
+/** Get the correct character for a given blank slot index from the mask + correct word */
+function getCorrectCharForSlot(mask: string, correctWord: string, slotIdx: number): string {
+  let wIdx = 0;
+  let bIdx = 0;
+  for (const ch of mask) {
+    if (ch === "_") {
+      if (bIdx === slotIdx) return correctWord[wIdx] ?? "";
+      bIdx++;
+    }
+    wIdx++;
+  }
+  return "";
+}
+
+// ─── Main Component ───────────────────────────────────────────────────────────
 
 export default function WriteFillBlanksPage() {
   const handleExit = usePracticeExit();
-  const [questions, setQuestions] = useState([]);
+  const { learningLang, knownLang } = useLanguage();
+  const searchParams = useSearchParams();
+  const tag = searchParams?.get("tag") ?? undefined;
+  const levelParam = searchParams?.get("level") ?? undefined;
+
+  const [questions, setQuestions] = useState<FillBlanksQuestion[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [userInputs, setUserInputs] = useState({}); // { wordIndex_charIndex: char }
   const [isCompleted, setIsCompleted] = useState(false);
   const [showFeedback, setShowFeedback] = useState(false);
   const [isCorrect, setIsCorrect] = useState(false);
   const [score, setScore] = useState(0);
-  const [showTranslation, setShowTranslation] = useState(false);
-  const [focusedKey, setFocusedKey] = useState(null); // e.g. "2_1"
-  const inputRefs = useRef({});
+  const [userInputs, setUserInputs] = useState<Record<string, string>>({});
+  const [focusedKey, setFocusedKey] = useState<string | null>(null);
+  const inputRefs = useRef<Record<string, HTMLInputElement | null>>({});
 
-  useEffect(() => {
-    const fetchData = async () => {
-      const data = await loadMockCSV("practice/writing/write_fill_blanks.csv");
-      setQuestions(data);
-      setIsLoading(false);
-    };
-    fetchData();
-  }, []);
-
-  const currentExercise = questions[currentIndex];
-
-  // Helper to split passage into words while keeping punctuation
-  const wordsWithPunctuation = currentExercise?.passage?.split(/(\s+)/) || [];
-
-  // Identify which indices are words that should be blanked
-  // We match targetWords sequentially to handle multiple occurrences
-  let targetPointer = 0;
-  const processedWords = wordsWithPunctuation.map((word, idx) => {
-    const cleanWord = word.replace(/[.,!?;:]/g, "").trim();
-    const shouldBlank =
-      cleanWord.length > 1 &&
-      targetPointer < currentExercise.targetWords.length &&
-      cleanWord.toLowerCase() ===
-        currentExercise.targetWords[targetPointer].toLowerCase();
-
-    const result = {
-      text: word,
-      clean: cleanWord,
-      isTarget: shouldBlank,
-      targetIndex: shouldBlank ? targetPointer : -1,
-    };
-
-    if (shouldBlank) targetPointer++;
-    return result;
-  });
+  const currentQ = questions[currentIndex];
 
   const { timerString, resetTimer } = useExerciseTimer({
-    duration: 120,
+    duration: currentQ?.timeLimitSeconds || 360,
     mode: "timer",
-    onExpire: () => {
-      if (!isCompleted && !showFeedback) {
-        handleSubmit();
-      }
-    },
+    onExpire: () => { if (!isCompleted && !showFeedback) handleSubmit(); },
     isPaused: isLoading || isCompleted || showFeedback,
   });
 
+  usePracticeComplete({
+    isGameOver: isCompleted,
+    score,
+    totalQuestions: questions.length,
+    exerciseType: "write_fill_blanks",
+    level: currentQ?.level,
+  });
+
+  // ── Load ───────────────────────────────────────────────────────────────────
   useEffect(() => {
-    setUserInputs({});
-    setShowFeedback(false);
-    resetTimer();
-  }, [currentIndex]);
+    (async () => {
+      try {
+        const data = await loadMockCSV("practice/writing/write_fill_blanks.csv", {
+          level: levelParam, learningLang: learningLang || "fr",
+          knownLang: knownLang || "en", tag,
+        });
+        const raw = Array.isArray(data) ? data : [];
+        const normalized: FillBlanksQuestion[] = raw
+          .filter((item: any) =>
+            // Accept new format (has fill_paragraph_fr) OR old format (has passage)
+            (item.fill_paragraph_fr || item.fill_paragraph_en || item.passage) &&
+            (item.Category === "main" || !item.Category)
+          )
+          .map((item: any) => {
+            // Detect old format: has `passage` + `targetWords`, no blanksData
+            const isOldFormat = !item.fill_paragraph_fr && !item.fill_paragraph_en &&
+              item.passage && item.targetWords;
 
-  const handleCharInput = (wordIdx, charIdx, value, maxLength) => {
-    const rawChar = value.slice(-1); // Only take the last char if they pasted or something
-    if (!rawChar && value !== "") return; // Protect against weirdness
+            let fill_paragraph_fr = item.fill_paragraph_fr || item.fill_paragraph_en || item.passage || "";
+            let blanksData: Record<string, BlankEntry> = item.blanksData || {};
 
-    const key = `${wordIdx}_${charIdx}`;
-    setUserInputs((prev) => ({ ...prev, [key]: rawChar }));
+            if (isOldFormat) {
+              const converted = convertOldFormat(item.passage, item.targetWords);
+              fill_paragraph_fr = converted.fill_paragraph_fr;
+              blanksData = converted.blanksData;
+            }
 
-    // Auto-focus next box
-    if (rawChar !== "") {
-      if (charIdx < maxLength - 1) {
-        inputRefs.current[`${wordIdx}_${charIdx + 1}`]?.focus();
+            return {
+              title_fr: item.title_fr || item.passage_title_fr || item.title || "",
+              title_en: item.title_en || item.passage_title_en || item.title || "",
+              heading_fr: item.heading_fr || "",
+              heading_en: item.heading_en || "",
+              complete_passage_en: item.complete_passage_en || item.englishTranslation || "",
+              fill_paragraph_fr,
+              blanksData,
+              timeLimitSeconds: item.timeLimitSeconds || item.TimeLimitSeconds || 360,
+              level: item.level || item.Level || "",
+            };
+          });
+        setQuestions(normalized);
+      } catch (e) {
+        console.error("WriteFillBlanks load error:", e);
+      } finally {
+        setIsLoading(false);
+      }
+    })();
+  }, [levelParam, learningLang, knownLang, tag]);
+
+  useEffect(() => {
+    if (currentQ && !isCompleted) {
+      setUserInputs({});
+      setShowFeedback(false);
+      inputRefs.current = {};
+      resetTimer();
+    }
+  }, [currentIndex, currentQ, isCompleted, resetTimer]);
+
+  // ── Input ──────────────────────────────────────────────────────────────────
+  const totalSlotsFor = useCallback((blankId: number) => {
+    const entry = currentQ?.blanksData[String(blankId)];
+    if (!entry) return 0;
+    return (entry.masked_fr.match(/_/g) || []).length;
+  }, [currentQ]);
+
+  const handleCharInput = useCallback((blankId: number, slotIdx: number, char: string) => {
+    const key = `${blankId}_${slotIdx}`;
+    setUserInputs(prev => ({ ...prev, [key]: char }));
+    if (!char) return;
+    const total = totalSlotsFor(blankId);
+    if (slotIdx < total - 1) {
+      inputRefs.current[`${blankId}_${slotIdx + 1}`]?.focus();
+    } else {
+      const ids = Object.keys(currentQ?.blanksData || {}).map(Number).sort((a, b) => a - b);
+      const nextId = ids.find(id => id > blankId);
+      if (nextId !== undefined) inputRefs.current[`${nextId}_0`]?.focus();
+    }
+  }, [currentQ, totalSlotsFor]);
+
+  const handleKeyDown = useCallback((e: React.KeyboardEvent, blankId: number, slotIdx: number) => {
+    if (e.key === "Backspace" && !userInputs[`${blankId}_${slotIdx}`]) {
+      if (slotIdx > 0) {
+        inputRefs.current[`${blankId}_${slotIdx - 1}`]?.focus();
       } else {
-        // Find next word's first blank
-        const nextTarget = processedWords.findIndex(
-          (w, i) => i > wordIdx && w.isTarget,
-        );
-        if (nextTarget !== -1) {
-          inputRefs.current[`${nextTarget}_0`]?.focus();
+        const ids = Object.keys(currentQ?.blanksData || {}).map(Number).sort((a, b) => a - b);
+        const prevId = [...ids].reverse().find(id => id < blankId);
+        if (prevId !== undefined) {
+          const prevTotal = totalSlotsFor(prevId);
+          inputRefs.current[`${prevId}_${prevTotal - 1}`]?.focus();
         }
       }
     }
-  };
+  }, [userInputs, currentQ, totalSlotsFor]);
 
-  const handleKeyDown = (e, wordIdx, charIdx) => {
-    if (e.key === "Backspace" && !userInputs[`${wordIdx}_${charIdx}`]) {
-      // Move to previous box
-      if (charIdx > 0) {
-        inputRefs.current[`${wordIdx}_${charIdx - 1}`]?.focus();
-      } else {
-        const prevTarget = [...processedWords]
-          .slice(0, wordIdx)
-          .reverse()
-          .find((w) => w.isTarget);
-        if (prevTarget) {
-          const pIdx = processedWords.indexOf(prevTarget);
-          const pWord = processedWords[pIdx];
-          const lastCharIdx =
-            pWord.clean.length - Math.floor(pWord.clean.length / 2) - 1;
-          inputRefs.current[`${pIdx}_${lastCharIdx}`]?.focus();
-        }
-      }
+  // ── Submit ─────────────────────────────────────────────────────────────────
+  const handleSubmit = useCallback(() => {
+    if (showFeedback || !currentQ) return;
+    // If no blanksData (old format), just mark as correct and continue
+    if (!currentQ.blanksData || Object.keys(currentQ.blanksData).length === 0) {
+      setIsCorrect(true);
+      setShowFeedback(true);
+      setScore(s => s + 1);
+      return;
     }
-  };
-
-  const handleSubmit = () => {
-    if (showFeedback) return;
-
     let allCorrect = true;
-    processedWords.forEach((word, wIdx) => {
-      if (!word.isTarget) return;
-      const keepCount = Math.floor(word.clean.length / 2);
-      const blankCount = word.clean.length - keepCount;
-      const expectedTail = word.clean.slice(keepCount).toLowerCase();
-
-      let userTail = "";
-      for (let i = 0; i < blankCount; i++) {
-        userTail += (userInputs[`${wIdx}_${i}`] || "").toLowerCase();
+    for (const [bid, entry] of Object.entries(currentQ.blanksData)) {
+      const mask = entry.masked_fr;
+      let slotIdx = 0;
+      let userWord = "";
+      for (const ch of mask) {
+        if (ch === "_") {
+          userWord += (userInputs[`${bid}_${slotIdx}`] || "").toLowerCase();
+          slotIdx++;
+        } else {
+          userWord += ch.toLowerCase();
+        }
       }
-
-      if (userTail !== expectedTail) allCorrect = false;
-    });
-
+      if (userWord !== entry.correct_fr.toLowerCase()) { allCorrect = false; break; }
+    }
     setIsCorrect(allCorrect);
     setShowFeedback(true);
-    if (allCorrect) setScore((s) => s + 1);
-  };
+    if (allCorrect) setScore(s => s + 1);
+  }, [showFeedback, currentQ, userInputs]);
 
   const handleContinue = () => {
-    if (currentIndex < questions.length - 1) {
-      setCurrentIndex((prev) => prev + 1);
-    } else {
-      setIsCompleted(true);
-    }
+    setShowFeedback(false);
+    if (currentIndex < questions.length - 1) setCurrentIndex(i => i + 1);
+    else setIsCompleted(true);
   };
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-slate-50 dark:bg-slate-900">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
-      </div>
-    );
-  }
+  // ── Render a blank word inline ─────────────────────────────────────────────
+  const renderBlankWord = (blankId: number, entry: BlankEntry) => {
+    const mask = entry.masked_fr;
+    let slotIdx = 0;
+    const chars = mask.split("");
 
-  if (!currentExercise) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-slate-50 dark:bg-slate-900">
-        <p className="text-xl text-slate-600 dark:text-slate-400">
-          No exercise data available.
-        </p>
+      <span
+        className="inline-flex items-center align-middle mx-1 rounded-xl border border-slate-300 dark:border-slate-600 overflow-hidden bg-white dark:bg-slate-800 shadow-sm"
+        style={{ verticalAlign: "middle" }}
+      >
+        {chars.map((ch, i) => {
+          const isLast = i === chars.length - 1;
+          const isFirst = i === 0;
+
+          if (ch === "_") {
+            const si = slotIdx++;
+            const key = `${blankId}_${si}`;
+            const userChar = userInputs[key] || "";
+            const correctChar = getCorrectCharForSlot(mask, entry.correct_fr, si);
+            const isFocused = focusedKey === key;
+            const isWrong = showFeedback && userChar.toLowerCase() !== correctChar.toLowerCase();
+            const isRight = showFeedback && userChar.toLowerCase() === correctChar.toLowerCase();
+
+            return (
+              <span
+                key={i}
+                className={cn(
+                  "relative flex items-center justify-center",
+                  "w-8 h-9",
+                  !isFirst && "border-l border-slate-200 dark:border-slate-600",
+                  isFocused && !showFeedback && "bg-blue-50 dark:bg-blue-900/30 ring-2 ring-inset ring-blue-500 z-10",
+                  isWrong && "bg-red-50 dark:bg-red-900/20",
+                  isRight && "bg-emerald-50 dark:bg-emerald-900/20",
+                )}
+              >
+                <input
+                  ref={el => { inputRefs.current[key] = el; }}
+                  type="text"
+                  maxLength={1}
+                  value={userChar}
+                  onChange={e => handleCharInput(blankId, si, e.target.value.slice(-1))}
+                  onKeyDown={e => handleKeyDown(e, blankId, si)}
+                  onFocus={() => setFocusedKey(key)}
+                  onBlur={() => setFocusedKey(prev => prev === key ? null : prev)}
+                  disabled={showFeedback}
+                  className={cn(
+                    "absolute inset-0 w-full h-full bg-transparent text-center text-sm font-mono outline-none",
+                    isWrong ? "text-red-600 dark:text-red-400" :
+                    isRight ? "text-emerald-700 dark:text-emerald-400" :
+                    "text-slate-800 dark:text-white",
+                  )}
+                />
+              </span>
+            );
+          }
+
+          // Revealed character cell
+          return (
+            <span
+              key={i}
+              className={cn(
+                "flex items-center justify-center w-8 h-9 text-sm font-mono text-slate-700 dark:text-slate-300 select-none",
+                !isFirst && "border-l border-slate-200 dark:border-slate-600",
+              )}
+            >
+              {ch}
+            </span>
+          );
+        })}
+      </span>
+    );
+  };
+
+  // ── Render FR passage with inline blanks ───────────────────────────────────
+  const renderPassage = () => {
+    if (!currentQ?.fill_paragraph_fr) return null;
+    const segments = parsePassage(currentQ.fill_paragraph_fr);
+    return (
+      <div className="text-sm leading-[3rem] text-slate-700 dark:text-slate-300">
+        {segments.map((seg, i) => {
+          if (seg.type === "text") return <span key={i}>{seg.text}</span>;
+          const entry = currentQ.blanksData[String(seg.blankId)];
+          if (!entry) return <span key={i} className="text-slate-400">___</span>;
+          return <React.Fragment key={i}>{renderBlankWord(seg.blankId, entry)}</React.Fragment>;
+        })}
       </div>
     );
-  }
+  };
+
+  // ── States ─────────────────────────────────────────────────────────────────
+  if (isLoading) return (
+    <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-900">
+      <Loader2 className="animate-spin text-sky-500 w-8 h-8" />
+    </div>
+  );
+
+  if (questions.length === 0) return (
+    <div className="flex flex-col items-center justify-center min-h-screen bg-slate-50 dark:bg-slate-900">
+      <p className="text-xl text-slate-600 dark:text-slate-400">No content available.</p>
+      <Button onClick={() => handleExit()} variant="outline" className="mt-4">Back</Button>
+    </div>
+  );
+
+  const progress = ((currentIndex + 1) / questions.length) * 100;
 
   return (
     <>
       <PracticeGameLayout
-        questionType="C-Test Passage"
-        instructionEn="Complete the text with the correct words"
-        progress={((currentIndex + 1) / (questions.length || 1)) * 100}
-        totalQuestions={questions.length}
+        questionType="Fill in the Blanks"
+        instructionFr="Complétez le texte"
+        instructionEn="Fill in the Blanks"
+        localizedInstruction="Complétez le texte"
+        progress={progress}
         isGameOver={isCompleted}
         score={score}
+        totalQuestions={questions.length}
         onExit={handleExit}
         onNext={handleSubmit}
-        timerValue={timerString}
+        onRestart={() => window.location.reload()}
+        isSubmitEnabled={!showFeedback}
         showSubmitButton={!showFeedback}
-        submitLabel="Check Answers"
+        submitLabel="Submit Answer"
+        timerValue={timerString}
+        currentQuestionIndex={currentIndex}
       >
-        <div className="w-full max-w-5xl mx-auto px-4 py-8">
-          <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] p-8 lg:p-16 shadow-2xl border-4 border-slate-100 dark:border-slate-800 relative overflow-hidden">
-            {/* Header / Title */}
-            <div className="text-center mb-12">
-              <h2 className="text-2xl lg:text-3xl font-semibold text-slate-800 dark:text-white uppercase">
-                {currentExercise.title}
+        <div className="w-full max-w-4xl mx-auto px-4 py-8 flex flex-col gap-5">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm p-6 lg:p-10 flex flex-col gap-5">
+
+            {/* Title */}
+            <div className="text-center">
+              {currentQ.heading_en && (
+                <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1">
+                  {currentQ.heading_en}
+                </p>
+              )}
+              <h2 className="text-xl font-bold text-slate-800 dark:text-white">
+                {currentQ.title_en || currentQ.title_fr}
               </h2>
-              <div className="h-1 w-16 bg-blue-500 mx-auto mt-4 rounded-full" />
+              <div className="h-0.5 w-12 bg-blue-500 mx-auto mt-2 rounded-full" />
             </div>
 
-            {/* The Text Container */}
-            <div className="text-xl lg:text-2xl leading-[3.5rem] text-slate-700 dark:text-slate-300">
-              {processedWords.map((word, wIdx) => {
-                if (!word.isTarget) {
-                  return <span key={wIdx}>{word.text}</span>;
-                }
-
-                const keepCount = Math.floor(word.clean.length / 2);
-                const blankCount = word.clean.length - keepCount;
-                const head = word.clean.slice(0, keepCount);
-                const tail = word.clean.slice(keepCount);
-                const hasPunctuation = word.text !== word.clean;
-                const punc = hasPunctuation
-                  ? word.text.slice(word.clean.length)
-                  : "";
-
-                return (
-                  <span
-                    key={wIdx}
-                    className="inline-flex items-center mx-0.5 align-middle group"
-                  >
-                    <span className="text-blue-600 dark:text-blue-400 font-medium">
-                      {head}
-                    </span>
-                    <div className="flex gap-1 mx-1">
-                      {Array.from({ length: blankCount }).map((_, cIdx) => {
-                        const key = `${wIdx}_${cIdx}`;
-                        const isIncorrect =
-                          showFeedback &&
-                          (userInputs[key] || "").toLowerCase() !==
-                            tail[cIdx].toLowerCase();
-                        return (
-                          <input
-                            key={cIdx}
-                            ref={(el) => (inputRefs.current[key] = el)}
-                            type="text"
-                            value={userInputs[key] || ""}
-                            onChange={(e) =>
-                              handleCharInput(
-                                wIdx,
-                                cIdx,
-                                e.target.value,
-                                blankCount,
-                              )
-                            }
-                            onKeyDown={(e) => handleKeyDown(e, wIdx, cIdx)}
-                            onFocus={() => setFocusedKey(key)}
-                            disabled={showFeedback}
-                            className={cn(
-                              "w-7 h-9 lg:w-9 lg:h-11 rounded-lg border-2 text-center text-lg lg:text-xl transition-all focus:scale-110 focus:z-10",
-                              "bg-slate-50 dark:bg-slate-800 font-medium",
-                              showFeedback
-                                ? isIncorrect
-                                  ? "border-red-500 text-red-600 bg-red-50 dark:bg-red-900/20"
-                                  : "border-emerald-500 text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20"
-                                : "border-slate-200 dark:border-slate-700 focus:border-blue-500 dark:focus:border-blue-400 focus:ring-4 focus:ring-blue-500/10",
-                            )}
-                          />
-                        );
-                      })}
-                    </div>
-                    {punc && <span>{punc}</span>}
-                  </span>
-                );
-              })}
-            </div>
-            {/* Accent Keyboard */}
-            {!showFeedback && (
-              <div className="mt-4">
-                <AccentKeyboard
-                  disabled={showFeedback}
-                  onAccentClick={(char) => {
-                    if (!focusedKey) return;
-                    const [wIdxStr, cIdxStr] = focusedKey.split("_");
-                    const wIdx = parseInt(wIdxStr);
-                    const cIdx = parseInt(cIdxStr);
-                    // Find the blankCount for this word
-                    const word = processedWords[wIdx];
-                    if (!word) return;
-                    const keepCount = Math.floor(word.clean.length / 2);
-                    const blankCount = word.clean.length - keepCount;
-                    handleCharInput(wIdx, cIdx, char, blankCount);
-                    requestAnimationFrame(() => {
-                      inputRefs.current[focusedKey]?.focus();
-                    });
-                  }}
-                />
-              </div>
+            {/* EN reference passage */}
+            {currentQ.complete_passage_en && (
+              <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
+                {currentQ.complete_passage_en}
+              </p>
             )}
+
+            {/* Divider */}
+            <hr className="border-slate-200 dark:border-slate-700" />
+
+            {/* FR passage with inline letter-box blanks */}
+            {renderPassage()}
+
           </div>
+
+          {/* Accent keyboard */}
+          {!showFeedback && (
+            <AccentKeyboard
+              disabled={showFeedback}
+              className=""
+              onAccentClick={(char) => {
+                if (!focusedKey) return;
+                const [bidStr, siStr] = focusedKey.split("_");
+                handleCharInput(parseInt(bidStr), parseInt(siStr), char);
+                requestAnimationFrame(() => inputRefs.current[focusedKey]?.focus());
+              }}
+            />
+          )}
         </div>
       </PracticeGameLayout>
 
       {showFeedback && (
         <FeedbackBanner
           isCorrect={isCorrect}
-          onContinue={handleContinue}
-          message={
-            isCorrect
-              ? "Perfect! Your grammar and spelling are spot on."
-              : "Some words aren't quite right. Keep practicing!"
-          }
+          feedbackTone={isCorrect ? "success" : "error"}
           correctAnswer={
-            !isCorrect && (
-              <div className="flex flex-col gap-2">
-                {/* Translate Toggle Button */}
-                <button
-                  onClick={() => setShowTranslation(!showTranslation)}
-                  className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-red-200 dark:bg-red-800 hover:bg-red-300 dark:hover:bg-red-700 transition-colors text-red-900 dark:text-red-100 text-sm font-medium self-start"
-                >
-                  <Languages className="w-4 h-4" />
-                  {showTranslation ? "Show French" : "Translate"}
-                </button>
-
-                {/* Answer Display */}
-                <span>
-                  {showTranslation
-                    ? // Show English translation
-                      currentExercise.englishTranslation ||
-                      "Translation not available"
-                    : // Show French answer with highlighted words
-                      processedWords.map((word, wIdx) => {
-                        if (word.isTarget) {
-                          return (
-                            <span
-                              key={wIdx}
-                              className="font-bold underline decoration-2 underline-offset-2"
-                            >
-                              {word.text}
-                            </span>
-                          );
-                        }
-                        return <span key={wIdx}>{word.text}</span>;
-                      })}
-                </span>
-              </div>
-            )
+            !isCorrect
+              ? Object.entries(currentQ?.blanksData || {})
+                  .sort(([a], [b]) => parseInt(a) - parseInt(b))
+                  .map(([id, e]) => `${id}. ${e.correct_fr}`)
+                  .join("  •  ")
+              : null
           }
-          continueLabel={
-            currentIndex < questions.length - 1 ? "NEXT PASSAGE" : "FINISH"
-          }
+          onContinue={handleContinue}
+          message={getFeedbackMessage(isCorrect)}
+          continueLabel={currentIndex + 1 === questions.length ? "FINISH" : "CONTINUE"}
         />
       )}
     </>

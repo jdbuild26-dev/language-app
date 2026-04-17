@@ -82,8 +82,7 @@ const GRAMMAR_SLUG_MAP: Record<string, string> = {
 // ─── Practice (Reading / Listening / Writing / Speaking) ─────────────────────
 const PRACTICE_SLUG_MAP: Record<string, string> = {
   // Reading
-  "translate_bubbles":         "/practice/reading/match-pairs",
-  "match_pairs":               "/practice/reading/match-pairs",
+  "translate_bubbles":         "/practice/reading/bubble-selection",
   "highlight_text":            "/practice/reading/highlight-text",
   "diagram_mapping":           "/practice/reading/diagram-labelling",
   "image_mcq":                 "/practice/reading/image-mcq",
@@ -95,10 +94,7 @@ const PRACTICE_SLUG_MAP: Record<string, string> = {
   "fill_blanks":               "/practice/reading/fill-blanks-passage",
   "reorder_sentences":         "/practice/reading/reorder",
   "reorder_sentence":          "/practice/reading/reorder",
-  "true_false":                "/practice/reading/true-false",
   "conversation_dialogue":     "/practice/reading/conversation",
-  "summary_completion":        "/practice/reading/summary-completion",
-  "sentence_completion":       "/practice/reading/sentence-completion",
   "match_sentence_ending":     "/practice/reading/complete-passage",
   "bubble_selection":          "/practice/reading/bubble-selection",
 
@@ -119,10 +115,7 @@ const PRACTICE_SLUG_MAP: Record<string, string> = {
   "write_topic":               "/practice/writing",
   "write_image":               "/practice/writing",
   "write_documents":           "/practice/writing",
-  "write_form":                "/practice/writing",
   "write_interactive":         "/practice/writing",
-  "write_analysis":            "/practice/writing",
-  "sentence_completion_write": "/practice/reading/sentence-completion",
 
   // Speaking
   "speak_translate":   "/practice/speaking/translate",

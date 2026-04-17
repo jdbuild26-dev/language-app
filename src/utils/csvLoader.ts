@@ -5,7 +5,6 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 // Mapping of CSV file paths to backend practice slugs
 const FILE_TO_SLUG = {
   "practice/reading/bubble_selection.csv": "translate_bubbles",
-  "practice/reading/match_pairs.csv": "match_pairs",
   "practice/speaking/repeat_sentence.csv": "repeat_sentence",
   "practice/speaking/what_do_you_see.csv": "what-do-you-see",
   "practice/writing/dictation_image.csv": "dictation_image",
@@ -16,13 +15,11 @@ const FILE_TO_SLUG = {
   "practice/listening/audio_fill_blanks.csv": "listen_fill_blanks",
   "practice/speaking/topic.csv": "speak_topic",
   "practice/writing/spelling.csv": "correct_spelling",
-  "practice/reading/true_false.csv": "true_false",
-  "practice/reading/summary_completion.csv": "summary_completion",
   "practice/reading/sentence_completion.csv": "sentence_completion",
   "practice/reading/match_sentence_ending.csv": "match_sentence_ending",
   "practice/reading/reorder.csv": "reorder_sentences",
   "practice/speaking/image.csv": "speak_image",
-  // "practice/reading/reading_conversation.csv": "reading_conversation",
+  "practice/reading/reading_conversation.csv": "conversation_dialogue",
   "practice/reading/diagram_labelling.csv": "diagram_mapping",
   "practice/reading/fill_blanks.csv": "fill_blanks",
   "practice/reading/fill_blanks_passage.csv": "fill_blanks",
@@ -49,7 +46,6 @@ const FILE_TO_SLUG = {
   "practice/writing/write_image.csv": "write_image",
   "practice/writing/write_topic.csv": "write_topic",
   "practice/writing/writing_conversation.csv": "writing_conversation",
-  "practice/writing/sentence_completion.csv": "sentence_completion",
   // Speaking
   "practice/speaking/speak_topic.csv": "speak_topic",
   "practice/speaking/speak_image.csv": "speak_image",

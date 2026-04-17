@@ -6,8 +6,6 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 const SLUG_TO_CSV: Record<string, string> = {
   translate_bubbles: "practice/reading/translate_bubbles.csv",
   listen_select: "practice/listening/listen_select.csv",
-  match_pairs: "practice/reading/match_pairs.csv",
-  "match-pairs": "practice/reading/match_pairs.csv",
   repeat_sentence: "practice/speaking/repeat_sentence.csv",
   "repeat-sentence": "practice/speaking/repeat_sentence.csv",
   speak_image: "practice/speaking/speak_image.csv",
@@ -31,8 +29,6 @@ const SLUG_TO_CSV: Record<string, string> = {
   image_mcq: "practice/reading/image_mcq.csv",
   match_desc_game: "practice/reading/match_desc_game.csv",
   reorder_sentences: "practice/reading/reorder_sentences.csv",
-  summary_completion: "practice/reading/summary_completion.csv",
-  true_false: "practice/reading/true_false.csv",
 };
 
 /**
@@ -71,10 +67,6 @@ export async function fetchPracticeData(slug: string, options: Record<string, an
   }
 }
 
-export async function fetchMatchPairsData(level: string) {
-  return fetchPracticeData("match-pairs", { level });
-}
-
 export async function fetchRepeatSentenceData(level: string) {
   return fetchPracticeData("repeat-sentence", { level });
 }
@@ -85,4 +77,8 @@ export async function fetchWhatDoYouSeeData() {
 
 export async function fetchDictationImageData() {
   return fetchPracticeData("dictation-image");
+}
+
+export async function fetchMatchPairsData() {
+  return fetchPracticeData("match-pairs");
 }
