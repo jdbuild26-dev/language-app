@@ -55,6 +55,51 @@ function parsePassage(paragraph: string): Segment[] {
   return segments;
 }
 
+/**
+ * Build a masked pattern from a word: keep first half of chars, blank the rest.
+ * e.g. "passé" → "p_s_é", "journée" → "j__r_é_"
+ */
+function buildMask(word: string): string {
+  const keep = Math.ceil(word.length / 2);
+  return word.split('').map((ch, i) => i < keep ? ch : '_').join('');
+}
+
+/**
+ * Convert old-format passage + targetWords into new-format fill_paragraph_fr + blanksData.
+ * Replaces each target word occurrence (in order) with [N] __________.
+ */
+function convertOldFormat(passage: string, targetWordsRaw: any): {
+  fill_paragraph_fr: string;
+  blanksData: Record<string, BlankEntry>;
+} {
+  // targetWords may arrive as an array or a space-separated string
+  const targets: string[] = Array.isArray(targetWordsRaw)
+    ? targetWordsRaw.filter(Boolean)
+    : String(targetWordsRaw).split(/\s+/).filter(Boolean);
+  const blanksData: Record<string, BlankEntry> = {};
+  let result = passage;
+  let blankId = 1;
+
+  for (const word of targets) {
+    // Case-insensitive replace of first occurrence
+    const re = new RegExp(word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+    const match = result.match(re);
+    if (match) {
+      const actualWord = match[0]; // preserve original casing
+      blanksData[String(blankId)] = {
+        correct_fr: actualWord,
+        correct_en: actualWord,
+        masked_fr: buildMask(actualWord),
+        masked_en: buildMask(actualWord),
+      };
+      result = result.replace(re, `[${blankId}] __________`);
+      blankId++;
+    }
+  }
+
+  return { fill_paragraph_fr: result, blanksData };
+}
+
 /** Get the correct character for a given blank slot index from the mask + correct word */
 function getCorrectCharForSlot(mask: string, correctWord: string, slotIdx: number): string {
   let wIdx = 0;
@@ -117,20 +162,36 @@ export default function WriteFillBlanksPage() {
         const raw = Array.isArray(data) ? data : [];
         const normalized: FillBlanksQuestion[] = raw
           .filter((item: any) =>
-            (item.fill_paragraph_fr || item.fill_paragraph_en) &&
+            // Accept new format (has fill_paragraph_fr) OR old format (has passage)
+            (item.fill_paragraph_fr || item.fill_paragraph_en || item.passage) &&
             (item.Category === "main" || !item.Category)
           )
-          .map((item: any) => ({
-            title_fr: item.title_fr || item.passage_title_fr || "",
-            title_en: item.title_en || item.passage_title_en || "",
-            heading_fr: item.heading_fr || "",
-            heading_en: item.heading_en || "",
-            complete_passage_en: item.complete_passage_en || "",
-            fill_paragraph_fr: item.fill_paragraph_fr || item.fill_paragraph_en || "",
-            blanksData: item.blanksData || {},
-            timeLimitSeconds: item.timeLimitSeconds || item.TimeLimitSeconds || 360,
-            level: item.level || item.Level || "",
-          }));
+          .map((item: any) => {
+            // Detect old format: has `passage` + `targetWords`, no blanksData
+            const isOldFormat = !item.fill_paragraph_fr && !item.fill_paragraph_en &&
+              item.passage && item.targetWords;
+
+            let fill_paragraph_fr = item.fill_paragraph_fr || item.fill_paragraph_en || item.passage || "";
+            let blanksData: Record<string, BlankEntry> = item.blanksData || {};
+
+            if (isOldFormat) {
+              const converted = convertOldFormat(item.passage, item.targetWords);
+              fill_paragraph_fr = converted.fill_paragraph_fr;
+              blanksData = converted.blanksData;
+            }
+
+            return {
+              title_fr: item.title_fr || item.passage_title_fr || item.title || "",
+              title_en: item.title_en || item.passage_title_en || item.title || "",
+              heading_fr: item.heading_fr || "",
+              heading_en: item.heading_en || "",
+              complete_passage_en: item.complete_passage_en || item.englishTranslation || "",
+              fill_paragraph_fr,
+              blanksData,
+              timeLimitSeconds: item.timeLimitSeconds || item.TimeLimitSeconds || 360,
+              level: item.level || item.Level || "",
+            };
+          });
         setQuestions(normalized);
       } catch (e) {
         console.error("WriteFillBlanks load error:", e);
@@ -188,6 +249,13 @@ export default function WriteFillBlanksPage() {
   // ── Submit ─────────────────────────────────────────────────────────────────
   const handleSubmit = useCallback(() => {
     if (showFeedback || !currentQ) return;
+    // If no blanksData (old format), just mark as correct and continue
+    if (!currentQ.blanksData || Object.keys(currentQ.blanksData).length === 0) {
+      setIsCorrect(true);
+      setShowFeedback(true);
+      setScore(s => s + 1);
+      return;
+    }
     let allCorrect = true;
     for (const [bid, entry] of Object.entries(currentQ.blanksData)) {
       const mask = entry.masked_fr;
@@ -324,9 +392,9 @@ export default function WriteFillBlanksPage() {
     <>
       <PracticeGameLayout
         questionType="Fill in the Blanks"
-        instructionFr="Lisez le passage et répondez"
-        instructionEn="Read the passage and respond"
-        localizedInstruction="Lisez le passage et répondez"
+        instructionFr="Complétez le texte"
+        instructionEn="Fill in the Blanks"
+        localizedInstruction="Complétez le texte"
         progress={progress}
         isGameOver={isCompleted}
         score={score}
@@ -375,6 +443,7 @@ export default function WriteFillBlanksPage() {
           {!showFeedback && (
             <AccentKeyboard
               disabled={showFeedback}
+              className=""
               onAccentClick={(char) => {
                 if (!focusedKey) return;
                 const [bidStr, siStr] = focusedKey.split("_");
@@ -389,6 +458,7 @@ export default function WriteFillBlanksPage() {
       {showFeedback && (
         <FeedbackBanner
           isCorrect={isCorrect}
+          feedbackTone={isCorrect ? "success" : "error"}
           correctAnswer={
             !isCorrect
               ? Object.entries(currentQ?.blanksData || {})

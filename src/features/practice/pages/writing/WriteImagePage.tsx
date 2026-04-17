@@ -165,9 +165,9 @@ export default function WriteImagePage() {
     <>
       <PracticeGameLayout
         questionType="Write About Image"
-        instructionFr="Lisez le passage et répondez"
-        instructionEn="Read the passage and respond"
-        localizedInstruction="Lisez le passage et répondez"
+        instructionFr="Décrivez l'image"
+        instructionEn="Write About Image"
+        localizedInstruction="Décrivez l'image"
         progress={progress}
         isGameOver={isCompleted}
         score={score}
