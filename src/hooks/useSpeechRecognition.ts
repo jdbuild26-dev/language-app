@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 // Minimal type definition for the Web Speech API (not always present in TS DOM lib)
 type SpeechRecognitionInstance = {
@@ -25,6 +26,7 @@ export default function useSpeechRecognition() {
   const [isListening, setIsListening] = useState(false);
   const [transcript, setTranscript] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const { learningLang } = useLanguage();
 
   const recognitionRef = useRef<SpeechRecognitionInstance | null>(null);
 
@@ -40,7 +42,21 @@ export default function useSpeechRecognition() {
     recognitionRef.current = recognition;
     recognition.continuous = true;
     recognition.interimResults = true;
-    recognition.lang = "fr-FR";
+
+    // Map language code to likely locale
+    const localeMap: Record<string, string> = {
+      fr: "fr-FR",
+      en: "en-GB",
+      es: "es-ES",
+      de: "de-DE",
+      it: "it-IT",
+      pt: "pt-PT",
+      ru: "ru-RU",
+      zh: "zh-CN",
+      ja: "ja-JP",
+      ko: "ko-KR",
+    };
+    recognition.lang = localeMap[learningLang] || `${learningLang}-${learningLang.toUpperCase()}`;
 
     recognition.onstart = () => {
       setIsListening(true);
@@ -68,7 +84,7 @@ export default function useSpeechRecognition() {
     return () => {
       recognition.stop();
     };
-  }, []);
+  }, [learningLang]);
 
   const resetTranscript = () => {
     setTranscript("");

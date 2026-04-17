@@ -95,7 +95,6 @@ const PRACTICE_SLUG_MAP: Record<string, string> = {
   "reorder_sentences":         "/practice/reading/reorder",
   "reorder_sentence":          "/practice/reading/reorder",
   "conversation_dialogue":     "/practice/reading/conversation",
-  "sentence_completion":       "/practice/reading/sentence-completion",
   "match_sentence_ending":     "/practice/reading/complete-passage",
   "bubble_selection":          "/practice/reading/bubble-selection",
 
@@ -116,10 +115,7 @@ const PRACTICE_SLUG_MAP: Record<string, string> = {
   "write_topic":               "/practice/writing",
   "write_image":               "/practice/writing",
   "write_documents":           "/practice/writing",
-  "write_form":                "/practice/writing",
   "write_interactive":         "/practice/writing",
-  "write_analysis":            "/practice/writing",
-  "sentence_completion_write": "/practice/reading/sentence-completion",
 
   // Speaking
   "speak_translate":   "/practice/speaking/translate",

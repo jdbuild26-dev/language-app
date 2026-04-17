@@ -1559,39 +1559,6 @@ const CSV_TRANSFORMERS = {
         : "",
     },
   }),
-  sentence_completion: (row) => ({
-    external_id: row.ExerciseID || `sentence_completion_${Math.random()}`,
-    instruction_en: row.Instruction_EN || "",
-    instruction_fr: row.Instruction_FR || "",
-    level: row.Level || "",
-    content: {
-      options: row["options"]
-        ? row["options"].startsWith("[") || row["options"].startsWith("{")
-          ? JSON.parse(row["options"])
-          : row["options"]
-        : "",
-      passageAfter: row["passageAfter"]
-        ? row["passageAfter"].startsWith("[") ||
-          row["passageAfter"].startsWith("{")
-          ? JSON.parse(row["passageAfter"])
-          : row["passageAfter"]
-        : "",
-      passageBefore: row["passageBefore"]
-        ? row["passageBefore"].startsWith("[") ||
-          row["passageBefore"].startsWith("{")
-          ? JSON.parse(row["passageBefore"])
-          : row["passageBefore"]
-        : "",
-    },
-    evaluation: {
-      correctIndex: row["eval_correctIndex"]
-        ? row["eval_correctIndex"].startsWith("[") ||
-          row["eval_correctIndex"].startsWith("{")
-          ? JSON.parse(row["eval_correctIndex"])
-          : row["eval_correctIndex"]
-        : "",
-    },
-  }),
   speak_image: (row) => ({
     external_id: row.ExerciseID || `speak_image_${Math.random()}`,
     instruction_en: row.Instruction_EN || "",

@@ -1,22 +1,116 @@
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
+// ---------------------------------------------------------------------------
+// Types
+// ---------------------------------------------------------------------------
+
+export interface PracticeTopic {
+  id: number;
+  slug: string;
+  title: string;
+  description: string;
+  difficulty: string;
+  level: string;
+  formality: string;
+  icon: string;
+  estimatedTime: string;
+  messageCount: number;
+  aiRole: string;
+  userRole: string;
+  aiPrompt: string;
+}
+
+export interface ChatTopicOptions {
+  level?: string;
+  formality?: string;
+  limit?: number;
+}
+
+export interface ChatMessage {
+  sender: string;
+  text: string;
+  correction?: string | null;
+}
+
+export interface PracticeScenario {
+  level: string;
+  formality: string;
+  title: string;
+  aiPrompt: string;
+  aiRole: string;
+  userRole: string;
+  mode: string;
+  objective?: string | null;
+  learning_lang?: string;
+  known_lang?: string;
+}
+
+export interface ChatResponse {
+  ai_response: string;
+  correction: string | null;
+  conversation_history: ChatMessage[];
+}
+
+export interface GreetingResponse {
+  ai_response: string;
+}
+
+export interface FeedbackAnalysis {
+  cefr_assessment: string;
+  overall_score: number;
+  overall_rating: string;
+  grammar_score: number;
+  vocabulary_score: number;
+  fluency_note: string;
+  mission_success: boolean | null;
+  mission_feedback: string | null;
+  parameters: any[];
+  feedback_points: any[];
+}
+
+export interface FeedbackReport {
+  level: string;
+  title: string;
+  date: string;
+  report_markdown: string;
+}
+
+export interface DbTopic {
+  id: number;
+  slug: string;
+  topic: string;
+  ai_role: string;
+  user_role: string;
+  instructions: Record<string, string | null>;
+  ai_prompts: Record<string, string | null>;
+}
+
+export interface TopicLevelData {
+  slug: string;
+  topic: string;
+  ai_role: string;
+  user_role: string;
+  level: string;
+  instruction: string | null;
+  ai_prompt: string | null;
+}
+
+// ---------------------------------------------------------------------------
+// API Functions
+// ---------------------------------------------------------------------------
+
 /**
  * Fetch AI practice chat topics with optional filtering.
- * @param {Object} options - Filter options
- * @param {string} [options.level] - CEFR level (A1, A2, B1, B2, C1, C2)
- * @param {string} [options.formality] - Conversation style (casual, formal)
- * @param {number} [options.limit] - Maximum number of topics
- * @returns {Promise<{count: number, topics: Array}>}
  */
-export async function fetchChatTopics({ level, formality, limit } = {}) {
+export async function fetchChatTopics(options: ChatTopicOptions = {}): Promise<{ count: number; topics: PracticeTopic[] }> {
+  const { level, formality, limit } = options;
   const params = new URLSearchParams();
   if (level) params.append("level", level);
   if (formality) params.append("formality", formality);
   if (limit) params.append("limit", limit.toString());
 
   const queryString = params.toString();
-  const url = `${API_URL}/api/ai-practice/topics${queryString ? `?${queryString}` : ""
-    }`;
+  const url = `${API_URL}/api/ai-practice/topics${queryString ? `?${queryString}` : ""}`;
 
   const response = await fetch(url);
   if (!response.ok) {
@@ -27,10 +121,8 @@ export async function fetchChatTopics({ level, formality, limit } = {}) {
 
 /**
  * Fetch a specific AI practice topic by slug.
- * @param {string} topicSlug - The topic slug
- * @returns {Promise<Object>} Topic details including AI prompt
  */
-export async function fetchTopicBySlug(topicSlug) {
+export async function fetchTopicBySlug(topicSlug: string): Promise<PracticeTopic> {
   const url = `${API_URL}/api/ai-practice/topics/${topicSlug}`;
 
   const response = await fetch(url);
@@ -42,9 +134,8 @@ export async function fetchTopicBySlug(topicSlug) {
 
 /**
  * Fetch available CEFR levels for AI practice.
- * @returns {Promise<{levels: string[]}>}
  */
-export async function fetchAIPracticeLevels() {
+export async function fetchAIPracticeLevels(): Promise<{ levels: string[] }> {
   const url = `${API_URL}/api/ai-practice/levels`;
 
   const response = await fetch(url);
@@ -56,17 +147,16 @@ export async function fetchAIPracticeLevels() {
 
 /**
  * Send a message in an AI practice conversation.
- * @param {Object} params - Chat parameters
- * @param {string} params.message - User's message in French
- * @param {Array} params.conversationHistory - Previous messages
- * @param {Object} params.scenario - Scenario metadata
- * @returns {Promise<{ai_response: string, correction: string|null, conversation_history: Array}>}
  */
 export async function sendChatMessage({
   message,
   conversationHistory,
   scenario,
-}) {
+}: {
+  message: string;
+  conversationHistory: ChatMessage[];
+  scenario: PracticeScenario;
+}): Promise<ChatResponse> {
   const url = `${API_URL}/api/ai-practice/chat`;
 
   const response = await fetch(url, {
@@ -87,10 +177,8 @@ export async function sendChatMessage({
 
 /**
  * Get initial AI greeting for a new conversation.
- * @param {Object} scenario - Scenario metadata
- * @returns {Promise<{ai_response: string}>}
  */
-export async function getInitialGreeting(scenario) {
+export async function getInitialGreeting(scenario: PracticeScenario): Promise<GreetingResponse> {
   const url = `${API_URL}/api/ai-practice/chat/greeting`;
 
   const response = await fetch(url, {
@@ -107,12 +195,12 @@ export async function getInitialGreeting(scenario) {
 
 /**
  * Translate text using the backend API.
- * @param {string} text - Text to translate
- * @param {string} targetLang - Target language code (default: 'en')
- * @returns {Promise<{text: string, translation: string}>}
  */
-export async function translateText(text, targetLang = "en") {
-  const response = await fetch("/api/translate", {
+export async function translateText(text: string, targetLang: string = "en"): Promise<{ text: string, translation: string }> {
+  // Corrected URL to match ai_practice.py route
+  const url = `${API_URL}/api/ai-practice/translate`;
+  
+  const response = await fetch(url, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ text, target_lang: targetLang }),
@@ -126,11 +214,8 @@ export async function translateText(text, targetLang = "en") {
 
 /**
  * Get a hint for what to say next in the conversation.
- * @param {Array} conversationHistory - Previous messages
- * @param {Object} scenario - Scenario metadata
- * @returns {Promise<{hint: string}>}
  */
-export async function getHint(conversationHistory, scenario) {
+export async function getHint(conversationHistory: ChatMessage[], scenario: PracticeScenario): Promise<{ hint: string }> {
   const url = `${API_URL}/api/ai-practice/hint`;
 
   const response = await fetch(url, {
@@ -150,11 +235,8 @@ export async function getHint(conversationHistory, scenario) {
 
 /**
  * Analyze a completed conversation session.
- * @param {Array} conversationHistory - All messages from the session
- * @param {Object} scenario - Scenario metadata
- * @returns {Promise<{cefr_assessment: string, grammar_score: number, vocabulary_score: number, fluency_note: string, mission_success: boolean|null, mission_feedback: string|null, feedback_points: Array}>}
  */
-export async function analyzeSession(conversationHistory, scenario) {
+export async function analyzeSession(conversationHistory: ChatMessage[], scenario: PracticeScenario): Promise<FeedbackAnalysis> {
   const url = `${API_URL}/api/ai-practice/analyze`;
 
   const response = await fetch(url, {
@@ -169,18 +251,13 @@ export async function analyzeSession(conversationHistory, scenario) {
   if (!response.ok) {
     throw new Error(`Analysis request failed: ${response.statusText}`);
   }
-  const data = await response.json();
-  return data;
+  return response.json();
 }
 
 /**
  * Generate a full CEFR-level-aware feedback report for a completed conversation.
- * Uses level-specific prompts (A1/A2/B1/B2) or a generic prompt for C1/C2.
- * @param {Array} conversationHistory - All messages from the session (with corrections)
- * @param {Object} scenario - Scenario metadata
- * @returns {Promise<{level: string, title: string, date: string, report_markdown: string}>}
  */
-export async function getFeedbackReport(conversationHistory, scenario) {
+export async function getFeedbackReport(conversationHistory: ChatMessage[], scenario: PracticeScenario): Promise<FeedbackReport> {
   const url = `${API_URL}/api/ai-practice/feedback-report`;
 
   const response = await fetch(url, {
@@ -197,11 +274,6 @@ export async function getFeedbackReport(conversationHistory, scenario) {
   }
   return response.json();
 }
-
-
-// ---------------------------------------------------------------------------
-// DB-backed prompt endpoints
-// ---------------------------------------------------------------------------
 
 /**
  * Fetch all AI practice topics from the database (includes per-level prompts).
@@ -223,34 +295,9 @@ export async function fetchDbTopicBySlug(slug: string): Promise<DbTopic> {
 
 /**
  * Fetch the instruction + AI prompt for a specific topic + CEFR level.
- * Called after the user picks their level on the topic card.
  */
 export async function fetchTopicForLevel(slug: string, level: string): Promise<TopicLevelData> {
   const response = await fetch(`${API_URL}/api/ai-practice/db/topics/${slug}/level/${level}`);
   if (!response.ok) throw new Error(`Failed to fetch topic for level: ${response.statusText}`);
   return response.json();
-}
-
-// ---------------------------------------------------------------------------
-// Types
-// ---------------------------------------------------------------------------
-
-export interface DbTopic {
-  id: number;
-  slug: string;
-  topic: string;
-  ai_role: string;
-  user_role: string;
-  instructions: Record<string, string | null>;
-  ai_prompts: Record<string, string | null>;
-}
-
-export interface TopicLevelData {
-  slug: string;
-  topic: string;
-  ai_role: string;
-  user_role: string;
-  level: string;
-  instruction: string | null;
-  ai_prompt: string | null;
 }

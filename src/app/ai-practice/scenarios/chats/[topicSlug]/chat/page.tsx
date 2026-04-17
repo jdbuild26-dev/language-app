@@ -14,6 +14,8 @@ import {
   getHint,
   getFeedbackReport,
 } from "@/services/aiPracticeApi";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { getLangName } from "@/utils/languages";
 
 interface Scenario {
   title: string;
@@ -25,6 +27,8 @@ interface Scenario {
   aiPrompt: string;
   objective?: string | null;
   icon?: string;
+  learning_lang: string;
+  known_lang: string;
 }
 
 interface Message {
@@ -40,6 +44,7 @@ export default function ChatPage() {
   const params = useParams();
   const topicSlug = params?.topicSlug as string | undefined;
   const router = useRouter();
+  const { learningLang, knownLang } = useLanguage();
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const [scenario, setScenario] = useState<Scenario | null>(null);
@@ -84,6 +89,8 @@ export default function ChatPage() {
               aiPrompt: topic.aiPrompt || "",
               objective: null,
               icon: topic.icon,
+              learning_lang: learningLang,
+              known_lang: knownLang,
             };
           } catch {
             router.replace("/ai-practice/scenarios/chats");
@@ -94,8 +101,8 @@ export default function ChatPage() {
         }
 
         setScenario(scenarioData);
-
-        let greetingText = "Bonjour ! Comment puis-je vous aider ?";
+ 
+        let greetingText = `Hello! How can I help you? (Greeting in ${getLangName(scenarioData.learning_lang)})`;
         try {
           const greeting = await getInitialGreeting({
             level: scenarioData.level,
@@ -106,6 +113,8 @@ export default function ChatPage() {
             userRole: scenarioData.userRole,
             mode: scenarioData.mode || "chat",
             objective: scenarioData.objective,
+            learning_lang: scenarioData.learning_lang,
+            known_lang: scenarioData.known_lang,
           });
           greetingText = greeting.ai_response;
         } catch (greetErr) {
@@ -129,7 +138,7 @@ export default function ChatPage() {
     }
 
     init();
-  }, [topicSlug]);
+  }, [topicSlug, learningLang, knownLang]);
 
   const handleSendMessage = async (text: string) => {
     if (!text.trim() || isSending || !scenario) return;
@@ -169,6 +178,8 @@ export default function ChatPage() {
           userRole: scenario.userRole,
           mode: scenario.mode || "chat",
           objective: scenario.objective,
+          learning_lang: scenario.learning_lang,
+          known_lang: scenario.known_lang,
         },
       });
 
@@ -225,6 +236,8 @@ export default function ChatPage() {
       userRole: scenario.userRole,
       mode: scenario.mode || "chat",
       objective: scenario.objective,
+      learning_lang: scenario.learning_lang,
+      known_lang: scenario.known_lang,
     })
       .then((data) => { setAnalysisData(data); })
       .catch((err) => {
@@ -264,6 +277,8 @@ export default function ChatPage() {
         userRole: scenario.userRole,
         mode: scenario.mode || "chat",
         objective: scenario.objective,
+        learning_lang: scenario.learning_lang,
+        known_lang: scenario.known_lang,
       });
 
       setAnalysisData(analysis);
@@ -303,6 +318,8 @@ export default function ChatPage() {
         userRole: scenario.userRole,
         mode: scenario.mode || "chat",
         objective: scenario.objective,
+        learning_lang: scenario.learning_lang,
+        known_lang: scenario.known_lang,
       });
 
       // Also fetch analysis parameters if not already available
@@ -318,6 +335,8 @@ export default function ChatPage() {
             userRole: scenario.userRole,
             mode: scenario.mode || "chat",
             objective: scenario.objective,
+            learning_lang: scenario.learning_lang,
+            known_lang: scenario.known_lang,
           });
         } catch {
           analysis = null;
@@ -387,7 +406,7 @@ export default function ChatPage() {
   };
 
   const handleHint = async (): Promise<string> => {
-    if (!scenario) return "Je ne sais pas quoi dire...";
+    if (!scenario) return `I'm not sure what to say... (Hint in ${getLangName(learningLang)})`;
     try {
       const history = messages.map((m) => ({
         sender: m.sender,
@@ -403,10 +422,12 @@ export default function ChatPage() {
         userRole: scenario.userRole,
         mode: scenario.mode || "chat",
         objective: scenario.objective,
+        learning_lang: scenario.learning_lang,
+        known_lang: scenario.known_lang,
       });
       return response.hint;
     } catch {
-      return "Je ne sais pas quoi dire...";
+      return `I'm not sure what to say... (Hint in ${getLangName(learningLang)})`;
     }
   };
 
