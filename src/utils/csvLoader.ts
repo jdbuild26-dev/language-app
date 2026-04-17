@@ -43,7 +43,8 @@ const FILE_TO_SLUG = {
   "practice/writing/write_analysis.csv": "write_analysis",
   "practice/writing/write_documents.csv": "write_documents",
   "practice/writing/write_fill_blanks.csv": "write_fill_blanks",
-  "practice/writing/write_image.csv": "write_image",  "practice/writing/write_topic.csv": "write_topic",
+  "practice/writing/write_image.csv": "write_image",
+  "practice/writing/write_topic.csv": "write_topic",
   "practice/writing/writing_conversation.csv": "writing_conversation",
   // Speaking
   "practice/speaking/speak_topic.csv": "speak_topic",

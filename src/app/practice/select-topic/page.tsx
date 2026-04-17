@@ -16,13 +16,16 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { cn } from "@/lib/utils";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 export default function TagTopicSelectionPage() {
     return (
-        <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-500 border-t-transparent"></div></div>}>
+        <Suspense fallback={
+            <div className="min-h-screen flex items-center justify-center">
+                <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-500 border-t-transparent" />
+            </div>
+        }>
             <TagTopicSelectionContent />
         </Suspense>
     );
@@ -36,37 +39,59 @@ function TagTopicSelectionContent() {
     const levelFromUrl = searchParams.get("level") || "A1";
 
     const [loading, setLoading] = useState(true);
-    const [tags, setTags] = useState([]);
-    const [error, setError] = useState(null);
+    const [tags, setTags] = useState<any[]>([]);
+
+    // Redirect straight to the exercise (no tag filter)
+    const goDirectly = () => {
+        if (nextTarget) router.push(nextTarget);
+        else router.push("/practice");
+    };
 
     useEffect(() => {
-        if (!type) {
+        if (!type || !nextTarget) {
             router.push("/practice");
             return;
         }
 
+        let cancelled = false;
+
         const fetchTags = async () => {
             try {
                 setLoading(true);
-                const response = await fetch(`${API_BASE_URL}/api/tag-topics/possible?question_type=${type}&level=${levelFromUrl}`);
-                if (!response.ok) throw new Error("Failed to fetch topics");
+                const controller = new AbortController();
+                const timeout = setTimeout(() => controller.abort(), 5000); // 5s timeout
+
+                const response = await fetch(
+                    `${API_BASE_URL}/api/tag-topics/possible?question_type=${type}&level=${levelFromUrl}`,
+                    { signal: controller.signal }
+                );
+                clearTimeout(timeout);
+
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
                 const data = await response.json();
-                setTags(data.tags || []);
+                if (!cancelled) setTags(data.tags || []);
             } catch (err) {
-                console.error("Error fetching tags:", err);
-                setError(err.message);
+                // On any error (network, timeout, 404, etc.) just go directly to the exercise
+                console.warn("[select-topic] Could not fetch tags, proceeding directly:", err);
+                if (!cancelled) goDirectly();
+                return;
             } finally {
-                setLoading(false);
+                if (!cancelled) setLoading(false);
             }
         };
 
         fetchTags();
-    }, [type, levelFromUrl, router]);
+        return () => { cancelled = true; };
+    }, [type, levelFromUrl]); // eslint-disable-line react-hooks/exhaustive-deps
 
-    const handleTopicSelect = (tag) => {
-        const url = new URL(nextTarget, "http://placeholder");
-        url.searchParams.set("tag", tag.slug);
-        router.push(url.pathname + url.search);
+    const handleTopicSelect = (tag: any) => {
+        try {
+            const url = new URL(nextTarget!, "http://placeholder");
+            url.searchParams.set("tag", tag.slug);
+            router.push(url.pathname + url.search);
+        } catch {
+            router.push(nextTarget!);
+        }
     };
 
     if (loading) {
@@ -97,7 +122,11 @@ function TagTopicSelectionContent() {
                             <Sparkles className="h-6 w-6 text-amber-400" />
                         </h1>
                         <p className="text-slate-500 dark:text-slate-400 mt-1">
-                            Select a specific area of <span className="text-blue-600 dark:text-blue-400 font-semibold">{type.split('_').join(' ').toUpperCase()}</span> to practice.
+                            Select a specific area of{" "}
+                            <span className="text-blue-600 dark:text-blue-400 font-semibold">
+                                {type?.split("_").join(" ").toUpperCase()}
+                            </span>{" "}
+                            to practice.
                         </p>
                     </div>
                 </div>
@@ -107,62 +136,69 @@ function TagTopicSelectionContent() {
                         <BookOpen className="h-12 w-12 text-slate-300 mx-auto mb-4" />
                         <h3 className="text-xl font-bold text-slate-700 dark:text-slate-300">No specific topics found</h3>
                         <p className="text-slate-500 mt-2 mb-6">This exercise type covers a broad range of general skills.</p>
-                        <Button onClick={() => router.push(nextTarget)} className="rounded-full px-8">
+                        <Button onClick={goDirectly} className="rounded-full px-8">
                             Proceed to General Practice
                             <ChevronRight className="ml-2 h-4 w-4" />
                         </Button>
                     </Card>
                 ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <AnimatePresence>
-                            {tags.map((tag, index) => (
-                                <motion.div
-                                    key={tag.id}
-                                    initial={{ opacity: 0, y: 20 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    transition={{ delay: index * 0.05 }}
-                                    whileHover={{ scale: 1.02 }}
-                                    whileTap={{ scale: 0.98 }}
-                                >
-                                    <Card
-                                        onClick={() => handleTopicSelect(tag)}
-                                        className="p-5 cursor-pointer bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 hover:border-blue-500 dark:hover:border-blue-400 transition-all group overflow-hidden relative"
+                    <>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <AnimatePresence>
+                                {tags.map((tag, index) => (
+                                    <motion.div
+                                        key={tag.id}
+                                        initial={{ opacity: 0, y: 20 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        transition={{ delay: index * 0.05 }}
+                                        whileHover={{ scale: 1.02 }}
+                                        whileTap={{ scale: 0.98 }}
                                     >
-                                        {/* Decorative background element */}
-                                        <div className="absolute -right-4 -bottom-4 opacity-5 group-hover:opacity-10 transition-opacity">
-                                            <Target className="h-24 w-24 rotate-12" />
-                                        </div>
-
-                                        <div className="flex items-start justify-between gap-4">
-                                            <div className="space-y-3">
-                                                <div className="flex items-center gap-2">
-                                                    <Badge variant="outline" className="bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-800">
-                                                        {levelFromUrl}
-                                                    </Badge>
-                                                    <span className="text-xs font-medium text-slate-400 uppercase tracking-wider">
-                                                        {tag.slug.split('/')[1] || 'General'}
-                                                    </span>
+                                        <Card
+                                            onClick={() => handleTopicSelect(tag)}
+                                            className="p-5 cursor-pointer bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 hover:border-blue-500 dark:hover:border-blue-400 transition-all group overflow-hidden relative"
+                                        >
+                                            <div className="absolute -right-4 -bottom-4 opacity-5 group-hover:opacity-10 transition-opacity">
+                                                <Target className="h-24 w-24 rotate-12" />
+                                            </div>
+                                            <div className="flex items-start justify-between gap-4">
+                                                <div className="space-y-3">
+                                                    <div className="flex items-center gap-2">
+                                                        <Badge variant="outline" className="bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-800">
+                                                            {levelFromUrl}
+                                                        </Badge>
+                                                        <span className="text-xs font-medium text-slate-400 uppercase tracking-wider">
+                                                            {tag.slug?.split("/")[1] || "General"}
+                                                        </span>
+                                                    </div>
+                                                    <h3 className="text-xl font-bold text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                                                        {tag.name_en}
+                                                    </h3>
+                                                    <p className="text-sm text-slate-500 dark:text-slate-400 flex items-center gap-2">
+                                                        <Zap className="h-3 w-3 text-amber-500" />
+                                                        Master this topic to boost your level
+                                                    </p>
                                                 </div>
-
-                                                <h3 className="text-xl font-bold text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
-                                                    {tag.name_en}
-                                                </h3>
-
-                                                <p className="text-sm text-slate-500 dark:text-slate-400 flex items-center gap-2">
-                                                    <Zap className="h-3 w-3 text-amber-500" />
-                                                    Master this topic to boost your level
-                                                </p>
+                                                <div className="h-10 w-10 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center group-hover:bg-blue-600 group-hover:text-white transition-all">
+                                                    <ChevronRight className="h-5 w-5" />
+                                                </div>
                                             </div>
+                                        </Card>
+                                    </motion.div>
+                                ))}
+                            </AnimatePresence>
+                        </div>
 
-                                            <div className="h-10 w-10 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center group-hover:bg-blue-600 group-hover:text-white transition-all">
-                                                <ChevronRight className="h-5 w-5" />
-                                            </div>
-                                        </div>
-                                    </Card>
-                                </motion.div>
-                            ))}
-                        </AnimatePresence>
-                    </div>
+                        {/* Skip option */}
+                        <div className="mt-6 text-center">
+                            <button
+                                onClick={goDirectly}
+                                className="text-sm text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 underline underline-offset-2 transition-colors"
+                            >
+                                Skip topic selection → Practice all
+                            </button>
+                        </div>
+                    </>
                 )}
 
                 {/* Info Box */}

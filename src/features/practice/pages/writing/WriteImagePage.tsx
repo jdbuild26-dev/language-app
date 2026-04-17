@@ -1,218 +1,173 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { usePracticeExit } from "@/hooks/usePracticeExit";
 import { useExerciseTimer } from "@/hooks/useExerciseTimer";
-import { Volume2, ImageIcon } from "lucide-react";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { usePracticeComplete } from "@/hooks/usePracticeComplete";
 import { cn } from "@/lib/utils";
 import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
-import FeedbackBanner from "@/components/ui/FeedbackBanner";
-import { getFeedbackMessage } from "@/utils/feedbackMessages";
-import { useTextToSpeech } from "@/hooks/useTextToSpeech";
 import { useWritingEvaluation } from "@/hooks/useWritingEvaluation";
 import WritingFeedbackResult from "@/components/WritingFeedbackResult";
-import { Loader2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { loadMockCSV } from "@/utils/csvLoader";
+import { Loader2, ImageIcon } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import AccentKeyboard from "@/components/ui/AccentKeyboard";
+import { useSearchParams } from "next/navigation";
 
-// Mock data for Describe Image exercise
-const MOCK_QUESTIONS = [
-  {
-    id: 1,
-    image: "🏖️",
-    englishDescription: "A beach with sun and waves",
-    hint: "beach, sun, water, sand",
-    sampleAnswer:
-      "C'est une plage avec du soleil et des vagues. Le sable est doré et l'eau est bleue.",
-    minWords: 8,
-    timeLimitSeconds: 120,
-  },
-  {
-    id: 2,
-    image: "🍽️",
-    englishDescription: "A dinner table with food",
-    hint: "table, food, plate, dinner",
-    sampleAnswer:
-      "Je vois une table avec de la nourriture. Il y a des assiettes et des verres pour le dîner.",
-    minWords: 8,
-    timeLimitSeconds: 120,
-  },
-  {
-    id: 3,
-    image: "🏔️",
-    englishDescription: "A mountain with snow",
-    hint: "mountain, snow, nature, sky",
-    sampleAnswer:
-      "C'est une grande montagne avec de la neige. Le ciel est bleu et le paysage est magnifique.",
-    minWords: 8,
-    timeLimitSeconds: 120,
-  },
-  {
-    id: 4,
-    image: "🎉",
-    englishDescription: "A party celebration",
-    hint: "party, celebration, happy, decoration",
-    sampleAnswer:
-      "C'est une fête. Les gens sont contents et il y a des décorations colorées partout.",
-    minWords: 8,
-    timeLimitSeconds: 120,
-  },
-];
+// ─── Types ────────────────────────────────────────────────────────────────────
 
-interface Question {
-  id: number;
-  image: string;
-  englishDescription: string;
-  hint: string;
-  sampleAnswer: string;
-  minWords: number;
+type WriteImageQuestion = {
+  heading_fr: string;
+  heading_en: string;
+  content_fr: string;   // AI context only — not rendered
+  content_en: string;   // AI context only — not rendered
+  instruction_box_fr: string;
+  instruction_box_en: string;
+  sample_answers_fr: string[];
+  sample_answers_en: string[];
+  image_url: string;
   timeLimitSeconds: number;
-  imageUrl?: string;
-  question?: string;
-}
+  charLimit: number;
+  level: string;
+};
+
+// ─── Component ────────────────────────────────────────────────────────────────
 
 export default function WriteImagePage() {
   const handleExit = usePracticeExit();
-  const { speak, isSpeaking } = useTextToSpeech();
+  const { learningLang, knownLang } = useLanguage();
+  const searchParams = useSearchParams();
+  const tag = searchParams?.get("tag") ?? undefined;
+  const levelParam = searchParams?.get("level") ?? undefined;
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  const [questions, setQuestions] = useState<Question[]>([]);
+  const [questions, setQuestions] = useState<WriteImageQuestion[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [userAnswer, setUserAnswer] = useState("");
   const [isCompleted, setIsCompleted] = useState(false);
   const [showFeedback, setShowFeedback] = useState(false);
-  const [showSample, setShowSample] = useState(false);
-  const [isCorrect, setIsCorrect] = useState(false);
-  const [feedbackMessage, setFeedbackMessage] = useState("");
   const [score, setScore] = useState(0);
-  const [isLoading, setIsLoading] = useState(true);
 
-  const { evaluation, isSubmitting, evaluate, resetEvaluation } =
-    useWritingEvaluation();
+  const { evaluation, isSubmitting, evaluate, resetEvaluation } = useWritingEvaluation();
 
-  const currentQuestion = questions[currentIndex];
-  const timerDuration = currentQuestion?.timeLimitSeconds || 120;
+  const currentQ = questions[currentIndex];
 
   const { timerString, resetTimer } = useExerciseTimer({
-    duration: timerDuration,
+    duration: currentQ?.timeLimitSeconds || 360,
     mode: "timer",
-    onExpire: () => {
-      if (!isCompleted && !showFeedback) {
-        handleSubmit();
-      }
-    },
-    isPaused: isCompleted || showFeedback || isLoading,
+    onExpire: () => { if (!isCompleted && !showFeedback) handleSubmit(); },
+    isPaused: isLoading || isCompleted || showFeedback,
   });
 
+  usePracticeComplete({
+    isGameOver: isCompleted,
+    score,
+    totalQuestions: questions.length,
+    exerciseType: "write_image",
+    level: currentQ?.level,
+  });
+
+  // ── Load ───────────────────────────────────────────────────────────────────
   useEffect(() => {
-    const fetchQuestions = async () => {
+    (async () => {
       try {
-        const data = await loadMockCSV("practice/writing/write_image.csv") as Question[];
-        // Map backend keys to component keys if necessary, or update component to use backend keys
-        // Backend returns: imageUrl, question, hint, sampleAnswer
-        // Component expects: image, englishDescription, hint, sampleAnswer
-
-        const mappedData = data.map((item) => ({
-          ...item,
-          image: item.imageUrl || item.image,
-          englishDescription: item.question || item.englishDescription,
-        }));
-
-        setQuestions(mappedData);
-      } catch (error) {
-        console.error("Error loading mock data:", error);
+        const data = await loadMockCSV("practice/writing/write_image.csv", {
+          level: levelParam,
+          learningLang: learningLang || "fr",
+          knownLang: knownLang || "en",
+          tag,
+        });
+        const raw = Array.isArray(data) ? data : [];
+        const normalized: WriteImageQuestion[] = raw
+          .filter((item: any) =>
+            (item.instruction_box_fr || item.instruction_box_en || item.heading_fr) &&
+            (item.Category === "main" || !item.Category)
+          )
+          .map((item: any) => ({
+            heading_fr: item.heading_fr || "",
+            heading_en: item.heading_en || "",
+            content_fr: item.content_fr || "",
+            content_en: item.content_en || "",
+            instruction_box_fr: item.instruction_box_fr || "Décrivez ce que vous voyez",
+            instruction_box_en: item.instruction_box_en || "Write what you see",
+            sample_answers_fr: Array.isArray(item.sample_answers_fr) ? item.sample_answers_fr : [],
+            sample_answers_en: Array.isArray(item.sample_answers_en) ? item.sample_answers_en : [],
+            image_url: item.image_url || item.imageUrl || "",
+            timeLimitSeconds: item.timeLimitSeconds || item.TimeLimitSeconds || 360,
+            charLimit: item.maxHighlightChars || 1000,
+            level: item.level || item.Level || "",
+          }));
+        setQuestions(normalized);
+      } catch (e) {
+        console.error("WriteImagePage load error:", e);
       } finally {
         setIsLoading(false);
       }
-    };
-    fetchQuestions();
-  }, []);
+    })();
+  }, [levelParam, learningLang, knownLang, tag]);
 
   useEffect(() => {
-    if (currentQuestion && !isCompleted) {
+    if (currentQ && !isCompleted) {
       setUserAnswer("");
-      setShowSample(false);
+      setShowFeedback(false);
       resetTimer();
       resetEvaluation();
     }
-  }, [currentIndex, currentQuestion, isCompleted, resetTimer, resetEvaluation]);
+  }, [currentIndex, currentQ, isCompleted, resetTimer, resetEvaluation]);
 
-  const handlePlaySample = () => {
-    if (currentQuestion) {
-      speak(currentQuestion.sampleAnswer, "fr-FR");
-    }
-  };
-
-  const getWordCount = (text: string) => {
-    return text
-      .trim()
-      .split(/\s+/)
-      .filter((word) => word.length > 0).length;
-  };
-
+  // ── Submit ─────────────────────────────────────────────────────────────────
   const handleSubmit = async () => {
-    if (showFeedback || isSubmitting || !currentQuestion) return;
-
+    if (showFeedback || isSubmitting || !currentQ) return;
     const result = await evaluate({
       task_type: "image",
       user_text: userAnswer,
-      topic: currentQuestion.englishDescription,
-      reference: currentQuestion.sampleAnswer,
-      context: `The user is describing this image/emoji: ${currentQuestion.image}. Hint words: ${currentQuestion.hint}`,
+      topic: currentQ.content_en || currentQ.content_fr || currentQ.heading_en,
+      reference: currentQ.sample_answers_en[0] || currentQ.sample_answers_fr[0] || "",
+      context: currentQ.content_en || currentQ.content_fr,
+      level: currentQ.level || levelParam || "A1",
     });
-
     if (result) {
-      const finalScore = (result as any).overall_score !== undefined ? (result as any).overall_score : (result as any).score;
-      setIsCorrect(finalScore >= 70);
-      setFeedbackMessage((result as any).executive_summary || (result as any).feedback);
+      const finalScore = (result as any).overall_score ?? (result as any).score ?? 0;
       setShowFeedback(true);
-      setShowSample(true);
-      if (finalScore >= 70) {
-        setScore((prev) => prev + 1);
-      }
+      if (finalScore >= 70) setScore(s => s + 1);
     }
   };
 
   const handleContinue = () => {
     setShowFeedback(false);
-
-    if (currentIndex < questions.length - 1) {
-      setCurrentIndex((prev) => prev + 1);
-    } else {
-      setIsCompleted(true);
-    }
+    resetEvaluation();
+    if (currentIndex < questions.length - 1) setCurrentIndex(i => i + 1);
+    else setIsCompleted(true);
   };
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-slate-50 dark:bg-slate-900">
-        <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
-      </div>
-    );
-  }
+  // ── States ─────────────────────────────────────────────────────────────────
+  if (isLoading) return (
+    <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-900">
+      <Loader2 className="animate-spin text-sky-500 w-8 h-8" />
+    </div>
+  );
 
-  if (questions.length === 0) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-slate-50 dark:bg-slate-900">
-        <p className="text-xl text-slate-600 dark:text-slate-400">
-          No content available.
-        </p>
-        <Button onClick={() => handleExit()} variant="outline" className="mt-4">
-          Back
-        </Button>
-      </div>
-    );
-  }
+  if (questions.length === 0) return (
+    <div className="flex flex-col items-center justify-center min-h-screen bg-slate-50 dark:bg-slate-900">
+      <p className="text-xl text-slate-600 dark:text-slate-400">No content available.</p>
+      <Button onClick={() => handleExit()} variant="outline" className="mt-4">Back</Button>
+    </div>
+  );
 
-  const wordCount = getWordCount(userAnswer);
-  const progress =
-    questions.length > 0 ? ((currentIndex + 1) / questions.length) * 100 : 0;
+  const progress = ((currentIndex + 1) / questions.length) * 100;
+  const charCount = userAnswer.length;
+  const charLimit = currentQ?.charLimit || 1000;
+  const instructionLabel = currentQ.instruction_box_en || currentQ.instruction_box_fr;
 
   return (
     <>
       <PracticeGameLayout
-        questionType="Describe the Image"
-        instructionFr="Décrivez l'image en français"
-        instructionEn="Describe the image in French"
+        questionType="Write About Image"
+        instructionFr="Lisez le passage et répondez"
+        instructionEn="Read the passage and respond"
+        localizedInstruction="Lisez le passage et répondez"
         progress={progress}
         isGameOver={isCompleted}
         score={score}
@@ -220,72 +175,97 @@ export default function WriteImagePage() {
         onExit={handleExit}
         onNext={handleSubmit}
         onRestart={() => window.location.reload()}
-        isSubmitEnabled={wordCount >= 3 && !showFeedback && !isSubmitting}
-        showSubmitButton={!showFeedback}
-        submitLabel={isSubmitting ? "Evaluating..." : "Submit"}
+        isSubmitEnabled={userAnswer.trim().length > 5 && !showFeedback && !isSubmitting && !evaluation}
+        showSubmitButton={!showFeedback && !evaluation}
+        submitLabel={isSubmitting ? "Evaluating…" : "Submit Answer"}
         timerValue={timerString}
+        currentQuestionIndex={currentIndex}
       >
-        <div className="flex flex-col items-center w-full max-w-2xl mx-auto px-4 py-6">
-          {/* Image display */}
-          <div className="w-full bg-gradient-to-br from-amber-100 to-orange-100 dark:from-amber-900/30 dark:to-orange-900/30 rounded-2xl p-8 mb-4 text-center">
-            <span className="text-8xl">{currentQuestion?.image}</span>
-          </div>
+        {/* ── Two-column layout matching mockup ── */}
+        <div className="flex flex-col lg:flex-row w-full h-full min-h-0 bg-slate-50 dark:bg-slate-950">
 
-          {/* English hint */}
-          <div className="flex items-center gap-2 mb-4">
-            <ImageIcon className="w-4 h-4 text-amber-600" />
-            <span className="text-sm text-slate-600 dark:text-slate-400">
-              {currentQuestion?.englishDescription}
-            </span>
-          </div>
-
-          {/* Hint keywords */}
-          <div className="flex flex-wrap gap-2 justify-center mb-4">
-            {currentQuestion?.hint.split(", ").map((word, index) => (
-              <span
-                key={index}
-                className="px-3 py-1 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 rounded-full text-xs font-medium"
-              >
-                {word}
-              </span>
-            ))}
-          </div>
-
-          {/* Text area */}
-          <div className="w-full relative">
-            <textarea
-              value={userAnswer}
-              onChange={(e) => setUserAnswer(e.target.value)}
-              placeholder="Describe what you see in French..."
-              disabled={showFeedback}
-              className={cn(
-                "w-full h-32 p-4 rounded-xl border-2 resize-none text-base",
-                "bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200",
-                "placeholder-slate-400 focus:outline-none focus:ring-2",
-                showFeedback
-                  ? "border-slate-300 dark:border-slate-600"
-                  : "border-slate-200 dark:border-slate-700 focus:border-amber-500 focus:ring-amber-200",
-              )}
-            />
-            <div className="absolute bottom-3 right-3 text-sm text-slate-400">
-              {wordCount} / {currentQuestion?.minWords} words min
-            </div>
-          </div>
-
-          {/* AI Evaluation Result */}
-          {evaluation && (
-            <div className="mt-8 w-full animate-in slide-in-from-bottom-8 duration-700">
-              <WritingFeedbackResult 
-                evaluation={evaluation as any} 
-                mode="writing"
-                userText={userAnswer}
-                originalImage={currentQuestion?.image}
-                onContinue={handleContinue}
+          {/* LEFT — image */}
+          <div className="flex items-center justify-center w-full lg:w-1/2 p-8 lg:p-12 border-b lg:border-b-0 lg:border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
+            {currentQ.image_url ? (
+              <img
+                src={currentQ.image_url}
+                alt="Exercise image"
+                className="max-w-full max-h-[380px] rounded-xl object-contain shadow-sm"
               />
-            </div>
-          )}
+            ) : (
+              <div className="flex flex-col items-center gap-3 text-slate-300 dark:text-slate-600">
+                <ImageIcon className="w-20 h-20" />
+                <p className="text-sm">Image not yet uploaded</p>
+              </div>
+            )}
+          </div>
 
-          {/* Sample answer side (only shown if needed, but the Result Modal handles it now) */}
+          {/* RIGHT — textarea */}
+          <div className="flex flex-col w-full lg:w-1/2 p-6 lg:p-10 bg-white dark:bg-slate-900">
+
+            {!evaluation ? (
+              <div className="flex flex-col h-full gap-4">
+                {/* Instruction label */}
+                <p className="text-sm text-slate-500 dark:text-slate-400">
+                  {instructionLabel}
+                </p>
+
+                {/* Textarea */}
+                <textarea
+                  ref={textareaRef}
+                  value={userAnswer}
+                  onChange={e => setUserAnswer(e.target.value)}
+                  placeholder="Écrivez ici…"
+                  disabled={showFeedback}
+                  maxLength={charLimit}
+                  autoFocus
+                  className={cn(
+                    "flex-1 min-h-[200px] w-full resize-none rounded-xl border text-sm font-medium p-4 outline-none transition-all",
+                    "bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100",
+                    "placeholder:text-slate-400 dark:placeholder:text-slate-500",
+                    "border-slate-200 dark:border-slate-700 focus:border-sky-400 focus:ring-2 focus:ring-sky-400/20",
+                  )}
+                />
+
+                {/* Char counter */}
+                <div className="flex justify-end">
+                  <span className={cn(
+                    "text-xs font-medium tabular-nums",
+                    charCount >= charLimit * 0.9 ? "text-red-500" : "text-slate-400",
+                  )}>
+                    {charCount} / {charLimit}
+                  </span>
+                </div>
+
+                {/* Accent keyboard */}
+                <AccentKeyboard
+                  disabled={showFeedback}
+                  onAccentClick={(char) => {
+                    const el = textareaRef.current;
+                    if (!el) return;
+                    const start = el.selectionStart;
+                    const end = el.selectionEnd;
+                    const newVal = userAnswer.slice(0, start) + char + userAnswer.slice(end);
+                    setUserAnswer(newVal);
+                    requestAnimationFrame(() => {
+                      el.focus();
+                      el.setSelectionRange(start + 1, start + 1);
+                    });
+                  }}
+                />
+              </div>
+            ) : (
+              /* AI evaluation result */
+              <div className="flex-1 overflow-y-auto animate-in slide-in-from-bottom-4 duration-500">
+                <WritingFeedbackResult
+                  evaluation={evaluation as any}
+                  mode="writing"
+                  userText={userAnswer}
+                  onContinue={handleContinue}
+                />
+              </div>
+            )}
+          </div>
         </div>
       </PracticeGameLayout>
     </>
