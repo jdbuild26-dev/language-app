@@ -78,3 +78,7 @@ export async function fetchWhatDoYouSeeData() {
 export async function fetchDictationImageData() {
   return fetchPracticeData("dictation-image");
 }
+
+export async function fetchMatchPairsData() {
+  return fetchPracticeData("match-pairs");
+}
