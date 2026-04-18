@@ -78,18 +78,31 @@ export default function WriteInteractivePage() {
     isPaused: isCompleted || isLoading,
   });
 
-  // Load conversation data from CSV
+  // Load conversation data from backend (write_interactive slug)
   useEffect(() => {
     const fetchConversation = async () => {
       try {
-        const data = await loadMockCSV(
-          "practice/writing/writing_conversation.csv",
+        const data = await loadMockCSV("practice/writing/write_interactive.csv");
+        const raw = Array.isArray(data) ? data : [];
+        // Filter to main category, prefer new format (has exchanges array)
+        const items = raw.filter((item: any) =>
+          (item.exchanges || item.title || item.scenario) &&
+          (item.Category === "main" || !item.Category)
         );
-        if (data && data.length > 0) {
-          setConversation(data[0]);
+        if (items.length > 0) {
+          // Pick a random exercise each session
+          const pick = items[Math.floor(Math.random() * items.length)];
+          // Normalise: backend spreads content flat into item
+          const conv = {
+            title: pick.title || pick.scenario_title || pick.title_en || "",
+            scenario: pick.scenario || pick.scenario_en || "",
+            timeLimitSeconds: pick.timeLimitSeconds || pick.TimeLimitSeconds || 300,
+            exchanges: Array.isArray(pick.exchanges) ? pick.exchanges : [],
+          };
+          setConversation(conv);
         }
       } catch (error) {
-        console.error("Error loading writing conversation:", error);
+        console.error("Error loading interactive writing:", error);
       } finally {
         setIsLoading(false);
       }
