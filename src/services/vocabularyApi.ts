@@ -2115,6 +2115,30 @@ const CSV_TRANSFORMERS = {
         : "",
     },
   }),
+  speaking_conversation: (row) => ({
+    external_id: row.ExerciseID || `speaking_conversation_${Math.random()}`,
+    instruction_en: row.Instruction_EN || "Respond to the conversation by speaking in French",
+    instruction_fr: row.Instruction_FR || "Répondez à la conversation en parlant en français",
+    level: row.Level || "",
+    content: {
+      title: row["title"]
+        ? row["title"].startsWith("[") || row["title"].startsWith("{")
+          ? JSON.parse(row["title"])
+          : row["title"]
+        : "",
+      scenario: row["scenario"]
+        ? row["scenario"].startsWith("[") || row["scenario"].startsWith("{")
+          ? JSON.parse(row["scenario"])
+          : row["scenario"]
+        : "",
+      exchanges: row["exchanges"]
+        ? row["exchanges"].startsWith("[") || row["exchanges"].startsWith("{")
+          ? JSON.parse(row["exchanges"])
+          : row["exchanges"]
+        : "",
+      timeLimitSeconds: parseInt(row["Time"] || row["timeLimitSeconds"] || "300", 10) || 300,
+    },
+  }),
   highlight_word: (row) => ({
     external_id: row.ExerciseID || `highlight_word_${Math.random()}`,
     instruction_en: row.Instruction_EN || "",

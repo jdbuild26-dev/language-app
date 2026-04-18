@@ -108,13 +108,18 @@ export const useTextToSpeech = () => {
       };
 
       utterance.onerror = (event) => {
-        // Ignore interrupted errors caused by canceling previous speech
-        if (event.error === "interrupted" || event.error === "canceled") {
+        // These errors are all non-critical and expected in normal operation:
+        // - interrupted / canceled: previous speech was stopped to start new speech
+        // - synthesis-failed: browser couldn't synthesise (e.g. no voice loaded yet)
+        // - audio-busy: audio output is busy (transient)
+        const silentErrors = ["interrupted", "canceled", "synthesis-failed", "audio-busy"];
+        if (silentErrors.includes(event.error)) {
           cleanup();
           return;
         }
 
-        console.error("TTS Error:", event);
+        // Log just the error string — the full event object is not serialisable
+        console.warn("TTS Error:", event.error || "unknown");
         setIsSpeaking(false);
         setIsPaused(false);
         cleanup();
