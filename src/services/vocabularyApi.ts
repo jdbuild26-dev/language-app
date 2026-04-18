@@ -1583,30 +1583,55 @@ const CSV_TRANSFORMERS = {
         : "",
     },
   }),
-  speak_interactive: (row) => ({
-    external_id: row.ExerciseID || `speak_interactive_${Math.random()}`,
-    instruction_en: row.Instruction_EN || "",
-    instruction_fr: row.Instruction_FR || "",
-    level: row.Level || "",
-    content: {
-      Prompt: row["Prompt"]
-        ? row["Prompt"].startsWith("[") || row["Prompt"].startsWith("{")
-          ? JSON.parse(row["Prompt"])
-          : row["Prompt"]
-        : "",
-      Context: row["Context"]
-        ? row["Context"].startsWith("[") || row["Context"].startsWith("{")
-          ? JSON.parse(row["Context"])
-          : row["Context"]
-        : "",
-      Description: row["Description"]
-        ? row["Description"].startsWith("[") ||
-          row["Description"].startsWith("{")
-          ? JSON.parse(row["Description"])
-          : row["Description"]
-        : "",
-    },
-  }),
+  speak_interactive: (row) => {
+    // Build exchanges array from flat CSV columns (same structure as write_interactive)
+    const exchanges: any[] = [];
+    for (let i = 1; i <= 4; i++) {
+      const speakerFR = row[`Speaker_${i}_FR`] || "";
+      const speakerEN = row[`Speaker_${i}_EN`] || "";
+      const promptFR  = row[`Prompt_${i}_FR`]  || "";
+      const promptEN  = row[`Prompt_${i}_EN`]  || "";
+      const sampleFR  = row[`Sample_${i}_FR`]  || "";
+      const sampleEN  = row[`Sample_${i}_EN`]  || "";
+      const minWords  = row[`Min_Words_${i}`]   || "3";
+
+      if (!speakerFR && !speakerEN) break;
+
+      exchanges.push({
+        isQuestion: false,
+        speakerText: speakerFR || speakerEN,
+        speakerText_en: speakerEN || speakerFR,
+        speakerAudio: speakerFR || speakerEN,
+      });
+
+      if (promptFR || promptEN) {
+        exchanges.push({
+          isQuestion: true,
+          speakerText: null,
+          prompt: promptFR || promptEN,
+          prompt_en: promptEN || promptFR,
+          sampleAnswer: sampleFR || sampleEN,
+          sampleAnswer_en: sampleEN || sampleFR,
+          minWords: parseInt(minWords, 10) || 3,
+        });
+      }
+    }
+
+    return {
+      external_id: row.ExerciseID || `speak_interactive_${Math.random()}`,
+      instruction_en: row.Instruction_EN || "Respond to the conversation by speaking in French",
+      instruction_fr: row.Instruction_FR || "Répondez à la conversation en parlant en français",
+      level: row.Level || "",
+      content: {
+        title:    row["Scenario Title_FR"] || row["Scenario Title_EN"] || "",
+        title_en: row["Scenario Title_EN"] || row["Scenario Title_FR"] || "",
+        scenario:    row["Scenario_FR"] || row["Scenario_EN"] || "",
+        scenario_en: row["Scenario_EN"] || row["Scenario_FR"] || "",
+        exchanges,
+        timeLimitSeconds: parseInt(row["Time"] || "300", 10) || 300,
+      },
+    };
+  },
   speak_topic: (row) => ({
     external_id: row.ExerciseID || `speak_topic_${Math.random()}`,
     instruction_en: row.Instruction_EN || "",

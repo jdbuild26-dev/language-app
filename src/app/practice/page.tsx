@@ -407,6 +407,18 @@ const practiceActivities = [
     shadow: "shadow-rose-200 dark:shadow-rose-900/20",
     isLive: true,
   },
+  {
+    id: "F11",
+    name: "Summarise What You Hear",
+    typeSlug: "summarise_audio",
+    icon: Volume2,
+    desc: "Listen and write a summary",
+    path: "/practice/writing/summarise",
+    category: "writing",
+    color: "from-violet-400 to-purple-500",
+    shadow: "shadow-violet-200 dark:shadow-violet-900/20",
+    isLive: true,
+  },
   // ========================================
   // SPEAKING Activities (H1-H4)
   // ========================================
