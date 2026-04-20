@@ -4,6 +4,7 @@ import { useState } from "react";
 import { X, Loader2 } from "lucide-react";
 import { fetchTopicForLevel } from "@/services/aiPracticeApi";
 import { useRouter } from "next/navigation";
+import { useLanguage } from "@/contexts/LanguageContext";
 import ConversationPreviewModal from "@/features/ai-practice/components/ConversationPreviewModal";
 
 const CEFR_LEVELS = [
@@ -28,6 +29,7 @@ interface Props {
 
 export default function LevelSelectModal({ topic, onClose }: Props) {
   const router = useRouter();
+  const { learningLang, knownLang } = useLanguage();
   const [selected, setSelected] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -50,6 +52,8 @@ export default function LevelSelectModal({ topic, onClose }: Props) {
         aiPrompt: data.ai_prompt || "",
         objective: data.objective || null,
         icon: topic.icon,
+        learning_lang: learningLang,
+        known_lang: knownLang,
       };
       sessionStorage.setItem("chatScenario", JSON.stringify(scenario));
       setPendingSlug(topic.slug);

@@ -25,6 +25,8 @@ interface Scenario {
   aiPrompt: string;
   objective?: string | null;
   icon?: string;
+  learning_lang?: string;
+  known_lang?: string;
 }
 
 interface Message {
@@ -86,6 +88,8 @@ export default function ChatPage() {
               aiPrompt: topic.aiPrompt || "",
               objective: null,
               icon: topic.icon,
+              learning_lang: localStorage.getItem("learning_lang") || "fr",
+              known_lang: localStorage.getItem("known_lang") || "en",
             };
           } catch {
             // Slug not found in backend — this is a mission/profession that
@@ -111,6 +115,8 @@ export default function ChatPage() {
             userRole: scenarioData.userRole,
             mode: scenarioData.mode || "chat",
             objective: scenarioData.objective,
+            learning_lang: scenarioData.learning_lang,
+            known_lang: scenarioData.known_lang,
           });
           greetingText = greeting.ai_response;
         } catch (greetErr) {
@@ -174,6 +180,8 @@ export default function ChatPage() {
           userRole: scenario.userRole,
           mode: scenario.mode || "chat",
           objective: scenario.objective,
+          learning_lang: scenario.learning_lang,
+          known_lang: scenario.known_lang,
         },
       });
 
@@ -230,6 +238,8 @@ export default function ChatPage() {
         userRole: scenario.userRole,
         mode: scenario.mode || "chat",
         objective: scenario.objective,
+        learning_lang: scenario.learning_lang,
+        known_lang: scenario.known_lang,
       });
 
       setAnalysisData(analysis);
@@ -262,6 +272,8 @@ export default function ChatPage() {
         userRole: scenario.userRole,
         mode: scenario.mode || "chat",
         objective: scenario.objective,
+        learning_lang: scenario.learning_lang,
+        known_lang: scenario.known_lang,
       });
       return response.hint;
     } catch {
