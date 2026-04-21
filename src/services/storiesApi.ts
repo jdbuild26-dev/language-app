@@ -242,3 +242,76 @@ export const useStoriesByGrammar = () => {
 
   return { stories, loading, error, getStoriesByGrammar };
 };
+
+// ─── DB-backed Stories API (parallel to grammarApi) ──────────────────────────
+
+const API_BASE_URL =
+  process.env.NEXT_PUBLIC_API_URL || "https://language-api-mine.onrender.com";
+
+export interface StorySubtopic {
+  id: number;
+  slug: string;
+  name_en: string;
+  name_fr?: string;
+  name_de?: string;
+  name_es?: string;
+  order_index: number;
+  notes_count: number;
+}
+
+export interface StoryTopic {
+  id: number;
+  slug: string;
+  name_en: string;
+  name_fr?: string;
+  name_de?: string;
+  name_es?: string;
+  learning_lang: string;
+  level_code: string;
+  order_index: number;
+  subtopics: StorySubtopic[];
+}
+
+export interface StoryNote {
+  id: number;
+  concept_id: string;
+  known_lang: string;
+  learning_lang: string;
+  title: string | null;
+  description: string | null;
+  order_index: number;
+}
+
+export async function fetchStoryTopics(
+  learningLang: string,
+  levelCode: string
+): Promise<StoryTopic[]> {
+  const params = new URLSearchParams({ learning_lang: learningLang, level_code: levelCode });
+  const res = await fetch(`${API_BASE_URL}/api/stories/topics?${params}`);
+  if (!res.ok) throw new Error("Failed to fetch story topics");
+  const data = await res.json();
+  return data.topics ?? [];
+}
+
+export async function fetchStorySubtopicNotes(
+  subtopicId: number,
+  knownLang?: string
+): Promise<StoryNote[]> {
+  const params = knownLang ? `?known_lang=${knownLang}` : "";
+  const res = await fetch(
+    `${API_BASE_URL}/api/stories/subtopics/${subtopicId}/notes${params}`
+  );
+  if (!res.ok) throw new Error("Failed to fetch story subtopic notes");
+  const data = await res.json();
+  return data.notes ?? [];
+}
+
+export function getStoryNoteHtmlUrl(noteId: number): string {
+  return `${API_BASE_URL}/api/stories/notes/${noteId}/html`;
+}
+
+export async function fetchStoryNoteHtml(noteId: number): Promise<string> {
+  const res = await fetch(`${API_BASE_URL}/api/stories/notes/${noteId}/html`);
+  if (!res.ok) throw new Error("Failed to fetch story note HTML");
+  return res.text();
+}
