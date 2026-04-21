@@ -1,5 +1,5 @@
-import GrammarNotesList from "@/features/grammar/pages/GrammarNotesList";
+import GrammarConceptsPage from "@/features/grammar/pages/GrammarConceptsPage";
 
 export default function GrammarLessonsPage() {
-  return <GrammarNotesList />;
+  return <GrammarConceptsPage />;
 }

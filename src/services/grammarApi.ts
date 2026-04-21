@@ -1,98 +1,99 @@
-"use client";
-
-import { useState, useCallback } from "react";
-
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL || "https://language-api-mine.onrender.com";
 
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+export interface GrammarSubtopic {
+  id: number;
+  slug: string;
+  name_en: string;
+  name_fr?: string;
+  name_de?: string;
+  name_es?: string;
+  order_index: number;
+  notes_count: number;
+}
+
+export interface GrammarTopic {
+  id: number;
+  slug: string;
+  name_en: string;
+  name_fr?: string;
+  name_de?: string;
+  name_es?: string;
+  learning_lang: string;
+  level_code: string;
+  order_index: number;
+  subtopics: GrammarSubtopic[];
+}
+
+export interface GrammarNote {
+  id: number;
+  concept_id: string;
+  known_lang: string;
+  learning_lang: string;
+  title: string | null;
+  description: string | null;
+  order_index: number;
+}
+
+// ─── API Functions ────────────────────────────────────────────────────────────
+
 /**
- * Fetch all grammar notes
+ * Fetch grammar topics (with nested subtopics) for a language + level.
  */
-export async function fetchGrammarNotes() {
-  const response = await fetch(`${API_BASE_URL}/api/grammar/notes`);
-  if (!response.ok) {
-    throw new Error("Failed to fetch grammar notes");
-  }
-  return response.json();
+export async function fetchGrammarTopics(
+  learningLang: string,
+  levelCode: string
+): Promise<GrammarTopic[]> {
+  const params = new URLSearchParams({ learning_lang: learningLang, level_code: levelCode });
+  const res = await fetch(`${API_BASE_URL}/api/grammar/topics?${params}`);
+  if (!res.ok) throw new Error("Failed to fetch grammar topics");
+  const data = await res.json();
+  return data.topics ?? [];
 }
 
 /**
- * Fetch a specific grammar note by ID
+ * Fetch notes for a specific subtopic, optionally filtered by known_lang.
  */
-export async function fetchGrammarNoteContent(noteId) {
-  const response = await fetch(`${API_BASE_URL}/api/grammar/notes/${noteId}`);
-  if (!response.ok) {
-    throw new Error("Failed to fetch grammar note content");
-  }
-  return response.json();
+export async function fetchSubtopicNotes(
+  subtopicId: number,
+  knownLang?: string
+): Promise<GrammarNote[]> {
+  const params = knownLang ? `?known_lang=${knownLang}` : "";
+  const res = await fetch(
+    `${API_BASE_URL}/api/grammar/subtopics/${subtopicId}/notes${params}`
+  );
+  if (!res.ok) throw new Error("Failed to fetch subtopic notes");
+  const data = await res.json();
+  return data.notes ?? [];
 }
 
 /**
- * Custom hook to manage grammar notes state
+ * Returns the URL to fetch the rendered HTML for a note.
+ * Used in an <iframe> or fetched directly.
  */
-export function useGrammarNotes() {
-  const [notes, setNotes] = useState<any[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
-
-  const getNotes = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const data = await fetchGrammarNotes();
-      setNotes(data.notes || []);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  return { notes, loading, error, getNotes };
+export function getGrammarNoteHtmlUrl(noteId: number): string {
+  return `${API_BASE_URL}/api/grammar/notes/${noteId}/html`;
 }
 
 /**
- * Custom hook to manage grammar note content
+ * Fetch the raw HTML content of a grammar note (for inline rendering).
  */
-export function useGrammarNoteContent() {
-  const [content, setContent] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
-
-  const getNoteContent = useCallback(async (noteId) => {
-    setLoading(true);
-    setError(null);
-    try {
-      const data = await fetchGrammarNoteContent(noteId);
-      setContent(data.content || "");
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  return { content, loading, error, getNoteContent };
+export async function fetchGrammarNoteHtml(noteId: number): Promise<string> {
+  const res = await fetch(`${API_BASE_URL}/api/grammar/notes/${noteId}/html`);
+  if (!res.ok) throw new Error("Failed to fetch grammar note HTML");
+  return res.text();
 }
 
-/**
- * Check grammar of a text using AI
- * @param {string} text - The text to check
- * @param {string} description - Optional context or instruction
- * @returns {Promise<Object>} - The grammar check result
- */
-export async function checkGrammar(text, description = "") {
+// ─── AI Grammar Check (unchanged) ────────────────────────────────────────────
+
+export async function checkGrammar(text: string, description = "") {
   const response = await fetch(`${API_BASE_URL}/api/grammar/check`, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ text, description }),
   });
-
-  if (!response.ok) {
-    throw new Error("Failed to check grammar");
-  }
-
+  if (!response.ok) throw new Error("Failed to check grammar");
   return response.json();
 }
