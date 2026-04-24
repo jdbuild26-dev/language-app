@@ -245,8 +245,7 @@ export const useStoriesByGrammar = () => {
 
 // ─── DB-backed Stories API (parallel to grammarApi) ──────────────────────────
 
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL || "https://language-api-mine.onrender.com";
+const API_BASE_URL = API_URL || "https://language-backend-v8sy.onrender.com";
 
 export interface StorySubtopic {
   id: number;
