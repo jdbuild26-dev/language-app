@@ -1,5 +1,29 @@
 "use client";
 
+/**
+ * PR: Grammar Topic Chooser — Dynamic Topic Selection Screen
+ *
+ * FEATURE SUMMARY:
+ * Adds a dynamic topic chooser screen before the grammar exercise type grid.
+ * Topics are fetched live from the backend API (/api/admin/grammar/topics).
+ *
+ * CHANGES IN THIS FILE:
+ * - Added `GrammarTopic` interface
+ * - Added `TopicChooser` component — fetches topics from API, renders as a card grid
+ *   with an "All Topics" option. Gracefully skips to exercise grid if API returns no topics.
+ * - Updated `GrammarPracticePage` — shows `TopicChooser` first (selectedTopic === undefined),
+ *   then the exercise type grid after a topic is selected.
+ * - Selected topic slug is passed as `?topic=<slug>` query param when navigating to exercises,
+ *   ready for exercise pages to filter by topic.
+ *
+ * API DEPENDENCY:
+ * GET /api/admin/grammar/topics
+ * Returns: { topics: GrammarTopic[] }
+ *
+ * BRANCH: feature/grammar-topic-chooser
+ * RELATED FILES: language-backend/app/routes/grammar_admin.py (list_topics endpoint)
+ */
+
 import React, { useState, useEffect } from "react";
 import {
   CheckCircle, Brain, Zap, Target, PenTool as Pen, Sparkles,
