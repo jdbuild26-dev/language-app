@@ -11,6 +11,7 @@ const SLUG_TO_CSV: Record<string, string> = {
   speak_image: "practice/speaking/speak_image.csv",
   speak_topic: "practice/speaking/speak_topic.csv",
   speak_interactive: "practice/speaking/speak_interactive.csv",
+  speaking_conversation: "practice/speaking/speaking_conversation.csv",
   speak_translate: "practice/speaking/speak_translate.csv",
   listen_bubble: "practice/listening/listen_bubble.csv",
   listen_fill_blanks: "practice/listening/listen_fill_blanks.csv",
@@ -29,20 +30,24 @@ const SLUG_TO_CSV: Record<string, string> = {
   image_mcq: "practice/reading/image_mcq.csv",
   match_desc_game: "practice/reading/match_desc_game.csv",
   reorder_sentences: "practice/reading/reorder_sentences.csv",
+  writing_conversation: "practice/writing/writing_conversation.csv",
 };
 
 /**
  * Standardized fetcher for practice exercise data from the backend.
  * Falls back to local mock CSV when the backend is unavailable.
  */
-export async function fetchPracticeData(slug: string, options: Record<string, any> = {}) {
+export async function fetchPracticeData(
+  slug: string,
+  options: Record<string, string | number | undefined> = {},
+) {
   const { level, limit, tag, learningLang, knownLang } = options;
   const params = new URLSearchParams();
-  if (level) params.append("level", level);
+  if (level) params.append("level", String(level));
   if (limit) params.append("limit", limit.toString());
-  if (tag) params.append("tag", tag);
-  if (learningLang) params.append("learning_lang", learningLang);
-  if (knownLang) params.append("known_lang", knownLang);
+  if (tag) params.append("tag", String(tag));
+  if (learningLang) params.append("learning_lang", String(learningLang));
+  if (knownLang) params.append("known_lang", String(knownLang));
 
   const queryString = params.toString();
   const url = `${API_URL}/api/practice/${slug}${queryString ? `?${queryString}` : ""}`;
