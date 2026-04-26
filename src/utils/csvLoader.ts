@@ -22,7 +22,6 @@ const FILE_TO_SLUG = {
   "practice/reading/reading_conversation.csv": "conversation_dialogue",
   "practice/reading/diagram_labelling.csv": "diagram_mapping",
   "practice/reading/fill_blanks.csv": "fill_blanks",
-  "practice/reading/fill_blanks_passage.csv": "fill_blanks",
   "practice/reading/highlight.csv": "highlight_word",
   "practice/reading/highlight_text.csv": "highlight_text",
   "practice/reading/image_labelling.csv": "image_labelling",
@@ -75,7 +74,15 @@ const FILE_TO_SLUG = {
  * @param {Object} options - Optional filtering (e.g. level)
  * @returns {Promise<Array>} - A promise that resolves to the data array.
  */
-export const loadMockCSV = async (fileName, options = {}) => {
+export const loadMockCSV = async (
+  fileName: string,
+  options: {
+    level?: string;
+    learningLang?: string;
+    knownLang?: string;
+    tag?: string;
+  } = {},
+) => {
   const slug = FILE_TO_SLUG[fileName];
 
   if (slug) {
@@ -137,7 +144,9 @@ export const loadMockCSV = async (fileName, options = {}) => {
                 ) {
                   try {
                     newRow[key] = JSON.parse(value);
-                  } catch (e) { }
+                  } catch {
+                    // Keep original string when parsing fails.
+                  }
                 }
               }
             }

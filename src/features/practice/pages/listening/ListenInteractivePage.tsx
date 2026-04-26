@@ -1,12 +1,14 @@
 "use client";
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 import React, { useState, useEffect, useRef } from "react";
 import { usePracticeExit } from "@/hooks/usePracticeExit";
 import { useExerciseTimer } from "@/hooks/useExerciseTimer";
-import { Volume2, MessageSquare, User } from "lucide-react";
+import { Volume2, User, Languages } from "lucide-react";
 import { cn } from "@/lib/utils";
 import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
 import FeedbackBanner from "@/components/ui/FeedbackBanner";
+import PracticeOptions from "@/components/ui/PracticeOptions";
 import { getFeedbackMessage } from "@/utils/feedbackMessages";
 import { useTextToSpeech } from "@/hooks/useTextToSpeech";
 import { loadMockCSV } from "@/utils/csvLoader";
@@ -15,16 +17,17 @@ import { Button } from "@/components/ui/button";
 
 export default function ListenInteractivePage() {
   const handleExit = usePracticeExit();
-  const { speak, isSpeaking } = useTextToSpeech();
-  const chatEndRef = useRef(null);
+  const { speak } = useTextToSpeech();
+  const chatEndRef = useRef<HTMLDivElement>(null);
 
   // State
-  const [conversation, setConversation] = useState(null);
+  const [conversation, setConversation] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [currentExchangeIndex, setCurrentExchangeIndex] = useState(0);
-  const [displayedExchanges, setDisplayedExchanges] = useState([]);
+  const [displayedExchanges, setDisplayedExchanges] = useState<any[]>([]);
+  const leftSideMode = "text";
 
-  const [selectedOption, setSelectedOption] = useState(null);
+  const [selectedOption, setSelectedOption] = useState<any>(null);
   const [isCompleted, setIsCompleted] = useState(false);
   const [showFeedback, setShowFeedback] = useState(false);
   const [isCorrect, setIsCorrect] = useState(false);
@@ -34,9 +37,9 @@ export default function ListenInteractivePage() {
   useEffect(() => {
     const fetchConversation = async () => {
       try {
-        const data = await loadMockCSV(
+        const data = (await loadMockCSV(
           "practice/listening/listen_interactive.csv",
-        );
+        )) as any[];
         if (data && data.length > 0) {
           setConversation(data[0]);
         } else {
@@ -61,7 +64,7 @@ export default function ListenInteractivePage() {
   const totalQuestions =
     conversation?.exchanges.filter((e) => e.isQuestion).length || 0;
 
-  const { timerString, resetTimer } = useExerciseTimer({
+  const { timerString } = useExerciseTimer({
     duration: timerDuration,
     mode: "timer",
     onExpire: () => {
@@ -100,6 +103,8 @@ export default function ListenInteractivePage() {
       }
     };
     handleAutoAdvance();
+    // This effect intentionally keys off the exchange index only.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentExchangeIndex, isCompleted]);
 
   // Effect to handle non-question exchanges automatically
@@ -136,6 +141,9 @@ export default function ListenInteractivePage() {
 
       return () => clearTimeout(timer);
     }
+    // `speak` and `displayedExchanges` are intentionally excluded to avoid
+    // replaying audio and resetting timers when voice state changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     currentExchangeIndex,
     currentExchange,
@@ -152,8 +160,10 @@ export default function ListenInteractivePage() {
 
   const handleOptionSelect = (index) => {
     if (showFeedback) return;
-    // Play TTS for the option
-    speak(currentExchange.options[index], "fr-FR");
+    // Play TTS for the option only if the right panel is in audio mode
+    if (leftSideMode === "text") {
+      speak(currentExchange.options[index], "fr-FR");
+    }
     setSelectedOption(index);
   };
 
@@ -194,13 +204,6 @@ export default function ListenInteractivePage() {
 
   // Calculate progress
   // Count how many questions we have passed so far
-  const completedQuestions =
-    conversation?.exchanges
-      ?.slice(0, currentExchangeIndex) // look at history
-      ?.filter((e) => e.isQuestion)?.length || 0;
-
-  // If we just finished one (status feedback), count it?
-  // Actually simpler: just use generic progress
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-900">
@@ -222,20 +225,15 @@ export default function ListenInteractivePage() {
     );
   }
 
-  const progress =
-    (Math.min(score + (showFeedback && isCorrect ? 0 : 0), totalQuestions) /
-      totalQuestions) *
-    100;
-  // A better progress bar for 'linear' conversation:
   const progressLinear =
     (currentExchangeIndex / (conversation?.exchanges?.length || 1)) * 100;
 
   return (
     <>
       <PracticeGameLayout
-        questionType="Interactive Listening"
-        instructionFr="Suivez la conversation et répondez"
-        instructionEn="Follow the conversation and respond"
+        questionType="Listening Conversation"
+        instructionFr="Écoutez et choisissez la bonne réponse"
+        instructionEn="Listen to the audio and select the best response"
         progress={progressLinear}
         isGameOver={isCompleted}
         score={score}
@@ -249,264 +247,185 @@ export default function ListenInteractivePage() {
           currentExchange?.isQuestion
         }
         showSubmitButton={currentExchange?.isQuestion && !showFeedback}
-        submitLabel="Reply"
+        submitLabel="Submit"
         timerValue={timerString}
       >
-        <div className="flex flex-col items-center w-full max-w-6xl mx-auto px-4 py-4">
-          {/* Two-column layout */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
-            {/* LEFT COLUMN: Conversation History */}
-            <div className="flex flex-col space-y-4">
-              {/* Context / Title */}
-              <div className="bg-white dark:bg-slate-800 p-4 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700 mb-2">
-                <div className="flex items-center gap-2 mb-2">
-                  <MessageSquare className="w-4 h-4 text-pink-500" />
-                  <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-200">
-                    Context
-                  </h3>
-                </div>
-                <p className="text-sm text-slate-600 dark:text-slate-400">
-                  {conversation?.context}
-                </p>
-              </div>
-
-              <h3 className="text-sm font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wide">
+        {/* Two-column layout */}
+        <div className="practice-reading-page-shell flex flex-col md:flex-row gap-3 p-3 mx-auto overflow-hidden flex-1 min-h-0">
+          {/* LEFT: Conversation bubbles */}
+          <div className="flex-1 min-h-0 flex flex-col bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm rounded-3xl border border-slate-200/60 dark:border-slate-700/60 shadow-sm overflow-hidden">
+            <div className="px-5 py-3 border-b-[2px] border-slate-100 dark:border-slate-700 flex justify-between items-center">
+              <span className="text-xs font-bold uppercase tracking-widest text-slate-600 dark:text-slate-300">
                 Conversation
-              </h3>
+              </span>
+            </div>
+            <div className="flex-1 min-h-0 overflow-y-auto scrollbar-hide-until-hover p-4 space-y-4">
+              {/* Show conversation history */}
+              {displayedExchanges.map((exchange, index) => {
+                const isHistorical = index < displayedExchanges.length - 1 || showFeedback;
+                const showSpeakerAsText = leftSideMode === "text" || isHistorical;
 
-              <div className="bg-slate-50 dark:bg-slate-900 rounded-2xl p-4 min-h-[400px] max-h-[500px] overflow-y-auto space-y-4">
-                {/* Show conversation history */}
-                {displayedExchanges.map((exchange, index) => (
-                  <div
-                    key={index}
-                    className={cn(
-                      "flex animate-in fade-in slide-in-from-bottom-2 duration-300",
-                      exchange.speaker === "You"
-                        ? "justify-end"
-                        : "justify-start",
-                    )}
-                  >
-                    {exchange.speaker !== "You" && (
-                      <div className="flex items-start gap-2 max-w-[85%]">
-                        <div className="w-8 h-8 rounded-full bg-pink-100 dark:bg-pink-900 flex items-center justify-center flex-shrink-0 mt-1">
-                          <User className="w-4 h-4 text-pink-600 dark:text-pink-400" />
-                        </div>
-                        <div className="bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 px-4 py-2 rounded-2xl rounded-tl-md shadow-sm">
-                          <p className="text-sm">{exchange.text}</p>
-                          {/* Play audio button */}
+                return (
+                <div
+                  key={index}
+                  className={cn(
+                    "flex animate-in fade-in slide-in-from-bottom-2 duration-300",
+                    exchange.speaker === "You"
+                      ? "justify-end"
+                      : "justify-start",
+                  )}
+                >
+                  {exchange.speaker !== "You" && (
+                    <div className="flex items-start gap-2 max-w-[85%]">
+                      <div className="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center flex-shrink-0 mt-1">
+                        <User className="w-4 h-4 text-slate-500 dark:text-slate-300" />
+                      </div>
+                      {showSpeakerAsText ? (
+                        <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 pl-4 pr-11 py-3 rounded-2xl rounded-tl-sm shadow-sm text-slate-700 dark:text-slate-200 relative inline-block text-left w-fit">
+                          <span className="text-[15px] leading-relaxed break-words">{exchange.text}</span>
                           <button
                             onClick={() => handlePlayExchange(exchange.text)}
-                            className="text-slate-400 hover:text-pink-500 dark:hover:text-pink-400 mt-1 inline-flex items-center gap-1"
-                            title="Play audio"
+                            className="absolute top-2 right-2 p-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-full transition-colors text-indigo-500"
+                            title="Replay audio"
                           >
-                            <Volume2 className="w-3 h-3" />
+                            <Volume2 className="w-4 h-4" />
                           </button>
                         </div>
-                      </div>
-                    )}
-
-                    {exchange.speaker === "You" && (
-                      <div className="bg-pink-500 text-white px-4 py-2 rounded-2xl rounded-br-md shadow-sm max-w-[85%]">
-                        <p className="text-sm">{exchange.text}</p>
-                      </div>
-                    )}
-                  </div>
-                ))}
-
-                {/* Empty state */}
-                {displayedExchanges.length === 0 && (
-                  <div className="flex items-center justify-center h-full text-slate-400 dark:text-slate-600">
-                    <p className="text-sm">Conversation will appear here...</p>
-                  </div>
-                )}
-
-                {/* Invisible element to scroll to */}
-                <div ref={chatEndRef} />
-              </div>
-            </div>
-
-            {/* RIGHT COLUMN: Response Options */}
-            <div className="flex flex-col space-y-4">
-              <h3 className="text-sm font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wide">
-                Select your response
-              </h3>
-
-              {currentExchange?.isQuestion && !showFeedback && (
-                <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-                  {/* Question prompt */}
-                  <div className="w-full bg-pink-50 dark:bg-pink-900/20 rounded-xl p-3 mb-3 border border-pink-200 dark:border-pink-800">
-                    <p className="text-sm text-pink-700 dark:text-pink-300 text-center">
-                      <span className="font-semibold">Your turn: </span>
-                      {currentExchange.question}
-                    </p>
-                  </div>
-
-                  {/* Options */}
-                  <div className="w-full grid grid-cols-1 gap-2">
-                    {currentExchange.options.map((option, index) => {
-                      const isSelected = selectedOption === index;
-
-                      return (
+                      ) : (
                         <button
-                          key={index}
-                          onClick={() => handleOptionSelect(index)}
-                          className={cn(
-                            "group relative p-4 rounded-xl border-2 text-left font-medium text-base transition-all flex items-center gap-4 bg-white dark:bg-slate-800 shadow-sm",
-                            // Default state
-                            "border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 hover:border-slate-300",
-                            // Selected state
-                            isSelected &&
-                              "border-pink-500 bg-pink-50 dark:bg-pink-900/20 text-pink-700 dark:text-pink-300 shadow-md ring-1 ring-pink-500",
-                          )}
+                          onClick={() => handlePlayExchange(exchange.text)}
+                          className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-5 py-3 rounded-2xl rounded-tl-sm shadow-sm flex items-center gap-3 hover:bg-slate-50 dark:hover:bg-slate-750 transition-colors group"
                         >
-                          {/* Circle Indicator */}
-                          <div
-                            className={cn(
-                              "w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors flex-shrink-0",
-                              isSelected
-                                ? "border-pink-500 bg-pink-500 text-white"
-                                : "border-slate-300 dark:border-slate-500 text-transparent group-hover:border-slate-400",
-                            )}
-                          >
-                            <span className="text-[10px] font-bold">✓</span>
-                          </div>
-
-                          <div className="flex-1 flex items-center">
-                            {/* Waveform SVG */}
-                            <svg
-                              width="120"
-                              height="24"
-                              viewBox="0 0 120 40"
-                              className={cn(
-                                "transition-colors",
-                                isSelected
-                                  ? "text-pink-500"
-                                  : "text-slate-400 dark:text-slate-500 group-hover:text-slate-500 dark:group-hover:text-slate-400",
-                              )}
-                            >
-                              <rect
-                                x="10"
-                                y="15"
-                                width="3"
-                                height="10"
-                                fill="currentColor"
-                                rx="1.5"
+                          <Volume2 className="w-5 h-5 text-indigo-500 group-hover:scale-110 transition-transform" />
+                          <div className="flex gap-1 items-center">
+                            {[1, 2, 3, 4, 5].map((i) => (
+                              <div
+                                key={i}
+                                className={cn(
+                                  "w-1 rounded-full bg-slate-200 dark:bg-slate-700",
+                                  i % 2 === 0 ? "h-3" : "h-5",
+                                )}
                               />
-                              <rect
-                                x="16"
-                                y="10"
-                                width="3"
-                                height="20"
-                                fill="currentColor"
-                                rx="1.5"
-                              />
-                              <rect
-                                x="22"
-                                y="5"
-                                width="3"
-                                height="30"
-                                fill="currentColor"
-                                rx="1.5"
-                              />
-                              <rect
-                                x="28"
-                                y="12"
-                                width="3"
-                                height="16"
-                                fill="currentColor"
-                                rx="1.5"
-                              />
-                              <rect
-                                x="34"
-                                y="18"
-                                width="3"
-                                height="4"
-                                fill="currentColor"
-                                rx="1.5"
-                              />
-                              <rect
-                                x="40"
-                                y="8"
-                                width="3"
-                                height="24"
-                                fill="currentColor"
-                                rx="1.5"
-                              />
-                              <rect
-                                x="46"
-                                y="14"
-                                width="3"
-                                height="12"
-                                fill="currentColor"
-                                rx="1.5"
-                              />
-                              <rect
-                                x="52"
-                                y="11"
-                                width="3"
-                                height="18"
-                                fill="currentColor"
-                                rx="1.5"
-                              />
-                              <rect
-                                x="58"
-                                y="16"
-                                width="3"
-                                height="8"
-                                fill="currentColor"
-                                rx="1.5"
-                              />
-                              <rect
-                                x="64"
-                                y="13"
-                                width="3"
-                                height="14"
-                                fill="currentColor"
-                                rx="1.5"
-                              />
-                              <rect
-                                x="70"
-                                y="10"
-                                width="3"
-                                height="20"
-                                fill="currentColor"
-                                rx="1.5"
-                              />
-                              <rect
-                                x="76"
-                                y="15"
-                                width="3"
-                                height="10"
-                                fill="currentColor"
-                                rx="1.5"
-                              />
-                            </svg>
-                          </div>
-
-                          {/* Audio indicator */}
-                          <Volume2
-                            className={cn(
-                              "w-4 h-4 transition-colors",
-                              isSelected
-                                ? "text-pink-500"
-                                : "text-slate-300 group-hover:text-slate-400",
-                            )}
-                          />
+                            ))}
+                          </div>Screenshot from 2026-04-22 16-49-13
                         </button>
-                      );
-                    })}
+                      )}
+                    </div>
+                  )}
+
+                  {exchange.speaker === "You" && (
+                    <div className="flex justify-end">
+                      <div className="bg-indigo-600 text-white pl-5 pr-12 py-3 rounded-2xl rounded-br-sm shadow-sm relative inline-block text-left w-fit ">
+                        <span className="text-[15px] leading-relaxed break-words">
+                          {exchange.text}
+                        </span>
+                        <button
+                          onClick={() => handlePlayExchange(exchange.text)}
+                          className="absolute top-2 right-2 p-1.5 hover:bg-white/20 rounded-full transition-colors text-white/90"
+                          title="Replay audio"
+                        >
+                          <Volume2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )})}
+
+              {/* Pending User Bubble (before checking) */}
+              {selectedOption !== null && !showFeedback && (
+                <div className="flex justify-end animate-in fade-in slide-in-from-bottom-2 duration-300">
+                  <div className="bg-indigo-600 text-white px-5 py-3 rounded-2xl rounded-br-sm shadow-sm relative inline-block text-left w-fit max-w-[85%] opacity-90">
+                    {leftSideMode === "text" ? (
+                      <div className="flex items-center gap-3">
+                        <Volume2 className="w-5 h-5 text-white/80 shrink-0" />
+                        <span className="text-xs font-bold uppercase tracking-widest">
+                          Selected
+                        </span>
+                      </div>
+                    ) : (
+                      <span className="text-[15px] leading-relaxed">
+                        {currentExchange?.options[selectedOption]}
+                      </span>
+                    )}
                   </div>
                 </div>
               )}
-              {/* If waiting for other speaker, maybe show a "Thinking..." indicator or just wait for timeout */}
-              {currentExchange &&
-                !currentExchange.isQuestion &&
-                !showFeedback && (
-                  <div className="h-12 flex items-center justify-center text-slate-400 text-sm animate-pulse">
+
+              {/* Empty state */}
+              {displayedExchanges.length === 0 && (
+                <div className="flex flex-col items-center justify-center h-full text-slate-400 dark:text-slate-500 py-10 opacity-70">
+                  <p className="text-sm">Conversation will appear here...</p>
+                </div>
+              )}
+
+              {/* Invisible element to scroll to */}
+              <div ref={chatEndRef} />
+            </div>
+          </div>
+
+          {/* RIGHT: Objective + question + options */}
+          <div className="flex-1 min-h-0 flex flex-col bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm rounded-3xl border border-slate-200/60 dark:border-slate-700/60 shadow-sm overflow-y-auto">
+            {/* Context card */}
+            <div className="m-4 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 shadow-sm p-5 min-h-[6rem]">
+              <p className="text-xs font-bold border-b-2 border-gray-200 dark:border-slate-600 pb-1 uppercase tracking-widest text-slate-600 dark:text-slate-300 mb-2">
+                Context
+              </p>
+              <p className="text-sm leading-relaxed text-slate-700 dark:text-slate-300 font-medium">
+                {conversation?.context || conversation?.title}
+              </p>
+            </div>
+
+            {/* Question */}
+            {currentExchange?.isQuestion && !showFeedback && (
+              <div className="px-4 py-5 animate-in fade-in slide-in-from-bottom-4 duration-500 border-b border-slate-100 dark:border-slate-700/50 mb-2">
+                <h3 className="practice-reading-heading flex items-start gap-3 text-[15px] font-bold text-slate-800 dark:text-slate-200">
+                  <Languages className="w-5 h-5 text-orange-500 shrink-0 mt-0.5" />
+                  <span className="leading-relaxed">
+                    {currentExchange.question || "Select the best response"}
+                  </span>
+                </h3>
+              </div>
+            )}
+
+            {/* Options */}
+            {currentExchange?.isQuestion && !showFeedback && (
+              <div className="px-4 pb-6">
+                <PracticeOptions
+                  options={currentExchange.options}
+                selectedOption={selectedOption}
+                correctIndex={currentExchange.correctIndex}
+                showFeedback={showFeedback}
+                onSelect={handleOptionSelect}
+                {...(leftSideMode === "text"
+                  ? {
+                      renderLabel: () => (
+                        <div className="flex items-center gap-3 w-full py-0.5">
+                          <Volume2 className="w-5 h-5 text-indigo-500 shrink-0" />
+                          <span className="text-[15px] font-semibold text-slate-600 dark:text-slate-300 uppercase tracking-wider">
+                            Listen
+                          </span>
+                        </div>
+                      ),
+                    }
+                  : {})}
+                renderSuffix={() => null}
+                itemClassName="w-full bg-white dark:bg-slate-800 py-4 px-5 rounded-2xl text-left flex items-center gap-4 border border-slate-200 dark:border-slate-700 shadow-sm transition-colors group"
+                />
+              </div>
+            )}
+
+            {/* If waiting for other speaker */}
+            {currentExchange &&
+              !currentExchange.isQuestion &&
+              !showFeedback && (
+                <div className="h-24 flex flex-col items-center justify-center text-slate-400 dark:text-slate-500 opacity-80">
+                  <Volume2 className="w-6 h-6 animate-pulse mb-3" />
+                  <div className="text-sm font-medium tracking-wide">
                     Listening...
                   </div>
-                )}
-            </div>
+                </div>
+              )}
           </div>
         </div>
       </PracticeGameLayout>
@@ -515,6 +434,7 @@ export default function ListenInteractivePage() {
       {showFeedback && (
         <FeedbackBanner
           isCorrect={isCorrect}
+          feedbackTone={isCorrect ? "success" : "error"}
           correctAnswer={
             !isCorrect
               ? currentExchange.options[currentExchange.correctIndex]

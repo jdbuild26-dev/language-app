@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL || "https://language-api-mine.onrender.com";
 
@@ -2139,17 +2141,6 @@ const CSV_TRANSFORMERS = {
       timeLimitSeconds: parseInt(row["Time"] || row["timeLimitSeconds"] || "300", 10) || 300,
     },
   }),
-  highlight_word: (row) => ({
-    external_id: row.ExerciseID || `highlight_word_${Math.random()}`,
-    instruction_en: row.Instruction_EN || "",
-    instruction_fr: row.Instruction_FR || "",
-    level: row.Level || "",
-    content: {
-      passage: row["passage"] || row["sentence"] || "",
-      question: row["question"] || "",
-      eval_correctWord: row["eval_correctWord"] || "",
-    },
-  }),
 };
 
 export async function fetchVocabulary({
@@ -2159,11 +2150,18 @@ export async function fetchVocabulary({
   limit,
   learningLang,
   knownLang,
+}: {
+  level?: string;
+  category?: string;
+  subCategory?: string | string[];
+  limit?: string | number;
+  learningLang?: string;
+  knownLang?: string;
 } = {}) {
   const params = new URLSearchParams();
   if (level) params.append("level", level);
   if (category) params.append("category", category);
-  if (limit) params.append("limit", limit);
+  if (limit) params.append("limit", String(limit));
   if (learningLang) params.append("learning_lang", learningLang);
   if (knownLang) params.append("known_lang", knownLang);
   // Handle subCategory array
@@ -2189,11 +2187,21 @@ export async function fetchVocabulary({
  * Fetch words for a specific lesson, optionally filtered by CEFR level
  */
 export async function fetchLessonWords(
-  lessonId,
-  { level, wordsPerLesson = 10, learningLang, knownLang } = {},
+  lessonId: string,
+  {
+    level,
+    wordsPerLesson = 10,
+    learningLang,
+    knownLang,
+  }: {
+    level?: string;
+    wordsPerLesson?: number;
+    learningLang?: string;
+    knownLang?: string;
+  } = {},
 ) {
   const params = new URLSearchParams();
-  params.append("words_per_lesson", wordsPerLesson);
+  params.append("words_per_lesson", String(wordsPerLesson));
   if (level) params.append("level", level);
   if (learningLang) params.append("learning_lang", learningLang);
   if (knownLang) params.append("known_lang", knownLang);
@@ -2503,11 +2511,19 @@ export async function deleteRelationship(relationshipId, token) {
  * Fetch practice questions from a specific sheet or slug
  */
 export async function fetchPracticeQuestions(
-  sheetName,
-  { limit, learningLang, knownLang } = {},
+  sheetName: string,
+  {
+    limit,
+    learningLang,
+    knownLang,
+  }: {
+    limit?: string | number;
+    learningLang?: string;
+    knownLang?: string;
+  } = {},
 ) {
   const params = new URLSearchParams();
-  if (limit) params.append("limit", limit);
+  if (limit) params.append("limit", String(limit));
   if (learningLang) params.append("learning_lang", learningLang);
   if (knownLang) params.append("known_lang", knownLang);
 
@@ -2544,7 +2560,9 @@ export async function fetchPracticeQuestions(
                   ) {
                     try {
                       newRow[key] = JSON.parse(newRow[key]);
-                    } catch (e) {}
+                    } catch {
+                      // Keep original string when it is not valid JSON.
+                    }
                   }
                 }
                 return newRow;
@@ -2607,7 +2625,9 @@ export async function fetchPracticeQuestions(
                     ) {
                       try {
                         newRow[key] = JSON.parse(newRow[key]);
-                      } catch (e) {}
+                      } catch {
+                        // Keep original string when it is not valid JSON.
+                      }
                     }
                   }
                   return newRow;
@@ -2737,12 +2757,20 @@ export async function fetchLearningQueue({
   category,
   learningLang,
   knownLang,
+}: {
+  userId?: string;
+  dailyLimitReviews?: string | number;
+  dailyLimitNew?: string | number;
+  level?: string;
+  category?: string;
+  learningLang?: string;
+  knownLang?: string;
 } = {}) {
   const params = new URLSearchParams();
   if (userId) params.append("user_id", userId);
   if (dailyLimitReviews)
-    params.append("daily_limit_reviews", dailyLimitReviews);
-  if (dailyLimitNew) params.append("daily_limit_new", dailyLimitNew);
+    params.append("daily_limit_reviews", String(dailyLimitReviews));
+  if (dailyLimitNew) params.append("daily_limit_new", String(dailyLimitNew));
   if (level) params.append("level", level);
   if (category) params.append("category", category);
   if (learningLang) params.append("learning_lang", learningLang);
@@ -2768,6 +2796,9 @@ export async function fetchLearningQueue({
 export async function fetchCompletePassageData({
   learningLang,
   knownLang,
+}: {
+  learningLang?: string;
+  knownLang?: string;
 } = {}) {
   const params = new URLSearchParams();
   if (learningLang) params.append("learning_lang", learningLang);
@@ -2787,6 +2818,9 @@ export async function fetchCompletePassageData({
 export async function fetchSummaryCompletionData({
   learningLang,
   knownLang,
+}: {
+  learningLang?: string;
+  knownLang?: string;
 } = {}) {
   const params = new URLSearchParams();
   if (learningLang) params.append("learning_lang", learningLang);
@@ -2972,6 +3006,11 @@ export async function createClassAssignment(assignmentData, classId, token) {
  * Fetch available question type slugs for a given CEFR level and learning language.
  * Returns null if level is "all" (show everything) or if the request fails.
  */
+const LOCALLY_SUPPORTED_QUESTION_TYPES = [
+  "writing_conversation",
+  "speaking_conversation",
+];
+
 export async function fetchAvailableQuestionTypes(level, language) {
   if (!level || level === "all") return null;
   try {
@@ -2980,7 +3019,13 @@ export async function fetchAvailableQuestionTypes(level, language) {
     );
     if (!res.ok) return null;
     const data = await res.json();
-    return Array.isArray(data.slugs) ? data.slugs : null;
+    if (!Array.isArray(data.slugs)) return null;
+
+    // Keep branch-local exercise types visible until the backend
+    // availability endpoint is updated with the new slugs.
+    return Array.from(
+      new Set([...data.slugs, ...LOCALLY_SUPPORTED_QUESTION_TYPES]),
+    );
   } catch (err) {
     console.error("fetchAvailableQuestionTypes error:", err);
     return null;
@@ -3016,7 +3061,16 @@ export async function rateSrsCard({ vocabId, rating }, token) {
  * Fetch vocab IDs that are due for review for the current user.
  * Returns an array of vocabId strings.
  */
-export async function fetchSrsDue({ category, level } = {}, token) {
+export async function fetchSrsDue(
+  {
+    category,
+    level,
+  }: {
+    category?: string;
+    level?: string;
+  } = {},
+  token?: string,
+) {
   if (!token) return [];
   try {
     const params = new URLSearchParams();

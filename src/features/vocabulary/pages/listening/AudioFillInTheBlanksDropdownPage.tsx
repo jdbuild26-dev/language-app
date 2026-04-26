@@ -1,133 +1,94 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { Play, Loader2, Check, ChevronDown } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { Volume2, RotateCcw, Languages } from "lucide-react";
 import { useTextToSpeech } from "@/hooks/useTextToSpeech";
 import { cn } from "@/lib/utils";
 import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
 import { usePracticeExit } from "@/hooks/usePracticeExit";
 
+type AnswerOption = "True" | "False" | "Not Given";
+
 export default function AudioFillInTheBlanksDropdownPage() {
   const handleExit = usePracticeExit();
   const { speak, isSpeaking } = useTextToSpeech();
-  const [hasStarted, setHasStarted] = useState(false);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+  const [playingRecordingId, setPlayingRecordingId] = useState<number | null>(
+    null,
+  );
   const [isCompleted, setIsCompleted] = useState(false);
 
-  // Mock Data
-  const audioText =
-    "Bonjour à tous. Aujourd'hui nous allons parler de la technologie et de son impact sur notre vie quotidienne. Les smartphones sont devenus indispensables pour beaucoup de gens. Ils nous permettent de rester connectés avec nos amis et notre famille, mais ils peuvent aussi être une source de distraction. Il est important de trouver un équilibre.";
+  const passage =
+    "Les Français aiment le fromage. Il existe plus de 300 variétés de fromage en France. Le camembert et le brie sont parmi les plus populaires.";
+
+  const audioRecordings = [
+    { id: 1, label: "AUDIO 1", text: "Les Français aiment le fromage." },
+    {
+      id: 2,
+      label: "AUDIO 2",
+      text: "Il existe plus de 300 variétés de fromage en France.",
+    },
+    {
+      id: 3,
+      label: "AUDIO 3",
+      text: "Le camembert et le brie sont parmi les plus populaires.",
+    },
+    {
+      id: 4,
+      label: "AUDIO 4",
+      text: "Le camembert et le brie sont parmi les plus populaires.",
+    },
+  ];
 
   const questions = [
     {
       id: 1,
-      question: "De quoi allons-nous parler aujourd'hui ?",
-      before: "Aujourd'hui nous allons parler de",
-      answer: "la technologie",
-      options: [
-        { text: "la technologie", en: "technology" },
-        { text: "la cuisine", en: "cooking" },
-        { text: "le sport", en: "sports" },
-        { text: "la politique", en: "politics" },
-      ],
-      after: ".",
+      text: "Le camembert est un fromage français populaire.",
+      answer: "True" as AnswerOption,
     },
     {
       id: 2,
-      question: "Quel appareil est devenu indispensable ?",
-      before: "Les",
-      answer: "smartphones",
-      options: [
-        { text: "ordinateurs", en: "computers" },
-        { text: "tablettes", en: "tablets" },
-        { text: "smartphones", en: "smartphones" },
-        { text: "télévisions", en: "televisions" },
-      ],
-      after: "sont devenus indispensables.",
+      text: "Il existe exactement 300 variétés de fromage en France.",
+      answer: "False" as AnswerOption,
     },
     {
       id: 3,
-      question: "Que permettent-ils de faire ?",
-      before: "Ils nous permettent de rester",
-      answer: "connectés",
-      options: [
-        { text: "isolés", en: "isolated" },
-        { text: "connectés", en: "connected" },
-        { text: "occupés", en: "busy" },
-        { text: "informés", en: "informed" },
-      ],
-      after: "avec nos amis.",
+      text: "Le brie est parmi les fromages les plus populaires.",
+      answer: "True" as AnswerOption,
     },
     {
       id: 4,
-      question: "Quelle peut être une conséquence négative ?",
-      before: "Ils peuvent aussi être une source de",
-      answer: "distraction",
-      options: [
-        { text: "joie", en: "joy" },
-        { text: "stress", en: "stress" },
-        { text: "distraction", en: "distraction" },
-        { text: "revenu", en: "income" },
-      ],
-      after: ".",
+      text: "Les Français n'aiment pas le fromage.",
+      answer: "False" as AnswerOption,
     },
     {
       id: 5,
-      question: "Que faut-il faire ?",
-      before: "Il est important de trouver un",
-      answer: "équilibre",
-      options: [
-        { text: "travail", en: "work" },
-        { text: "équilibre", en: "balance" },
-        { text: "passe-temps", en: "hobby" },
-        { text: "ami", en: "friend" },
-      ],
-      after: ".",
-    },
-    {
-      id: 6,
-      question: "Que sont les smartphones pour beaucoup de gens ?",
-      before: "Les smartphones sont",
-      answer: "indispensables",
-      options: [
-        { text: "inutiles", en: "useless" },
-        { text: "chers", en: "expensive" },
-        { text: "indispensables", en: "indispensable" },
-        { text: "dangereux", en: "dangerous" },
-      ],
-      after: "pour beaucoup de gens.",
+      text: "Le texte mentionne la fabrication du camembert.",
+      answer: "Not Given" as AnswerOption,
     },
   ];
 
-  const [inputs, setInputs] = useState({});
+  const [answers, setAnswers] = useState<Record<number, AnswerOption | undefined>>({});
   const [score, setScore] = useState(0);
 
-  const handlePlay = () => {
-    if (isPlaying) return;
-
-    setHasStarted(true);
-    setIsPlaying(true);
-    speak(audioText, "fr-FR", 0.9);
+  const playRecording = (id: number, text: string, rate = 0.9) => {
+    setPlayingRecordingId(id);
+    speak(text, "fr-FR", rate);
   };
 
-  // Monitor isSpeaking to detect end of playback
   useEffect(() => {
-    if (hasStarted && isPlaying && !isSpeaking) {
-      setIsPlaying(false);
+    if (!isSpeaking) {
+      setPlayingRecordingId(null);
     }
-  }, [isSpeaking, hasStarted, isPlaying]);
+  }, [isSpeaking]);
 
-  const handleChange = (id, value) => {
-    setInputs((prev) => ({ ...prev, [id]: value }));
+  const handleAnswerChange = (questionId: number, value: AnswerOption) => {
+    setAnswers((prev) => ({ ...prev, [questionId]: value }));
   };
 
   const handleSubmit = () => {
-    // Basic scoring
     let correctCount = 0;
     questions.forEach((q) => {
-      if (inputs[q.id] === q.answer) {
+      if (answers[q.id] === q.answer) {
         correctCount++;
       }
     });
@@ -135,17 +96,15 @@ export default function AudioFillInTheBlanksDropdownPage() {
     setIsCompleted(true);
   };
 
-  const progress =
-    questions.length > 0
-      ? ((currentQuestionIndex + 1) / questions.length) * 100
-      : 0;
+  const progress = (1 / questions.length) * 100;
+  const isSubmitEnabled = Object.keys(answers).length === questions.length;
 
   return (
     <PracticeGameLayout
-      questionTypeFr="Remplir les blancs (Liste déroulante)"
-      questionTypeEn="Audio Fill in the Blanks (Dropdown)"
-      instructionFr="Écoutez l'audio et sélectionnez la bonne réponse"
-      instructionEn="Listen to the audio and select the correct answer"
+      questionTypeFr="L'affirmation est-elle vraie, fausse, ou non mentionnée?"
+      questionTypeEn="Is the statement true, false, or not given?"
+      instructionFr="L'affirmation est-elle vraie, fausse, ou non mentionnée?"
+      instructionEn="Listen and choose true, false, or not given"
       progress={progress}
       isGameOver={isCompleted}
       score={score}
@@ -153,146 +112,115 @@ export default function AudioFillInTheBlanksDropdownPage() {
       onExit={handleExit}
       onNext={handleSubmit}
       onRestart={() => window.location.reload()}
-      isSubmitEnabled={Object.keys(inputs).length === questions.length}
-      showSubmitButton={hasStarted}
+      isSubmitEnabled={isSubmitEnabled}
+      showSubmitButton={true}
       submitLabel="CHECK"
       timerValue=""
     >
-      <div className="flex flex-col items-center w-full max-w-4xl mx-auto px-4 space-y-6">
-        {/* Sticky Audio Player */}
-        <div className="sticky top-0 z-40 bg-white/95 dark:bg-slate-950/95 backdrop-blur-md w-full -mx-4 px-4 py-4 border-b border-slate-200/50 dark:border-slate-800/50 shadow-sm">
-          <div className="max-w-2xl mx-auto">
-            <div className="bg-slate-100 dark:bg-slate-900 rounded-2xl p-6 border border-slate-200 dark:border-slate-800 flex items-center gap-6 shadow-inner">
-              <button
-                onClick={handlePlay}
-                disabled={isPlaying}
-                className={cn(
-                  "w-16 h-16 rounded-full flex items-center justify-center flex-shrink-0 transition-all shadow-lg hover:shadow-xl",
-                  isPlaying
-                    ? "bg-slate-200 dark:bg-slate-800 cursor-not-allowed opacity-80"
-                    : "bg-blue-600 hover:bg-blue-500 active:scale-95 text-white",
-                )}
-              >
-                {isPlaying ? (
-                  <div className="flex gap-1 h-5 items-center">
-                    <span className="w-1 bg-blue-500 h-full animate-pulse" />
-                    <span
-                      className="w-1 bg-blue-500 h-3/4 animate-pulse"
-                      style={{ animationDelay: "0.1s" }}
-                    />
-                    <span
-                      className="w-1 bg-blue-500 h-1/2 animate-pulse"
-                      style={{ animationDelay: "0.2s" }}
-                    />
-                  </div>
-                ) : (
-                  <Play className="w-7 h-7 ml-1" />
-                )}
-              </button>
+      <div className="flex flex-col flex-1 min-h-0 w-full p-3 sm:p-4 md:p-5">
+        <div className="flex flex-col flex-1 min-h-0 gap-4 md:grid md:grid-cols-2 md:gap-5 md:overflow-hidden md:h-full">
+          <div className="w-full md:min-h-0 rounded-xl border border-slate-200 bg-white dark:bg-slate-950 dark:border-slate-800 p-4 flex flex-col h-full overflow-hidden">
+            <h3 className="text-xs tracking-widest font-semibold text-slate-400 mb-4">
+              AUDIO RECORDINGS
+            </h3>
 
-              <div className="flex-1 space-y-2">
-                <p className="text-sm font-medium text-slate-500 dark:text-slate-400">
-                  {isPlaying
-                    ? "Playing audio..."
-                    : hasStarted
-                      ? "Audio complete - Click to replay"
-                      : "Tap play to start"}
-                </p>
-                <div className="h-2 w-full bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
-                  {isPlaying && (
-                    <div className="h-full bg-blue-500 w-full animate-pulse" />
-                  )}
-                  {!isPlaying && hasStarted && (
-                    <div className="h-full bg-blue-500 w-full" />
-                  )}
-                </div>
-              </div>
-            </div>
+            <div className="space-y-3 flex-1 min-h-0 overflow-y-auto pr-1 custom-scrollbar">
+              {audioRecordings.map((recording) => {
+                const isThisPlaying = isSpeaking && playingRecordingId === recording.id;
 
-            <p className="mt-4 text-sm text-slate-500 dark:text-slate-400 text-center">
-              {!hasStarted
-                ? "Listen to the scenario carefully and answer the questions below."
-                : "You can replay the audio as many times as needed."}
-            </p>
-          </div>
-        </div>
+                return (
+                  <div
+                    key={recording.id}
+                    className="rounded-2xl border border-slate-200 bg-slate-50 dark:bg-slate-900 dark:border-slate-700 p-4"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <p className="text-xs tracking-[0.2em] font-semibold text-blue-600 mb-2">
+                          {recording.label}
+                        </p>
+                        <p className="text-[20px] md:text-[22px] leading-[1.35] font-medium text-slate-700 dark:text-slate-200">
+                          {recording.text}
+                        </p>
+                      </div>
 
-        {/* Questions Area */}
-        <div className="w-full space-y-6 pb-8">
-          {questions.map((q, index) => {
-            const userAnswer = inputs[q.id];
-            const isCorrect = isCompleted && userAnswer === q.answer;
-            const isWrong = isCompleted && userAnswer !== q.answer;
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => playRecording(recording.id, recording.text, 0.9)}
+                          className={cn(
+                            "w-9 h-9 rounded-full border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 flex items-center justify-center transition-colors",
+                            isThisPlaying
+                              ? "text-blue-600"
+                              : "text-slate-400 hover:text-slate-600",
+                          )}
+                        >
+                          <Volume2 className={cn("w-4 h-4", isThisPlaying && "animate-pulse")} />
+                        </button>
 
-            return (
-              <div
-                key={q.id}
-                className={cn(
-                  "bg-white dark:bg-slate-950 rounded-xl p-6 shadow-sm border border-slate-200 dark:border-slate-800 transition-all duration-500",
-                  hasStarted ? "opacity-100" : "opacity-50 pointer-events-none",
-                  isCompleted && isWrong ? "border-red-200 bg-red-50/50" : "",
-                  isCompleted && isCorrect
-                    ? "border-green-200 bg-green-50/50"
-                    : "",
-                )}
-              >
-                <h3 className="font-medium text-slate-900 dark:text-white mb-4 flex items-start gap-3">
-                  <span className="flex-shrink-0 w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center text-sm font-bold">
-                    {index + 1}
-                  </span>
-                  {q.question}
-                </h3>
-
-                <div className="flex flex-wrap items-baseline gap-2 text-lg leading-loose text-slate-700 dark:text-slate-300 pl-9">
-                  <span>{q.before}</span>
-                  <div className="relative inline-block">
-                    <select
-                      value={inputs[q.id] || ""}
-                      onChange={(e) => handleChange(q.id, e.target.value)}
-                      disabled={!hasStarted || isCompleted}
-                      className={cn(
-                        "appearance-none border-b-2 bg-transparent px-8 py-0.5 min-w-[160px] font-medium focus:outline-none text-center transition-colors cursor-pointer",
-                        !userAnswer
-                          ? "border-slate-300 dark:border-slate-700 text-slate-500"
-                          : "border-blue-300 text-blue-600 dark:text-blue-400",
-                        isCompleted && isCorrect
-                          ? "border-green-500 text-green-600"
-                          : "",
-                        isCompleted && isWrong
-                          ? "border-red-500 text-red-600"
-                          : "",
-                      )}
-                    >
-                      <option value="" disabled>
-                        Select...
-                      </option>
-                      {q.options.map((option) => (
-                        <option key={option.text} value={option.text}>
-                          {option.text} ({option.en})
-                        </option>
-                      ))}
-                    </select>
-                    <ChevronDown className="w-4 h-4 absolute right-1 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
-                  </div>
-                  <span>{q.after}</span>
-                  {isCompleted && isWrong && (
-                    <div className="w-full mt-2 text-sm text-green-600 font-medium animate-in fade-in slide-in-from-top-1">
-                      Correct answer: {q.answer}
+                        <button
+                          type="button"
+                          onClick={() => playRecording(recording.id, recording.text, 0.75)}
+                          className="w-9 h-9 rounded-full border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 flex items-center justify-center text-slate-400 hover:text-slate-600 transition-colors"
+                        >
+                          <RotateCcw className="w-4 h-4" />
+                        </button>
+                      </div>
                     </div>
-                  )}
-                </div>
-              </div>
-            );
-          })}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
 
-          {!hasStarted && (
-            <div className="text-center p-8 bg-blue-50 dark:bg-blue-950/20 rounded-xl border-2 border-dashed border-blue-200 dark:border-blue-800">
-              <p className="text-blue-600 dark:text-blue-400 font-medium">
-                Click the play button above to start the audio and unlock the
-                questions
+          <div className="w-full md:min-h-0 rounded-xl border border-slate-200 bg-white dark:bg-slate-950 dark:border-slate-800 p-4 flex flex-col h-full overflow-hidden">
+            <div className="flex items-start gap-2 mb-4 shrink-0">
+              <Languages className="w-4 h-4 mt-1 text-orange-500 shrink-0" />
+              <p className="text-[20px] md:text-[22px] leading-[1.35] font-semibold text-slate-800 dark:text-slate-100">
+                {passage}
               </p>
             </div>
-          )}
+
+            <div className="space-y-3 flex-1 min-h-0 overflow-y-auto pr-1 custom-scrollbar">
+              {questions.map((question, index) => {
+                const selected = answers[question.id];
+                const isCorrect = isCompleted && selected === question.answer;
+                const isWrong = isCompleted && selected && selected !== question.answer;
+
+                return (
+                  <div
+                    key={question.id}
+                    className={cn(
+                      "rounded-2xl border border-slate-200 bg-slate-50 dark:bg-slate-900 dark:border-slate-700 p-4",
+                      isCompleted && isCorrect && "border-emerald-300 bg-emerald-50 dark:bg-emerald-950/30",
+                      isCompleted && isWrong && "border-rose-300 bg-rose-50 dark:bg-rose-950/30",
+                    )}
+                  >
+                    <p className="text-[20px] md:text-[22px] leading-[1.35] font-medium text-slate-700 dark:text-slate-200 mb-3">
+                      <span className="text-blue-600 font-semibold mr-2">{index + 1}.</span>
+                      {question.text}
+                    </p>
+
+                    <div className="flex flex-wrap gap-5 pl-8">
+                      {(["True", "False", "Not Given"] as AnswerOption[]).map((option) => (
+                        <label key={option} className="inline-flex items-center gap-2 cursor-pointer text-[18px] leading-7 text-slate-500 dark:text-slate-300">
+                          <input
+                            type="radio"
+                            name={`question-${question.id}`}
+                            value={option}
+                            checked={selected === option}
+                            onChange={() => handleAnswerChange(question.id, option)}
+                            disabled={isCompleted}
+                            className="h-4 w-4 accent-slate-500"
+                          />
+                          <span>{option}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
         </div>
       </div>
     </PracticeGameLayout>
