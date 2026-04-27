@@ -1,9 +1,10 @@
 "use client";
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { usePracticeExit } from "@/hooks/usePracticeExit";
 import { useExerciseTimer } from "@/hooks/useExerciseTimer";
-import { MessageSquare, User, MessageCircle, Volume2 } from "lucide-react";
+import { Languages, User, Volume2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
 import { useTextToSpeech } from "@/hooks/useTextToSpeech";
@@ -18,7 +19,9 @@ export default function WritingConversationPage() {
   const { speak } = useTextToSpeech();
   const chatEndRef = useRef<HTMLDivElement>(null);
   const speakRef = useRef(speak);
-  useEffect(() => { speakRef.current = speak; }, [speak]);
+  useEffect(() => {
+    speakRef.current = speak;
+  }, [speak]);
 
   const [conversation, setConversation] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -32,7 +35,8 @@ export default function WritingConversationPage() {
   const [finalAnalysis, setFinalAnalysis] = useState<any>(null);
   const [hasPlayedAudio, setHasPlayedAudio] = useState(false);
 
-  const { isSubmitting, evaluate, analyzeConversation } = useWritingEvaluation();
+  const { isSubmitting, evaluate, analyzeConversation } =
+    useWritingEvaluation();
 
   const currentExchange = conversation?.exchanges?.[currentTurnIndex];
   const totalExchanges = conversation?.exchanges?.length || 0;
@@ -42,7 +46,8 @@ export default function WritingConversationPage() {
     mode: "timer",
     onExpire: () => {
       if (!isCompleted && !hasAnswered && currentExchange) {
-        if (currentTurnIndex < totalExchanges - 1) setCurrentTurnIndex(p => p + 1);
+        if (currentTurnIndex < totalExchanges - 1)
+          setCurrentTurnIndex((p) => p + 1);
         else setIsCompleted(true);
       }
     },
@@ -53,12 +58,17 @@ export default function WritingConversationPage() {
   useEffect(() => {
     const load = async () => {
       try {
-        const data = await loadMockCSV("practice/writing/writing_conversation.csv");
+        const data = await loadMockCSV(
+          "practice/writing/writing_conversation.csv",
+        );
         const raw = Array.isArray(data) ? data : [];
         const items = raw.filter((item: any) => {
           const exchanges = item.content?.exchanges || item.exchanges;
-          return Array.isArray(exchanges) && exchanges.length > 0 &&
-            (item.Category === "main" || !item.Category);
+          return (
+            Array.isArray(exchanges) &&
+            exchanges.length > 0 &&
+            (item.Category === "main" || !item.Category)
+          );
         });
         if (items.length > 0) {
           const pick = items[Math.floor(Math.random() * items.length)];
@@ -82,7 +92,11 @@ export default function WritingConversationPage() {
   useEffect(() => {
     if (!currentExchange || isCompleted || hasPlayedAudio) return;
     if (currentExchange.speakerAudio) {
-      try { speakRef.current(currentExchange.speakerAudio, "fr-FR"); } catch {}
+      try {
+        speakRef.current(currentExchange.speakerAudio, "fr-FR");
+      } catch (error) {
+        console.warn("TTS playback failed:", error);
+      }
       setHasPlayedAudio(true);
     }
   }, [currentTurnIndex, currentExchange, isCompleted, hasPlayedAudio]);
@@ -97,7 +111,12 @@ export default function WritingConversationPage() {
 
   // Final analysis
   useEffect(() => {
-    if (isCompleted && conversationHistory.length > 0 && !finalAnalysis && !isAnalyzing) {
+    if (
+      isCompleted &&
+      conversationHistory.length > 0 &&
+      !finalAnalysis &&
+      !isAnalyzing
+    ) {
       setIsAnalyzing(true);
       analyzeConversation(conversationHistory).then((res: any) => {
         setFinalAnalysis({
@@ -105,7 +124,8 @@ export default function WritingConversationPage() {
           cefr_level: res.cefr_level || "A1",
           vocab_diversity: res.vocab_diversity ?? 50,
           grammar_diversity: res.grammar_diversity ?? 50,
-          executive_summary: res.overall_feedback || res.executive_summary || "",
+          executive_summary:
+            res.overall_feedback || res.executive_summary || "",
           improved_version: res.improved_version || "",
           detailed_tweaks: (res.key_mistakes || []).map((m: any) => ({
             original: m.mistake || "",
@@ -113,81 +133,121 @@ export default function WritingConversationPage() {
             explanation: m.explanation || "",
           })),
           professional_checks: res.professional_checks || {
-            register: "informal", tone_appropriatness: true, politeness: true, task_fulfillment: true,
+            register: "informal",
+            tone_appropriatness: true,
+            politeness: true,
+            task_fulfillment: true,
           },
           parameters: res.parameters,
         });
         setIsAnalyzing(false);
       });
     }
-  }, [isCompleted, conversationHistory, finalAnalysis, isAnalyzing, analyzeConversation]);
+  }, [
+    isCompleted,
+    conversationHistory,
+    finalAnalysis,
+    isAnalyzing,
+    analyzeConversation,
+  ]);
 
   // Auto-scroll
-  useEffect(() => { chatEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [conversationHistory]);
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [conversationHistory]);
 
-  const getWordCount = (t: string) => t.trim().split(/\s+/).filter(w => w.length > 0).length;
+  const getWordCount = (t: string) =>
+    t
+      .trim()
+      .split(/\s+/)
+      .filter((w) => w.length > 0).length;
 
-  const handleSubmit = useCallback(async (e?: React.FormEvent) => {
-    if (e) e.preventDefault();
-    if (!currentExchange || !userInput.trim() || isSubmitting || hasAnswered) return;
+  const handleSubmit = useCallback(
+    async (e?: React.FormEvent) => {
+      if (e) e.preventDefault();
+      if (!currentExchange || !userInput.trim() || isSubmitting || hasAnswered)
+        return;
 
-    const submitted = userInput.trim();
-    setUserInput("");
-    setHasAnswered(true);
+      const submitted = userInput.trim();
+      setUserInput("");
+      setHasAnswered(true);
 
-    setConversationHistory(prev => [...prev, {
-      speakerText: currentExchange.speakerText,
-      userText: submitted,
-      isEvaluating: true,
-    }]);
+      setConversationHistory((prev) => [
+        ...prev,
+        {
+          speakerText: currentExchange.speakerText,
+          userText: submitted,
+          isEvaluating: true,
+        },
+      ]);
 
-    try {
-      const result = await evaluate({
-        task_type: "interactive",
-        user_text: submitted,
-        topic: conversation.scenario,
-        reference: currentExchange.sampleAnswer || "",
-        context: `Prompt: ${currentExchange.prompt || currentExchange.speakerText}`,
-      });
-
-      if (result) {
-        if ((result.score ?? result.overall_score ?? 0) >= 70) setScore(p => p + 1);
-        setConversationHistory(prev => {
-          const updated = [...prev];
-          const last = updated[updated.length - 1];
-          last.isEvaluating = false;
-          last.wasCorrect = (result.score ?? result.overall_score ?? 0) >= 70;
-          last.evaluation = result;
-          return updated;
+      try {
+        const result = await evaluate({
+          task_type: "interactive",
+          user_text: submitted,
+          topic: conversation.scenario,
+          reference: currentExchange.sampleAnswer || "",
+          context: `Prompt: ${currentExchange.prompt || currentExchange.speakerText}`,
         });
-        setTimeout(() => {
-          if (currentTurnIndex < totalExchanges - 1) setCurrentTurnIndex(p => p + 1);
-          else setIsCompleted(true);
-        }, 2500);
-      } else {
+
+        if (result) {
+          if ((result.score ?? result.overall_score ?? 0) >= 70)
+            setScore((p) => p + 1);
+          setConversationHistory((prev) => {
+            const updated = [...prev];
+            const last = updated[updated.length - 1];
+            last.isEvaluating = false;
+            last.wasCorrect = (result.score ?? result.overall_score ?? 0) >= 70;
+            last.evaluation = result;
+            return updated;
+          });
+          setTimeout(() => {
+            if (currentTurnIndex < totalExchanges - 1)
+              setCurrentTurnIndex((p) => p + 1);
+            else setIsCompleted(true);
+          }, 2500);
+        } else {
+          setHasAnswered(false);
+          setConversationHistory((prev) => prev.slice(0, -1));
+        }
+      } catch {
         setHasAnswered(false);
-        setConversationHistory(prev => prev.slice(0, -1));
+        setConversationHistory((prev) => prev.slice(0, -1));
       }
-    } catch {
-      setHasAnswered(false);
-      setConversationHistory(prev => prev.slice(0, -1));
-    }
-  }, [currentExchange, userInput, isSubmitting, hasAnswered, evaluate, conversation, currentTurnIndex, totalExchanges]);
-
-  if (isLoading) return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-900">
-      <Loader2 className="animate-spin text-emerald-500 w-8 h-8" />
-    </div>
+    },
+    [
+      currentExchange,
+      userInput,
+      isSubmitting,
+      hasAnswered,
+      evaluate,
+      conversation,
+      currentTurnIndex,
+      totalExchanges,
+    ],
   );
 
-  if (!conversation) return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-slate-50 dark:bg-slate-900">
-      <p className="text-xl text-slate-600 dark:text-slate-400">No content available.</p>
-      <Button onClick={handleExit} variant="outline" className="mt-4">Back</Button>
-    </div>
-  );
+  if (isLoading)
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-900">
+        <Loader2 className="animate-spin text-emerald-500 w-8 h-8" />
+      </div>
+    );
 
-  const progress = totalExchanges > 0 ? ((currentTurnIndex + 1) / totalExchanges) * 100 : 0;
+  if (!conversation)
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen bg-slate-50 dark:bg-slate-900">
+        <p className="text-xl text-slate-600 dark:text-slate-400">
+          No content available.
+        </p>
+        <Button onClick={handleExit} variant="outline" className="mt-4">
+          Back
+        </Button>
+      </div>
+    );
+
+  const progress =
+    totalExchanges > 0 ? ((currentTurnIndex + 1) / totalExchanges) * 100 : 0;
 
   return (
     <>
@@ -202,165 +262,196 @@ export default function WritingConversationPage() {
         onExit={handleExit}
         onNext={handleSubmit}
         onRestart={() => window.location.reload()}
-        isSubmitEnabled={userInput.trim().length >= 2 && !hasAnswered && !!currentExchange}
+        isSubmitEnabled={
+          userInput.trim().length >= 2 && !hasAnswered && !!currentExchange
+        }
         showSubmitButton={!!currentExchange && !hasAnswered}
         submitLabel="Submit"
         timerValue={timerString}
       >
-        <div className="flex flex-col items-center w-full max-w-6xl mx-auto px-4 py-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
-
-            {/* LEFT: Conversation history */}
-            <div className="flex flex-col space-y-4">
-              {/* Context card */}
-              <div className="bg-white dark:bg-slate-800 p-4 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700">
-                <div className="flex items-center gap-2 mb-2">
-                  <MessageSquare className="w-4 h-4 text-emerald-500" />
-                  <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-200">Context</h3>
-                </div>
-                <p className="text-sm font-medium text-slate-700 dark:text-slate-300">{conversation.title}</p>
-                {conversation.scenario && (
-                  <p className="text-xs text-slate-500 mt-2 border-t pt-2 border-slate-100 dark:border-slate-700">
-                    {conversation.scenario}
-                  </p>
-                )}
-              </div>
-
-              <h3 className="text-sm font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wide">
+        <div className="practice-reading-page-shell flex flex-col md:flex-row gap-3 p-3 mx-auto overflow-hidden flex-1 min-h-0">
+          <div className="flex-1 min-h-0 flex flex-col bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm rounded-3xl border border-slate-200/60 dark:border-slate-700/60 shadow-sm overflow-hidden">
+            <div className="px-5 py-3 border-b-[2px] border-slate-100 dark:border-slate-700 flex justify-between items-center">
+              <span className="text-xs font-bold uppercase tracking-widest text-slate-600 dark:text-slate-300">
                 Conversation
-              </h3>
-
-              <div className="bg-slate-50 dark:bg-slate-900 rounded-2xl p-4 min-h-[400px] max-h-[500px] overflow-y-auto space-y-4">
-                {conversationHistory.map((turn, i) => (
-                  <div key={i} className="space-y-3">
-                    {/* Bot message */}
-                    {turn.speakerText && (
-                      <div className="flex justify-start">
-                        <div className="flex items-start gap-2 max-w-[85%]">
-                          <div className="w-8 h-8 rounded-full bg-emerald-100 dark:bg-emerald-900 flex items-center justify-center flex-shrink-0 mt-1">
-                            <User className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                          </div>
-                          <div className="bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 px-4 py-2 rounded-2xl rounded-tl-md shadow-sm">
-                            <p className="text-sm">{turn.speakerText}</p>
-                          </div>
-                        </div>
+              </span>
+            </div>
+            <div className="flex-1 min-h-0 overflow-y-auto scrollbar-hide-until-hover p-4 space-y-4">
+              {conversationHistory.map((turn, i) => (
+                <div key={i} className="space-y-3">
+                  {turn.speakerText && (
+                    <div className="flex items-start gap-2 max-w-[85%]">
+                      <div className="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center shrink-0 mt-1">
+                        <User className="w-4 h-4 text-slate-500 dark:text-slate-300" />
                       </div>
-                    )}
-                    {/* User response + inline eval */}
-                    {turn.userText && (
-                      <div className="flex flex-col items-end gap-1">
-                        <div className="bg-emerald-500 text-white px-4 py-2 rounded-2xl rounded-br-md shadow-sm max-w-[85%]">
-                          <p className="text-sm">{turn.userText}</p>
+                      <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 pl-4 pr-11 py-3 rounded-2xl rounded-tl-sm shadow-sm text-slate-700 dark:text-slate-200 relative inline-block text-left w-fit max-w-[85%]">
+                        <span className="text-[15px] leading-relaxed break-words">
+                          {turn.speakerText}
+                        </span>
+                        <button
+                          onClick={() => speak(turn.speakerText, "fr-FR")}
+                          className="absolute top-2 right-2 p-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-full transition-colors text-emerald-500"
+                          title="Replay audio"
+                          type="button"
+                        >
+                          <Volume2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                  {turn.userText && (
+                    <div className="flex flex-col items-end gap-1">
+                      <div className="bg-emerald-600 text-white pl-5 pr-12 py-3 rounded-2xl rounded-br-sm shadow-sm relative inline-block text-left w-fit max-w-[85%]">
+                        <p className="text-[15px] leading-relaxed break-words">
+                          {turn.userText}
+                        </p>
+                        <button
+                          onClick={() => speak(turn.userText, "fr-FR")}
+                          className="absolute top-2 right-2 p-1.5 hover:bg-white/20 rounded-full transition-colors text-white/90"
+                          title="Replay audio"
+                          type="button"
+                        >
+                          <Volume2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                      {turn.isEvaluating && (
+                        <div className="flex items-center gap-2 text-xs text-slate-400 italic mr-2 mt-1">
+                          <Loader2 className="w-3 h-3 animate-spin" />{" "}
+                          Evaluating...
                         </div>
-                        {turn.isEvaluating && (
-                          <div className="flex items-center gap-2 text-xs text-slate-400 italic mr-2 mt-1">
-                            <Loader2 className="w-3 h-3 animate-spin" /> Evaluating...
-                          </div>
-                        )}
-                        {turn.evaluation && (
-                          <div className={cn(
+                      )}
+                      {turn.evaluation && (
+                        <div
+                          className={cn(
                             "max-w-[85%] px-4 py-3 rounded-2xl rounded-br-md shadow-sm text-sm border mt-1",
                             turn.wasCorrect
                               ? "bg-emerald-50 dark:bg-emerald-900/20 text-emerald-800 dark:text-emerald-200 border-emerald-200 dark:border-emerald-800/50"
-                              : "bg-amber-50 dark:bg-amber-900/20 text-amber-800 dark:text-amber-200 border-amber-200 dark:border-amber-800/50"
-                          )}>
-                            <p className="font-semibold mb-1 text-xs uppercase tracking-wider opacity-80">
-                              {turn.wasCorrect ? "Great job!" : "Keep going!"}
-                            </p>
-                            <p className="text-sm mb-2 opacity-90">{turn.evaluation.feedback || turn.evaluation.executive_summary}</p>
-                            {turn.evaluation.improved_version && (
-                              <div className="bg-white/50 dark:bg-black/20 p-2 rounded-lg mt-2">
-                                <p className="text-xs font-semibold mb-1 opacity-80">Better way to say it:</p>
-                                <p className="text-sm italic">{turn.evaluation.improved_version}</p>
-                              </div>
-                            )}
-                          </div>
-                        )}
+                              : "bg-amber-50 dark:bg-amber-900/20 text-amber-800 dark:text-amber-200 border-amber-200 dark:border-amber-800/50",
+                          )}
+                        >
+                          <p className="font-semibold mb-1 text-xs uppercase tracking-wider opacity-80">
+                            {turn.wasCorrect ? "Great job!" : "Keep going!"}
+                          </p>
+                          <p className="text-sm mb-2 opacity-90">
+                            {turn.evaluation.feedback ||
+                              turn.evaluation.executive_summary}
+                          </p>
+                          {turn.evaluation.improved_version && (
+                            <div className="bg-white/50 dark:bg-black/20 p-2 rounded-lg mt-2">
+                              <p className="text-xs font-semibold mb-1 opacity-80">
+                                Better way to say it:
+                              </p>
+                              <p className="text-sm italic">
+                                {turn.evaluation.improved_version}
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              ))}
+
+              {!hasAnswered && currentExchange && (
+                <div className="flex items-start gap-2 max-w-[85%]">
+                  <div className="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center shrink-0 mt-1">
+                    <User className="w-4 h-4 text-slate-500 dark:text-slate-300" />
+                  </div>
+                  <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 pl-4 pr-11 py-3 rounded-2xl rounded-tl-sm shadow-sm text-slate-700 dark:text-slate-200 relative inline-block text-left w-fit max-w-[85%]">
+                    <span className="text-[15px] leading-relaxed break-words">
+                      {currentExchange.speakerText}
+                    </span>
+                    <button
+                      onClick={() =>
+                        speak(
+                          currentExchange.speakerAudio ||
+                            currentExchange.speakerText,
+                          "fr-FR",
+                        )
+                      }
+                      className="absolute top-2 right-2 p-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-full transition-colors text-emerald-500"
+                      title="Replay audio"
+                      type="button"
+                    >
+                      <Volume2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {conversationHistory.length === 0 && hasAnswered === false && (
+                <div className="flex flex-col items-center justify-center h-full text-slate-400 dark:text-slate-500 py-10 opacity-70">
+                  <p className="text-sm">Conversation will appear here...</p>
+                </div>
+              )}
+              <div ref={chatEndRef} />
+            </div>
+          </div>
+
+          <div className="flex-1 min-h-0 flex flex-col bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm rounded-3xl border border-slate-200/60 dark:border-slate-700/60 shadow-sm overflow-y-auto">
+            <div className="m-4 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 shadow-sm p-5 min-h-[6rem]">
+              <p className="text-xs font-bold border-b-2 border-gray-200 dark:border-slate-600 pb-1 uppercase tracking-widest text-slate-600 dark:text-slate-300 mb-2">
+                Context
+              </p>
+              <p className="text-sm leading-relaxed text-slate-700 dark:text-slate-300">
+                {conversation?.scenario || conversation?.title}
+              </p>
+            </div>
+
+            {currentExchange && (
+              <div className="px-4 py-5 animate-in fade-in slide-in-from-bottom-4 duration-500 border-b border-slate-100 dark:border-slate-700/50 mb-2">
+                <h3 className="practice-reading-heading flex items-start gap-3 text-[15px] font-bold text-slate-800 dark:text-slate-200">
+                  <Languages className="w-5 h-5 text-emerald-500 shrink-0 mt-0.5" />
+                  <span className="leading-relaxed">
+                    {currentExchange.prompt ||
+                      "Write the next reply in the conversation"}
+                  </span>
+                </h3>
+              </div>
+            )}
+
+            {currentExchange && !hasAnswered && (
+              <div className="px-4 pb-6 animate-in fade-in slide-in-from-bottom-4 duration-500 space-y-4">
+                <form onSubmit={handleSubmit} className="space-y-3">
+                  <textarea
+                    value={userInput}
+                    onChange={(e) => setUserInput(e.target.value)}
+                    placeholder="Type your response in French..."
+                    className={cn(
+                      "w-full px-4 py-4 rounded-2xl border text-base transition-all outline-none shadow-sm min-h-[180px] resize-none",
+                      "bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200",
+                      "border-slate-200 dark:border-slate-700 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10",
+                    )}
+                    autoFocus
+                  />
+                  <div className="flex flex-col gap-3">
+                    <div className="  px-4 ">
+                      <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
+                        {getWordCount(userInput)} /{" "}
+                        {currentExchange.minWords || 3} words minimum
+                      </span>
+                    </div>
+                    {currentExchange.sampleAnswer && (
+                      <div className="bg-slate-50 dark:bg-slate-800/50 rounded-2xl p-4 border border-slate-200 dark:border-slate-700">
+                        <p className="text-xs uppercase tracking-widest text-slate-400 dark:text-slate-500 mb-2">
+                          Example Response
+                        </p>
+                        <p className="text-sm text-slate-600 dark:text-slate-300">
+                          {currentExchange.sampleAnswer}
+                        </p>
                       </div>
                     )}
                   </div>
-                ))}
-
-                {/* Current bot message (typing indicator) */}
-                {!hasAnswered && currentExchange && (
-                  <div className="flex justify-start">
-                    <div className="flex items-start gap-2 max-w-[85%]">
-                      <div className="w-8 h-8 rounded-full bg-emerald-100 dark:bg-emerald-900 flex items-center justify-center flex-shrink-0 mt-1">
-                        <User className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                      </div>
-                      <div className="bg-white dark:bg-slate-800 px-4 py-3 rounded-2xl rounded-tl-md shadow-sm">
-                        <div className="flex items-center gap-2">
-                          <Volume2 className="w-4 h-4 text-emerald-500 animate-pulse" />
-                          <p className="text-sm text-slate-700 dark:text-slate-200">{currentExchange.speakerText}</p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {conversationHistory.length === 0 && !currentExchange && (
-                  <div className="flex items-center justify-center h-full text-slate-400 dark:text-slate-600">
-                    <p className="text-sm">Conversation will appear here...</p>
-                  </div>
-                )}
-                <div ref={chatEndRef} />
+                </form>
               </div>
-            </div>
+            )}
 
-            {/* RIGHT: Writing input */}
-            <div className="flex flex-col space-y-4">
-              <h3 className="text-sm font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wide">
-                Your Response
-              </h3>
-
-              {currentExchange && !hasAnswered && (
-                <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 space-y-4">
-                  {/* Prompt */}
-                  {currentExchange.prompt && (
-                    <div className="w-full bg-emerald-50 dark:bg-emerald-900/20 rounded-2xl p-4 border border-emerald-100 dark:border-emerald-800/50">
-                      <p className="text-sm text-emerald-700 dark:text-emerald-300">
-                        <span className="font-bold">Prompt: </span>{currentExchange.prompt}
-                      </p>
-                    </div>
-                  )}
-
-                  {/* Text input */}
-                  <form onSubmit={handleSubmit} className="space-y-3">
-                    <textarea
-                      value={userInput}
-                      onChange={e => setUserInput(e.target.value)}
-                      placeholder="Type your response in French..."
-                      className={cn(
-                        "w-full px-4 py-3 rounded-xl border-2 text-base transition-all outline-none shadow-sm min-h-[180px] resize-none",
-                        "bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200",
-                        "border-slate-200 dark:border-slate-700 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10",
-                      )}
-                      autoFocus
-                    />
-                    <div className="flex flex-col gap-2">
-                      <div className="flex justify-between items-center text-xs">
-                        <span className="text-slate-400">
-                          {getWordCount(userInput)} / {currentExchange.minWords || 3} words minimum
-                        </span>
-                      </div>
-                      {currentExchange.sampleAnswer && (
-                        <div className="bg-slate-50 dark:bg-slate-800/50 rounded-lg p-3 border border-slate-200 dark:border-slate-700">
-                          <p className="text-xs text-slate-500 dark:text-slate-400">
-                            <span className="font-semibold">Example:</span> {currentExchange.sampleAnswer}
-                          </p>
-                        </div>
-                      )}
-                    </div>
-                  </form>
-                </div>
-              )}
-
-              {!currentExchange && !isCompleted && (
-                <div className="flex items-center justify-center h-[300px] text-slate-400 dark:text-slate-600 text-sm italic">
-                  <p>Loading next turn...</p>
-                </div>
-              )}
-            </div>
+            {!currentExchange && !isCompleted && (
+              <div className="flex items-center justify-center h-[300px] text-slate-400 dark:text-slate-600 text-sm italic">
+                <p>Loading next turn...</p>
+              </div>
+            )}
           </div>
         </div>
       </PracticeGameLayout>
@@ -384,7 +475,10 @@ export default function WritingConversationPage() {
                 <WritingFeedbackResult
                   evaluation={finalAnalysis}
                   mode="interactive"
-                  userText={conversationHistory.filter(t => t.userText).map(t => t.userText).join(" | ")}
+                  userText={conversationHistory
+                    .filter((t) => t.userText)
+                    .map((t) => t.userText)
+                    .join(" | ")}
                   onContinue={handleExit}
                 />
               </div>

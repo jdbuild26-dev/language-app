@@ -290,3 +290,32 @@
   }
 }
 
+@layer utilities {
+  /* Scrollbar hide until hover */
+  .scrollbar-hide-until-hover::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  .scrollbar-hide-until-hover::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .scrollbar-hide-until-hover::-webkit-scrollbar-thumb {
+    background-color: transparent;
+    border-radius: 10px;
+  }
+  .scrollbar-hide-until-hover:hover::-webkit-scrollbar-thumb {
+    background-color: #cbd5e1; /* slate-300 */
+  }
+  .dark .scrollbar-hide-until-hover:hover::-webkit-scrollbar-thumb {
+    background-color: #475569; /* slate-600 */
+  }
+
+  /* Completely hide scrollbars */
+  .scrollbar-hide {
+    -ms-overflow-style: none; /* IE and Edge */
+    scrollbar-width: none; /* Firefox */
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none; /* Chrome, Safari and Opera */
+  }
+}
