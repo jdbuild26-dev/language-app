@@ -75,17 +75,27 @@ const FILE_TO_SLUG = {
  * @param {Object} options - Optional filtering (e.g. level)
  * @returns {Promise<Array>} - A promise that resolves to the data array.
  */
-export const loadMockCSV = async (fileName, options = {}) => {
+export const loadMockCSV = async (
+  fileName: string,
+  options: {
+    level?: string;
+    learningLang?: string;
+    knownLang?: string;
+    tag?: string;
+    limit?: number;
+  } = {},
+) => {
   const slug = FILE_TO_SLUG[fileName];
 
   if (slug) {
     try {
-      const { level, learningLang, knownLang, tag } = options;
+      const { level, learningLang, knownLang, tag, limit } = options;
       const params = new URLSearchParams();
       if (level) params.append("level", level);
       if (learningLang) params.append("learning_lang", learningLang);
       if (knownLang) params.append("known_lang", knownLang);
       if (tag) params.append("tag", tag);
+      if (limit) params.append("limit", limit.toString());
 
       const response = await fetch(
         `${API_URL}/api/practice/${slug}${params.toString() ? `?${params}` : ""}`,
