@@ -1,0 +1,41 @@
+id,correctOrder,timeLimitSeconds
+LO001,"[""D'abord, je me réveille."", ""Ensuite, je me lève du lit."", ""Puis, je prends une douche."", ""Finalement, je m'habille.""]",90
+LO002,"[""Premièrement, je lis la recette."", ""Deuxièmement, je prépare les ingrédients."", ""Troisièmement, je mélange tout."", ""Quatrièmement, je fais cuire.""]",90
+LO003,"[""Nous arrivons à la gare."", ""Nous achetons les billets."", ""Nous attendons sur le quai."", ""Nous montons dans le train.""]",90
+LO004,"[""Elle ouvre son ordinateur."", ""Elle tape son mot de passe."", ""Elle ouvre son email."", ""Elle lit ses messages.""]",90
+LO005,"[""Il entre dans le magasin."", ""Il cherche ce qu'il veut."", ""Il va à la caisse."", ""Il paie ses achats.""]",90
+LO006,"[""Je prends mon sac."", ""Je sors de la maison."", ""Je marche jusqu'à l'arrêt."", ""Je prends le bus.""]",90
+LO007,"[""Nous réservons une table."", ""Nous arrivons au restaurant."", ""Nous commandons nos plats."", ""Nous mangeons notre repas.""]",90
+LO008,"[""Elle allume son téléphone."", ""Elle ouvre l'application."", ""Elle cherche un film."", ""Elle commence à regarder.""]",90
+LO009,"[""Il met de l'eau dans la bouilloire."", ""Il fait chauffer l'eau."", ""Il verse l'eau dans la tasse."", ""Il ajoute le thé.""]",90
+LO010,"[""Je choisis un livre."", ""Je vais à la caisse."", ""Je présente ma carte."", ""J'emprunte le livre.""]",90
+LO011,"[""Nous entrons dans le cinéma."", ""Nous achetons du pop-corn."", ""Nous trouvons nos places."", ""Nous regardons le film.""]",90
+LO012,"[""Elle prend son manteau."", ""Elle met ses chaussures."", ""Elle prend ses clés."", ""Elle ferme la porte.""]",90
+LO013,"[""Il ouvre le réfrigérateur."", ""Il sort les ingrédients."", ""Il prépare un sandwich."", ""Il mange son sandwich.""]",90
+LO014,"[""Je me brosse les dents."", ""Je me lave le visage."", ""Je mets mon pyjama."", ""Je vais au lit.""]",90
+LO015,"[""Nous arrivons à l'hôtel."", ""Nous faisons l'enregistrement."", ""Nous montons dans notre chambre."", ""Nous défaisons nos valises.""]",90
+LO016,"[""Elle allume la télévision."", ""Elle change de chaîne."", ""Elle trouve son émission."", ""Elle s'installe pour regarder.""]",90
+LO017,"[""Il prend son vélo."", ""Il met son casque."", ""Il commence à pédaler."", ""Il arrive au parc.""]",90
+LO018,"[""Je remplis la machine à laver."", ""J'ajoute la lessive."", ""Je lance le programme."", ""J'attends que ce soit fini.""]",90
+LO019,"[""Nous entrons dans la salle de sport."", ""Nous nous changeons."", ""Nous commençons l'entraînement."", ""Nous prenons une douche.""]",90
+LO020,"[""Elle ouvre son agenda."", ""Elle vérifie ses rendez-vous."", ""Elle prépare ses documents."", ""Elle part pour sa réunion.""]",90
+LO021,"[""Il allume son ordinateur."", ""Il ouvre son logiciel."", ""Il commence à travailler."", ""Il sauvegarde son travail.""]",90
+LO022,"[""Je prends mon parapluie."", ""Je sors sous la pluie."", ""Je marche jusqu'au métro."", ""Je descends dans la station.""]",90
+LO023,"[""Nous arrivons à la plage."", ""Nous installons nos serviettes."", ""Nous mettons de la crème solaire."", ""Nous allons nager.""]",90
+LO024,"[""Elle prend son sac de courses."", ""Elle va au supermarché."", ""Elle remplit son panier."", ""Elle paie à la caisse.""]",90
+LO025,"[""Il met ses lunettes."", ""Il ouvre son journal."", ""Il lit les nouvelles."", ""Il boit son café.""]",90
+LO026,"[""Je cherche mes clés."", ""Je les trouve dans mon sac."", ""J'ouvre la voiture."", ""Je démarre le moteur.""]",90
+LO027,"[""Nous entrons dans le musée."", ""Nous achetons nos billets."", ""Nous visitons les expositions."", ""Nous achetons des souvenirs.""]",90
+LO028,"[""Elle prend son téléphone."", ""Elle compose le numéro."", ""Elle attend la réponse."", ""Elle commence à parler.""]",90
+LO029,"[""Il ouvre le robinet."", ""Il se lave les mains."", ""Il prend une serviette."", ""Il se sèche les mains.""]",90
+LO030,"[""Je mets mes écouteurs."", ""Je choisis une playlist."", ""Je lance la musique."", ""Je commence à courir.""]",90
+LO031,"[""Nous arrivons au théâtre."", ""Nous montrons nos billets."", ""Nous trouvons nos sièges."", ""Nous regardons la pièce.""]",90
+LO032,"[""Elle ouvre son livre."", ""Elle trouve sa page."", ""Elle commence à lire."", ""Elle tourne les pages.""]",90
+LO033,"[""Il prend la farine."", ""Il ajoute les œufs."", ""Il mélange la pâte."", ""Il fait cuire les crêpes.""]",90
+LO034,"[""Je mets mon réveil."", ""Je ferme les lumières."", ""Je me couche."", ""Je m'endors.""]",90
+LO035,"[""Nous entrons dans l'avion."", ""Nous trouvons nos places."", ""Nous attachons nos ceintures."", ""Nous décollons.""]",90
+LO036,"[""Elle prend son stylo."", ""Elle ouvre son cahier."", ""Elle écrit ses notes."", ""Elle ferme son cahier.""]",90
+LO037,"[""Il met son costume."", ""Il noue sa cravate."", ""Il met ses chaussures."", ""Il part pour l'entretien.""]",90
+LO038,"[""Je prends mon appareil photo."", ""Je règle les paramètres."", ""Je cadre la photo."", ""Je prends la photo.""]",90
+LO039,"[""Nous arrivons au concert."", ""Nous passons le contrôle."", ""Nous trouvons notre place."", ""Nous écoutons la musique.""]",90
+LO040,"[""Elle ouvre le four."", ""Elle sort le gâteau."", ""Elle le pose sur la table."", ""Elle le laisse refroidir.""]",90
