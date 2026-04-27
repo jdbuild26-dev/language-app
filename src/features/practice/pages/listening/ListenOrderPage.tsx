@@ -54,7 +54,7 @@ export default function ListenOrderPage() {
         setShowFeedback(true);
       }
     },
-    isPaused: isCompleted || showFeedback || !playedAudio || isLoading,
+    isPaused: isCompleted || !playedAudio || showFeedback || isLoading,
   });
 
   useEffect(() => {
