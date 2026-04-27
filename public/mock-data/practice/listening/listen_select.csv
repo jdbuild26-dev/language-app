@@ -1,6 +1,41 @@
 id,audioText,question,options,correctIndex,timeLimitSeconds
-1,"Bonjour, comment allez-vous?","What is being said?","[""Hello, how are you?"", ""Goodbye, see you later"", ""Good night, sleep well"", ""Thank you very much""]",0,30
-2,"Je voudrais un café, s'il vous plaît.","What is the person ordering?","[""A tea"", ""A coffee"", ""A juice"", ""A water""]",1,30
-3,"Il fait beau aujourd'hui.","What is the weather like?","[""It's raining"", ""It's cold"", ""It's nice/beautiful"", ""It's snowing""]",2,30
-4,"Je m'appelle Marie et j'ai vingt ans.","How old is Marie?","[""18 years old"", ""19 years old"", ""20 years old"", ""21 years old""]",2,30
-5,"Le train part à huit heures.","What time does the train leave?","[""7 o'clock"", ""8 o'clock"", ""9 o'clock"", ""10 o'clock""]",1,30
+LS01,"Bonjour, comment allez-vous?","What is being said?","[""Hello, how are you?"", ""Goodbye, see you later"", ""Good night, sleep well"", ""Thank you very much""]",0,30
+LS02,"Je voudrais un café, s'il vous plaît.","What is the person ordering?","[""A tea"", ""A coffee"", ""A juice"", ""A water""]",1,30
+LS03,"Il fait beau aujourd'hui.","What is the weather like?","[""It's raining"", ""It's cold"", ""It's nice/beautiful"", ""It's snowing""]",2,30
+LS04,"Je m'appelle Marie et j'ai vingt ans.","How old is Marie?","[""18 years old"", ""19 years old"", ""20 years old"", ""21 years old""]",2,30
+LS05,"Le train part à huit heures.","What time does the train leave?","[""7 o'clock"", ""8 o'clock"", ""9 o'clock"", ""10 o'clock""]",1,30
+LS06,"Je vais au marché acheter des légumes.","Where is the person going?","[""To the bakery"", ""To the market"", ""To the school"", ""To the hospital""]",1,30
+LS07,"Il y a trois personnes dans la famille.","How many people are in the family?","[""Two"", ""Three"", ""Four"", ""Five""]",1,30
+LS08,"La bibliothèque ferme à dix-neuf heures.","When does the library close?","[""At 6pm"", ""At 7pm"", ""At 8pm"", ""At 9pm""]",1,30
+LS09,"Je prends le bus pour aller au travail.","How does the person get to work?","[""By car"", ""By train"", ""By bus"", ""On foot""]",2,30
+LS010,"Il pleut beaucoup en automne.","When does it rain a lot?","[""In spring"", ""In summer"", ""In autumn"", ""In winter""]",2,30
+LS011,"Mon anniversaire est le quinze mars.","When is the person's birthday?","[""March 5th"", ""March 10th"", ""March 15th"", ""March 20th""]",2,30
+LS012,"Je mange une pomme chaque matin.","What does the person eat every morning?","[""A banana"", ""An orange"", ""An apple"", ""A pear""]",2,30
+LS013,"Le restaurant est fermé le lundi.","Which day is the restaurant closed?","[""Sunday"", ""Saturday"", ""Tuesday"", ""Monday""]",3,30
+LS014,"J'habite à Paris depuis cinq ans.","How long has the person lived in Paris?","[""Two years"", ""Three years"", ""Four years"", ""Five years""]",3,30
+LS015,"Le médecin arrive dans dix minutes.","When does the doctor arrive?","[""In 5 minutes"", ""In 10 minutes"", ""In 15 minutes"", ""In 20 minutes""]",1,30
+LS016,"Je lis un livre intéressant.","What is the person doing?","[""Watching TV"", ""Reading a book"", ""Writing a letter"", ""Listening to music""]",1,30
+LS017,"La réunion commence à neuf heures.","When does the meeting start?","[""At 8am"", ""At 9am"", ""At 10am"", ""At 11am""]",1,30
+LS018,"Il fait froid en hiver.","What is the weather like in winter?","[""Hot"", ""Warm"", ""Cold"", ""Mild""]",2,30
+LS019,"Je cherche la gare, s'il vous plaît.","What is the person looking for?","[""The hospital"", ""The school"", ""The station"", ""The market""]",2,30
+LS020,"Le film dure deux heures.","How long is the film?","[""One hour"", ""One and a half hours"", ""Two hours"", ""Three hours""]",2,30
+LS021,"Ma sœur travaille dans un hôpital.","Where does the sister work?","[""In a school"", ""In a bank"", ""In a hospital"", ""In a restaurant""]",2,30
+LS022,"Je voudrais réserver une chambre pour deux nuits.","How many nights does the person want to stay?","[""One night"", ""Two nights"", ""Three nights"", ""Four nights""]",1,30
+LS023,"Le supermarché est ouvert jusqu'à vingt heures.","Until what time is the supermarket open?","[""Until 7pm"", ""Until 8pm"", ""Until 9pm"", ""Until 10pm""]",1,30
+LS024,"J'ai perdu mon portefeuille dans le métro.","Where did the person lose their wallet?","[""On the bus"", ""In the taxi"", ""In the metro"", ""At the station""]",2,30
+LS025,"Le cours de français commence lundi prochain.","When does the French class start?","[""This Friday"", ""This Saturday"", ""Next Monday"", ""Next Tuesday""]",2,30
+LS026,"Je préfère le thé au café.","What does the person prefer?","[""Coffee"", ""Juice"", ""Tea"", ""Water""]",2,30
+LS027,"Il y a une pharmacie près de la poste.","What is near the post office?","[""A bakery"", ""A school"", ""A pharmacy"", ""A bank""]",2,30
+LS028,"Mon frère a passé son examen hier.","When did the brother take his exam?","[""Today"", ""Yesterday"", ""Last week"", ""Tomorrow""]",1,30
+LS029,"Je dois appeler le plombier demain.","Who does the person need to call?","[""The electrician"", ""The plumber"", ""The doctor"", ""The mechanic""]",1,30
+LS030,"La piscine est ouverte le week-end.","When is the swimming pool open?","[""On weekdays"", ""On weekends"", ""Every day"", ""Only on Sundays""]",1,30
+LS031,"Nous partons en vacances en juillet.","When are they going on holiday?","[""In June"", ""In July"", ""In August"", ""In September""]",1,30
+LS032,"Le billet coûte vingt euros.","How much does the ticket cost?","[""Ten euros"", ""Fifteen euros"", ""Twenty euros"", ""Twenty-five euros""]",2,30
+LS033,"Je travaille de neuf heures à dix-sept heures.","What are the person's working hours?","[""8am to 4pm"", ""9am to 5pm"", ""10am to 6pm"", ""8am to 5pm""]",1,30
+LS034,"Il y a beaucoup de monde au marché le samedi.","When is the market very busy?","[""On Fridays"", ""On Saturdays"", ""On Sundays"", ""On Mondays""]",1,30
+LS035,"Je n'aime pas les épinards.","What does the person dislike?","[""Carrots"", ""Potatoes"", ""Spinach"", ""Tomatoes""]",2,30
+LS036,"La banque est fermée le dimanche.","Which day is the bank closed?","[""Saturday"", ""Sunday"", ""Monday"", ""Friday""]",1,30
+LS037,"Mon appartement est au troisième étage.","On which floor is the apartment?","[""First floor"", ""Second floor"", ""Third floor"", ""Fourth floor""]",2,30
+LS038,"Je vais chez le dentiste vendredi.","When is the dentist appointment?","[""Wednesday"", ""Thursday"", ""Friday"", ""Saturday""]",2,30
+LS039,"Il fait très chaud en été.","What is the weather like in summer?","[""Cold"", ""Mild"", ""Warm"", ""Very hot""]",3,30
+LS040,"Le prochain bus arrive dans cinq minutes.","When does the next bus arrive?","[""In 2 minutes"", ""In 5 minutes"", ""In 10 minutes"", ""In 15 minutes""]",1,30

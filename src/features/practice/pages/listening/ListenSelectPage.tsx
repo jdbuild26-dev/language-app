@@ -65,8 +65,17 @@ function ListenSelectContent() {
           return;
         }
 
-        // Helper to get English text from an item
+        // Helper to get English text from an item — handles both CSV mock shape and backend shape
         const getEnglishText = (item) => {
+          // Backend shape: Correct answer_EN / "Correct answer_EN" field
+          const backendCorrect =
+            item["Correct answer_EN"] ||
+            item["correct_answer_en"] ||
+            item["CorrectAnswerEn"] ||
+            item["correctAnswer_en"];
+          if (backendCorrect) return backendCorrect;
+
+          // Mock CSV shape: options array + correctIndex
           try {
             let opts = [];
             if (Array.isArray(item.options)) {
@@ -74,10 +83,57 @@ function ListenSelectContent() {
             } else if (typeof item.options === "string") {
               opts = JSON.parse(item.options.replace(/'/g, '"'));
             }
-            return opts[item.correctIndex] || "Translation unavailable";
+            if (opts.length > 0) {
+              return opts[item.correctIndex] || opts[0] || "Translation unavailable";
+            }
           } catch (e) {
-            return "Translation error";
+            // fall through
           }
+
+          // Backend shape: question text as fallback
+          return item.question || item.Question_EN || item["Question_EN"] || "Translation unavailable";
+        };
+
+        // Helper to get French audio text — handles both shapes
+        const getFrenchAudio = (item) => {
+          // Backend shape: Audio_FR field
+          return (
+            item.audioText ||
+            item["Audio_FR"] ||
+            item["audio_fr"] ||
+            item["AudioFr"] ||
+            item.question ||
+            ""
+          );
+        };
+
+        // Helper to get all 4 French options for an item (correct + 3 wrong)
+        const getFrenchOptions = (item): Array<{ french: string; english: string }> => {
+          // Backend shape: Correct answer_FR + Wrong answer_1_FR etc.
+          const correctFr =
+            item["Correct answer_FR"] ||
+            item["correct_answer_fr"] ||
+            item["CorrectAnswerFr"] ||
+            getFrenchAudio(item);
+          const correctEn = getEnglishText(item);
+
+          const wrongPairs: Array<{ french: string; english: string }> = [];
+          for (let i = 1; i <= 3; i++) {
+            const wFr =
+              item[`Wrong answer_${i}_FR`] ||
+              item[`wrong_answer_${i}_fr`] ||
+              item[`WrongAnswer${i}Fr`];
+            const wEn =
+              item[`Wrong answer_${i}_EN`] ||
+              item[`wrong_answer_${i}_en`] ||
+              item[`WrongAnswer${i}En`];
+            if (wFr) wrongPairs.push({ french: wFr, english: wEn || wFr });
+          }
+
+          if (wrongPairs.length > 0) {
+            return [{ french: correctFr, english: correctEn }, ...wrongPairs];
+          }
+          return null; // signal to use cross-item distractor strategy
         };
 
         // Transform data:
@@ -86,21 +142,40 @@ function ListenSelectContent() {
 
         const transformed = data.map((item, index, allItems) => {
           // 1. Identify Correct French Audio and English Text
-          const correctFrenchAudio = item.audioText;
+          const correctFrenchAudio = getFrenchAudio(item);
           const correctEnglishText = getEnglishText(item);
 
-          // 2. Generate Distractors from OTHER items
+          // 2. Try to get all 4 options directly from the item (backend shape)
+          const directOptions = getFrenchOptions(item);
+          if (directOptions && directOptions.length >= 2) {
+            // Shuffle options
+            const shuffled = directOptions
+              .map((value) => ({ value, sort: Math.random() }))
+              .sort((a, b) => a.sort - b.sort)
+              .map(({ value }) => value);
+            const newCorrectIndex = shuffled.findIndex(
+              (opt) => opt.french === correctFrenchAudio,
+            );
+            return {
+              ...item,
+              questionText: item.question || item.Question_EN || item["Question_EN"] || correctEnglishText,
+              audioOptions: shuffled,
+              correctIndex: newCorrectIndex >= 0 ? newCorrectIndex : 0,
+            };
+          }
+
+          // 3. Fallback: Generate Distractors from OTHER items (mock CSV shape)
           const otherItems = allItems.filter((i) => i.id !== item.id);
           const shuffledOthers = [...otherItems].sort(
             () => Math.random() - 0.5,
           );
 
           const distractors = shuffledOthers.slice(0, 3).map((i) => ({
-            french: i.audioText,
+            french: getFrenchAudio(i),
             english: getEnglishText(i),
           }));
 
-          // 3. Create Audio Options (Objects now)
+          // 4. Create Audio Options (Objects now)
           const audioOptionsRaw = [
             { french: correctFrenchAudio, english: correctEnglishText },
             ...distractors,
@@ -119,7 +194,7 @@ function ListenSelectContent() {
 
           return {
             ...item,
-            questionText: correctEnglishText, // New English Prompt
+            questionText: item.question || item.Question_EN || item["Question_EN"] || correctEnglishText, // New English Prompt
             audioOptions: shuffledAudioOptions, // Array of { french, english }
             correctIndex: newCorrectIndex,
           };

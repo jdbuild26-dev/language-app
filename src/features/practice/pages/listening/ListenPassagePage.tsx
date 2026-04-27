@@ -32,10 +32,10 @@ export default function ListenPassagePage() {
   const [hasPlayed, setHasPlayed] = useState(false);
 
   const currentPassage = passages[currentPassageIndex];
-  const currentQuestion = currentPassage?.questions[currentQuestionIndex];
+  const currentQuestion = currentPassage?.questions?.[currentQuestionIndex];
   const timerDuration = currentPassage?.timeLimitSeconds || 120;
   const totalQuestions = passages.reduce(
-    (acc, p) => acc + p.questions.length,
+    (acc, p) => acc + (p.questions?.length || 0),
     0,
   );
 
@@ -56,7 +56,11 @@ export default function ListenPassagePage() {
     const fetchPassages = async () => {
       try {
         const data = await loadMockCSV("practice/listening/listen_passage.csv");
-        setPassages(data);
+        // Filter out passages with invalid or missing questions
+        const validPassages = data.filter(
+          (p) => p.questions && Array.isArray(p.questions) && p.questions.length > 0
+        );
+        setPassages(validPassages);
       } catch (error) {
         console.error("Error loading mock data:", error);
       } finally {

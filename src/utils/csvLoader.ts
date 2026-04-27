@@ -137,12 +137,22 @@ export const loadMockCSV = async (fileName, options = {}) => {
                 ) {
                   try {
                     newRow[key] = JSON.parse(value);
-                  } catch (e) { }
+                  } catch (e) {
+                    console.warn(`Failed to parse JSON for key "${key}":`, e);
+                  }
                 }
               }
             }
             return newRow;
           });
+          
+          // Log any rows with parsing issues for debugging
+          processedData.forEach((row, index) => {
+            if (row.questions && typeof row.questions === 'string') {
+              console.warn(`Row ${index} has unparsed questions field:`, row.questions);
+            }
+          });
+          
           resolve(processedData);
         },
         error: (error) => reject(error),

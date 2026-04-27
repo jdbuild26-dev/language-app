@@ -1,13 +1,14 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, Suspense } from "react";
 import { CheckCircle, XCircle, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { loadMockCSV } from "@/utils/csvLoader";
 import { usePracticeExit } from "@/hooks/usePracticeExit";
 import { useExerciseTimer } from "@/hooks/useExerciseTimer";
 import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
 import { getFeedbackMessage } from "@/utils/feedbackMessages";
+import { fetchPracticeData } from "@/utils/practiceFetcher";
+import { useSearchParams } from "next/navigation";
 
 type MatchImage = {
   id: string | number;
@@ -25,7 +26,21 @@ type MatchQuestion = {
 };
 
 export default function MatchDescToImagePage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-900">
+        <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+      </div>
+    }>
+      <MatchDescToImageContent />
+    </Suspense>
+  );
+}
+
+function MatchDescToImageContent() {
   const handleExit = usePracticeExit();
+  const searchParams = useSearchParams();
+  const tag = searchParams?.get("tag") ?? undefined;
 
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [selectedImageId, setSelectedImageId] = useState<
@@ -42,8 +57,30 @@ export default function MatchDescToImagePage() {
   useEffect(() => {
     const fetchQuestions = async () => {
       try {
-        const data = await loadMockCSV("practice/reading/match_desc_game.csv");
-        setQuestions(Array.isArray(data) ? (data as MatchQuestion[]) : []);
+        const data = await fetchPracticeData("match_desc_to_image", { tag });
+
+        const parseImages = (v: unknown): MatchImage[] => {
+          if (Array.isArray(v)) return v as MatchImage[];
+          if (typeof v === "string" && v) {
+            try { return JSON.parse(v) as MatchImage[]; } catch { return []; }
+          }
+          return [];
+        };
+
+        const mapped = (Array.isArray(data) ? data : []).map((item: any) => {
+          // Backend shape: fields spread from content/evaluation/config/metadata_
+          // Mock CSV shape: flat columns parsed by PapaParse
+          const c = item.content || item;
+          return {
+            description: c.description || item.description || "",
+            images: parseImages(c.images ?? item.images),
+            instructionFr: item.instructionFr || item.instruction_fr || "",
+            instructionEn: item.instructionEn || item.instruction_en || "",
+            localizedInstruction: item.localizedInstruction || "",
+          } as MatchQuestion;
+        }).filter((q) => q.description || (q.images && q.images.length > 0));
+
+        setQuestions(mapped);
       } catch (error) {
         console.error("Error loading mock data:", error);
         setQuestions([]);
@@ -52,7 +89,7 @@ export default function MatchDescToImagePage() {
       }
     };
     fetchQuestions();
-  }, []);
+  }, [tag]);
 
   const currentQuestion = questions[currentQuestionIndex];
   const progress =

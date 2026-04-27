@@ -25,9 +25,9 @@ const SLUG_TO_CSV: Record<string, string> = {
   diagram_mapping: "practice/reading/diagram_mapping.csv",
   fill_blanks: "practice/reading/fill_blanks.csv",
   highlight_text: "practice/reading/highlight_text.csv",
-  image_labelling: "practice/reading/image_labelling.csv",
-  image_mcq: "practice/reading/image_mcq.csv",
+  image_labelling: "practice/reading/image_labelling.csv",  image_mcq: "practice/reading/image_mcq.csv",
   match_desc_game: "practice/reading/match_desc_game.csv",
+  match_desc_to_image: "practice/reading/match_desc_game.csv",
   reorder_sentences: "practice/reading/reorder_sentences.csv",
 };
 
