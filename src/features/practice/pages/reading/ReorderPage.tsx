@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { useQuestionLanguage } from "@/hooks/useQuestionLanguage";
 import { usePracticeComplete } from "@/hooks/usePracticeComplete";
 import { useSearchParams } from "next/navigation";
+import { useTranslateText } from "@/hooks/useTranslateText";
 
 type ReorderQuestion = {
   id: string | number;
@@ -143,6 +144,10 @@ function ReorderContent() {
   usePracticeComplete({ isGameOver: isCompleted, score, totalQuestions: questions.length, exerciseType: "reorder_sentences", level: currentQuestion?.level });
   const headingText = pick(currentQuestion?.title_fr, currentQuestion?.title_en)
     || currentQuestion?.title || "Reorder the Sentences";
+
+  const { displayText: headingDisplayText, isTranslating: isTranslatingH, toggle: toggleTranslate, reset: resetTranslate } = useTranslateText(headingText, learningLang);
+  // Reset translation when question changes
+  React.useEffect(() => { resetTranslate(); }, [currentIndex]); // eslint-disable-line react-hooks/exhaustive-deps
   const timerDuration = currentQuestion?.timeLimitSeconds || 360;
 
   const buildOrderItems = (sentences: string[], questionId: string | number): OrderItem[] =>
@@ -238,8 +243,15 @@ function ReorderContent() {
       >
         <div className="practice-reading-page-shell flex flex-col items-center justify-center w-full max-w-7xl mx-auto px-3 sm:px-4 flex-1 min-h-0">
           <h1 className="w-full max-w-4xl mx-auto mb-8 text-center text-2xl md:text-3xl font-bold text-slate-900 dark:text-slate-100 flex items-center justify-center gap-2">
-            <Languages className="w-5 h-5 text-blue-500 shrink-0" />
-            <span>{headingText}</span>
+            <button
+              type="button"
+              onClick={toggleTranslate}
+              disabled={isTranslatingH}
+              className="inline-flex items-center justify-center shrink-0 text-blue-500 hover:text-blue-600 disabled:opacity-60 transition-colors"
+            >
+              {isTranslatingH ? <Loader2 className="w-5 h-5 animate-spin" /> : <Languages className="w-5 h-5 text-blue-500 shrink-0" />}
+            </button>
+            <span>{headingDisplayText}</span>
           </h1>
 
           <div className="w-full max-w-4xl mx-auto">

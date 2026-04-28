@@ -20,6 +20,7 @@ export default function ListeningComprehensionPage() {
   const [isPlaying, setIsPlaying] = useState(false);
   const [userAnswers, setUserAnswers] = useState({});
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [isGameOver, setIsGameOver] = useState(false);
   const [score, setScore] = useState(0);
 
   // Load Data
@@ -30,7 +31,29 @@ export default function ListeningComprehensionPage() {
           "practice/listening/listening_comprehension.csv",
         );
         if (data && data.length > 0) {
-          setScenarioData(data[0]);
+          const raw = data[0] as any;
+
+          // API returns flat fields: Question_1_FR, Correct Answer_1_FR, etc.
+          // Build the questions array the component expects.
+          const questions: Array<{ id: string; question: string; answer: string; placeholder?: string; accept?: string[] }> = [];
+          let i = 1;
+          while (raw[`Question_${i}_FR`] || raw[`Question_${i}_EN`]) {
+            const answer = raw[`Correct Answer_${i}_FR`] || raw[`Correct Answer_${i}_EN`] || "";
+            questions.push({
+              id: String(i),
+              question: raw[`Question_${i}_FR`] || raw[`Question_${i}_EN`] || "",
+              answer,
+              // Accept any word from the answer as a valid partial match
+              accept: answer.split(/[\s,]+/).filter((w: string) => w.length > 2),
+            });
+            i++;
+          }
+
+          setScenarioData({
+            title: raw["Passage Title_FR"] || raw["Passage Title_EN"] || raw.title || "",
+            audioText: raw["Audio_FR"] || raw.audioText || raw.audio_fr || "",
+            questions,
+          });
         }
       } catch (error) {
         console.error("Error loading mock data:", error);
@@ -113,8 +136,12 @@ export default function ListeningComprehensionPage() {
 
     setScore(correctCount);
     setIsSubmitted(true);
-    cancel(); // Stop audio if playing
+    cancel();
     setIsPlaying(false);
+  };
+
+  const handleFinish = () => {
+    setIsGameOver(true);
   };
 
   if (isLoading) {
@@ -159,17 +186,16 @@ export default function ListeningComprehensionPage() {
       instructionFr="Écoutez le scénario et répondez aux questions"
       instructionEn="Listen to the scenario and answer the questions"
       progress={progress}
-      isGameOver={isSubmitted}
+      isGameOver={isGameOver}
       score={score}
       totalQuestions={questionsCount}
       onExit={handleExit}
-      onNext={handleSubmit}
+      onNext={isSubmitted ? handleFinish : handleSubmit}
       onRestart={() => window.location.reload()}
-      isSubmitEnabled={isAllFilled && !isSubmitted}
+      isSubmitEnabled={isSubmitted || (isAllFilled && !isSubmitted)}
       showSubmitButton={hasStarted}
-      submitLabel="CHECK"
-      showFeedback={isSubmitted}
-      isCorrect={score === questionsCount}
+      submitLabel={isSubmitted ? "FINISH" : "CHECK"}
+      showFeedback={false}
       feedbackMessage={`You got ${score} out of ${questionsCount} correct.`}
     >
       <div className="flex flex-col items-center w-full max-w-4xl mx-auto px-4 space-y-6 pb-24">
@@ -255,7 +281,26 @@ export default function ListeningComprehensionPage() {
           </div>
         </div>
 
-        {/* Questions Area */}
+        {/* Score summary after submit */}
+          {isSubmitted && (
+            <div className={cn(
+              "w-full max-w-2xl rounded-xl border p-4 flex items-center gap-3 animate-in fade-in slide-in-from-top-2",
+              score === questionsCount
+                ? "bg-green-50 dark:bg-green-900/20 border-green-300 dark:border-green-700"
+                : "bg-amber-50 dark:bg-amber-900/20 border-amber-300 dark:border-amber-700"
+            )}>
+              <span className={cn("text-2xl font-black", score === questionsCount ? "text-green-600" : "text-amber-600")}>
+                {score}/{questionsCount}
+              </span>
+              <p className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                {score === questionsCount
+                  ? "Perfect! All answers correct."
+                  : `${score} correct — review the answers below, then click FINISH.`}
+              </p>
+            </div>
+          )}
+
+          {/* Questions Area */}
         <div className="w-full max-w-2xl space-y-6">
           <h2 className="text-2xl font-bold text-center text-slate-800 dark:text-white mb-8">
             {scenarioData.title}

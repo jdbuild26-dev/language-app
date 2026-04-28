@@ -14,6 +14,7 @@ import { useTextToSpeech } from "@/hooks/useTextToSpeech";
 import { loadMockCSV } from "@/utils/csvLoader";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useTranslateText } from "@/hooks/useTranslateText";
 
 export default function ListenInteractivePage() {
   const handleExit = usePracticeExit();
@@ -41,9 +42,58 @@ export default function ListenInteractivePage() {
           "practice/listening/listen_interactive.csv",
         )) as any[];
         if (data && data.length > 0) {
-          setConversation(data[0]);
+          const raw = data[0] as any;
+
+          // Build exchanges from flat fields: Speaker_N_FR + Prompt_N_FR + Sample_N_FR
+          const exchanges: any[] = [];
+          let n = 1;
+          while (raw[`Speaker_${n}_FR`] || raw[`Prompt_${n}_FR`]) {
+            const speakerText = raw[`Speaker_${n}_FR`] || "";
+            const question = raw[`Prompt_${n}_FR`] || raw[`Prompt_${n}_EN`] || "";
+            const correctText = raw[`Sample_${n}_FR`] || raw[`Sample_${n}_EN`] || "";
+
+            // Build options: correct + samples from other turns as distractors
+            const distractors: string[] = [];
+            let d = 1;
+            while (raw[`Sample_${d}_FR`]) {
+              if (d !== n) distractors.push(raw[`Sample_${d}_FR`]);
+              d++;
+            }
+            const options = [correctText, ...distractors.slice(0, 3)]
+              .filter(Boolean)
+              .sort(() => Math.random() - 0.5);
+            const correctIndex = options.indexOf(correctText);
+
+            // Non-question exchange: just the speaker line
+            if (speakerText) {
+              exchanges.push({
+                speaker: raw[`Scenario Title_FR`] ? "Speaker" : `Speaker ${n}`,
+                text: speakerText,
+                isQuestion: false,
+              });
+            }
+
+            // Question exchange
+            if (question && options.length > 0) {
+              exchanges.push({
+                speaker: "Question",
+                text: question,
+                question,
+                isQuestion: true,
+                options,
+                correctIndex: correctIndex >= 0 ? correctIndex : 0,
+              });
+            }
+            n++;
+          }
+
+          setConversation({
+            title: raw["Scenario Title_FR"] || raw["Scenario Title_EN"] || "",
+            context: raw["Scenario_FR"] || raw["Scenario_EN"] || "",
+            timeLimitSeconds: raw["Time"] || 300,
+            exchanges,
+          });
         } else {
-          console.error("No data found in CSV");
           setConversation(null);
         }
       } catch (error) {
@@ -57,8 +107,12 @@ export default function ListenInteractivePage() {
   }, []);
 
   // Derived state
-  const currentExchange = conversation?.exchanges[currentExchangeIndex];
+  const currentExchange = conversation?.exchanges?.[currentExchangeIndex];
   const timerDuration = conversation?.timeLimitSeconds || 300;
+
+  // Translate question per exchange
+  const { displayText: questionDisplayText, isTranslating: isTranslatingQ, toggle: toggleTranslate, reset: resetTranslate } = useTranslateText(currentExchange?.question || "", "fr");
+  useEffect(() => { resetTranslate(); }, [currentExchangeIndex]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Count total questions
   const totalQuestions =
@@ -307,7 +361,7 @@ export default function ListenInteractivePage() {
                                 )}
                               />
                             ))}
-                          </div>Screenshot from 2026-04-22 16-49-13
+                          </div>
                         </button>
                       )}
                     </div>
@@ -380,9 +434,11 @@ export default function ListenInteractivePage() {
             {currentExchange?.isQuestion && !showFeedback && (
               <div className="px-4 py-5 animate-in fade-in slide-in-from-bottom-4 duration-500 border-b border-slate-100 dark:border-slate-700/50 mb-2">
                 <h3 className="practice-reading-heading flex items-start gap-3 text-[15px] font-bold text-slate-800 dark:text-slate-200">
-                  <Languages className="w-5 h-5 text-orange-500 shrink-0 mt-0.5" />
+                  <button type="button" onClick={toggleTranslate} disabled={isTranslatingQ} className="inline-flex items-center justify-center shrink-0 text-orange-500 hover:text-orange-600 disabled:opacity-60 transition-colors mt-0.5">
+                    {isTranslatingQ ? <Loader2 className="w-5 h-5 animate-spin" /> : <Languages className="w-5 h-5 shrink-0" />}
+                  </button>
                   <span className="leading-relaxed">
-                    {currentExchange.question || "Select the best response"}
+                    {questionDisplayText || "Select the best response"}
                   </span>
                 </h3>
               </div>

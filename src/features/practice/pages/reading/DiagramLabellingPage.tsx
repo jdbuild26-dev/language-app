@@ -5,7 +5,7 @@ import { usePracticeExit } from "@/hooks/usePracticeExit";
 import { useExerciseTimer } from "@/hooks/useExerciseTimer";
 import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
 import CustomSelect from "@/components/ui/CustomSelect";
-import { Languages, Loader2 } from "lucide-react";
+import { Languages, Loader2, ImageOff } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { loadMockCSV } from "@/utils/csvLoader";
 import { Button } from "@/components/ui/button";
@@ -117,6 +117,11 @@ function DiagramLabellingContent() {
   const [isCorrect, setIsCorrect] = useState(false);
   const [correctAnswerText, setCorrectAnswerText] = useState("");
 
+  // Translate question state
+  const [translatedQuestion, setTranslatedQuestion] = useState("");
+  const [showTranslation, setShowTranslation] = useState(false);
+  const [isTranslating, setIsTranslating] = useState(false);
+
   // ── Load data ──────────────────────────────────────────────────────────────
   useEffect(() => {
     const fetchData = async () => {
@@ -220,6 +225,8 @@ function DiagramLabellingContent() {
     setIsCorrect(false);
     setFeedbackMessage("");
     setCorrectAnswerText("");
+    setTranslatedQuestion("");
+    setShowTranslation(false);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentIndex, ex]);
 
@@ -298,6 +305,40 @@ function DiagramLabellingContent() {
     setCorrectAnswerText("");
   };
 
+  const handleTranslateQuestion = async () => {
+    // Source is always the question in learning language; translate to the other
+    const sourceText = pick(ex?.question_fr, ex?.question_en) || questionText;
+    const targetLang = learningLang === "fr" ? "en" : "fr";
+
+    if (showTranslation) {
+      setShowTranslation(false);
+      return;
+    }
+    if (translatedQuestion) {
+      setShowTranslation(true);
+      return;
+    }
+    if (!sourceText) return;
+
+    try {
+      setIsTranslating(true);
+      const res = await fetch("/api/translate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: sourceText, target_lang: targetLang }),
+      });
+      if (!res.ok) throw new Error("Translation failed");
+      const data = (await res.json()) as { translation?: string };
+      setTranslatedQuestion(data.translation || "");
+      setShowTranslation(true);
+    } catch {
+      setTranslatedQuestion("");
+      setShowTranslation(false);
+    } finally {
+      setIsTranslating(false);
+    }
+  };
+
   const allAnswered = questions.length > 0 && questions.every(q => answers[q.id]);
   const progress = exercises.length > 0
     ? ((currentIndex + (showFeedback ? 1 : 0)) / exercises.length) * 100
@@ -358,7 +399,7 @@ function DiagramLabellingContent() {
         {/* ── Left: Image + Passage ── */}
         <div className="md:basis-[52%] md:max-w-[52%] min-h-0 flex flex-col gap-3">
 
-          {/* Image — shown when URL available, placeholder slot when not */}
+          {/* Image — shown when URL available, illustrated splash when not */}
           {imageUrl ? (
             <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 flex justify-center items-center p-3 shadow-sm min-h-[180px] md:min-h-[220px]">
               <img
@@ -368,8 +409,14 @@ function DiagramLabellingContent() {
               />
             </div>
           ) : (
-            <div className="bg-slate-100 dark:bg-slate-800 rounded-2xl border border-dashed border-slate-300 dark:border-slate-600 flex justify-center items-center p-4 min-h-[80px] text-slate-400 dark:text-slate-500 text-sm italic">
-              Image coming soon
+            <div className="bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 flex flex-col justify-center items-center gap-3 p-6 min-h-[140px] shadow-sm">
+              <div className="w-14 h-14 rounded-2xl bg-white dark:bg-slate-700 shadow-inner flex items-center justify-center">
+                <ImageOff className="w-7 h-7 text-slate-400 dark:text-slate-500" />
+              </div>
+              <div className="text-center">
+                <p className="text-sm font-semibold text-slate-500 dark:text-slate-400">No diagram image</p>
+                <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">Use the passage text to answer</p>
+              </div>
             </div>
           )}
 
@@ -390,8 +437,20 @@ function DiagramLabellingContent() {
         <div className="md:basis-[48%] md:max-w-[48%] min-h-0 flex flex-col dark:bg-slate-900 rounded-2xl border border-slate-200 bg-white dark:border-slate-700 p-4 md:p-5 overflow-y-auto custom-scrollbar">
 
           <h3 className="practice-reading-heading flex items-center gap-2 mb-4">
-            <Languages className="w-5 h-5 text-blue-500 shrink-0" />
-            {questionText}
+            <button
+              type="button"
+              onClick={handleTranslateQuestion}
+              disabled={isTranslating}
+              aria-label={showTranslation ? "Show original" : "Translate question"}
+              title={showTranslation ? "Show original" : "Translate question"}
+              className="inline-flex items-center justify-center shrink-0 text-blue-500 hover:text-blue-600 disabled:opacity-60 transition-colors"
+            >
+              {isTranslating
+                ? <Loader2 className="w-5 h-5 animate-spin" />
+                : <Languages className="w-5 h-5" />
+              }
+            </button>
+            {showTranslation && translatedQuestion ? translatedQuestion : questionText}
           </h3>
 
           <div className="grid grid-cols-1 gap-3">

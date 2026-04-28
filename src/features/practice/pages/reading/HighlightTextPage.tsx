@@ -80,7 +80,7 @@ function HighlightTextContent() {
             questionTitle: c.questionTitle || "",
             requiredCore:    e.requiredCore || e.correct_answer_en || "",
             requiredCore_fr: e.requiredCore_fr || e.correct_answer_fr || "",
-            correctAnswer:   e.correctAnswer || e.correct_answer_en || e.requiredCore || "",
+            correctAnswer:   e.correctAnswer || e.correct_answer_fr || e.requiredCore_fr || e.correct_answer_en || e.requiredCore || "",
             acceptableBoundary: e.acceptableBoundary || e.acceptable_answer_texts || e.passage_en || c.passage_en || c.passage || "",
             timeLimitSeconds: cfg.timeLimitSeconds || cfg.TimeLimitSeconds || 360,
             minHighlightChars: cfg.minHighlightChars || cfg.MinHighlightChars || 20,
@@ -150,6 +150,8 @@ function HighlightTextContent() {
   useEffect(() => {
     if (currentQuestion && !isCompleted) {
       setSelectedText("");
+      setTranslatedQuestion("");
+      setShowTranslation(false);
       resetTimer();
     }
   }, [currentIndex, currentQuestion, isCompleted, resetTimer]);
@@ -245,6 +247,9 @@ function HighlightTextContent() {
       return;
     }
 
+    // Always translate to the opposite of the learning language
+    const targetLang = learningLang === "fr" ? "en" : "fr";
+
     try {
       setIsTranslating(true);
       const res = await fetch("/api/translate", {
@@ -252,7 +257,7 @@ function HighlightTextContent() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           text: questionTranslationSource,
-          target_lang: learningLang || "fr",
+          target_lang: targetLang,
         }),
       });
 
@@ -330,7 +335,11 @@ function HighlightTextContent() {
         feedbackTone={
           showFeedback ? (isCorrect ? "success" : "error") : "error"
         }
-        correctAnswer={!isCorrect ? currentQuestion.correctAnswer : undefined}
+        correctAnswer={!isCorrect && showFeedback
+          ? (learningLang === "fr"
+              ? (currentQuestion.requiredCore_fr || currentQuestion.correctAnswer)
+              : (currentQuestion.correctAnswer || currentQuestion.requiredCore))
+          : undefined}
         feedbackMessage={feedbackMessage}
       >
         <div className="practice-reading-page-shell flex flex-col flex-1 min-h-0 gap-4 p-3 sm:gap-5 sm:p-4 md:grid md:grid-cols-2 md:gap-5 md:overflow-hidden md:p-5 md:h-full">

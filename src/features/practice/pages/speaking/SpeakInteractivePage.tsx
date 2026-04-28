@@ -11,6 +11,7 @@ import { useTextToSpeech } from "@/hooks/useTextToSpeech";
 import { useSpeakingEvaluation } from "@/hooks/useSpeakingEvaluation";
 import { loadMockCSV } from "@/utils/csvLoader";
 import { Loader2 } from "lucide-react";
+import { useTranslateText } from "@/hooks/useTranslateText";
 import { Button } from "@/components/ui/button";
 import WritingFeedbackResult from "@/components/WritingFeedbackResult";
 
@@ -57,6 +58,11 @@ export default function SpeakInteractivePage() {
   const { isSubmitting, evaluate, analyzeConversation } = useSpeakingEvaluation();
 
   const currentExchange = conversation?.exchanges[currentTurnIndex];
+
+  // Translate prompt per exchange
+  const { displayText: promptDisplayText, isTranslating: isTranslatingP, toggle: toggleTranslate, reset: resetTranslate } = useTranslateText(currentExchange?.prompt || "", "fr");
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  React.useEffect(() => { resetTranslate(); }, [currentTurnIndex]);
   const totalExchanges = conversation?.exchanges.length || 0;
   const timerDuration = conversation?.timeLimitSeconds || 300;
   const totalQuestions =
@@ -512,9 +518,9 @@ export default function SpeakInteractivePage() {
               <>
                 <div className="px-4 py-5 animate-in fade-in slide-in-from-bottom-4 duration-500 border-b border-slate-100 dark:border-slate-700/50 mb-2">
                   <h3 className="practice-reading-heading flex items-start gap-3 text-[15px] font-bold text-slate-800 dark:text-slate-200">
-                    <Languages className="w-5 h-5 text-indigo-500 shrink-0 mt-0.5" />
+                    <button type="button" onClick={toggleTranslate} disabled={isTranslatingP} className="inline-flex items-center justify-center shrink-0 text-indigo-500 hover:text-indigo-600 disabled:opacity-60 transition-colors mt-0.5">{isTranslatingP ? <Loader2 className="w-5 h-5 animate-spin" /> : <Languages className="w-5 h-5 shrink-0" />}</button>
                     <span className="leading-relaxed">
-                      {currentExchange.prompt ||
+                      {promptDisplayText ||
                         "Say the next reply in the conversation"}
                     </span>
                   </h3>
