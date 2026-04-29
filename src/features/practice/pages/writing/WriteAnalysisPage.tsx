@@ -17,6 +17,7 @@ import FeedbackBanner from "@/components/ui/FeedbackBanner";
 import { getFeedbackMessage } from "@/utils/feedbackMessages";
 import { useTextToSpeech } from "@/hooks/useTextToSpeech";
 import { fetchWriteAnalysisData } from "@/services/vocabularyApi";
+import { fetchPracticeData } from "@/utils/practiceFetcher";
 import { useWritingEvaluation } from "@/hooks/useWritingEvaluation";
 import WritingFeedbackResult from "@/components/WritingFeedbackResult";
 
@@ -87,22 +88,43 @@ export default function WriteAnalysisPage() {
     const fetchQuestions = async () => {
       try {
         setIsLoading(true);
-        // Try fetching from backend first
-        const data = await fetchWriteAnalysisData();
-        if (data && data.length > 0) {
-          setQuestions(data);
+        const data = await fetchPracticeData("write_analysis");
+        const raw = Array.isArray(data) ? data : [];
+        const normalized = raw
+          .filter((item: any) =>
+            (item.title || item.content?.title) &&
+            (item.Category === "main" || !item.Category)
+          )
+          .map((item: any) => {
+            const c = item.content || item;
+            const ev = item.evaluation || item;
+            // Support both nested content.content and flat structure
+            const innerContent = c.content || {};
+            return {
+              id: item.ExerciseID || item.id || Math.random(),
+              type: c.type || item.type || "table",
+              title: c.title || item.title || "",
+              instruction: c.instruction || item.instruction || c.instruction_en || "",
+              content: {
+                headers: innerContent.headers || c.headers || [],
+                rows: innerContent.rows || c.rows || [],
+              },
+              sampleAnswer: ev.sampleAnswer || c.sampleAnswer || item.sampleAnswer || "",
+              minWords: c.minWords || item.minWords || 30,
+              timeLimitSeconds: c.timeLimitSeconds || item.timeLimitSeconds || item.config?.timeLimitSeconds || 600,
+              level: item.level || item.Level || "",
+            };
+          })
+          .filter((q: any) => q.content.headers.length > 0);
+
+        if (normalized.length > 0) {
+          setQuestions(normalized);
         } else {
-          console.warn(
-            `[DATA_SOURCE] WriteAnalysisPage: BACKEND returned empty data. Falling back to MOCK_DATA. Count: ${MOCK_QUESTIONS.length}`,
-          );
+          console.warn("[WriteAnalysisPage] No valid exercises from backend, using mock data");
           setQuestions(MOCK_QUESTIONS);
         }
       } catch (error) {
-        console.error(
-          `[DATA_SOURCE] WriteAnalysisPage: BACKEND fetch FAILED. Falling back to MOCK_DATA. Count: ${MOCK_QUESTIONS.length}`,
-          error,
-        );
-        // Fallback to mock data if backend fails (e.g. DNS issues)
+        console.error("[WriteAnalysisPage] Backend fetch failed, using mock data:", error);
         setQuestions(MOCK_QUESTIONS);
       } finally {
         setIsLoading(false);

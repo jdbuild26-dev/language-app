@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils";
 import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
 import { useTextToSpeech } from "@/hooks/useTextToSpeech";
 import { useWritingEvaluation } from "@/hooks/useWritingEvaluation";
-import { loadMockCSV } from "@/utils/csvLoader";
+import { fetchPracticeData } from "@/utils/practiceFetcher";
 import { Loader2 } from "lucide-react";
 import { useTranslateText } from "@/hooks/useTranslateText";
 import { Button } from "@/components/ui/button";
@@ -59,9 +59,7 @@ export default function WritingConversationPage() {
   useEffect(() => {
     const load = async () => {
       try {
-        const data = await loadMockCSV(
-          "practice/writing/writing_conversation.csv",
-        );
+        const data = await fetchPracticeData("writing_conversation");
         const raw = Array.isArray(data) ? data : [];
         const items = raw.filter((item: any) => {
           const exchanges = item.content?.exchanges || item.exchanges;

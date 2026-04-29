@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils";
 import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
 import { useWritingEvaluation } from "@/hooks/useWritingEvaluation";
 import WritingFeedbackResult from "@/components/WritingFeedbackResult";
-import { loadMockCSV } from "@/utils/csvLoader";
+import { fetchPracticeData } from "@/utils/practiceFetcher";
 import { Loader2, Play, Pause } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import AccentKeyboard from "@/components/ui/AccentKeyboard";
@@ -158,7 +158,7 @@ export default function SummariseAudioPage() {
   useEffect(() => {
     (async () => {
       try {
-        const data = await loadMockCSV("practice/writing/summarise_audio.csv", {
+        const data = await fetchPracticeData("summarise_audio", {
           level: levelParam,
           learningLang: learningLang || "fr",
           knownLang: knownLang || "en",

@@ -16,7 +16,7 @@ import { Button } from "@/components/ui/button";
 import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
 import { usePracticeExit } from "@/hooks/usePracticeExit";
 import { cn } from "@/lib/utils";
-import { loadMockCSV } from "@/utils/csvLoader";
+import { fetchPracticeData } from "@/utils/practiceFetcher";
 import WritingFeedbackResult from "@/components/WritingFeedbackResult";
 import { useTextToSpeech } from "@/hooks/useTextToSpeech";
 import { motion, AnimatePresence } from "framer-motion";
@@ -85,7 +85,7 @@ export default function TranslateBySpeakingPage() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const data = await loadMockCSV("practice/speaking/speak_translate.csv") as Question[];
+        const data = await fetchPracticeData("speak_translate") as Question[];
         setQuestions(data);
       } catch (error) {
         console.error("Error fetching speaking data:", error);

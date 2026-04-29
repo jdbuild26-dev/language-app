@@ -31,6 +31,22 @@ const SLUG_TO_CSV: Record<string, string> = {
   match_desc_to_image: "practice/reading/match_desc_game.csv",
   reorder_sentences: "practice/reading/reorder_sentences.csv",
   writing_conversation: "practice/writing/writing_conversation.csv",
+  translate_typed: "practice/writing/translate_typed.csv",
+  write_translate: "practice/writing/translate_typed.csv",
+  correct_spelling: "practice/writing/spelling.csv",
+  write_fill_blanks: "practice/writing/write_fill_blanks.csv",
+  write_topic: "practice/writing/write_topic.csv",
+  write_image: "practice/writing/write_image.csv",
+  write_documents: "practice/writing/write_documents.csv",
+  write_interactive: "practice/writing/write_interactive.csv",
+  writing_conversation: "practice/writing/writing_conversation.csv",
+  write_analysis: "practice/writing/write_analysis.csv",
+  summarise_audio: "practice/writing/summarise_audio.csv",
+  speak_translate: "practice/speaking/speak_translate.csv",
+  speak_topic: "practice/speaking/speak_topic.csv",
+  speak_image: "practice/speaking/speak_image.csv",
+  speak_interactive: "practice/speaking/speak_interactive.csv",
+  speaking_conversation: "practice/speaking/speaking_conversation.csv",
 };
 
 /**

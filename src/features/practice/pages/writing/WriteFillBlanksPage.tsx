@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils";
 import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
 import FeedbackBanner from "@/components/ui/FeedbackBanner";
 import { getFeedbackMessage } from "@/utils/feedbackMessages";
-import { loadMockCSV } from "@/utils/csvLoader";
+import { fetchPracticeData } from "@/utils/practiceFetcher";
 import AccentKeyboard from "@/components/ui/AccentKeyboard";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -155,7 +155,7 @@ export default function WriteFillBlanksPage() {
   useEffect(() => {
     (async () => {
       try {
-        const data = await loadMockCSV("practice/writing/write_fill_blanks.csv", {
+        const data = await fetchPracticeData("write_fill_blanks", {
           level: levelParam, learningLang: learningLang || "fr",
           knownLang: knownLang || "en", tag,
         });

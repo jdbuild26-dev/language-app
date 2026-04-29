@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils";
 import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
 import { useTextToSpeech } from "@/hooks/useTextToSpeech";
 import { useWritingEvaluation } from "@/hooks/useWritingEvaluation";
-import { loadMockCSV } from "@/utils/csvLoader";
+import { fetchPracticeData } from "@/utils/practiceFetcher";
 import { Loader2 } from "lucide-react";
 import { useTranslateText } from "@/hooks/useTranslateText";
 import { Button } from "@/components/ui/button";
@@ -116,7 +116,7 @@ export default function WriteInteractivePage() {
   useEffect(() => {
     const fetchConversation = async () => {
       try {
-        const data = await loadMockCSV("practice/writing/write_interactive.csv");
+        const data = await fetchPracticeData("write_interactive");
         const raw = Array.isArray(data) ? data : [];
         // Filter to main category, prefer new format (has exchanges array)
         const items = raw.filter((item: any) =>

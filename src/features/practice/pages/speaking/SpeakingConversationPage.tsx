@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils";
 import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
 import { useTextToSpeech } from "@/hooks/useTextToSpeech";
 import { useSpeakingEvaluation } from "@/hooks/useSpeakingEvaluation";
-import { loadMockCSV } from "@/utils/csvLoader";
+import { fetchPracticeData } from "@/utils/practiceFetcher";
 import { Loader2 } from "lucide-react";
 import { useTranslateText } from "@/hooks/useTranslateText";
 import { Button } from "@/components/ui/button";
@@ -43,6 +43,11 @@ export default function SpeakingConversationPage() {
 
   const currentExchange = conversation?.exchanges?.[currentTurnIndex];
   const totalExchanges = conversation?.exchanges?.length || 0;
+
+  // Translate prompt per exchange
+  const { displayText: promptDisplayText, isTranslating: isTranslatingP, toggle: toggleTranslate, reset: resetTranslate } = useTranslateText(currentExchange?.prompt || "", "fr");
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  React.useEffect(() => { resetTranslate(); }, [currentTurnIndex]);
 
   const { timerString, resetTimer } = useExerciseTimer({
     duration: conversation?.timeLimitSeconds || 300,
@@ -84,9 +89,7 @@ export default function SpeakingConversationPage() {
   useEffect(() => {
     const load = async () => {
       try {
-        const data = await loadMockCSV(
-          "practice/speaking/speaking_conversation.csv",
-        );
+        const data = await fetchPracticeData("speaking_conversation");
         const raw = Array.isArray(data) ? data : [];
         const items = raw.filter((item: any) => {
           const exchanges = item.content?.exchanges || item.exchanges;

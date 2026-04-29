@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils";
 import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
 import { useTextToSpeech } from "@/hooks/useTextToSpeech";
 import { useSpeakingEvaluation } from "@/hooks/useSpeakingEvaluation";
-import { loadMockCSV } from "@/utils/csvLoader";
+import { fetchPracticeData } from "@/utils/practiceFetcher";
 import { Loader2 } from "lucide-react";
 import { useTranslateText } from "@/hooks/useTranslateText";
 import { Button } from "@/components/ui/button";
@@ -120,7 +120,7 @@ export default function SpeakInteractivePage() {
   useEffect(() => {
     const fetchConversation = async () => {
       try {
-        const data = await loadMockCSV("practice/speaking/speak_interactive.csv");
+        const data = await fetchPracticeData("speak_interactive");
         const raw = Array.isArray(data) ? data : [];
         const items = raw.filter(
           (item: any) =>

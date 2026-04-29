@@ -7,7 +7,7 @@ import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 
-import { loadMockCSV } from "@/utils/csvLoader";
+import { fetchPracticeData } from "@/utils/practiceFetcher";
 
 import WritingFeedbackResult from "@/components/WritingFeedbackResult";
 
@@ -94,7 +94,19 @@ export default function GenericSpeakingPage({
             try {
                 let data: any[] = [];
                 if (csvName) {
-                    data = await loadMockCSV(csvName) as any[];
+                    // Extract slug from csvName e.g. "practice/speaking/speak_topic.csv" -> "speak_topic"
+                    const slug = csvName.replace(/^.*\//, '').replace(/\.csv$/, '');
+                    data = await fetchPracticeData(slug) as any[];
+                    if (!data || data.length === 0) {
+                        // Fallback: try the old loadMockCSV path via direct fetch
+                        const res = await fetch(`/mock-data/${csvName}`);
+                        if (res.ok) {
+                            const text = await res.text();
+                            const Papa = (await import('papaparse')).default;
+                            const parsed = Papa.parse(text, { header: true, skipEmptyLines: true });
+                            data = parsed.data as any[];
+                        }
+                    }
                 } else if (mockData && mockData.length > 0) {
                     data = mockData;
                 } else {
