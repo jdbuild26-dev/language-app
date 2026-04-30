@@ -13,6 +13,7 @@ import { useTextToSpeech } from "@/hooks/useTextToSpeech";
 import { loadMockCSV } from "@/utils/csvLoader";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useTranslateText } from "@/hooks/useTranslateText";
 
 const parseMaybeJson = (value: any) => {
   if (typeof value !== "string") return value;
@@ -32,9 +33,30 @@ const parseMaybeJson = (value: any) => {
 
 const normalizeConversation = (rawConversation: any) => {
   const source = rawConversation?.content || rawConversation || {};
-  const rawExchanges = parseMaybeJson(
+
+  // Try structured exchanges array first
+  let rawExchanges = parseMaybeJson(
     source.exchanges || rawConversation?.exchanges || [],
   );
+
+  // Fallback: build exchanges from flat fields Exchange_1_FR, Exchange_2_FR …
+  if (!Array.isArray(rawExchanges) || rawExchanges.length === 0) {
+    const built: any[] = [];
+    let i = 1;
+    while (source[`Exchange_${i}_FR`] || source[`Exchange_${i}_EN`]) {
+      built.push({
+        turnId: i,
+        speakerText: source[`Exchange_${i}_FR`] || source[`Exchange_${i}_EN`] || "",
+        speakerAudio: source[`Exchange_${i}_FR`] || source[`Exchange_${i}_EN`] || "",
+        speaker: source[`Exchange_${i}_Speaker`] || `Speaker ${i}`,
+        questionText: null,
+        correctOptionId: null,
+        options: [],
+      });
+      i++;
+    }
+    rawExchanges = built;
+  }
 
   const exchanges = (Array.isArray(rawExchanges) ? rawExchanges : [])
     .map((exchange: any, index: number) => {
@@ -71,9 +93,10 @@ const normalizeConversation = (rawConversation: any) => {
               : index,
         speakerText: exchange?.speakerText || exchange?.speakerAudio || "",
         speakerAudio: exchange?.speakerAudio || exchange?.speakerText || "",
-        questionText: exchange?.questionText || "Select the best response",
+        speaker: exchange?.speaker || "",
+        questionText: exchange?.questionText || null,
         correctOptionId:
-          exchange?.correctOptionId ?? exchange?.correctIndex ?? options[0]?.id,
+          exchange?.correctOptionId ?? exchange?.correctIndex ?? options[0]?.id ?? null,
         options,
       };
     })
@@ -81,6 +104,7 @@ const normalizeConversation = (rawConversation: any) => {
     .map((exchange) => ({
       speakerText: exchange.speakerText,
       speakerAudio: exchange.speakerAudio,
+      speaker: exchange.speaker,
       questionText: exchange.questionText,
       correctOptionId: exchange.correctOptionId,
       options: exchange.options,
@@ -89,8 +113,9 @@ const normalizeConversation = (rawConversation: any) => {
   return {
     ...rawConversation,
     ...source,
-    title: source.title || rawConversation?.title || "",
-    scenario: source.scenario || rawConversation?.scenario || "",
+    title: source["Scenario Title_FR"] || source["Scenario Title_EN"] || source.title || rawConversation?.title || "",
+    scenario: source["Context_FR"] || source["Context_EN"] || source.scenario || rawConversation?.scenario || "",
+    objectives: source["Objectives_FR"] || source["Objectives_EN"] || "",
     exchanges,
   };
 };
@@ -130,8 +155,12 @@ export default function ListeningConversationPage() {
   // Audio playback state
   const [hasPlayedAudio, setHasPlayedAudio] = useState(false);
 
-  const currentExchange = conversation?.exchanges[currentTurnIndex];
-  const totalExchanges = conversation?.exchanges.length || 0;
+  const currentExchange = conversation?.exchanges?.[currentTurnIndex];
+  const totalExchanges = conversation?.exchanges?.length || 0;
+
+  // Translate question text per exchange
+  const { displayText: questionDisplayText, isTranslating: isTranslatingQ, toggle: toggleTranslate, reset: resetTranslate } = useTranslateText(currentExchange?.questionText || "", "fr");
+  useEffect(() => { resetTranslate(); }, [currentTurnIndex]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const timerDuration = 45; // Increased for conversation context
 
@@ -210,7 +239,20 @@ export default function ListeningConversationPage() {
   };
 
   const handleSubmit = () => {
-    if (hasAnswered || selectedOption === null || showFeedback) return;
+    if (hasAnswered) return;
+
+    // Dialogue-only exchange (no options) — just advance
+    if (!currentExchange?.options || currentExchange.options.length === 0) {
+      setConversationHistory((prev) => [
+        ...prev,
+        { speakerText: currentExchange.speakerText, userText: "", userOptionId: null, wasCorrect: true },
+      ]);
+      setHasAnswered(true);
+      handleContinue();
+      return;
+    }
+
+    if (selectedOption === null || showFeedback) return;
 
     const selectedOptionObj = currentExchange.options.find(
       (opt) => opt.id === selectedOption,
@@ -233,8 +275,8 @@ export default function ListeningConversationPage() {
         ...prev,
         {
           question: currentExchange.speakerText,
-          expected: correctOptionObj.text,
-          actual: selectedOptionObj.text,
+          expected: correctOptionObj?.text || "",
+          actual: selectedOptionObj?.text || "",
         },
       ]);
     }
@@ -345,11 +387,13 @@ export default function ListeningConversationPage() {
         onNext={handleSubmit}
         onRestart={() => window.location.reload()}
         isSubmitEnabled={
-          selectedOption !== null && !showFeedback && !hasAnswered
+          currentExchange?.options?.length > 0
+            ? selectedOption !== null && !showFeedback && !hasAnswered
+            : !hasAnswered
         }
         showSubmitButton={!showFeedback && !hasAnswered}
-        submitLabel="Submit"
-        timerValue={timerString}
+        submitLabel={currentExchange?.options?.length > 0 ? "Submit" : "Next →"}
+        timerValue={currentExchange?.options?.length > 0 ? timerString : ""}
         customEndGameContent={customEndGameContent}
       >
         {/* Two-column layout */}
@@ -481,22 +525,45 @@ export default function ListeningConversationPage() {
               <p className="text-sm leading-relaxed text-slate-700 dark:text-slate-300">
                 {conversation?.scenario || conversation?.title}
               </p>
+              {conversation?.objectives && (
+                <p className="text-xs text-slate-400 dark:text-slate-500 mt-2 italic">{conversation.objectives}</p>
+              )}
             </div>
 
-            {/* Question */}
-            {currentExchange && (
+            {/* Question — only when exchange has options */}
+            {currentExchange?.options?.length > 0 && (
               <div className="px-4 py-5 animate-in fade-in slide-in-from-bottom-4 duration-500 border-b border-slate-100 dark:border-slate-700/50 mb-2">
                 <h3 className="practice-reading-heading flex items-start gap-3 text-[15px] font-bold text-slate-800 dark:text-slate-200">
-                  <Languages className="w-5 h-5 text-orange-500 shrink-0 mt-0.5" />
+                  <button type="button" onClick={toggleTranslate} disabled={isTranslatingQ} className="inline-flex items-center justify-center shrink-0 text-orange-500 hover:text-orange-600 disabled:opacity-60 transition-colors mt-0.5">
+                    {isTranslatingQ ? <Loader2 className="w-5 h-5 animate-spin" /> : <Languages className="w-5 h-5 shrink-0" />}
+                  </button>
                   <span className="leading-relaxed">
-                    {currentExchange.questionText || "Select the best response"}
+                    {questionDisplayText || "Select the best response"}
                   </span>
                 </h3>
               </div>
             )}
 
-            {/* Options */}
-            {!hasAnswered && currentExchange && (
+            {/* Dialogue-only: show speaker name + listening indicator */}
+            {currentExchange && (!currentExchange.options || currentExchange.options.length === 0) && (
+              <div className="px-4 py-6 flex flex-col items-center gap-3 text-slate-400 dark:text-slate-500">
+                {currentExchange.speaker && (
+                  <p className="text-xs font-bold uppercase tracking-widest text-slate-500">{currentExchange.speaker}</p>
+                )}
+                <p className="text-base font-medium text-slate-700 dark:text-slate-200 text-center px-4">
+                  {currentExchange.speakerText}
+                </p>
+                <div className="flex gap-1.5 items-center mt-2">
+                  <span className="w-2 h-2 rounded-full bg-indigo-400 animate-bounce" style={{ animationDelay: "0ms" }} />
+                  <span className="w-2 h-2 rounded-full bg-indigo-400 animate-bounce" style={{ animationDelay: "150ms" }} />
+                  <span className="w-2 h-2 rounded-full bg-indigo-400 animate-bounce" style={{ animationDelay: "300ms" }} />
+                </div>
+                <p className="text-xs text-slate-400">Listening…</p>
+              </div>
+            )}
+
+            {/* Options — only when exchange has options */}
+            {!hasAnswered && currentExchange?.options?.length > 0 && (
               <div className="px-4 pb-6">
                 <PracticeOptions
                   options={currentExchange.options.map((o) => o.text)}

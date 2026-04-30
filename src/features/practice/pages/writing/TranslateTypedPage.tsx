@@ -6,7 +6,7 @@ import { useExerciseTimer } from "@/hooks/useExerciseTimer";
 import { cn } from "@/lib/utils";
 import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
 import FeedbackBanner from "@/components/ui/FeedbackBanner";
-import { loadMockCSV } from "@/utils/csvLoader";
+import { fetchPracticeData } from "@/utils/practiceFetcher";
 import { Button } from "@/components/ui/button";
 import AccentKeyboard from "@/components/ui/AccentKeyboard";
 
@@ -32,6 +32,64 @@ function isAnswerCorrect(userInput: string, question: any): boolean {
   return candidates.some((c) => normalise(c) === user);
 }
 
+/** Normalise a raw API item into the shape this page expects */
+function normaliseQuestion(raw: any) {
+  // Resolve source text (English sentence the user must translate)
+  const sourceText =
+    raw.sourceText ||
+    raw.SourceText ||
+    raw.source_text ||
+    raw["Complete Sentence_EN"] ||
+    raw["Complete Sentence_en"] ||
+    raw.Question ||
+    raw.question ||
+    "";
+
+  // Resolve correct answer (French translation) — be explicit, never fall back to English fields
+  const correctAnswer =
+    raw["Correct answer_FR"] ||
+    raw["Correct answer_fr"] ||
+    raw["correct answer_fr"] ||
+    raw["Complete Sentence_FR"] ||
+    raw["Complete Sentence_fr"] ||
+    raw.correctAnswer_fr ||
+    // Only use generic correctAnswer if it's clearly not the same as sourceText
+    (raw.correctAnswer && raw.correctAnswer !== sourceText ? raw.correctAnswer : "") ||
+    (raw.CorrectAnswer && raw.CorrectAnswer !== sourceText ? raw.CorrectAnswer : "") ||
+    "";
+
+  // Resolve acceptable answers array
+  const acceptableAnswers: string[] = (() => {
+    if (Array.isArray(raw.acceptableAnswers) && raw.acceptableAnswers.length > 0) {
+      // Filter out any English sentences that snuck in
+      const filtered = raw.acceptableAnswers.filter((a: string) => a !== sourceText);
+      if (filtered.length > 0) return filtered;
+    }
+    const raw_aa =
+      raw["Correct answer_FR"] ||
+      raw["Correct answer_fr"] ||
+      raw.AcceptableAnswers ||
+      correctAnswer;
+    if (typeof raw_aa === "string" && raw_aa.includes("|"))
+      return raw_aa.split("|").map((s: string) => s.trim()).filter(Boolean);
+    return correctAnswer ? [correctAnswer] : [];
+  })();
+
+  const timeLimitSeconds =
+    raw.timeLimitSeconds ||
+    raw.TimeLimitSeconds ||
+    raw.config?.timeLimitSeconds ||
+    60;
+
+  return {
+    ...raw,
+    sourceText,
+    correctAnswer,
+    acceptableAnswers,
+    timeLimitSeconds,
+  };
+}
+
 export default function TranslateTypedPage() {
   const handleExit = usePracticeExit();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -47,9 +105,14 @@ export default function TranslateTypedPage() {
 
   useEffect(() => {
     const fetchData = async () => {
-      const data = await loadMockCSV("practice/writing/translate_typed.csv");
-      setQuestions(data);
-      setIsLoading(false);
+      try {
+        const data = await fetchPracticeData("translate_typed");
+        setQuestions(data.map(normaliseQuestion));
+      } catch (err) {
+        console.error("[TranslateTypedPage] Failed to load exercises:", err);
+      } finally {
+        setIsLoading(false);
+      }
     };
     fetchData();
   }, []);

@@ -11,7 +11,7 @@ import { getFeedbackMessage } from "@/utils/feedbackMessages";
 import { useTextToSpeech } from "@/hooks/useTextToSpeech";
 import { useWritingEvaluation } from "@/hooks/useWritingEvaluation";
 import WritingFeedbackResult from "@/components/WritingFeedbackResult";
-import * as vocabularyApi from "@/services/vocabularyApi";
+import { fetchPracticeData } from "@/utils/practiceFetcher";
 import { Button } from "@/components/ui/button";
 
 export default function WriteDocumentsPage() {
@@ -35,19 +35,35 @@ export default function WriteDocumentsPage() {
   useEffect(() => {
     const fetchQuestions = async () => {
       try {
-        const data = await vocabularyApi.fetchWritingDocuments();
-        if (data && data.length > 0) {
-          setQuestions(data);
+        const data = await fetchPracticeData("write_documents");
+        const raw = Array.isArray(data) ? data : [];
+        const normalized = raw
+          .filter((item: any) =>
+            (item.documentType || item.documentType_fr || item.content?.documentType) &&
+            (item.Category === "main" || !item.Category)
+          )
+          .map((item: any) => {
+            const c = item.content || item;
+            const ev = item.evaluation || item;
+            return {
+              documentType:    c.documentType || c.documentType_fr || item.documentType || "",
+              scenario:        c.scenario     || c.scenario_fr     || item.scenario     || "",
+              recipient:       c.recipient    || c.recipient_fr    || item.recipient    || "",
+              subject:         c.subject      || c.subject_fr      || item.subject      || "",
+              template:        c.template     || c.template_fr     || item.template     || "",
+              sampleAnswer:    ev.sampleAnswer || ev.sampleAnswer_fr || item.sampleAnswer || "",
+              minWords:        c.minWords     || item.minWords      || 20,
+              timeLimitSeconds: item.timeLimitSeconds || item.config?.timeLimitSeconds || item.TimeLimitSeconds || 360,
+              level:           item.level || item.Level || "",
+            };
+          });
+        if (normalized.length > 0) {
+          setQuestions(normalized);
         } else {
-          console.warn(
-            `[DATA_SOURCE] WriteDocumentsPage: BACKEND returned empty data. No fallback available.`,
-          );
+          console.warn("[WriteDocumentsPage] No valid exercises found");
         }
       } catch (error) {
-        console.error(
-          `[DATA_SOURCE] WriteDocumentsPage: BACKEND fetch FAILED. No fallback available.`,
-          error,
-        );
+        console.error("[WriteDocumentsPage] Failed to load:", error);
       } finally {
         setIsLoading(false);
       }

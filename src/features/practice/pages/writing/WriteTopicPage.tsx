@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils";
 import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
 import { useWritingEvaluation } from "@/hooks/useWritingEvaluation";
 import WritingFeedbackResult from "@/components/WritingFeedbackResult";
-import { loadMockCSV } from "@/utils/csvLoader";
+import { fetchPracticeData } from "@/utils/practiceFetcher";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import AccentKeyboard from "@/components/ui/AccentKeyboard";
@@ -77,7 +77,7 @@ export default function WriteTopicPage() {
   useEffect(() => {
     (async () => {
       try {
-        const data = await loadMockCSV("practice/writing/write_topic.csv", {
+        const data = await fetchPracticeData("write_topic", {
           level: levelParam,
           learningLang: learningLang || "fr",
           knownLang: knownLang || "en",

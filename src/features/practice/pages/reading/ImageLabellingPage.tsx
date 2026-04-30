@@ -6,7 +6,7 @@ import { useExerciseTimer } from "@/hooks/useExerciseTimer";
 import { cn } from "@/lib/utils";
 import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
 import { Button } from "@/components/ui/button";
-import { loadMockCSV } from "@/utils/csvLoader";
+import { fetchPracticeData } from "@/utils/practiceFetcher";
 import { CheckCircle2, Languages, Loader2, Sparkles } from "lucide-react";
 import { useQuestionLanguage } from "@/hooks/useQuestionLanguage";
 import { usePracticeComplete } from "@/hooks/usePracticeComplete";
@@ -93,7 +93,7 @@ function ImageLabellingContent() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const data = await loadMockCSV("practice/reading/image_labelling.csv", { tag });
+        const data = await fetchPracticeData("image_labelling", { tag });
         const mapped = (Array.isArray(data) ? data : []).map((item: any) => {
           const c = item.content || item;
           const cfg = item.config || item;
@@ -161,22 +161,40 @@ function ImageLabellingContent() {
 
   // ── Reset per exercise ─────────────────────────────────────────────────────
   const resetGame = () => {
-    setBankItems([...wordBank]);
+    // Force re-derive word bank from current exercise
+    const currentWordBank = learningLang === "fr"
+      ? parseArr<string>(ex?.word_bank_fr)
+      : parseArr<string>(ex?.word_bank_en);
+    
+    // Fallback: derive from items if no word bank
+    const currentItems = parseArr<LabelItem>(ex?.items).map(item => ({
+      ...item,
+      name: learningLang === "fr"
+        ? (item.name_fr || item.name)
+        : (item.name_en || item.name),
+    }));
+    
+    const finalWordBank = currentWordBank.length > 0 
+      ? currentWordBank 
+      : currentItems.map(i => i.name);
+    
+    setBankItems([...finalWordBank]);
     setPlacedItems([]);
     setShowFeedback(false);
     setIsCorrect(false);
     setFeedbackMessage("");
     setSelectedLabel(null);
     setSelectedTarget(null);
+    setScore(0);
   };
 
   useEffect(() => {
-    if (ex && wordBank.length > 0) {
+    if (ex) {
       resetGame();
       resetTimer();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentIndex, ex, wordBank.length]);
+  }, [currentIndex, ex?.external_id]);
 
   // ── Image resize tracking ──────────────────────────────────────────────────
   const handleImageLoad = (e: React.SyntheticEvent<HTMLImageElement>) => {
@@ -272,6 +290,10 @@ function ImageLabellingContent() {
   const handleContinue = () => {
     if (!showFeedback) return;
     if (isCorrect && currentIndex < exercises.length - 1) {
+      // Reset feedback state before moving to next exercise
+      setShowFeedback(false);
+      setIsCorrect(false);
+      setFeedbackMessage("");
       setCurrentIndex(prev => prev + 1);
       return;
     }
@@ -279,6 +301,7 @@ function ImageLabellingContent() {
       setIsCompleted(true);
       return;
     }
+    // If not correct, just hide feedback to try again
     setShowFeedback(false);
   };
 

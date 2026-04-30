@@ -81,6 +81,11 @@ function CompletePassageContent() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Translate heading state
+  const [translatedHeading, setTranslatedHeading] = useState("");
+  const [showTranslation, setShowTranslation] = useState(false);
+  const [isTranslating, setIsTranslating] = useState(false);
+
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
@@ -171,6 +176,8 @@ function CompletePassageContent() {
     setIsCorrect(false);
     setFeedbackTone("error");
     setFeedbackMessage("");
+    setTranslatedHeading("");
+    setShowTranslation(false);
     resetTimer();
   }, [currentIndex, currentQuestion, isCompleted, resetTimer]);
 
@@ -196,6 +203,29 @@ function CompletePassageContent() {
       return;
     }
     setIsCompleted(true);
+  };
+
+  const handleTranslateHeading = async () => {
+    const targetLang = learningLang === "fr" ? "en" : "fr";
+    if (showTranslation) { setShowTranslation(false); return; }
+    if (translatedHeading) { setShowTranslation(true); return; }
+    try {
+      setIsTranslating(true);
+      const res = await fetch("/api/translate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: selectHeading, target_lang: targetLang }),
+      });
+      if (!res.ok) throw new Error("Translation failed");
+      const data = (await res.json()) as { translation?: string };
+      setTranslatedHeading(data.translation || "");
+      setShowTranslation(true);
+    } catch {
+      setTranslatedHeading("");
+      setShowTranslation(false);
+    } finally {
+      setIsTranslating(false);
+    }
   };
 
   if (loading) {
@@ -276,8 +306,20 @@ function CompletePassageContent() {
         {/* Right — Options */}
         <div className="flex-1 min-h-0 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 p-6 md:p-8 overflow-y-auto">
           <h3 className="practice-reading-heading mb-6 flex items-center gap-2">
-            <Languages className="w-5 h-5 text-blue-500" />
-            {selectHeading}
+            <button
+              type="button"
+              onClick={handleTranslateHeading}
+              disabled={isTranslating}
+              aria-label={showTranslation ? "Show original" : "Translate heading"}
+              title={showTranslation ? "Show original" : "Translate heading"}
+              className="inline-flex items-center justify-center shrink-0 text-blue-500 hover:text-blue-600 disabled:opacity-60 transition-colors"
+            >
+              {isTranslating
+                ? <Loader2 className="w-5 h-5 animate-spin" />
+                : <Languages className="w-5 h-5" />
+              }
+            </button>
+            {showTranslation && translatedHeading ? translatedHeading : selectHeading}
           </h3>
 
           <div className="space-y-3">

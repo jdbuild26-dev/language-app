@@ -54,14 +54,22 @@ export default function ListenOrderPage() {
         setShowFeedback(true);
       }
     },
-    isPaused: isCompleted || showFeedback || !playedAudio || isLoading,
+    isPaused: isCompleted || !playedAudio || showFeedback || isLoading,
   });
 
   useEffect(() => {
     const fetchQuestions = async () => {
       try {
-        const data = await loadMockCSV("practice/listening/listen_order.csv");
-        setQuestions(data);
+        // Fetch with limit=5 to get only 5 random exercises
+        const data = await loadMockCSV("practice/listening/listen_order.csv", { limit: 5 });
+        
+        // If data has more than 5 items (fallback from local CSV), shuffle and take 5
+        if (data && data.length > 5) {
+          const shuffled = shuffleArray(data);
+          setQuestions(shuffled.slice(0, 5));
+        } else {
+          setQuestions(data || []);
+        }
       } catch (error) {
         console.error("Error loading mock data:", error);
       } finally {
@@ -162,7 +170,7 @@ export default function ListenOrderPage() {
         isSubmitEnabled={playedAudio && !showFeedback}
         showSubmitButton={!showFeedback}
         submitLabel="Check"
-        timerValue={playedAudio ? timerString : "--:--"}
+        timerValue={timerString}
       >
         <div className="flex flex-col items-center w-full max-w-2xl mx-auto px-4 py-6">
           <div className="w-full flex gap-4">

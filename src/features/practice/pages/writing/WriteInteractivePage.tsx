@@ -9,8 +9,9 @@ import { cn } from "@/lib/utils";
 import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
 import { useTextToSpeech } from "@/hooks/useTextToSpeech";
 import { useWritingEvaluation } from "@/hooks/useWritingEvaluation";
-import { loadMockCSV } from "@/utils/csvLoader";
+import { fetchPracticeData } from "@/utils/practiceFetcher";
 import { Loader2 } from "lucide-react";
+import { useTranslateText } from "@/hooks/useTranslateText";
 import { Button } from "@/components/ui/button";
 import WritingFeedbackResult from "@/components/WritingFeedbackResult";
 
@@ -83,6 +84,11 @@ export default function WriteInteractivePage() {
     useWritingEvaluation();
 
   const currentExchange = conversation?.exchanges[currentTurnIndex];
+
+  // Translate prompt per exchange
+  const { displayText: promptDisplayText, isTranslating: isTranslatingP, toggle: toggleTranslate, reset: resetTranslate } = useTranslateText(currentExchange?.prompt || "", "fr");
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  React.useEffect(() => { resetTranslate(); }, [currentTurnIndex]);
   const totalExchanges = conversation?.exchanges.length || 0;
 
   const timerDuration =
@@ -110,7 +116,7 @@ export default function WriteInteractivePage() {
   useEffect(() => {
     const fetchConversation = async () => {
       try {
-        const data = await loadMockCSV("practice/writing/write_interactive.csv");
+        const data = await fetchPracticeData("write_interactive");
         const raw = Array.isArray(data) ? data : [];
         // Filter to main category, prefer new format (has exchanges array)
         const items = raw.filter((item: any) =>
@@ -282,7 +288,7 @@ export default function WriteInteractivePage() {
         user_text: submittedText,
         topic: conversation?.scenario ?? "",
         reference: currentExchange.sampleAnswer || "",
-        context: `Prompt: ${currentExchange.prompt || ""}`,
+        context: `Prompt: ${promptDisplayText || ""}`,
       });
 
       if (result) {
@@ -492,9 +498,9 @@ export default function WriteInteractivePage() {
               <>
                 <div className="px-4 py-5 animate-in fade-in slide-in-from-bottom-4 duration-500 border-b border-slate-100 dark:border-slate-700/50 mb-2">
                   <h3 className="practice-reading-heading flex items-start gap-3 text-[15px] font-bold text-slate-800 dark:text-slate-200">
-                    <Languages className="w-5 h-5 text-emerald-500 shrink-0 mt-0.5" />
+                    <button type="button" onClick={toggleTranslate} disabled={isTranslatingP} className="inline-flex items-center justify-center shrink-0 text-emerald-500 hover:text-emerald-600 disabled:opacity-60 transition-colors mt-0.5">{isTranslatingP ? <Loader2 className="w-5 h-5 animate-spin" /> : <Languages className="w-5 h-5 shrink-0" />}</button>
                     <span className="leading-relaxed">
-                      {currentExchange.prompt ||
+                      {promptDisplayText ||
                         "Write the next reply in the conversation"}
                     </span>
                   </h3>

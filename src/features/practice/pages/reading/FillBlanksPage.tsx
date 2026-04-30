@@ -51,6 +51,30 @@ function normalizeOptions(v: unknown): string[] {
   return [];
 }
 
+/**
+ * Parses a passage string like "La bibliothèque est [1] __________ la poste."
+ * into PassageSegment[] — splitting on [N] ___... markers.
+ */
+function parseSegmentsFromPassage(passage: string): PassageSegment[] {
+  if (!passage) return [];
+  const segments: PassageSegment[] = [];
+  // Match [N] followed by optional underscores/spaces
+  const regex = /\[(\d+)\]\s*_{2,}\s*/g;
+  let lastIndex = 0;
+  let match: RegExpExecArray | null;
+  while ((match = regex.exec(passage)) !== null) {
+    if (match.index > lastIndex) {
+      segments.push({ type: "text", text: passage.slice(lastIndex, match.index) });
+    }
+    segments.push({ type: "blank", id: parseInt(match[1], 10) });
+    lastIndex = match.index + match[0].length;
+  }
+  if (lastIndex < passage.length) {
+    segments.push({ type: "text", text: passage.slice(lastIndex) });
+  }
+  return segments;
+}
+
 // ── Page wrapper ──────────────────────────────────────────────────────────────
 
 export default function FillBlanksPage() {
@@ -88,6 +112,11 @@ function FillBlanksContent() {
   const [totalScore, setTotalScore] = useState(0);
   const [isCompleted, setIsCompleted] = useState(false);
 
+  // Translate heading state
+  const [translatedHeading, setTranslatedHeading] = useState("");
+  const [showTranslation, setShowTranslation] = useState(false);
+  const [isTranslating, setIsTranslating] = useState(false);
+
   // ── Load data ──────────────────────────────────────────────────────────────
   useEffect(() => {
     const fetchData = async () => {
@@ -105,6 +134,13 @@ function FillBlanksContent() {
           const segments = parseJson<PassageSegment[]>(
             c.passageSegments || item.passageSegments, []
           );
+
+          // Fallback: derive segments from passage_fr / passage_en if DB has none stored
+          const passageFr = c.passage_fr || item.passage_fr || '';
+          const passageEn = c.passage_en || item.passage_en || '';
+          const derivedSegments = segments.length > 0
+            ? segments
+            : parseSegmentsFromPassage(passageFr || passageEn);
           const blanksRaw = parseJson<Record<string, any>>(
             e.blanksData || item.blanksData || item.eval_blanksData, {}
           );
@@ -127,9 +163,9 @@ function FillBlanksContent() {
           return {
             external_id:      item.external_id || item.ExerciseID,
             level:            item.Level || item.level || '',
-            passage_fr:       c.passage_fr || item.passage_fr || '',
-            passage_en:       c.passage_en || item.passage_en || '',
-            passageSegments:  segments,
+            passage_fr:       passageFr,
+            passage_en:       passageEn,
+            passageSegments:  derivedSegments,
             blanksData,
             timeLimitSeconds: Number(cfg.timeLimitSeconds || item.timeLimitSeconds || 480),
             instructionFr:    item.instructionFr || item.instruction_fr || '',
@@ -160,6 +196,8 @@ function FillBlanksContent() {
     setFeedbackTone("error");
     setFeedbackMessage("");
     setScore(0);
+    setTranslatedHeading("");
+    setShowTranslation(false);
     resetTimer();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentIndex, ex]);
@@ -206,6 +244,29 @@ function FillBlanksContent() {
   };
 
   const handleSubmit = () => { if (!showFeedback) checkAnswers(); };
+
+  const handleTranslateHeading = async () => {
+    const targetLang = learningLang === "fr" ? "en" : "fr";
+    if (showTranslation) { setShowTranslation(false); return; }
+    if (translatedHeading) { setShowTranslation(true); return; }
+    try {
+      setIsTranslating(true);
+      const res = await fetch("/api/translate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: selectHeading, target_lang: targetLang }),
+      });
+      if (!res.ok) throw new Error("failed");
+      const data = (await res.json()) as { translation?: string };
+      setTranslatedHeading(data.translation || "");
+      setShowTranslation(true);
+    } catch {
+      setTranslatedHeading("");
+      setShowTranslation(false);
+    } finally {
+      setIsTranslating(false);
+    }
+  };
 
   const handleContinue = () => {
     if (currentIndex < exercises.length - 1) {
@@ -348,8 +409,20 @@ function FillBlanksContent() {
         <div className="md:col-span-3 min-h-0 h-full self-stretch flex flex-col justify-start overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900">
           <div className="p-6 flex-1 min-h-0 overflow-y-auto custom-scrollbar">
             <h2 className="mb-6 flex items-center gap-2 text-xl font-semibold text-slate-900 dark:text-slate-100">
-              <Languages className="w-5 h-5 text-blue-500 shrink-0" />
-              {selectHeading}
+              <button
+                type="button"
+                onClick={handleTranslateHeading}
+                disabled={isTranslating}
+                aria-label={showTranslation ? "Show original" : "Translate heading"}
+                title={showTranslation ? "Show original" : "Translate heading"}
+                className="inline-flex items-center justify-center shrink-0 text-blue-500 hover:text-blue-600 disabled:opacity-60 transition-colors"
+              >
+                {isTranslating
+                  ? <Loader2 className="w-5 h-5 animate-spin" />
+                  : <Languages className="w-5 h-5" />
+                }
+              </button>
+              {showTranslation && translatedHeading ? translatedHeading : selectHeading}
             </h2>
 
             <div className="space-y-3">

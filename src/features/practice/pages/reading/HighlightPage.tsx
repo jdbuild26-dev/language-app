@@ -8,6 +8,7 @@ import { Loader2, Volume2, Languages } from "lucide-react";
 import { loadMockCSV } from "@/utils/csvLoader";
 import { cn } from "@/lib/utils";
 import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
+import { useTranslateText } from "@/hooks/useTranslateText";
 
 // MOCK_QUESTIONS removed - migrated to CSV
 
@@ -48,6 +49,11 @@ export default function HighlightPage() {
 
   const currentQuestion = questions[currentIndex];
   const timerDuration = currentQuestion?.timeLimitSeconds || 30;
+
+  // Translate question text
+  const { displayText: questionDisplayText, isTranslating: isTranslatingQ, toggle: toggleTranslate, reset: resetTranslate } = useTranslateText(currentQuestion?.question || "", "fr");
+
+  useEffect(() => { resetTranslate(); }, [currentIndex]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const { timerString, resetTimer } = useExerciseTimer({
     duration: timerDuration,
@@ -165,8 +171,15 @@ export default function HighlightPage() {
           {/* Question */}
           <div className="w-full bg-gradient-to-r from-emerald-500 to-teal-600 rounded-2xl p-6 mb-6 shadow-lg">
             <p className="text-lg md:text-xl text-white font-semibold text-center flex items-center justify-center gap-2">
-              <Languages className="w-5 h-5 text-blue-100 shrink-0" />
-              <span>{currentQuestion?.question}</span>
+              <button
+                type="button"
+                onClick={toggleTranslate}
+                disabled={isTranslatingQ}
+                className="inline-flex items-center justify-center shrink-0 text-blue-100 hover:text-white disabled:opacity-60 transition-colors"
+              >
+                {isTranslatingQ ? <Loader2 className="w-5 h-5 animate-spin" /> : <Languages className="w-5 h-5 text-blue-100 shrink-0" />}
+              </button>
+              <span>{questionDisplayText}</span>
             </p>
           </div>
 

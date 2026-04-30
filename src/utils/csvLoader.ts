@@ -9,7 +9,7 @@ const FILE_TO_SLUG = {
   "practice/speaking/what_do_you_see.csv": "what-do-you-see",
   "practice/writing/dictation_image.csv": "dictation_image",
   "practice/reading/comprehension.csv": "passage_mcq",
-  "practice/reading/fill_blanks_passage.csv": "complete_passage_dropdown",
+  "practice/reading/fill_blanks_passage.csv": "fill_blanks",
   "practice/listening/type.csv": "type_what_you_hear",
   "practice/listening/select.csv": "multiple_choice_audio",
   "practice/listening/audio_fill_blanks.csv": "listen_fill_blanks",
@@ -81,18 +81,20 @@ export const loadMockCSV = async (
     learningLang?: string;
     knownLang?: string;
     tag?: string;
+    limit?: number;
   } = {},
 ) => {
   const slug = FILE_TO_SLUG[fileName];
 
   if (slug) {
     try {
-      const { level, learningLang, knownLang, tag } = options;
+      const { level, learningLang, knownLang, tag, limit } = options;
       const params = new URLSearchParams();
       if (level) params.append("level", level);
       if (learningLang) params.append("learning_lang", learningLang);
       if (knownLang) params.append("known_lang", knownLang);
       if (tag) params.append("tag", tag);
+      if (limit) params.append("limit", limit.toString());
 
       const response = await fetch(
         `${API_URL}/api/practice/${slug}${params.toString() ? `?${params}` : ""}`,
@@ -144,14 +146,22 @@ export const loadMockCSV = async (
                 ) {
                   try {
                     newRow[key] = JSON.parse(value);
-                  } catch {
-                    // Keep original string when parsing fails.
+                  } catch (e) {
+                    console.warn(`Failed to parse JSON for key "${key}":`, e);
                   }
                 }
               }
             }
             return newRow;
           });
+          
+          // Log any rows with parsing issues for debugging
+          processedData.forEach((row, index) => {
+            if (row.questions && typeof row.questions === 'string') {
+              console.warn(`Row ${index} has unparsed questions field:`, row.questions);
+            }
+          });
+          
           resolve(processedData);
         },
         error: (error) => reject(error),
