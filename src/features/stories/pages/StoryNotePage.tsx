@@ -284,6 +284,33 @@ export default function StoryNotePage() {
     const abortCtrl = new AbortController();
     const sig = { signal: abortCtrl.signal };
 
+    // ── Resolve French TTS voice (async on Chrome) ──────────────────────────
+    // Setting lang alone is unreliable — the browser may fall back to the
+    // default voice if voices haven't loaded yet. We resolve the best French
+    // voice once and reuse it for all utterances in this page.
+    let frenchVoice: SpeechSynthesisVoice | null = null;
+    const resolveFrenchVoice = () => {
+      const voices = window.speechSynthesis?.getVoices() ?? [];
+      frenchVoice =
+        voices.find((v) => v.lang === "fr-FR") ??
+        voices.find((v) => v.lang === "fr-CA") ??
+        voices.find((v) => v.lang.startsWith("fr")) ??
+        null;
+    };
+    if (window.speechSynthesis) {
+      resolveFrenchVoice();
+      // Chrome fires onvoiceschanged when the list is ready
+      window.speechSynthesis.onvoiceschanged = resolveFrenchVoice;
+    }
+
+    /** Create a French utterance with the best available voice. */
+    const makeFrenchUtt = (text: string): SpeechSynthesisUtterance => {
+      const utt = new SpeechSynthesisUtterance(text);
+      utt.lang = "fr-FR";
+      if (frenchVoice) utt.voice = frenchVoice;
+      return utt;
+    };
+
     // ── Hero translate ──────────────────────────────────────────────────────
     const heroBtn = root.querySelector<HTMLButtonElement>("#heroTranslateBtn");
     const titleGroup = root.querySelector<HTMLElement>(".hero-title-group");
@@ -333,7 +360,7 @@ export default function StoryNotePage() {
           monoPlaying = false;
           monoPlayBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="currentColor" style="width:20px;height:20px"><path d="M8 5v14l11-7z"/></svg>';
         } else {
-          const utt = new SpeechSynthesisUtterance(primaryPara.textContent ?? "");
+          const utt = makeFrenchUtt(primaryPara.textContent ?? "");
           utt.onend = () => {
             monoPlaying = false;
             monoPlayBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="currentColor" style="width:20px;height:20px"><path d="M8 5v14l11-7z"/></svg>';
@@ -388,7 +415,7 @@ export default function StoryNotePage() {
       window.speechSynthesis.cancel();
       const textEl = msgRows[idx].querySelector<HTMLElement>(".msg-text");
       if (!textEl) return;
-      const utt = new SpeechSynthesisUtterance(textEl.textContent ?? "");
+      const utt = makeFrenchUtt(textEl.textContent ?? "");
       utt.rate = speeds[speedIdx];
       utt.onend = () => {
         if (playing && idx + 1 < msgRows.length) {
@@ -431,8 +458,8 @@ export default function StoryNotePage() {
       }, sig);
     }
 
-    cleanupRef.current = () => { abortCtrl.abort(); window.speechSynthesis?.cancel(); };
-    return () => { abortCtrl.abort(); window.speechSynthesis?.cancel(); };
+    cleanupRef.current = () => { abortCtrl.abort(); window.speechSynthesis?.cancel(); if (window.speechSynthesis) window.speechSynthesis.onvoiceschanged = null; };
+    return () => { abortCtrl.abort(); window.speechSynthesis?.cancel(); if (window.speechSynthesis) window.speechSynthesis.onvoiceschanged = null; };
   }, [html]);
 
   const isLoading = loadingNotes || loadingHtml;
