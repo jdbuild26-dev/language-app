@@ -41,6 +41,15 @@ export default function WritingConversationPage() {
 
   const currentExchange = conversation?.exchanges?.[currentTurnIndex];
   const totalExchanges = conversation?.exchanges?.length || 0;
+  const {
+    displayText: promptDisplayText,
+    isTranslating: isTranslatingP,
+    toggle: toggleTranslate,
+    reset: resetTranslate,
+  } = useTranslateText(currentExchange?.prompt || "", "fr");
+  useEffect(() => {
+    resetTranslate();
+  }, [currentTurnIndex, resetTranslate]);
 
   const { timerString, resetTimer } = useExerciseTimer({
     duration: conversation?.timeLimitSeconds || 300,
@@ -223,6 +232,7 @@ export default function WritingConversationPage() {
       conversation,
       currentTurnIndex,
       totalExchanges,
+      promptDisplayText,
     ],
   );
 
@@ -401,7 +411,18 @@ export default function WritingConversationPage() {
             {currentExchange && (
               <div className="px-4 py-5 animate-in fade-in slide-in-from-bottom-4 duration-500 border-b border-slate-100 dark:border-slate-700/50 mb-2">
                 <h3 className="practice-reading-heading flex items-start gap-3 text-[15px] font-bold text-slate-800 dark:text-slate-200">
-                  <button type="button" onClick={toggleTranslate} disabled={isTranslatingP} className="inline-flex items-center justify-center shrink-0 text-emerald-500 hover:text-emerald-600 disabled:opacity-60 transition-colors mt-0.5">{isTranslatingP ? <Loader2 className="w-5 h-5 animate-spin" /> : <Languages className="w-5 h-5 shrink-0" />}</button>
+                  <button
+                    type="button"
+                    onClick={toggleTranslate}
+                    disabled={isTranslatingP}
+                    className="inline-flex items-center justify-center shrink-0 text-emerald-500 hover:text-emerald-600 disabled:opacity-60 transition-colors mt-0.5"
+                  >
+                    {isTranslatingP ? (
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                    ) : (
+                      <Languages className="w-5 h-5 shrink-0" />
+                    )}
+                  </button>
                   <span className="leading-relaxed">
                     {promptDisplayText ||
                       "Write the next reply in the conversation"}
