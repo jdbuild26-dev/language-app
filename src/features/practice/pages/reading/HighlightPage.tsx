@@ -1,16 +1,13 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { usePracticeExit } from "@/hooks/usePracticeExit";
 import { useExerciseTimer } from "@/hooks/useExerciseTimer";
 import { useTextToSpeech } from "@/hooks/useTextToSpeech";
-import { Loader2, Volume2, Languages } from "lucide-react";
-import { loadMockCSV } from "@/utils/csvLoader";
+import { Loader2, Volume2, Languages, MousePointer2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
 import { useTranslateText } from "@/hooks/useTranslateText";
-
-// MOCK_QUESTIONS removed - migrated to CSV
 
 export default function HighlightPage() {
   const handleExit = usePracticeExit();
@@ -19,39 +16,49 @@ export default function HighlightPage() {
   const [questions, setQuestions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [selectedWord, setSelectedWord] = useState(null);
+  const [selectedText, setSelectedText] = useState("");
   const [isCompleted, setIsCompleted] = useState(false);
+  const [showFeedback, setShowFeedback] = useState(false);
+  const [isCorrect, setIsCorrect] = useState(false);
+  const [feedbackMessage, setFeedbackMessage] = useState("");
+  const [score, setScore] = useState(0);
+
+  const passageRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const fetchQuestions = async () => {
       try {
-        const data = await loadMockCSV("practice/reading/highlight_word.csv");
-        setQuestions(Array.isArray(data) ? (data as any[]) : []);
+        // Fetch from the real backend using native fetch
+        const response = await fetch("/api/practice/highlight_text");
+        if (!response.ok) throw new Error("Failed to fetch exercises");
+        const data = await response.json();
+        setQuestions(Array.isArray(data) ? data : []);
       } catch (error) {
-        console.error("Error loading mock data:", error);
+        console.error("Error loading exercises:", error);
+        setQuestions([]);
       } finally {
         setLoading(false);
       }
     };
     fetchQuestions();
   }, []);
-  const [showFeedback, setShowFeedback] = useState(false);
-  const [isCorrect, setIsCorrect] = useState(false);
-  const [feedbackMessage, setFeedbackMessage] = useState("");
-  const [score, setScore] = useState(0);
-
-  const getFeedbackMessage = (correct) => {
-    if (correct) {
-      return "Excellent! Good job finding the word.";
-    }
-    return "Try again. Look for the word that matches the meaning.";
-  };
 
   const currentQuestion = questions[currentIndex];
-  const timerDuration = currentQuestion?.timeLimitSeconds || 30;
+  const lLang = currentQuestion?.learning_lang || "fr";
+  const kLang = currentQuestion?.known_lang || "en";
+  
+  const passage = currentQuestion?.content?.[`passage_${lLang}`] || "";
+  const questionText = currentQuestion?.content?.[`question_${lLang}`] || "";
+  const correctAnswer = currentQuestion?.evaluation?.[`correct_answer_${lLang}`] || "";
+  const tolerance = currentQuestion?.evaluation?.acceptable_boundary || 10;
+  const minChars = currentQuestion?.config?.minHighlightChars || 0;
+  const maxChars = currentQuestion?.config?.maxHighlightChars || 2000;
+  const isCaseSensitive = currentQuestion?.config?.caseSensitive || false;
 
-  // Translate question text
-  const { displayText: questionDisplayText, isTranslating: isTranslatingQ, toggle: toggleTranslate, reset: resetTranslate } = useTranslateText(currentQuestion?.question || "", "fr");
+  const timerDuration = currentQuestion?.config?.timeLimitSeconds || 360;
+
+  // Translate question text (if user wants to see it in known lang)
+  const { displayText: questionDisplayText, isTranslating: isTranslatingQ, toggle: toggleTranslate, reset: resetTranslate } = useTranslateText(questionText, kLang);
 
   useEffect(() => { resetTranslate(); }, [currentIndex]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -70,58 +77,80 @@ export default function HighlightPage() {
 
   useEffect(() => {
     if (currentQuestion && !isCompleted) {
-      setSelectedWord(null);
+      setSelectedText("");
       resetTimer();
     }
   }, [currentIndex, currentQuestion, isCompleted, resetTimer]);
 
   const handlePlayAudio = () => {
-    if (currentQuestion) {
-      speak(currentQuestion.passage, "fr-FR");
+    if (passage) {
+      speak(passage, lLang === "fr" ? "fr-FR" : "en-US");
     }
   };
 
-  // Normalize for comparison
-  const normalize = (str) =>
-    str
-      .toLowerCase()
-      .replace(/[.,!?;:'"]/g, "")
-      .trim();
+  const normalize = (str: string) => {
+    let normalized = str.trim().replace(/[.,!?;:'"]/g, "");
+    if (!isCaseSensitive) normalized = normalized.toLowerCase();
+    return normalized;
+  };
 
-  const handleWordClick = (word) => {
-    if (showFeedback) return;
-    setSelectedWord(word);
+  const handleMouseUp = () => {
+    if (showFeedback || isCompleted) return;
+    const selection = window.getSelection();
+    if (selection) {
+      const text = selection.toString().trim();
+      if (text) {
+        setSelectedText(text);
+      }
+    }
   };
 
   const handleSubmit = () => {
-    if (showFeedback || !selectedWord) return;
+    if (showFeedback || !selectedText) return;
 
-    const correct =
-      normalize(selectedWord) === normalize(currentQuestion.correctWord);
-    setIsCorrect(correct);
-    setFeedbackMessage(getFeedbackMessage(correct));
-    setShowFeedback(true);
+    const sel = normalize(selectedText);
+    const target = normalize(correctAnswer);
 
-    if (correct) {
-      setScore((prev) => prev + 1);
+    // Validation: Min/Max characters
+    if (selectedText.length < minChars) {
+      setFeedbackMessage(`Your selection is too short. Please select at least ${minChars} characters.`);
+      setIsCorrect(false);
+      setShowFeedback(true);
+      return;
     }
+    if (selectedText.length > maxChars) {
+      setFeedbackMessage(`Your selection is too long. Maximum allowed is ${maxChars} characters.`);
+      setIsCorrect(false);
+      setShowFeedback(true);
+      return;
+    }
+
+    // Fuzzy Match:
+    // 1. Check if one contains the other
+    const isContained = sel.includes(target) || target.includes(sel);
+    // 2. Check if the length difference is within the acceptable boundary (tolerance)
+    const lengthDiff = Math.abs(sel.length - target.length);
+    
+    const correct = isContained && lengthDiff <= tolerance;
+
+    setIsCorrect(correct);
+    if (correct) {
+      setFeedbackMessage("Excellent! You found the correct section.");
+      setScore((prev) => prev + 1);
+    } else {
+      setFeedbackMessage("Not quite. Try to be more precise with your selection.");
+    }
+    setShowFeedback(true);
   };
 
   const handleContinue = () => {
     setShowFeedback(false);
-
     if (currentIndex < questions.length - 1) {
       setCurrentIndex((prev) => prev + 1);
     } else {
       setIsCompleted(true);
     }
   };
-
-  const progress =
-    questions.length > 0 ? ((currentIndex + 1) / questions.length) * 100 : 0;
-
-  // Split passage into clickable words
-  const words = currentQuestion?.passage.split(/\s+/) || [];
 
   if (loading) {
     return (
@@ -131,15 +160,15 @@ export default function HighlightPage() {
     );
   }
 
+  const progress = questions.length > 0 ? ((currentIndex + 1) / questions.length) * 100 : 0;
+
   return (
     <>
       <PracticeGameLayout
-        questionType="Highlight the Word"
-        questionTypeFr="Surligner le mot"
-        questionTypeEn="Highlight the Word"
-        localizedInstruction={undefined}
-        instructionFr="Trouvez et sélectionnez le mot"
-        instructionEn="Find and select the word"
+        questionType="Highlight the Sentence"
+        questionTypeFr="Surligner la phrase"
+        questionTypeEn="Highlight the Sentence"
+        localizedInstruction={currentQuestion?.content?.[`box_instructions_${lLang}`]}
         progress={progress}
         isGameOver={isCompleted}
         score={score}
@@ -149,87 +178,77 @@ export default function HighlightPage() {
         onRestart={() => window.location.reload()}
         currentQuestionIndex={currentIndex}
         questionCounterValue={currentIndex + 1}
-        isSubmitEnabled={!!selectedWord || showFeedback}
+        isSubmitEnabled={!!selectedText || showFeedback}
         showSubmitButton={true}
-        submitLabel={
-          showFeedback
-            ? currentIndex + 1 === questions.length
-              ? "FINISH"
-              : "CONTINUE"
-            : "Submit Answer"
-        }
+        submitLabel={showFeedback ? (currentIndex + 1 === questions.length ? "FINISH" : "CONTINUE") : "Submit Selection"}
         timerValue={timerString}
         showFeedback={showFeedback}
         isCorrect={isCorrect}
-        correctAnswer={!isCorrect ? currentQuestion.correctWord : null}
+        correctAnswer={!isCorrect ? correctAnswer : null}
         feedbackMessage={feedbackMessage}
-        feedbackTone={
-          showFeedback ? (isCorrect ? "success" : "error") : "neutral"
-        }
+        feedbackTone={showFeedback ? (isCorrect ? "success" : "error") : "neutral"}
       >
-        <div className="flex flex-col items-center w-full max-w-2xl mx-auto px-4 py-6 pb-[100px] flex-1 min-h-0">
-          {/* Question */}
-          <div className="w-full bg-gradient-to-r from-emerald-500 to-teal-600 rounded-2xl p-6 mb-6 shadow-lg">
-            <p className="text-lg md:text-xl text-white font-semibold text-center flex items-center justify-center gap-2">
+        <div className="flex flex-col items-center w-full max-w-3xl mx-auto px-4 py-6 pb-[100px] flex-1 min-h-0">
+          {/* Question Header */}
+          <div className="w-full bg-gradient-to-r from-blue-500 to-indigo-600 rounded-2xl p-6 mb-6 shadow-lg">
+            <p className="text-lg md:text-xl text-white font-semibold text-center flex items-center justify-center gap-3">
               <button
                 type="button"
                 onClick={toggleTranslate}
                 disabled={isTranslatingQ}
                 className="inline-flex items-center justify-center shrink-0 text-blue-100 hover:text-white disabled:opacity-60 transition-colors"
               >
-                {isTranslatingQ ? <Loader2 className="w-5 h-5 animate-spin" /> : <Languages className="w-5 h-5 text-blue-100 shrink-0" />}
+                {isTranslatingQ ? <Loader2 className="w-5 h-5 animate-spin" /> : <Languages className="w-5 h-5" />}
               </button>
               <span>{questionDisplayText}</span>
             </p>
           </div>
 
-          {/* Passage with clickable words */}
-          <div className="w-full bg-white dark:bg-slate-800 rounded-2xl p-6 mb-6 shadow-lg border border-slate-200 dark:border-slate-700">
-            <div className="flex flex-wrap gap-2 justify-center leading-relaxed">
-              {words.map((word, index) => {
-                const cleanWord = word.replace(/[.,!?;:'"]/g, "");
-                const isSelected = selectedWord === cleanWord;
-                const isCorrectWord =
-                  showFeedback &&
-                  normalize(cleanWord) ===
-                    normalize(currentQuestion.correctWord);
+          {/* Passage Area */}
+          <div className="w-full bg-white dark:bg-slate-800 rounded-2xl p-8 mb-6 shadow-xl border border-slate-200 dark:border-slate-700 relative overflow-hidden">
+             <div className="absolute top-4 right-4 text-slate-400 select-none">
+                <MousePointer2 className="w-5 h-5 opacity-50" />
+             </div>
+             
+             <h3 className="text-xl font-bold mb-4 text-slate-900 dark:text-white border-b pb-2">
+                {currentQuestion?.content?.[`title_${lLang}`] || "Passage"}
+             </h3>
 
-                return (
-                  <button
-                    key={index}
-                    onClick={() => handleWordClick(cleanWord)}
-                    disabled={showFeedback}
-                    className={cn(
-                      "px-3 py-1 rounded-lg text-lg font-medium transition-all duration-200 border-2",
-                      isCorrectWord
-                        ? "bg-emerald-500 text-white border-emerald-500"
-                        : isSelected && showFeedback && !isCorrect
-                          ? "bg-red-500 text-white border-red-500"
-                          : isSelected
-                            ? "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 border-emerald-500"
-                            : "bg-transparent border-transparent text-slate-800 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-700 hover:border-slate-300",
-                    )}
-                  >
-                    {word}
-                  </button>
-                );
-              })}
-            </div>
+             <div 
+                ref={passageRef}
+                onMouseUp={handleMouseUp}
+                onTouchEnd={handleMouseUp}
+                className="text-xl leading-relaxed text-slate-800 dark:text-slate-200 selection:bg-blue-200 selection:text-blue-900 cursor-text whitespace-pre-wrap select-text"
+             >
+                {passage}
+             </div>
+
+             {selectedText && !showFeedback && (
+                <div className="mt-6 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg animate-in fade-in slide-in-from-top-2">
+                   <p className="text-sm font-medium text-blue-600 dark:text-blue-400 mb-1 flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full bg-blue-500"></span>
+                      Currently Selected:
+                   </p>
+                   <p className="text-slate-700 dark:text-slate-300 italic line-clamp-2">
+                      "{selectedText}"
+                   </p>
+                </div>
+             )}
           </div>
 
-          {/* Audio button */}
+          {/* Audio Controls */}
           <button
             onClick={handlePlayAudio}
             disabled={isSpeaking}
             className={cn(
-              "flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all",
+              "flex items-center gap-2 px-6 py-3 rounded-full text-sm font-semibold transition-all shadow-sm border",
               isSpeaking
-                ? "bg-emerald-100 text-emerald-600"
-                : "bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-emerald-100 hover:text-emerald-600",
+                ? "bg-blue-100 text-blue-600 border-blue-200"
+                : "bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-blue-50 dark:hover:bg-blue-900/30 hover:border-blue-300",
             )}
           >
-            <Volume2 className="w-4 h-4" />
-            Listen to passage
+            <Volume2 className="w-5 h-5" />
+            Listen to Passage
           </button>
         </div>
       </PracticeGameLayout>
