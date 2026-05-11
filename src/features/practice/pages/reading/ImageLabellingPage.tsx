@@ -7,22 +7,28 @@ import { cn } from "@/lib/utils";
 import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
 import { Button } from "@/components/ui/button";
 import { fetchPracticeData } from "@/utils/practiceFetcher";
-import { CheckCircle2, Languages, Loader2, Sparkles } from "lucide-react";
+import { CheckCircle2, Languages, Loader2, Sparkles, Image as ImageIcon, XCircle, RotateCcw } from "lucide-react";
 import { useQuestionLanguage } from "@/hooks/useQuestionLanguage";
 import { usePracticeComplete } from "@/hooks/usePracticeComplete";
 import { useSearchParams } from "next/navigation";
+import { Card } from "@/components/ui/card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { motion, AnimatePresence } from "framer-motion";
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 type LabelItem = {
-  id?: number;
-  name: string;      // display name (learning lang)
-  name_fr?: string;
-  name_en?: string;
-  x: number;
-  y: number;
+  id: number;
+  name: string;      // correct name (learning lang)
+  name_fr: string;
+  name_en: string;
+  options?: string[]; // list of strings (learning lang)
 };
-
-type PlacedItem = LabelItem & { isCorrect: boolean | null };
 
 type ImageLabellingExercise = {
   external_id?: string;
@@ -35,10 +41,7 @@ type ImageLabellingExercise = {
   instructionFr?: string;
   instructionEn?: string;
   image?: string;
-  // new format
-  items?: LabelItem[] | string;
-  word_bank_fr?: string[] | string;
-  word_bank_en?: string[] | string;
+  items: LabelItem[];
   timeLimitSeconds?: number;
 };
 
@@ -71,23 +74,16 @@ function ImageLabellingContent() {
   const searchParams = useSearchParams();
   const tag = searchParams?.get("tag") ?? undefined;
 
-  const imageRef = useRef<HTMLImageElement | null>(null);
-  const [imgSize, setImgSize] = useState({ width: 0, height: 0 });
-
   const [exercises, setExercises] = useState<ImageLabellingExercise[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [currentIndex, setCurrentIndex] = useState(0);
 
-  const [bankItems, setBankItems] = useState<string[]>([]);
-  const [placedItems, setPlacedItems] = useState<PlacedItem[]>([]);
+  const [userAnswers, setUserAnswers] = useState<Record<number, string>>({});
   const [isCompleted, setIsCompleted] = useState(false);
   const [showFeedback, setShowFeedback] = useState(false);
-  const [score, setScore] = useState(0);
   const [totalScore, setTotalScore] = useState(0);
   const [feedbackMessage, setFeedbackMessage] = useState("");
   const [isCorrect, setIsCorrect] = useState(false);
-  const [selectedLabel, setSelectedLabel] = useState<string | null>(null);
-  const [selectedTarget, setSelectedTarget] = useState<LabelItem | null>(null);
 
   // ── Load data ──────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -97,6 +93,26 @@ function ImageLabellingContent() {
         const mapped = (Array.isArray(data) ? data : []).map((item: any) => {
           const c = item.content || item;
           const cfg = item.config || item;
+          
+          // Determine learning language once per exercise if possible
+          // For now assume 'fr' or use item.learning_lang
+          const learningLang = item.learning_lang || 'fr';
+
+          const rawItems = parseArr<any>(c.items || item.items);
+          const mappedItems = rawItems.map((it: any) => {
+            const opts = learningLang === 'fr' 
+              ? parseArr<string>(it.options_fr) 
+              : parseArr<string>(it.options_en);
+            
+            return {
+              id: it.id,
+              name: learningLang === 'fr' ? (it.name_fr || it.name) : (it.name_en || it.name),
+              name_fr: it.name_fr || it.name || '',
+              name_en: it.name_en || it.name || '',
+              options: opts.length > 0 ? opts : []
+            } as LabelItem;
+          });
+
           return {
             external_id:  item.external_id || item.ExerciseID,
             level:        item.Level || item.level || '',
@@ -108,9 +124,7 @@ function ImageLabellingContent() {
             instructionFr: item.instructionFr || item.instruction_fr || '',
             instructionEn: item.instructionEn || item.instruction_en || '',
             image:        c.image || item.image || item.imageUrl || '',
-            items:        parseArr<LabelItem>(c.items || item.items),
-            word_bank_fr: parseArr<string>(c.word_bank_fr || item.word_bank_fr),
-            word_bank_en: parseArr<string>(c.word_bank_en || item.word_bank_en),
+            items:        mappedItems,
             timeLimitSeconds: Number(cfg.timeLimitSeconds || item.timeLimitSeconds || 120),
           } as ImageLabellingExercise;
         });
@@ -128,64 +142,15 @@ function ImageLabellingContent() {
   const { pick, showQuestionInKnown, learningLang } = useQuestionLanguage(ex?.level);
   usePracticeComplete({ isGameOver: isCompleted, score: totalScore, totalQuestions: exercises.length, exerciseType: "image_labelling", level: ex?.level });
 
-  // ── Derive items in learning language ─────────────────────────────────────
-  const items: LabelItem[] = useMemo(() => {
-    const raw = parseArr<LabelItem>(ex?.items);
-    return raw.map(item => ({
-      ...item,
-      // display name is always in learning language
-      name: learningLang === "fr"
-        ? (item.name_fr || item.name)
-        : (item.name_en || item.name),
-    }));
-  }, [ex?.items, learningLang]);
-
-  // Word bank in learning language
-  const wordBank: string[] = useMemo(() => {
-    const wb = learningLang === "fr"
-      ? parseArr<string>(ex?.word_bank_fr)
-      : parseArr<string>(ex?.word_bank_en);
-    // fallback: derive from items if no word bank
-    if (wb.length === 0) return items.map(i => i.name);
-    return wb;
-  }, [ex?.word_bank_fr, ex?.word_bank_en, items, learningLang]);
-
-  // EN translations for showing after submit
-  const wordBankEn: string[] = useMemo(() =>
-    parseArr<string>(ex?.word_bank_en), [ex?.word_bank_en]);
-  const wordBankFr: string[] = useMemo(() =>
-    parseArr<string>(ex?.word_bank_fr), [ex?.word_bank_fr]);
-
   const titleText    = pick(ex?.title_fr, ex?.title_en) || ex?.title || "Image Labelling";
   const questionText = pick(ex?.question_fr, ex?.question_en) || "Label the image";
 
   // ── Reset per exercise ─────────────────────────────────────────────────────
   const resetGame = () => {
-    // Force re-derive word bank from current exercise
-    const currentWordBank = learningLang === "fr"
-      ? parseArr<string>(ex?.word_bank_fr)
-      : parseArr<string>(ex?.word_bank_en);
-    
-    // Fallback: derive from items if no word bank
-    const currentItems = parseArr<LabelItem>(ex?.items).map(item => ({
-      ...item,
-      name: learningLang === "fr"
-        ? (item.name_fr || item.name)
-        : (item.name_en || item.name),
-    }));
-    
-    const finalWordBank = currentWordBank.length > 0 
-      ? currentWordBank 
-      : currentItems.map(i => i.name);
-    
-    setBankItems([...finalWordBank]);
-    setPlacedItems([]);
+    setUserAnswers({});
     setShowFeedback(false);
     setIsCorrect(false);
     setFeedbackMessage("");
-    setSelectedLabel(null);
-    setSelectedTarget(null);
-    setScore(0);
   };
 
   useEffect(() => {
@@ -195,19 +160,6 @@ function ImageLabellingContent() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentIndex, ex?.external_id]);
-
-  // ── Image resize tracking ──────────────────────────────────────────────────
-  const handleImageLoad = (e: React.SyntheticEvent<HTMLImageElement>) => {
-    setImgSize({ width: e.currentTarget.clientWidth, height: e.currentTarget.clientHeight });
-  };
-  useEffect(() => {
-    const handleResize = () => {
-      if (imageRef.current)
-        setImgSize({ width: imageRef.current.clientWidth, height: imageRef.current.clientHeight });
-    };
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, []);
 
   // ── Timer ──────────────────────────────────────────────────────────────────
   const { timerString, resetTimer } = useExerciseTimer({
@@ -224,65 +176,32 @@ function ImageLabellingContent() {
   });
 
   // ── Interaction handlers ───────────────────────────────────────────────────
-  const handleLabelClick = (name: string) => {
+  const handleAnswerChange = (itemId: number, value: string) => {
     if (showFeedback) return;
-    if (selectedTarget) {
-      placeItem(name, selectedTarget);
-      setSelectedTarget(null);
-      setSelectedLabel(null);
-      return;
-    }
-    setSelectedLabel(selectedLabel === name ? null : name);
-  };
-
-  const handleTargetClick = (target: LabelItem) => {
-    if (showFeedback) return;
-    const alreadyPlaced = placedItems.find(
-      p => Math.abs(p.x - target.x) < 0.0001 && Math.abs(p.y - target.y) < 0.0001
-    );
-    if (alreadyPlaced) { handleReturnToBank(alreadyPlaced.name); return; }
-    if (selectedLabel) {
-      placeItem(selectedLabel, target);
-      setSelectedLabel(null);
-      setSelectedTarget(null);
-    } else {
-      setSelectedTarget(selectedTarget === target ? null : target);
-    }
-  };
-
-  const placeItem = (name: string, target: LabelItem) => {
-    setBankItems(prev => prev.filter(i => i !== name));
-    setPlacedItems(prev => [...prev, { ...target, name, isCorrect: null }]);
-  };
-
-  const handleReturnToBank = (name: string) => {
-    if (showFeedback) return;
-    setPlacedItems(prev => prev.filter(p => p.name !== name));
-    setBankItems(prev => prev.includes(name) ? prev : [...prev, name]);
+    setUserAnswers(prev => ({ ...prev, [itemId]: value }));
   };
 
   const handleCheck = () => {
-    if (!items.length) return;
+    if (!ex?.items.length) return;
+    
     let correct = 0;
-    const newPlaced = placedItems.map(placed => {
-      const target = items.find(
-        k => Math.abs(k.x - placed.x) < 0.0001 && Math.abs(k.y - placed.y) < 0.0001
-      );
-      if (!target) return placed;
-      const isHit = target.name === placed.name;
-      if (isHit) correct++;
-      return { ...placed, isCorrect: isHit };
+    ex.items.forEach(item => {
+      if (userAnswers[item.id] === item.name) {
+        correct++;
+      }
     });
-    setPlacedItems(newPlaced);
-    setScore(correct);
-    setTotalScore(prev => prev + correct);
-    const total = items.length;
+
+    setTotalScore(prev => prev + (correct === ex.items.length ? 1 : 0)); // Score per exercise or per item?
+    // Let's stick to per-item score for totalScore if that's the app pattern, 
+    // but usually totalScore is total correct items.
+    
+    const total = ex.items.length;
     if (correct === total) {
       setIsCorrect(true);
-      setFeedbackMessage(`Perfect! All ${total} labels correct!`);
+      setFeedbackMessage(`Perfect! All ${total} correct!`);
     } else {
       setIsCorrect(false);
-      setFeedbackMessage(`${correct} out of ${total} correct. Check your placements!`);
+      setFeedbackMessage(`${correct} out of ${total} correct. Try again!`);
     }
     setShowFeedback(true);
   };
@@ -290,7 +209,6 @@ function ImageLabellingContent() {
   const handleContinue = () => {
     if (!showFeedback) return;
     if (isCorrect && currentIndex < exercises.length - 1) {
-      // Reset feedback state before moving to next exercise
       setShowFeedback(false);
       setIsCorrect(false);
       setFeedbackMessage("");
@@ -301,53 +219,45 @@ function ImageLabellingContent() {
       setIsCompleted(true);
       return;
     }
-    // If not correct, just hide feedback to try again
     setShowFeedback(false);
   };
 
   // ── Loading / empty ────────────────────────────────────────────────────────
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-slate-50 dark:bg-slate-900">
-        <Loader2 className="w-10 h-10 animate-spin text-orange-500" />
+      <div className="flex items-center justify-center min-h-[400px]">
+        <Loader2 className="w-8 h-8 animate-spin text-orange-500" />
       </div>
     );
   }
 
   if (!ex) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-slate-50 dark:bg-slate-900">
-        <p className="text-xl text-slate-600 dark:text-slate-400">No questions available.</p>
-        <Button onClick={() => handleExit()} variant="outline" className="mt-4">Back</Button>
+      <div className="flex flex-col items-center justify-center min-h-[400px] p-8 text-center">
+        <h2 className="text-xl font-semibold mb-2">No exercises found</h2>
+        <p className="text-slate-500 mb-6">There was an issue loading the practice data.</p>
+        <Button onClick={handleExit}>Go Back</Button>
       </div>
     );
   }
 
-  const totalItems = items.length;
-  const progress = exercises.length > 0
-    ? ((currentIndex + placedItems.length / (totalItems || 1)) / exercises.length) * 100
-    : 0;
+  const filledCount = Object.values(userAnswers).filter(v => v !== "").length;
+  const totalCount = ex.items.length;
+  const progress = exercises.length > 0 ? (currentIndex / exercises.length) * 100 : 0;
 
   // ── Render ─────────────────────────────────────────────────────────────────
   return (
     <PracticeGameLayout
       questionType={titleText}
-      questionTypeFr="Étiquetage d'image"
-      questionTypeEn="Image Labelling"
-      localizedInstruction={showQuestionInKnown ? questionText : (ex.question_fr || questionText)}
-      instructionFr={ex.question_fr || "Étiquetez l'image"}
-      instructionEn={ex.question_en || "Label the image"}
+      instructionFr={ex.instructionFr || "Étiquetez l'image"}
+      instructionEn={ex.instructionEn || "Label the image"}
+      localizedInstruction={questionText}
       progress={progress}
-      isGameOver={isCompleted}
-      score={totalScore}
-      totalQuestions={totalItems}
-      currentQuestionIndex={currentIndex}
-      questionCounterValue={currentIndex + 1}
       onExit={handleExit}
-      onNext={showFeedback ? handleContinue : handleCheck}
-      onRestart={() => { setCurrentIndex(0); setIsCompleted(false); setShowFeedback(false); setTotalScore(0); }}
-      isSubmitEnabled={placedItems.length > 0 || showFeedback}
+      timerValue={timerString}
       showSubmitButton={true}
+      isSubmitEnabled={filledCount === totalCount}
+      onNext={showFeedback ? handleContinue : handleCheck}
       submitLabel={
         showFeedback
           ? isCorrect
@@ -355,184 +265,124 @@ function ImageLabellingContent() {
             : "Try Again"
           : "Check Answers"
       }
-      timerValue={timerString}
       showFeedback={showFeedback}
       isCorrect={isCorrect}
-      feedbackTone={showFeedback ? (isCorrect ? "success" : "error") : "neutral"}
+      feedbackTone={isCorrect ? "success" : "error"}
       feedbackMessage={feedbackMessage}
-      correctAnswer={undefined}
+      score={totalScore}
+      totalQuestions={exercises.length}
+      currentQuestionIndex={currentIndex}
+      isGameOver={isCompleted}
+      onRestart={() => { setCurrentIndex(0); setIsCompleted(false); setTotalScore(0); }}
     >
-      <div className="practice-reading-page-shell grid grid-cols-1 md:grid-cols-10 gap-4 p-3 md:p-4 mx-auto overflow-hidden flex-1 min-h-0">
-
-        {/* ── Word Bank (right column) ── */}
-        <div className="md:col-span-3 md:order-2 min-h-0 flex flex-col bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden shadow-[0_8px_26px_-18px_rgba(15,23,42,0.55)]">
-          <div className="px-4 py-4 bg-slate-50/90 dark:bg-slate-800/60 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center">
-            <h3 className="text-[11px] lg:text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-[0.18em]">
-              Labels
-            </h3>
-            <p className="text-xs font-semibold text-sky-600 dark:text-sky-400">
-              {bankItems.length} left
-            </p>
-          </div>
-
-          <div className="flex flex-row flex-wrap md:flex-nowrap md:flex-col gap-2 p-3 overflow-x-visible md:overflow-y-auto custom-scrollbar no-scrollbar md:flex-1">
-            {bankItems.length === 0 && placedItems.length === totalItems ? (
-              <div className="flex flex-1 items-center justify-center gap-2 text-slate-400 dark:text-slate-500 min-w-full">
-                <CheckCircle2 className="w-5 h-5 opacity-50 text-emerald-500" />
-                <span className="text-xs font-semibold">Done!</span>
+      <div className="max-w-6xl mx-auto px-4 py-6 w-full">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+          
+          {/* ── Left Column: Image ────────────────────────────────────────── */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-3">
+                <span className="px-3 py-1 bg-orange-100 text-orange-700 text-[10px] font-bold rounded-full uppercase tracking-wider">
+                  Passage
+                </span>
+                <span className="text-sm text-slate-500 font-medium">
+                  {filledCount}/{totalCount} filled
+                </span>
               </div>
-            ) : (
-              bankItems.map((name) => {
-                // Find EN translation for this label
-                const frIdx = wordBankFr.indexOf(name);
-                const enTranslation = frIdx >= 0 && wordBankEn[frIdx] ? wordBankEn[frIdx] : null;
-                return (
-                  <button
-                    key={name}
-                    onClick={() => handleLabelClick(name)}
-                    className={cn(
-                      "practice-reading-option-text px-2.5 sm:px-4 py-1.5 sm:py-2.5 rounded-lg font-semibold text-xs sm:text-sm shadow-sm border transition-all duration-200 active:scale-[0.98] select-none text-center min-w-[84px] sm:min-w-[110px] md:min-w-0 flex-shrink-0 md:flex-shrink",
-                      selectedLabel === name
-                        ? "bg-sky-600 text-white border-sky-500 shadow-md ring-4 ring-sky-100 dark:ring-sky-900/40"
-                        : "bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white border-slate-300 dark:border-slate-600 hover:border-sky-400 hover:bg-sky-50 dark:hover:bg-slate-700/60",
-                    )}
-                  >
-                    <span>{name}</span>
-                    {/* Show EN translation after submit */}
-                    {showFeedback && enTranslation && learningLang === "fr" && (
-                      <span className="text-[10px] opacity-60 flex items-center justify-center gap-0.5 mt-0.5">
-                        <Languages className="w-2.5 h-2.5 inline" /> {enTranslation}
-                      </span>
-                    )}
-                  </button>
-                );
-              })
-            )}
-          </div>
-        </div>
+            </div>
 
-        {/* ── Image panel (left column) ── */}
-        <div className="md:col-span-7 md:order-1 min-h-0 flex flex-col min-w-0 bg-white dark:bg-slate-900/50 rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden shadow-[0_12px_36px_-24px_rgba(15,23,42,0.6)] relative">
-          <div className="px-4 py-3 border-b border-slate-200 dark:border-slate-700 bg-gradient-to-r from-slate-50 to-white dark:from-slate-900 dark:to-slate-900/80">
-            <p className="practice-reading-option-text text-slate-700 dark:text-slate-200 font-medium text-center flex items-center justify-center gap-2">
-              <Sparkles className="w-4 h-4 text-sky-500" />
-              {selectedLabel
-                ? `Tap a marker for "${selectedLabel}"`
-                : selectedTarget
-                  ? "Select the matching label now"
-                  : "Select a label, then place it on a marker"}
-            </p>
-          </div>
-
-          <div className="flex-1 flex items-center justify-center p-2 min-h-0 overflow-hidden bg-[radial-gradient(ellipse_at_top,rgba(148,163,184,0.14),transparent_58%)] dark:bg-none">
-            {ex.image ? (
-              <div
-                className="relative transition-all duration-500 ease-out rounded-2xl overflow-hidden border border-slate-200/70 dark:border-slate-700/70 shadow-[0_20px_45px_-30px_rgba(15,23,42,0.7)]"
-                style={{ width: imgSize.width || undefined, height: imgSize.height || undefined, maxWidth: "100%", maxHeight: "100%" }}
-              >
-                <img
-                  ref={imageRef}
-                  src={ex.image}
-                  alt={titleText}
-                  onLoad={handleImageLoad}
-                  className="block w-full h-auto max-h-[62vh] md:max-h-[68vh] object-contain pointer-events-none select-none"
-                />
-                {/* Numbered markers */}
-                {items.map((target, idx) => {
-                  const isPlaced = placedItems.some(
-                    p => Math.abs(p.x - target.x) < 0.0001 && Math.abs(p.y - target.y) < 0.0001
-                  );
-                  const isSelected = selectedTarget === target;
-                  return (
-                    <button
-                      key={idx}
-                      onClick={() => handleTargetClick(target)}
-                      className={cn(
-                        "absolute w-6 h-6 lg:w-7 lg:h-7 rounded-full transform -translate-x-1/2 -translate-y-1/2 transition-all duration-200 cursor-pointer flex items-center justify-center z-20 text-xs font-bold",
-                        isSelected
-                          ? "bg-sky-600 text-white ring-4 ring-sky-100 dark:ring-sky-900/50 scale-110 shadow-lg"
-                          : isPlaced
-                            ? "opacity-0 pointer-events-none"
-                            : "bg-white text-sky-700 hover:bg-sky-100 hover:scale-110 border-2 border-sky-500/70 dark:border-sky-400/70 shadow-md",
-                      )}
-                      style={{ left: `${target.x * 100}%`, top: `${target.y * 100}%` }}
-                    >
-                      {target.id ?? idx + 1}
-                    </button>
-                  );
-                })}
-                {/* Placed labels */}
-                {placedItems.map((item) => {
-                  const frIdx = wordBankFr.indexOf(item.name);
-                  const enLabel = frIdx >= 0 && wordBankEn[frIdx] ? wordBankEn[frIdx] : null;
-                  return (
-                    <button
-                      key={`${item.name}-${item.x}-${item.y}`}
-                      onClick={() => handleReturnToBank(item.name)}
-                      className={cn(
-                        "absolute practice-reading-option-text px-2.5 py-1.5 lg:px-3 lg:py-2 rounded-lg lg:rounded-xl font-semibold text-[10px] lg:text-xs shadow-lg transform -translate-x-1/2 -translate-y-1/2 transition-all z-30 select-none border active:scale-[0.98] group",
-                        item.isCorrect === true
-                          ? "bg-emerald-600 text-white border-emerald-500 ring-2 ring-emerald-100 dark:ring-emerald-900/30"
-                          : item.isCorrect === false
-                            ? "bg-rose-600 text-white border-rose-500 ring-2 ring-rose-100 dark:ring-rose-900/30"
-                            : "bg-sky-50/95 dark:bg-slate-800/95 backdrop-blur-sm text-slate-900 dark:text-white border-sky-300 dark:border-slate-600 hover:border-rose-400 hover:bg-rose-50 dark:hover:bg-slate-700/60",
-                      )}
-                      style={{ left: `${item.x * 100}%`, top: `${item.y * 100}%` }}
-                    >
-                      <span>{item.name}</span>
-                      {showFeedback && enLabel && learningLang === "fr" && (
-                        <span className="block text-[9px] opacity-70 mt-0.5">{enLabel}</span>
-                      )}
-                      {!showFeedback && item.isCorrect === null && (
-                        <span className="absolute -top-1.5 -right-1.5 bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center text-[8px] opacity-0 group-hover:opacity-100 transition-all shadow-lg scale-0 group-hover:scale-100">✕</span>
-                      )}
-                    </button>
-                  );
-                })}
+            <Card className="overflow-hidden border-2 border-slate-100 shadow-sm rounded-3xl bg-white">
+              <div className="relative aspect-video lg:aspect-square flex items-center justify-center bg-slate-50">
+                {ex.image ? (
+                  <img
+                    src={ex.image}
+                    alt="Labelling exercise"
+                    className="w-full h-full object-contain p-4"
+                  />
+                ) : (
+                  <div className="flex flex-col items-center gap-3 text-slate-300">
+                    <ImageIcon className="w-16 h-16" />
+                    <span className="text-sm">No image provided</span>
+                  </div>
+                )}
               </div>
-            ) : (
-              /* No image yet — show numbered grid placeholder */
-              <div className="w-full max-w-lg grid grid-cols-4 gap-3 p-4">
-                {items.map((target, idx) => {
-                  const placed = placedItems.find(
-                    p => Math.abs(p.x - target.x) < 0.0001 && Math.abs(p.y - target.y) < 0.0001
-                  );
-                  const isSelected = selectedTarget === target;
-                  const frIdx = placed ? wordBankFr.indexOf(placed.name) : -1;
-                  const enLabel = frIdx >= 0 && wordBankEn[frIdx] ? wordBankEn[frIdx] : null;
+            </Card>
+          </div>
+
+          {/* ── Right Column: Dropdowns ───────────────────────────────────── */}
+          <div className="space-y-6">
+            <div className="bg-white dark:bg-slate-800 p-6 rounded-3xl border-2 border-slate-100 shadow-sm">
+              <h3 className="text-lg font-bold text-slate-800 dark:text-white mb-2">
+                {questionText}
+              </h3>
+              <p className="text-sm text-slate-500 mb-6 font-medium">
+                Select the best option for each missing word
+              </p>
+
+              <div className="space-y-4 max-h-[55vh] overflow-y-auto pr-2 custom-scrollbar">
+                {ex.items.map((item, idx) => {
+                  const isCorrectItem = showFeedback && userAnswers[item.id] === item.name;
+                  const isIncorrectItem = showFeedback && userAnswers[item.id] && userAnswers[item.id] !== item.name;
+
                   return (
-                    <button
-                      key={idx}
-                      onClick={() => handleTargetClick(target)}
-                      className={cn(
-                        "rounded-xl border-2 p-3 flex flex-col items-center justify-center gap-1 min-h-[72px] transition-all font-semibold text-sm",
-                        isSelected
-                          ? "bg-sky-100 border-sky-500 text-sky-700 ring-2 ring-sky-200"
-                          : placed
-                            ? placed.isCorrect === true
-                              ? "bg-emerald-50 border-emerald-400 text-emerald-700"
-                              : placed.isCorrect === false
-                                ? "bg-rose-50 border-rose-400 text-rose-700"
-                                : "bg-sky-50 border-sky-300 text-sky-800"
-                            : "bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-400 hover:border-sky-300",
-                      )}
-                    >
-                      <span className="text-xs font-bold text-slate-400">{target.id ?? idx + 1}</span>
-                      {placed ? (
-                        <>
-                          <span className="text-center leading-tight">{placed.name}</span>
-                          {showFeedback && enLabel && learningLang === "fr" && (
-                            <span className="text-[10px] opacity-60">{enLabel}</span>
+                    <div key={item.id} className="flex items-center gap-4 group">
+                      <div className={cn(
+                        "w-10 h-10 shrink-0 flex items-center justify-center rounded-xl font-bold text-sm transition-all duration-300 border-2",
+                        isCorrectItem ? "bg-green-100 text-green-700 border-green-200" :
+                        isIncorrectItem ? "bg-red-100 text-red-700 border-red-200" :
+                        userAnswers[item.id] ? "bg-orange-100 text-orange-700 border-orange-200" :
+                        "bg-slate-50 text-slate-400 border-slate-100 group-hover:border-slate-200"
+                      )}>
+                        {idx + 1}
+                      </div>
+
+                      <div className="flex-1">
+                        <Select
+                          value={userAnswers[item.id] || ""}
+                          onValueChange={(val) => handleAnswerChange(item.id, val)}
+                          disabled={showFeedback}
+                        >
+                          <SelectTrigger className={cn(
+                            "h-12 rounded-xl border-2 transition-all duration-200 font-medium",
+                            isCorrectItem ? "border-green-200 bg-green-50/30 text-green-700" :
+                            isIncorrectItem ? "border-red-200 bg-red-50/30 text-red-700" :
+                            userAnswers[item.id] ? "border-orange-200 bg-white shadow-sm" :
+                            "border-slate-100 bg-white hover:border-slate-200"
+                          )}>
+                            <SelectValue placeholder="Select a word" />
+                          </SelectTrigger>
+                          <SelectContent className="rounded-xl border-2 border-slate-100 shadow-xl overflow-hidden">
+                            {item.options?.map((opt) => (
+                              <SelectItem key={opt} value={opt} className="rounded-lg my-1 font-medium mx-1">
+                                {opt}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div className="w-6 shrink-0 flex items-center justify-center">
+                        <AnimatePresence>
+                          {showFeedback && (
+                            <motion.div
+                              initial={{ scale: 0, opacity: 0 }}
+                              animate={{ scale: 1, opacity: 1 }}
+                              className="flex items-center justify-center"
+                            >
+                              {isCorrectItem ? (
+                                <CheckCircle2 className="w-6 h-6 text-green-500" />
+                              ) : (
+                                <XCircle className="w-6 h-6 text-red-500" />
+                              )}
+                            </motion.div>
                           )}
-                        </>
-                      ) : (
-                        <span className="text-xs text-slate-300 italic">drop here</span>
-                      )}
-                    </button>
+                        </AnimatePresence>
+                      </div>
+                    </div>
                   );
                 })}
               </div>
-            )}
+            </div>
           </div>
         </div>
       </div>
