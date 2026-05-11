@@ -54,8 +54,17 @@ function parseQuizFromHtml(html: string): QuizQuestion[] {
 // ─── Strip quiz section + Take Quiz nav button from injected HTML ─────────────
 
 function extractBody(fullHtml: string): string {
-  const styleMatch = fullHtml.match(/<style[^>]*>([\s\S]*?)<\/style>/i);
-  const styles = styleMatch ? `<style>${styleMatch[1]}</style>` : "";
+  // Collect ALL <style> blocks (the compiled HTML may have multiple)
+  const styleBlocks: string[] = [];
+  const styleRegex = /<style[^>]*>([\s\S]*?)<\/style>/gi;
+  let styleMatch: RegExpExecArray | null;
+  while ((styleMatch = styleRegex.exec(fullHtml)) !== null) {
+    styleBlocks.push(styleMatch[1]);
+  }
+  const styles = styleBlocks.length > 0
+    ? `<style>${styleBlocks.join("\n")}</style>`
+    : "";
+
   const bodyMatch = fullHtml.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
   const body = bodyMatch ? bodyMatch[1] : fullHtml;
   const bodyNoScripts = body.replace(/<script[\s\S]*?<\/script>/gi, "");
