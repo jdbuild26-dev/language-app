@@ -89,7 +89,7 @@ const PRACTICE_SLUG_MAP: Record<string, string> = {
   "match_desc_to_image":       "/practice/reading/match-desc-to-image",
   "image_labelling":           "/practice/reading/image-labelling",
   "passage_mcq":               "/practice/reading/comprehension",
-  "complete_passage_dropdown": "/practice/reading/fill-blanks-passage",
+  "complete_passage_dropdown": "/practice/reading/complete-passage",
   "fill_blanks_passage":       "/practice/reading/fill-blanks-passage",
   "fill_blanks":               "/practice/reading/fill-blanks-passage",
   "reorder_sentences":         "/practice/reading/reorder",
