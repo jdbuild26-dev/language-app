@@ -35,12 +35,22 @@ export default function WritingConversationPage() {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [finalAnalysis, setFinalAnalysis] = useState<any>(null);
   const [hasPlayedAudio, setHasPlayedAudio] = useState(false);
+  // Pre-shuffled MCQ options for the current exchange — shuffled once per turn, not on every render
+  const [shuffledOptions, setShuffledOptions] = useState<{ text: string; isCorrect: boolean }[]>([]);
 
   const { isSubmitting, evaluate, analyzeConversation } =
     useWritingEvaluation();
 
   const currentExchange = conversation?.exchanges?.[currentTurnIndex];
   const totalExchanges = conversation?.exchanges?.length || 0;
+
+  // Translate the current prompt text on demand
+  const {
+    displayText: promptDisplayText,
+    isTranslating: isTranslatingP,
+    toggle: toggleTranslate,
+    reset: resetTranslate,
+  } = useTranslateText(currentExchange?.prompt || currentExchange?.speakerText || "", "fr");
 
   const { timerString, resetTimer } = useExerciseTimer({
     duration: conversation?.timeLimitSeconds || 300,
@@ -61,21 +71,24 @@ export default function WritingConversationPage() {
       try {
         const data = await fetchPracticeData("writing_conversation");
         const raw = Array.isArray(data) ? data : [];
+        // Accept both standard exchanges and MCQ-converted exchanges
         const items = raw.filter((item: any) => {
           const exchanges = item.content?.exchanges || item.exchanges;
-          return (
-            Array.isArray(exchanges) &&
-            exchanges.length > 0 &&
-            (item.Category === "main" || !item.Category)
-          );
+          return Array.isArray(exchanges) && exchanges.length > 0;
         });
         if (items.length > 0) {
-          const pick = items[Math.floor(Math.random() * items.length)];
+          // Merge ALL items' exchanges into one session so both RCG001 and RCG002
+          // are played sequentially rather than picking one at random.
+          const allExchanges = items.flatMap((item: any) =>
+            Array.isArray(item.exchanges) ? item.exchanges : []
+          );
+          const first = items[0];
           setConversation({
-            title: pick.title || pick.title_en || "",
-            scenario: pick.scenario || pick.scenario_en || "",
-            timeLimitSeconds: pick.timeLimitSeconds || 300,
-            exchanges: Array.isArray(pick.exchanges) ? pick.exchanges : [],
+            title: first.title || first.title_en || "",
+            scenario: first.scenario || first.scenario_en || first["context_en"] || "",
+            timeLimitSeconds: first.timeLimitSeconds || (first.Time ? parseInt(first.Time) : 300),
+            exchanges: allExchanges,
+            isMcqConversation: items.some((i: any) => i.isMcqConversation),
           });
         }
       } catch (e) {
@@ -100,13 +113,33 @@ export default function WritingConversationPage() {
     }
   }, [currentTurnIndex, currentExchange, isCompleted, hasPlayedAudio]);
 
-  // Reset on turn change
+  // Reset on turn change — deps are only stable primitives/functions, NOT currentExchange
+  // (currentExchange is a derived object that changes reference every render)
   useEffect(() => {
     setUserInput("");
     setHasAnswered(false);
     setHasPlayedAudio(false);
+    resetTranslate();
     resetTimer();
-  }, [currentTurnIndex, resetTimer]);
+
+    // Pre-shuffle MCQ options once for this turn
+    const exchange = conversation?.exchanges?.[currentTurnIndex];
+    if (exchange?.isMcq) {
+      const opts: { text: string; isCorrect: boolean }[] = [
+        { text: exchange.correctAnswer || exchange.sampleAnswer || "", isCorrect: true },
+        ...((exchange.distractors || []) as any[]).map((d: any) => ({
+          text: d.fr || d.en || "",
+          isCorrect: false,
+        })),
+      ]
+        .filter((o) => o.text)
+        .sort(() => Math.random() - 0.5);
+      setShuffledOptions(opts);
+    } else {
+      setShuffledOptions([]);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentTurnIndex, conversation]);
 
   // Final analysis
   useEffect(() => {
@@ -412,37 +445,60 @@ export default function WritingConversationPage() {
 
             {currentExchange && !hasAnswered && (
               <div className="px-4 pb-6 animate-in fade-in slide-in-from-bottom-4 duration-500 space-y-4">
-                <form onSubmit={handleSubmit} className="space-y-3">
-                  <textarea
-                    value={userInput}
-                    onChange={(e) => setUserInput(e.target.value)}
-                    placeholder="Type your response in French..."
-                    className={cn(
-                      "w-full px-4 py-4 rounded-2xl border text-base transition-all outline-none shadow-sm min-h-[180px] resize-none",
-                      "bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200",
-                      "border-slate-200 dark:border-slate-700 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10",
-                    )}
-                    autoFocus
-                  />
-                  <div className="flex flex-col gap-3">
-                    <div className="  px-4 ">
-                      <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
-                        {getWordCount(userInput)} /{" "}
-                        {currentExchange.minWords || 3} words minimum
-                      </span>
-                    </div>
-                    {currentExchange.sampleAnswer && (
-                      <div className="bg-slate-50 dark:bg-slate-800/50 rounded-2xl p-4 border border-slate-200 dark:border-slate-700">
-                        <p className="text-xs uppercase tracking-widest text-slate-400 dark:text-slate-500 mb-2">
-                          Example Response
-                        </p>
-                        <p className="text-sm text-slate-600 dark:text-slate-300">
-                          {currentExchange.sampleAnswer}
-                        </p>
-                      </div>
-                    )}
+                {currentExchange.isMcq ? (
+                  /* ── MCQ mode: options pre-shuffled once per turn ── */
+                  <div className="space-y-3">
+                    {shuffledOptions.map((opt, i) => (
+                      <button
+                        key={i}
+                        type="button"
+                        onClick={() => setUserInput(opt.text)}
+                        className={cn(
+                          "w-full text-left px-4 py-3 rounded-2xl border text-sm transition-all",
+                          "bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200",
+                          userInput === opt.text
+                            ? "border-emerald-500 ring-2 ring-emerald-500/20 bg-emerald-50 dark:bg-emerald-900/20"
+                            : "border-slate-200 dark:border-slate-700 hover:border-emerald-400",
+                        )}
+                      >
+                        {opt.text}
+                      </button>
+                    ))}
                   </div>
-                </form>
+                ) : (
+                  /* ── Free-text mode ── */
+                  <form onSubmit={handleSubmit} className="space-y-3">
+                    <textarea
+                      value={userInput}
+                      onChange={(e) => setUserInput(e.target.value)}
+                      placeholder="Type your response in French..."
+                      className={cn(
+                        "w-full px-4 py-4 rounded-2xl border text-base transition-all outline-none shadow-sm min-h-[180px] resize-none",
+                        "bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200",
+                        "border-slate-200 dark:border-slate-700 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10",
+                      )}
+                      autoFocus
+                    />
+                    <div className="flex flex-col gap-3">
+                      <div className="  px-4 ">
+                        <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
+                          {getWordCount(userInput)} /{" "}
+                          {currentExchange.minWords || 3} words minimum
+                        </span>
+                      </div>
+                      {currentExchange.sampleAnswer && (
+                        <div className="bg-slate-50 dark:bg-slate-800/50 rounded-2xl p-4 border border-slate-200 dark:border-slate-700">
+                          <p className="text-xs uppercase tracking-widest text-slate-400 dark:text-slate-500 mb-2">
+                            Example Response
+                          </p>
+                          <p className="text-sm text-slate-600 dark:text-slate-300">
+                            {currentExchange.sampleAnswer}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </form>
+                )}
               </div>
             )}
 

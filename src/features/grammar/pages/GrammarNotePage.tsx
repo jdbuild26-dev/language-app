@@ -158,11 +158,21 @@ export default function GrammarNotePage() {
 /**
  * Extract the content inside <body>…</body> from a full HTML document,
  * and prepend the <style> block so note-specific styles still apply.
+ *
+ * All CSS rules in the compiled HTML are scoped to .grammar-note-root so they
+ * don't bleed into the host app (no global * { margin:0 } resets, etc.).
  */
 function extractBody(fullHtml: string): string {
-  // Extract <style> blocks from <head>
-  const styleMatch = fullHtml.match(/<style[^>]*>([\s\S]*?)<\/style>/i);
-  const styles = styleMatch ? `<style>${styleMatch[1]}</style>` : "";
+  // Extract ALL <style> blocks from the document (may be in <head> or inline)
+  const styleBlocks: string[] = [];
+  const styleRegex = /<style[^>]*>([\s\S]*?)<\/style>/gi;
+  let styleMatch: RegExpExecArray | null;
+  while ((styleMatch = styleRegex.exec(fullHtml)) !== null) {
+    styleBlocks.push(styleMatch[1]);
+  }
+  const styles = styleBlocks.length > 0
+    ? `<style>${styleBlocks.join("\n")}</style>`
+    : "";
 
   // Extract <body> content
   const bodyMatch = fullHtml.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
