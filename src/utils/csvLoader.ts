@@ -12,7 +12,7 @@ const FILE_TO_SLUG = {
   "practice/reading/fill_blanks_passage.csv": "fill_blanks",
   "practice/listening/type.csv": "type_what_you_hear",
   "practice/listening/select.csv": "multiple_choice_audio",
-  "practice/listening/audio_fill_blanks.csv": "listen_fill_blanks",
+  "practice/listening/audio_fill_blanks.csv": "listen_fill_blanks_dropdown",
   "practice/speaking/topic.csv": "speak_topic",
   "practice/writing/spelling.csv": "correct_spelling",
   "practice/reading/sentence_completion.csv": "sentence_completion",
@@ -35,7 +35,6 @@ const FILE_TO_SLUG = {
   "practice/listening/listen_passage.csv": "listen_passage",
   "practice/listening/listen_select.csv": "listen_select",
   "practice/listening/listen_type.csv": "listen_type",
-  "practice/listening/listening_comprehension.csv": "listening_comprehension",
   "practice/listening/listening_conversation.csv": "listening_conversation",
   // Writing
   "practice/writing/translate_typed.csv": "translate_typed",
