@@ -128,8 +128,7 @@ function AudioDropdownContent() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // This exercise uses listen_fill_blanks_dropdown slug — no DB data yet,
-        // so we fall back to the listen_fill_blanks data and adapt it.
+        // This exercise uses listen_fill_blanks_dropdown slug.
         const data = await loadMockCSV("practice/listening/audio_fill_blanks.csv", { tag });
         const mapped = (Array.isArray(data) ? data : [])
           .map((item: any) => buildExercise(item))

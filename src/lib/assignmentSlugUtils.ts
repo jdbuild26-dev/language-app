@@ -29,7 +29,6 @@ const VOCAB_SLUG_MAP: Record<string, string> = {
   "audio-match-2":      "/vocabulary/practice/listening/audio-to-audio",
   "audio-fill-blank":   "/vocabulary/practice/listening/fill-in-blank",
   "dictation":          "/vocabulary/practice/listening/dictation",
-  "listen-fill-blanks": "/vocabulary/practice/listening/fill-blanks",
 
   // from DB / underscore slugs
   "choose_options":     "/vocabulary/practice/choose-options",
@@ -75,7 +74,6 @@ const GRAMMAR_SLUG_MAP: Record<string, string> = {
   "grammar_transformation": "/grammar/practice/transformation",
   "grammar_combination":    "/grammar/practice/combination",
   "grammar_rewrite":        "/grammar/practice/rewrite",
-  "listen_fill_blanks":     "/grammar/practice/fill-blanks",
   "fill_blanks":            "/grammar/practice/fill-blanks",
 };
 
@@ -106,7 +104,6 @@ const PRACTICE_SLUG_MAP: Record<string, string> = {
   "listen_order":                "/practice/listening/order",
   "listen_passage":              "/practice/listening/passage",
   "listen_interactive":          "/practice/listening/interactive",
-  "listening_comprehension":     "/practice/listening/comprehension",
   "listening_conversation":      "/practice/listening/conversation",
 
   // Writing
@@ -168,9 +165,7 @@ const KEBAB_TO_DB: Record<string, string> = {
   "phonetics":          "listen_phonetics",
   "multi-select":       "listen_select",
   "audio-match-2":      "audio_to_audio",
-  "audio-fill-blank":   "listen_fill_blanks",
   "dictation":          "dictation_image",
-  "listen-fill-blanks": "listen_fill_blanks",
 
   // Grammar
   "fill-blanks-options":  "fill_blanks_options",

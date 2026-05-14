@@ -960,30 +960,6 @@ const CSV_TRANSFORMERS = {
         : "",
     },
   }),
-  listen_fill_blanks: (row) => ({
-    external_id: row.ExerciseID || `listen_fill_blanks_${Math.random()}`,
-    instruction_en: row.Instruction_EN || "",
-    instruction_fr: row.Instruction_FR || "",
-    level: row.Level || "",
-    content: {
-      blanks: row["blanks"]
-        ? row["blanks"].startsWith("[") || row["blanks"].startsWith("{")
-          ? JSON.parse(row["blanks"])
-          : row["blanks"]
-        : "",
-      audioText: row["audioText"]
-        ? row["audioText"].startsWith("[") || row["audioText"].startsWith("{")
-          ? JSON.parse(row["audioText"])
-          : row["audioText"]
-        : "",
-      displayParts: row["displayParts"]
-        ? row["displayParts"].startsWith("[") ||
-          row["displayParts"].startsWith("{")
-          ? JSON.parse(row["displayParts"])
-          : row["displayParts"]
-        : "",
-    },
-  }),
   listen_interactive: (row) => ({
     external_id: row.ExerciseID || `listen_interactive_${Math.random()}`,
     instruction_en: row.Instruction_EN || "",
