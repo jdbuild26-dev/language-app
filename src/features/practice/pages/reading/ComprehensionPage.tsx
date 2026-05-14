@@ -180,20 +180,16 @@ function ComprehensionContent() {
   // Total question count across all passages (for progress/score)
   const totalQuestions = allQuestions.length;
 
-  // Count how many questions have been answered across completed passages
-  const questionsAnsweredBefore = passages
-    .slice(0, passageIndex)
-    .reduce((sum, p) => sum + p.questions.length, 0);
-
-  const currentPassageQuestionCount = currentPassage?.questions.length ?? 0;
-
   // Progress: based on passages
   const progress = passages.length > 0 ? ((passageIndex + 1) / passages.length) * 100 : 0;
+
+  // Score tracking uses total individual questions; counter/display uses passage count
+  const totalPassages = passages.length;
 
   usePracticeComplete({
     isGameOver: isCompleted,
     score,
-    totalQuestions,
+    totalQuestions: allQuestions.length,
     exerciseType: "passage_mcq",
     level: currentPassage?.level,
   });
@@ -320,7 +316,7 @@ function ComprehensionContent() {
         progress={progress}
         isGameOver={isCompleted}
         score={score}
-        totalQuestions={totalQuestions}
+        totalQuestions={totalPassages}
         onExit={handleExit}
         onNext={showFeedback ? handleContinue : handleSubmit}
         onRestart={() => window.location.reload()}
