@@ -149,12 +149,14 @@ function GenericSpeakingContent({
                     return {
                         ...item,
                         // Topic/prompt fields
-                        Question: item.Question || c.topic_fr || c.sentence_fr || c.source_sentence || item.topic_fr || item.sentence_fr || item.source_sentence || "",
+                        // speak_translate stores the English source in item.Sentence / item.sourceText
+                        Question: item.Question || c.topic_fr || c.sentence_fr || c.source_sentence || item.topic_fr || item.sentence_fr || item.source_sentence || item.Sentence || item.sourceText || item.sentence || "",
                         Prompt:   item.Prompt   || c.topic_fr || c.sentence_fr || item.topic_fr || "",
                         Topic:    item.Topic    || c.topic_fr || item.topic_fr || "",
                         Sentence: item.Sentence || c.sentence_fr || item.sentence_fr || "",
                         // Answer/reference
-                        Answer:   item.Answer   || c.correct_answer || c.topic_en || c.sentence_en || item.correct_answer || item.topic_en || "",
+                        // speak_translate stores the French answer in item.Translation / item.correctAnswer
+                        Answer:   item.Answer   || c.correct_answer || c.correctAnswer || c.topic_en || c.sentence_en || item.correct_answer || item.correctAnswer || item.Translation || item.topic_en || "",
                         Translation: item.Translation || c.sentence_en || c.topic_en || item.sentence_en || "",
                         Description: item.Description || c.topic_en || c.sentence_en || item.topic_en || "",
                         // Image
