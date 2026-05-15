@@ -91,7 +91,7 @@ function CompletePassageContent() {
       setLoading(true);
       setError(null);
       try {
-        const data = await loadMockCSV("practice/reading/sentence_completion.csv", {
+        const data = await loadMockCSV("practice/reading/complete_passage.csv", {
           learningLang, knownLang, tag,
         });
         const mapped = (Array.isArray(data) ? data : []).map((item: any) => {

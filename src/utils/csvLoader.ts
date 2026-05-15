@@ -16,6 +16,7 @@ const FILE_TO_SLUG = {
   "practice/speaking/topic.csv": "speak_topic",
   "practice/writing/spelling.csv": "correct_spelling",
   "practice/reading/sentence_completion.csv": "sentence_completion",
+  "practice/reading/complete_passage.csv":    "complete_passage_dropdown",
   "practice/reading/match_sentence_ending.csv": "match_sentence_ending",
   "practice/reading/reorder.csv": "reorder_sentences",
   "practice/speaking/image.csv": "speak_image",
