@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, Suspense } from "react";
 import { 
   Mic, 
   Loader2, 
@@ -19,6 +19,7 @@ import { cn } from "@/lib/utils";
 import { fetchPracticeData } from "@/utils/practiceFetcher";
 import WritingFeedbackResult from "@/components/WritingFeedbackResult";
 import { useTextToSpeech } from "@/hooks/useTextToSpeech";
+import { useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 
 interface Question {
@@ -26,11 +27,22 @@ interface Question {
   Sentence: string;
   Translation: string;
   Scenario: string;
+  Level?: string;
 }
 
 export default function TranslateBySpeakingPage() {
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center min-h-screen"><Loader2 className="w-8 h-8 animate-spin text-indigo-500" /></div>}>
+      <TranslateBySpeakingContent />
+    </Suspense>
+  );
+}
+
+function TranslateBySpeakingContent() {
   const handleExit = usePracticeExit();
   const { speak } = useTextToSpeech();
+  const searchParams = useSearchParams();
+  const tag = searchParams?.get("tag") ?? undefined;
 
   // Game State
   const [questions, setQuestions] = useState<Question[]>([]);
@@ -85,8 +97,16 @@ export default function TranslateBySpeakingPage() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const data = await fetchPracticeData("speak_translate") as Question[];
-        setQuestions(data);
+        const data = await fetchPracticeData("speak_translate", { tag }) as any[];
+        // Normalize: backend spreads content fields — Sentence, Translation, Scenario are at top level
+        const mapped = (Array.isArray(data) ? data : []).map((item: any) => ({
+          id:          item.id || item.ExerciseID,
+          Sentence:    item.Sentence    || item.sentence    || item.sourceText  || item.Question || "",
+          Translation: item.Translation || item.translation || item.correctAnswer || item.Answer || "",
+          Scenario:    item.Scenario    || item.scenario    || item.Description  || "",
+          Level:       item.Level       || item.level       || "A1",
+        })).filter((q: any) => q.Sentence);
+        setQuestions(mapped);
       } catch (error) {
         console.error("Error fetching speaking data:", error);
       } finally {
@@ -95,9 +115,11 @@ export default function TranslateBySpeakingPage() {
     };
 
     fetchData();
-  }, []);
+  }, [tag]);
 
   const currentQuestion = questions[currentIndex];
+
+  const isStartingRef = useRef(false);
 
   const handleToggleListening = () => {
     if (!recognitionRef.current) {
@@ -106,13 +128,26 @@ export default function TranslateBySpeakingPage() {
     }
 
     if (isListening) {
+      isStartingRef.current = false;
       recognitionRef.current.stop();
+      setIsListening(false);
     } else {
+      if (isStartingRef.current) return;
+      isStartingRef.current = true;
+      try { recognitionRef.current.stop(); } catch { /* already stopped */ }
       setSpokenText("");
       setEvaluation(null);
       setShowFeedback(false);
-      recognitionRef.current.start();
-      setIsListening(true);
+      setTimeout(() => {
+        try {
+          recognitionRef.current.start();
+          setIsListening(true);
+        } catch (e) {
+          console.warn("Speech recognition start failed:", e);
+        } finally {
+          isStartingRef.current = false;
+        }
+      }, 150);
     }
   };
 

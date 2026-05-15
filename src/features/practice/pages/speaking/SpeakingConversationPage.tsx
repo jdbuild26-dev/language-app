@@ -1,7 +1,7 @@
 "use client";
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef, useCallback, Suspense } from "react";
 import { usePracticeExit } from "@/hooks/usePracticeExit";
 import { useExerciseTimer } from "@/hooks/useExerciseTimer";
 import { Languages, User, Mic, Volume2 } from "lucide-react";
@@ -10,20 +10,29 @@ import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
 import { useTextToSpeech } from "@/hooks/useTextToSpeech";
 import { useSpeakingEvaluation } from "@/hooks/useSpeakingEvaluation";
 import { fetchPracticeData } from "@/utils/practiceFetcher";
+import { useSearchParams } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { useTranslateText } from "@/hooks/useTranslateText";
 import { Button } from "@/components/ui/button";
 import WritingFeedbackResult from "@/components/WritingFeedbackResult";
 
 export default function SpeakingConversationPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-violet-500" /></div>}>
+      <SpeakingConversationContent />
+    </Suspense>
+  );
+}
+
+function SpeakingConversationContent() {
   const handleExit = usePracticeExit();
   const { speak } = useTextToSpeech();
   const chatEndRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<any>(null);
   const speakRef = useRef(speak);
-  useEffect(() => {
-    speakRef.current = speak;
-  }, [speak]);
+  const searchParams = useSearchParams();
+  const tag = searchParams?.get("tag") ?? undefined;
+  useEffect(() => { speakRef.current = speak; }, [speak]);
 
   const [conversation, setConversation] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -89,7 +98,7 @@ export default function SpeakingConversationPage() {
   useEffect(() => {
     const load = async () => {
       try {
-        const data = await fetchPracticeData("speaking_conversation");
+        const data = await fetchPracticeData("speaking_conversation", { tag });
         const raw = Array.isArray(data) ? data : [];
         const items = raw.filter((item: any) => {
           const exchanges = item.content?.exchanges || item.exchanges;

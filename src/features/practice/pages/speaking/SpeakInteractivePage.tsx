@@ -1,7 +1,7 @@
 "use client";
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef, useCallback, Suspense } from "react";
 import { usePracticeExit } from "@/hooks/usePracticeExit";
 import { useExerciseTimer } from "@/hooks/useExerciseTimer";
 import { Languages, User, Mic, Volume2 } from "lucide-react";
@@ -10,16 +10,27 @@ import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
 import { useTextToSpeech } from "@/hooks/useTextToSpeech";
 import { useSpeakingEvaluation } from "@/hooks/useSpeakingEvaluation";
 import { fetchPracticeData } from "@/utils/practiceFetcher";
+import { useSearchParams } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { useTranslateText } from "@/hooks/useTranslateText";
 import { Button } from "@/components/ui/button";
 import WritingFeedbackResult from "@/components/WritingFeedbackResult";
 
 export default function SpeakInteractivePage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-indigo-500" /></div>}>
+      <SpeakInteractiveContent />
+    </Suspense>
+  );
+}
+
+function SpeakInteractiveContent() {
   const handleExit = usePracticeExit();
   const { speak } = useTextToSpeech();
   const chatEndRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<any>(null);
+  const searchParams = useSearchParams();
+  const tag = searchParams?.get("tag") ?? undefined;
 
   // Keep speak in a ref so the auto-advance effect doesn't re-run when voices load
   const speakRef = useRef(speak);
@@ -120,7 +131,7 @@ export default function SpeakInteractivePage() {
   useEffect(() => {
     const fetchConversation = async () => {
       try {
-        const data = await fetchPracticeData("speak_interactive");
+        const data = await fetchPracticeData("speak_interactive", { tag });
         const raw = Array.isArray(data) ? data : [];
         const items = raw.filter(
           (item: any) =>

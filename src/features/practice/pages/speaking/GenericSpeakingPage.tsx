@@ -1,10 +1,10 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
-import { Mic, Loader2, Volume2, Sparkles, MessageCircle, Info } from "lucide-react";
+import React, { useState, useEffect, useRef, Suspense } from "react";
+import { Mic, Loader2, Volume2, MessageCircle, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { cn } from "@/lib/utils";
 
 import { fetchPracticeData } from "@/utils/practiceFetcher";
@@ -25,7 +25,16 @@ interface Question {
   Level?: string;
   level?: string;
   Image?: string;
+  imageUrl?: string;
   correctAnswer?: string;
+  // DB parsed fields
+  topic_fr?: string;
+  topic_en?: string;
+  sentence_fr?: string;
+  sentence_en?: string;
+  image_url?: string;
+  source_sentence?: string;
+  correct_answer?: string;
 }
 
 export default function GenericSpeakingPage({
@@ -38,7 +47,24 @@ export default function GenericSpeakingPage({
     mockData,
     csvName = null
 }) {
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center min-h-screen"><Loader2 className="w-8 h-8 animate-spin text-blue-500" /></div>}>
+      <GenericSpeakingContent
+        title={title} taskType={taskType} sheetName={sheetName}
+        instructionEn={instructionEn} instructionFr={instructionFr}
+        icon={Icon} mockData={mockData} csvName={csvName}
+      />
+    </Suspense>
+  );
+}
+
+function GenericSpeakingContent({
+    title, taskType, sheetName, instructionEn, instructionFr,
+    icon: Icon = Mic, mockData, csvName = null
+}) {
     const router = useRouter();
+    const searchParams = useSearchParams();
+    const tag = searchParams?.get("tag") ?? undefined;
 
     // Game State
     const [questions, setQuestions] = useState<Question[]>([]);
@@ -54,6 +80,7 @@ export default function GenericSpeakingPage({
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     const recognitionRef = useRef<any>(null);
+    const isStartingRef = useRef(false); // guard against double-start race condition
 
     // Initialize Speech Recognition
     useEffect(() => {
@@ -94,11 +121,9 @@ export default function GenericSpeakingPage({
             try {
                 let data: any[] = [];
                 if (csvName) {
-                    // Extract slug from csvName e.g. "practice/speaking/speak_topic.csv" -> "speak_topic"
                     const slug = csvName.replace(/^.*\//, '').replace(/\.csv$/, '');
-                    data = await fetchPracticeData(slug) as any[];
+                    data = await fetchPracticeData(slug, { tag }) as any[];
                     if (!data || data.length === 0) {
-                        // Fallback: try the old loadMockCSV path via direct fetch
                         const res = await fetch(`/mock-data/${csvName}`);
                         if (res.ok) {
                             const text = await res.text();
@@ -118,7 +143,29 @@ export default function GenericSpeakingPage({
                     data = json.data || [];
                 }
 
-                const shuffled = [...data].sort(() => 0.5 - Math.random()) as Question[];
+                // Normalize DB fields to the shape GenericSpeakingPage expects
+                const normalized = data.map((item: any) => {
+                    const c = item.content || item;
+                    return {
+                        ...item,
+                        // Topic/prompt fields
+                        // speak_translate stores the English source in item.Sentence / item.sourceText
+                        Question: item.Question || c.topic_fr || c.sentence_fr || c.source_sentence || item.topic_fr || item.sentence_fr || item.source_sentence || item.Sentence || item.sourceText || item.sentence || "",
+                        Prompt:   item.Prompt   || c.topic_fr || c.sentence_fr || item.topic_fr || "",
+                        Topic:    item.Topic    || c.topic_fr || item.topic_fr || "",
+                        Sentence: item.Sentence || c.sentence_fr || item.sentence_fr || "",
+                        // Answer/reference
+                        // speak_translate stores the French answer in item.Translation / item.correctAnswer
+                        Answer:   item.Answer   || c.correct_answer || c.correctAnswer || c.topic_en || c.sentence_en || item.correct_answer || item.correctAnswer || item.Translation || item.topic_en || "",
+                        Translation: item.Translation || c.sentence_en || c.topic_en || item.sentence_en || "",
+                        Description: item.Description || c.topic_en || c.sentence_en || item.topic_en || "",
+                        // Image
+                        Image:    item.Image    || c.image_url || item.image_url || item.imageUrl || "",
+                        Level:    item.Level    || item.level  || "A1",
+                    };
+                }).filter((q: any) => q.Question || q.Topic || q.Sentence || q.Prompt);
+
+                const shuffled = [...normalized].sort(() => 0.5 - Math.random()) as Question[];
                 setQuestions(shuffled);
             } catch (error) {
                 console.error("Error fetching speaking data:", error);
@@ -128,7 +175,7 @@ export default function GenericSpeakingPage({
         };
 
         fetchData();
-    }, [sheetName, mockData, csvName]);
+    }, [sheetName, mockData, csvName, tag]);
 
     const currentQuestion = questions[currentIndex];
 
@@ -154,12 +201,27 @@ export default function GenericSpeakingPage({
         }
 
         if (isListening) {
+            isStartingRef.current = false;
             recognitionRef.current.stop();
+            setIsListening(false);
         } else {
+            if (isStartingRef.current) return; // already starting, ignore double-click
+            isStartingRef.current = true;
+            // Stop any existing session before starting a new one
+            try { recognitionRef.current.stop(); } catch { /* already stopped */ }
             setSpokenText("");
             setEvaluation(null);
-            recognitionRef.current.start();
-            setIsListening(true);
+            // Small delay to let the browser fully stop before restarting
+            setTimeout(() => {
+                try {
+                    recognitionRef.current.start();
+                    setIsListening(true);
+                } catch (e) {
+                    console.warn("Speech recognition start failed:", e);
+                } finally {
+                    isStartingRef.current = false;
+                }
+            }, 150);
         }
     };
 
