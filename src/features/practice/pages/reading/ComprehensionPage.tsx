@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, Suspense } from "react";
+import React, { useState, useEffect, useCallback, Suspense } from "react";
 import { usePracticeExit } from "@/hooks/usePracticeExit";
 import { useExerciseTimer } from "@/hooks/useExerciseTimer";
 import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
@@ -13,6 +13,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { useQuestionLanguage } from "@/hooks/useQuestionLanguage";
 import { usePracticeComplete } from "@/hooks/usePracticeComplete";
 import { useSearchParams } from "next/navigation";
+
 type ComprehensionQuestion = {
   passage?: string;
   passage_fr?: string;
@@ -23,10 +24,8 @@ type ComprehensionQuestion = {
   question_fr?: string;
   question_en?: string;
   level?: string;
-  // new bilingual options
   options_fr?: string[];
   options_en?: string[];
-  // legacy
   options?: string[];
   correctIndex: number;
   localizedInstruction?: string;
@@ -35,12 +34,56 @@ type ComprehensionQuestion = {
   timeLimitSeconds?: number;
 };
 
+/** A passage with all its questions grouped together */
+type PassageGroup = {
+  passage_fr: string;
+  passage_en: string;
+  passage_title_fr: string;
+  passage_title_en: string;
+  level: string;
+  instructionFr: string;
+  instructionEn: string;
+  timeLimitSeconds: number;
+  questions: ComprehensionQuestion[];
+};
+
 function parseArr(v: unknown): string[] {
   if (Array.isArray(v)) return v.map(String);
   if (typeof v === "string" && v) {
     try { return JSON.parse(v); } catch { return v.split("|").map(s => s.trim()).filter(Boolean); }
   }
   return [];
+}
+
+/** Group a flat list of questions into passage groups by matching passage text */
+function groupByPassage(questions: ComprehensionQuestion[]): PassageGroup[] {
+  const groups: PassageGroup[] = [];
+  const seen = new Map<string, number>(); // passage key → group index
+
+  for (const q of questions) {
+    // Use passage_fr as primary key, fall back to passage_en, then passage
+    const key = (q.passage_fr || q.passage_en || q.passage || "").trim();
+    if (!key) continue;
+
+    if (seen.has(key)) {
+      groups[seen.get(key)!].questions.push(q);
+    } else {
+      seen.set(key, groups.length);
+      groups.push({
+        passage_fr:       q.passage_fr || q.passage_en || q.passage || "",
+        passage_en:       q.passage_en || q.passage_fr || q.passage || "",
+        passage_title_fr: q.passage_title_fr || q.passage_title_en || "",
+        passage_title_en: q.passage_title_en || q.passage_title_fr || "",
+        level:            q.level || "",
+        instructionFr:    q.instructionFr || "",
+        instructionEn:    q.instructionEn || "",
+        timeLimitSeconds: q.timeLimitSeconds || 60,
+        questions:        [q],
+      });
+    }
+  }
+
+  return groups;
 }
 
 export default function ComprehensionPage() {
@@ -64,18 +107,21 @@ function ComprehensionContent() {
     knownLang?: string;
   };
 
-  const [questions, setQuestions] = useState<ComprehensionQuestion[]>([]);
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [selectedOption, setSelectedOption] = useState<number | null>(null);
+  const [passages, setPassages] = useState<PassageGroup[]>([]);
+  const [allQuestions, setAllQuestions] = useState<ComprehensionQuestion[]>([]);
+  const [passageIndex, setPassageIndex] = useState(0);
   const [isCompleted, setIsCompleted] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Per-question state for the current passage
+  const [selectedOptions, setSelectedOptions] = useState<(number | null)[]>([]);
+  const [submitted, setSubmitted] = useState(false);
+  const [score, setScore] = useState(0);
+
+  // Feedback banner (shown after submit, one per passage)
   const [showFeedback, setShowFeedback] = useState(false);
   const [isCorrect, setIsCorrect] = useState(false);
   const [feedbackMessage, setFeedbackMessage] = useState("");
-  const [score, setScore] = useState(0);
-  const [isLoading, setIsLoading] = useState(true);
-  const [translatedQuestion, setTranslatedQuestion] = useState("");
-  const [showTranslation, setShowTranslation] = useState(false);
-  const [isTranslating, setIsTranslating] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -89,24 +135,26 @@ function ComprehensionContent() {
           const e = item.evaluation || item;
           const cfg = item.config || item;
           return {
-            level:            item.Level || item.level || '',
-            passage_fr:       c.passage_fr || item.passage_fr || item.passage || '',
-            passage_en:       c.passage_en || item.passage_en || item.passage || '',
-            passage_title_fr: c.passage_title_fr || item.passage_title_fr || '',
-            passage_title_en: c.passage_title_en || item.passage_title_en || '',
-            question_fr:      c.question_fr || item.question_fr || '',
-            question_en:      c.question_en || item.question_en || item.question || '',
-            question:         c.question_en || item.question_en || item.question || '',
+            level:            item.Level || item.level || "",
+            passage_fr:       c.passage_fr || item.passage_fr || item.passage || "",
+            passage_en:       c.passage_en || item.passage_en || item.passage || "",
+            passage_title_fr: c.passage_title_fr || item.passage_title_fr || "",
+            passage_title_en: c.passage_title_en || item.passage_title_en || "",
+            question_fr:      c.question_fr || item.question_fr || "",
+            question_en:      c.question_en || item.question_en || item.question || "",
+            question:         c.question_en || item.question_en || item.question || "",
             options_fr:       parseArr(c.options_fr || item.options_fr),
             options_en:       parseArr(c.options_en || item.options_en),
             options:          parseArr(c.options || item.options),
             correctIndex:     Number(e.correctIndex ?? item.correctIndex ?? item.eval_correctIndex ?? 0),
             timeLimitSeconds: Number(cfg.timeLimitSeconds || item.timeLimitSeconds || 60),
-            instructionFr:    item.instructionFr || item.instruction_fr || '',
-            instructionEn:    item.instructionEn || item.instruction_en || '',
+            instructionFr:    item.instructionFr || item.instruction_fr || "",
+            instructionEn:    item.instructionEn || item.instruction_en || "",
           } as ComprehensionQuestion;
         });
-        setQuestions(mapped);
+        const grouped = groupByPassage(mapped);
+        setAllQuestions(mapped);
+        setPassages(grouped);
       } catch (error) {
         console.error("Error loading comprehension data:", error);
       } finally {
@@ -116,93 +164,94 @@ function ComprehensionContent() {
     fetchData();
   }, [learningLang, knownLang, tag]);
 
-  const currentQuestion = questions[currentIndex];
-  const { pick, pickTranslation, showQuestionInKnown } = useQuestionLanguage(currentQuestion?.level);
-  usePracticeComplete({ isGameOver: isCompleted, score, totalQuestions: questions.length, exerciseType: "passage_mcq", level: currentQuestion?.level });
+  const currentPassage = passages[passageIndex];
 
-  // Passage always in learning language
-  const passageText  = learningLang === "fr"
-    ? currentQuestion?.passage_fr || currentQuestion?.passage_en || currentQuestion?.passage || ""
-    : currentQuestion?.passage_en || currentQuestion?.passage_fr || currentQuestion?.passage || "";
-  const passageTitle = learningLang === "fr"
-    ? currentQuestion?.passage_title_fr || currentQuestion?.passage_title_en || ""
-    : currentQuestion?.passage_title_en || currentQuestion?.passage_title_fr || "";
+  // Reset per-question state when passage changes
+  useEffect(() => {
+    if (currentPassage) {
+      setSelectedOptions(new Array(currentPassage.questions.length).fill(null));
+      setSubmitted(false);
+      setShowFeedback(false);
+    }
+  }, [passageIndex, currentPassage]);
 
-  // Question: level-based language
-  const questionText = pick(currentQuestion?.question_fr, currentQuestion?.question_en)
-    || currentQuestion?.question || "";
-  const questionTranslationSource = pickTranslation(currentQuestion?.question_fr, currentQuestion?.question_en)
-    || currentQuestion?.question || "";
+  const { pick, showQuestionInKnown } = useQuestionLanguage(currentPassage?.level);
 
-  // Options: always in learning language (FR), EN shown after submit
-  const displayOptions = currentQuestion?.options_fr?.length
-    ? currentQuestion.options_fr
-    : currentQuestion?.options ?? [];
-  const translationOptions = currentQuestion?.options_en?.length
-    ? currentQuestion.options_en
-    : [];
+  // Total question count across all passages (for progress/score)
+  const totalQuestions = allQuestions.length;
 
-  const handleTranslateQuestion = async () => {
-    if (!questionTranslationSource) return;
-    if (showTranslation) { setShowTranslation(false); return; }
-    if (translatedQuestion) { setShowTranslation(true); return; }
-    try {
-      setIsTranslating(true);
-      const res = await fetch("/api/translate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: questionTranslationSource, target_lang: learningLang }),
-      });
-      if (!res.ok) throw new Error();
-      const data = (await res.json()) as { translation?: string };
-      setTranslatedQuestion(data.translation || "");
-      setShowTranslation(true);
-    } catch { setTranslatedQuestion(""); setShowTranslation(false); }
-    finally { setIsTranslating(false); }
-  };
+  // Progress: based on passages
+  const progress = passages.length > 0 ? ((passageIndex + 1) / passages.length) * 100 : 0;
 
-  const timerDuration = currentQuestion?.timeLimitSeconds || 60;
+  // Score tracking uses total individual questions; counter/display uses passage count
+  const totalPassages = passages.length;
+
+  usePracticeComplete({
+    isGameOver: isCompleted,
+    score,
+    totalQuestions: allQuestions.length,
+    exerciseType: "passage_mcq",
+    level: currentPassage?.level,
+  });
+
+  const timerDuration = currentPassage?.timeLimitSeconds || 60;
 
   const { timerString, resetTimer } = useExerciseTimer({
     duration: timerDuration,
     mode: "timer",
     onExpire: () => {
-      if (!isCompleted && !showFeedback) {
-        setIsCorrect(false);
-        setFeedbackMessage("Time's up!");
-        setShowFeedback(true);
+      if (!isCompleted && !submitted) {
+        handleSubmit();
       }
     },
-    isPaused: isCompleted || showFeedback,
+    isPaused: isCompleted || submitted,
   });
 
   useEffect(() => {
-    if (currentQuestion && !isCompleted) {
-      setSelectedOption(null);
-      setTranslatedQuestion("");
-      setShowTranslation(false);
+    if (currentPassage && !isCompleted) {
       resetTimer();
     }
-  }, [currentIndex, currentQuestion, isCompleted, resetTimer]);
+  }, [passageIndex, currentPassage, isCompleted, resetTimer]);
 
-  const handleOptionSelect = (index: number) => {
-    if (showFeedback) return;
-    setSelectedOption(index);
+  const handleOptionSelect = (questionIdx: number, optionIdx: number) => {
+    if (submitted) return;
+    setSelectedOptions(prev => {
+      const next = [...prev];
+      next[questionIdx] = optionIdx;
+      return next;
+    });
   };
 
-  const handleSubmit = () => {
-    if (showFeedback || selectedOption === null) return;
-    const correct = selectedOption === currentQuestion.correctIndex;
-    setIsCorrect(correct);
-    setFeedbackMessage(getFeedbackMessage(correct));
+  const handleSubmit = useCallback(() => {
+    if (submitted || !currentPassage) return;
+    // Require all questions to be answered
+    if (selectedOptions.some(o => o === null)) return;
+
+    setSubmitted(true);
+
+    // Score this passage
+    let passageCorrect = 0;
+    for (let i = 0; i < currentPassage.questions.length; i++) {
+      if (selectedOptions[i] === currentPassage.questions[i].correctIndex) {
+        passageCorrect++;
+      }
+    }
+    setScore(prev => prev + passageCorrect);
+
+    const allCorrect = passageCorrect === currentPassage.questions.length;
+    setIsCorrect(allCorrect);
+    setFeedbackMessage(
+      allCorrect
+        ? getFeedbackMessage(true)
+        : `${passageCorrect} / ${currentPassage.questions.length} correct`
+    );
     setShowFeedback(true);
-    if (correct) setScore(prev => prev + 1);
-  };
+  }, [submitted, currentPassage, selectedOptions]);
 
   const handleContinue = () => {
     setShowFeedback(false);
-    if (currentIndex < questions.length - 1) {
-      setCurrentIndex(prev => prev + 1);
+    if (passageIndex < passages.length - 1) {
+      setPassageIndex(prev => prev + 1);
     } else {
       setIsCompleted(true);
     }
@@ -216,7 +265,7 @@ function ComprehensionContent() {
     );
   }
 
-  if (questions.length === 0) {
+  if (passages.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-slate-50 dark:bg-slate-900">
         <p className="text-xl text-slate-600 dark:text-slate-400">No questions available.</p>
@@ -239,7 +288,17 @@ function ComprehensionContent() {
     renderLabel?: (option: string, index: number) => React.ReactNode;
   }>;
 
-  const progress = questions.length > 0 ? ((currentIndex + 1) / questions.length) * 100 : 0;
+  // Passage text always in learning language
+  const passageText = learningLang === "fr"
+    ? currentPassage?.passage_fr || currentPassage?.passage_en || ""
+    : currentPassage?.passage_en || currentPassage?.passage_fr || "";
+  const passageTitle = learningLang === "fr"
+    ? currentPassage?.passage_title_fr || currentPassage?.passage_title_en || ""
+    : currentPassage?.passage_title_en || currentPassage?.passage_title_fr || "";
+
+  const allAnswered = selectedOptions.length > 0 && selectedOptions.every(o => o !== null);
+
+  const isLastPassage = passageIndex === passages.length - 1;
 
   return (
     <>
@@ -247,30 +306,34 @@ function ComprehensionContent() {
         questionType="Reading Comprehension"
         questionTypeFr="Compréhension de lecture"
         questionTypeEn="Reading Comprehension"
-        localizedInstruction={showQuestionInKnown ? "Read the passage and answer" : "Lisez le passage et répondez"}
-        instructionFr={currentQuestion?.instructionFr || "Lisez le passage et répondez"}
-        instructionEn={currentQuestion?.instructionEn || "Read the passage and answer"}
+        localizedInstruction={
+          showQuestionInKnown
+            ? "Read the passage and answer all questions"
+            : "Lisez le passage et répondez à toutes les questions"
+        }
+        instructionFr={currentPassage?.instructionFr || "Lisez le passage et répondez à toutes les questions"}
+        instructionEn={currentPassage?.instructionEn || "Read the passage and answer all questions"}
         progress={progress}
         isGameOver={isCompleted}
         score={score}
-        totalQuestions={questions.length}
+        totalQuestions={totalPassages}
         onExit={handleExit}
         onNext={showFeedback ? handleContinue : handleSubmit}
         onRestart={() => window.location.reload()}
-        currentQuestionIndex={currentIndex}
-        questionCounterValue={currentIndex + 1}
-        isSubmitEnabled={selectedOption !== null || showFeedback}
+        currentQuestionIndex={passageIndex}
+        questionCounterValue={passageIndex + 1}
+        isSubmitEnabled={allAnswered || showFeedback}
         showSubmitButton={true}
         submitLabel={
           showFeedback
-            ? currentIndex + 1 === questions.length ? "FINISH" : "CONTINUE"
-            : "Submit Answer"
+            ? isLastPassage ? "FINISH" : "CONTINUE"
+            : "Submit Answers"
         }
         timerValue={timerString}
         feedbackTone={showFeedback ? (isCorrect ? "success" : "error") : "neutral"}
       >
         <div className="practice-reading-page-shell flex flex-col md:flex-row gap-3 p-3 mx-auto overflow-hidden flex-1 min-h-0">
-          {/* Left Column — Passage (always in learning language) */}
+          {/* Left Column — Passage */}
           <div className="flex-1 min-h-0 bg-white dark:bg-slate-800 p-5 md:p-8 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 flex flex-col overflow-hidden">
             {passageTitle && (
               <p className="text-sm font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-3">
@@ -287,45 +350,52 @@ function ComprehensionContent() {
             </div>
           </div>
 
-          {/* Right Column — Question & Options */}
-          <div className="flex-1 min-h-0 flex flex-col dark:bg-slate-900 rounded-2xl border border-slate-200 bg-white dark:border-slate-700 p-5 md:p-8 gap-5 overflow-y-auto">
-            {/* Question with translate button */}
-            <h3 className="mb-2 flex items-start gap-2">
-              <button
-                type="button"
-                onClick={handleTranslateQuestion}
-                disabled={isTranslating}
-                aria-label={showTranslation ? "Show original" : "Translate question"}
-                className="inline-flex items-center justify-center shrink-0 mt-1 text-blue-500 hover:text-blue-600 disabled:opacity-60"
-              >
-                {isTranslating
-                  ? <span className="w-5 h-5 animate-spin rounded-full border-2 border-blue-400 border-t-transparent" />
-                  : <Languages className="w-5 h-5 text-blue-500 shrink-0 mt-1" />}
-              </button>
-              <span className="practice-reading-option-text font-medium">
-                {showTranslation && translatedQuestion ? translatedQuestion : questionText}
-              </span>
-            </h3>
+          {/* Right Column — All questions for this passage */}
+          <div className="flex-1 min-h-0 flex flex-col dark:bg-slate-900 rounded-2xl border border-slate-200 bg-white dark:border-slate-700 p-5 md:p-8 gap-6 overflow-y-auto">
+            {currentPassage?.questions.map((q, qIdx) => {
+              const questionText = pick(q.question_fr, q.question_en) || q.question || "";
+              const displayOptions = q.options_fr?.length ? q.options_fr : q.options ?? [];
+              const translationOptions = q.options_en?.length ? q.options_en : [];
 
-            {/* Options — always in learning language, EN shown after submit */}
-            <OptionsComponent
-              options={displayOptions}
-              selectedOption={selectedOption}
-              correctIndex={currentQuestion?.correctIndex ?? -1}
-              showFeedback={showFeedback}
-              onSelect={handleOptionSelect}
-              renderLabel={(option: string, index: number) => (
-                <>
-                  <span>{option}</span>
-                  {showFeedback && translationOptions[index] && (
-                    <span className="text-xs opacity-70 flex items-center gap-1 mt-0.5">
-                      <Languages className="w-3 h-3 shrink-0" />
-                      {translationOptions[index]}
+              return (
+                <div key={qIdx} className="flex flex-col gap-3">
+                  {/* Question number + text */}
+                  <h3 className="flex items-start gap-2">
+                    <span className="shrink-0 mt-0.5 text-xs font-bold text-blue-500 bg-blue-50 dark:bg-blue-900/30 rounded-full w-5 h-5 flex items-center justify-center">
+                      {qIdx + 1}
                     </span>
+                    <span className="practice-reading-option-text font-medium">
+                      {questionText}
+                    </span>
+                  </h3>
+
+                  {/* Options */}
+                  <OptionsComponent
+                    options={displayOptions}
+                    selectedOption={selectedOptions[qIdx] ?? null}
+                    correctIndex={submitted ? q.correctIndex : undefined}
+                    showFeedback={submitted}
+                    onSelect={(optIdx) => handleOptionSelect(qIdx, optIdx)}
+                    renderLabel={(option: string, index: number) => (
+                      <>
+                        <span>{option}</span>
+                        {submitted && translationOptions[index] && (
+                          <span className="text-xs opacity-70 flex items-center gap-1 mt-0.5">
+                            <Languages className="w-3 h-3 shrink-0" />
+                            {translationOptions[index]}
+                          </span>
+                        )}
+                      </>
+                    )}
+                  />
+
+                  {/* Divider between questions */}
+                  {qIdx < currentPassage.questions.length - 1 && (
+                    <hr className="border-slate-200 dark:border-slate-700 mt-1" />
                   )}
-                </>
-              )}
-            />
+                </div>
+              );
+            })}
           </div>
         </div>
       </PracticeGameLayout>
@@ -334,29 +404,12 @@ function ComprehensionContent() {
         <FeedbackBanner
           isCorrect={isCorrect}
           feedbackTone={isCorrect ? "success" : "error"}
-          correctAnswer={!isCorrect ? displayOptions[currentQuestion.correctIndex] : null}
+          correctAnswer={null}
           onContinue={handleContinue}
           message={feedbackMessage}
-          continueLabel={currentIndex + 1 === questions.length ? "FINISH" : "CONTINUE"}
+          continueLabel={isLastPassage ? "FINISH" : "CONTINUE"}
         />
       )}
     </>
   );
 }
-
-type ComprehensionQuestion = {
-  passage?: string;
-  question?: string;
-  question_fr?: string;
-  question_en?: string;
-  heading?: string;
-  heading_fr?: string;
-  heading_en?: string;
-  level?: string;
-  options: string[];
-  correctIndex: number;
-  localizedInstruction?: string;
-  instructionFr?: string;
-  instructionEn?: string;
-  timeLimitSeconds?: number;
-};
