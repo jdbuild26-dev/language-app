@@ -35,7 +35,7 @@ const FILE_TO_SLUG = {
   "practice/listening/listen_order.csv": "listen_order",
   "practice/listening/listen_passage.csv": "listen_passage",
   "practice/listening/listen_select.csv": "listen_select",
-  "practice/listening/listen_type.csv": "listen_type",
+  "practice/listening/listen_type.csv": "type_what_you_hear",
   "practice/listening/listening_conversation.csv": "listening_conversation",
   // Writing
   "practice/writing/translate_typed.csv": "translate_typed",

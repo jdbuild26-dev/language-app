@@ -1,7 +1,7 @@
 "use client";
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, Suspense } from "react";
 import { usePracticeExit } from "@/hooks/usePracticeExit";
 import { useExerciseTimer } from "@/hooks/useExerciseTimer";
 import { Volume2, User, Languages } from "lucide-react";
@@ -11,15 +11,26 @@ import FeedbackBanner from "@/components/ui/FeedbackBanner";
 import PracticeOptions from "@/components/ui/PracticeOptions";
 import { getFeedbackMessage } from "@/utils/feedbackMessages";
 import { useTextToSpeech } from "@/hooks/useTextToSpeech";
-import { loadMockCSV } from "@/utils/csvLoader";
+import { fetchPracticeData } from "@/utils/practiceFetcher";
+import { useSearchParams } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTranslateText } from "@/hooks/useTranslateText";
 
 export default function ListenInteractivePage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-pink-500" /></div>}>
+      <ListenInteractiveContent />
+    </Suspense>
+  );
+}
+
+function ListenInteractiveContent() {
   const handleExit = usePracticeExit();
   const { speak } = useTextToSpeech();
   const chatEndRef = useRef<HTMLDivElement>(null);
+  const searchParams = useSearchParams();
+  const tag = searchParams?.get("tag") ?? undefined;
 
   // State
   const [conversation, setConversation] = useState<any>(null);
@@ -38,73 +49,75 @@ export default function ListenInteractivePage() {
   useEffect(() => {
     const fetchConversation = async () => {
       try {
-        const data = (await loadMockCSV(
-          "practice/listening/listen_interactive.csv",
-        )) as any[];
+        const data = (await fetchPracticeData("listen_interactive", { tag })) as any[];
         if (data && data.length > 0) {
           const raw = data[0] as any;
+          const c = raw.content || raw;
 
-          // Build exchanges from flat fields: Speaker_N_FR + Prompt_N_FR + Sample_N_FR
-          const exchanges: any[] = [];
-          let n = 1;
-          while (raw[`Speaker_${n}_FR`] || raw[`Prompt_${n}_FR`]) {
-            const speakerText = raw[`Speaker_${n}_FR`] || "";
-            const question = raw[`Prompt_${n}_FR`] || raw[`Prompt_${n}_EN`] || "";
-            const correctText = raw[`Sample_${n}_FR`] || raw[`Sample_${n}_EN`] || "";
+          // Build exchanges from parsed DB format (exchanges array) or flat columns
+          let exchanges: any[] = [];
 
-            // Build options: correct + samples from other turns as distractors
-            const distractors: string[] = [];
-            let d = 1;
-            while (raw[`Sample_${d}_FR`]) {
-              if (d !== n) distractors.push(raw[`Sample_${d}_FR`]);
-              d++;
-            }
-            const options = [correctText, ...distractors.slice(0, 3)]
-              .filter(Boolean)
-              .sort(() => Math.random() - 0.5);
-            const correctIndex = options.indexOf(correctText);
-
-            // Non-question exchange: just the speaker line
-            if (speakerText) {
-              exchanges.push({
-                speaker: raw[`Scenario Title_FR`] ? "Speaker" : `Speaker ${n}`,
-                text: speakerText,
+          if (Array.isArray(c.exchanges) && c.exchanges.length > 0) {
+            // New DB format: exchanges array with question_fr/options_fr/correctIndex
+            exchanges = c.exchanges.map((ex: any) => {
+              if (ex.question_fr || ex.question_en) {
+                // MCQ exchange
+                const opts = ex.options_fr || ex.options_en || [];
+                return {
+                  speaker: "Question",
+                  text: ex.question_fr || ex.question_en || "",
+                  question: ex.question_fr || ex.question_en || "",
+                  isQuestion: true,
+                  options: opts,
+                  correctIndex: typeof ex.correctIndex === "number" ? ex.correctIndex : 0,
+                };
+              }
+              // Dialogue exchange
+              return {
+                speaker: ex.speaker_fr || "Speaker",
+                text: ex.prompt_fr || ex.sample_fr || "",
                 isQuestion: false,
-              });
+              };
+            }).filter((ex: any) => ex.text);
+          } else {
+            // Legacy flat columns: Speaker_N_FR + Prompt_N_FR + Sample_N_FR
+            let n = 1;
+            while (raw[`Speaker_${n}_FR`] || raw[`Prompt_${n}_FR`]) {
+              const speakerText = raw[`Speaker_${n}_FR`] || "";
+              const question = raw[`Prompt_${n}_FR`] || raw[`Prompt_${n}_EN`] || "";
+              const correctText = raw[`Sample_${n}_FR`] || raw[`Sample_${n}_EN`] || "";
+              const distractors: string[] = [];
+              let d = 1;
+              while (raw[`Sample_${d}_FR`]) {
+                if (d !== n) distractors.push(raw[`Sample_${d}_FR`]);
+                d++;
+              }
+              const options = [correctText, ...distractors.slice(0, 3)].filter(Boolean).sort(() => Math.random() - 0.5);
+              const correctIndex = options.indexOf(correctText);
+              if (speakerText) exchanges.push({ speaker: "Speaker", text: speakerText, isQuestion: false });
+              if (question && options.length > 0) exchanges.push({ speaker: "Question", text: question, question, isQuestion: true, options, correctIndex: correctIndex >= 0 ? correctIndex : 0 });
+              n++;
             }
-
-            // Question exchange
-            if (question && options.length > 0) {
-              exchanges.push({
-                speaker: "Question",
-                text: question,
-                question,
-                isQuestion: true,
-                options,
-                correctIndex: correctIndex >= 0 ? correctIndex : 0,
-              });
-            }
-            n++;
           }
 
           setConversation({
-            title: raw["Scenario Title_FR"] || raw["Scenario Title_EN"] || "",
-            context: raw["Scenario_FR"] || raw["Scenario_EN"] || "",
-            timeLimitSeconds: raw["Time"] || 300,
+            title: c.title_fr || c.title_en || raw["Scenario Title_FR"] || raw["Scenario Title_EN"] || "",
+            context: c.scenario_fr || c.scenario_en || raw["Scenario_FR"] || raw["Context_FR"] || "",
+            timeLimitSeconds: c.timeLimitSeconds || raw["Time"] || 300,
             exchanges,
           });
         } else {
           setConversation(null);
         }
       } catch (error) {
-        console.error("Error loading mock data:", error);
+        console.error("Error loading listen interactive data:", error);
         setConversation(null);
       } finally {
         setIsLoading(false);
       }
     };
     fetchConversation();
-  }, []);
+  }, [tag]);
 
   // Derived state
   const currentExchange = conversation?.exchanges?.[currentExchangeIndex];
