@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, Suspense } from "react";
 import { usePracticeExit } from "@/hooks/usePracticeExit";
 import { useExerciseTimer } from "@/hooks/useExerciseTimer";
 import { Volume2, RotateCcw, Pause, Play } from "lucide-react";
@@ -9,14 +9,24 @@ import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
 import FeedbackBanner from "@/components/ui/FeedbackBanner";
 import { getFeedbackMessage } from "@/utils/feedbackMessages";
 import { useTextToSpeech } from "@/hooks/useTextToSpeech";
-import { loadMockCSV } from "@/utils/csvLoader";
+import { fetchPracticeData } from "@/utils/practiceFetcher";
+import { useSearchParams } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export default function ListenPassagePage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-rose-500" /></div>}>
+      <ListenPassageContent />
+    </Suspense>
+  );
+}
+
+function ListenPassageContent() {
   const handleExit = usePracticeExit();
-  const { speak, isSpeaking, pause, resume, isPaused, cancel } =
-    useTextToSpeech();
+  const { speak, isSpeaking, pause, resume, isPaused, cancel } = useTextToSpeech();
+  const searchParams = useSearchParams();
+  const tag = searchParams?.get("tag") ?? undefined;
 
   const [passages, setPassages] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -55,20 +65,36 @@ export default function ListenPassagePage() {
   useEffect(() => {
     const fetchPassages = async () => {
       try {
-        const data = await loadMockCSV("practice/listening/listen_passage.csv");
-        // Filter out passages with invalid or missing questions
-        const validPassages = data.filter(
-          (p) => p.questions && Array.isArray(p.questions) && p.questions.length > 0
-        );
-        setPassages(validPassages);
+        const data = await fetchPracticeData("listen_passage", { tag });
+        const mapped = (Array.isArray(data) ? data : []).map((item: any) => {
+          const c = item.content || item;
+          const passageText = c.passageText || item.passageText || c.passageText_en || "";
+          // questions: array of {question_fr, question_en, options_fr, options_en, correctIndex}
+          let questions: any[] = [];
+          if (Array.isArray(c.questions) && c.questions.length > 0) {
+            questions = c.questions.map((q: any) => ({
+              question: q.question_fr || q.question_en || q.question || "",
+              options: q.options_fr || q.options_en || q.options || [],
+              correctIndex: typeof q.correctIndex === "number" ? q.correctIndex : 0,
+            }));
+          }
+          return {
+            passageText,
+            title: c.title_fr || c.title_en || item.title_fr || "",
+            questions,
+            timeLimitSeconds: Number(c.timeLimitSeconds || item.timeLimitSeconds || item.Time || 120),
+            level: item.Level || item.level || "A1",
+          };
+        }).filter((p: any) => p.passageText && p.questions.length > 0);
+        setPassages(mapped);
       } catch (error) {
-        console.error("Error loading mock data:", error);
+        console.error("Error loading listen passage data:", error);
       } finally {
         setIsLoading(false);
       }
     };
     fetchPassages();
-  }, []);
+  }, [tag]);
 
   useEffect(() => {
     if (currentPassage && !isCompleted) {

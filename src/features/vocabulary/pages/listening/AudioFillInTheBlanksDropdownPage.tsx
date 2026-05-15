@@ -35,7 +35,6 @@ function parseAnswers(raw: string): string[] {
 }
 
 /** Split passage like "Today [1] __________ and [2] __________." into segments */
-type Segment = { type: "text"; text: string } | { type: "blank"; id: number };
 function parseSegments(passage: string): Segment[] {
   const segments: Segment[] = [];
   const regex = /\[(\d+)\]\s*_{2,}\s*/g;
@@ -49,34 +48,52 @@ function parseSegments(passage: string): Segment[] {
   return segments;
 }
 
-type BlankDef = { id: number; correct: string; options: string[] };
-
 function buildExercise(item: any): Exercise | null {
-  const audioText = item["Audio_FR"] || item.audioText || item.audio_fr || "";
-  const fillParagraph = item["Fill Paragraph_FR"] || item.passage_fr || audioText;
+  const audioText = item.audioText || item["Audio_FR"] || item.audio_fr || "";
+  const fillParagraph = item.passage_fr || item["Fill Paragraph_FR"] || item.passage_en || audioText;
 
-  const correctAnswers = parseAnswers(item["Correct Answer_FR"] || item["Correct Answer_EN"] || "");
-  if (!audioText || correctAnswers.length === 0) return null;
+  if (!audioText) return null;
 
-  // Build wrong options pools from Wrong Answer_N_FR fields
-  const wrongPools: string[][] = [];
-  let wi = 1;
-  while (item[`Wrong Answer_${wi}_FR`] || item[`Wrong Answer_${wi}_EN`]) {
-    const wrongs = parseAnswers(item[`Wrong Answer_${wi}_FR`] || item[`Wrong Answer_${wi}_EN`] || "");
-    wrongPools.push(wrongs);
-    wi++;
+  // ── Path 1: data came from the backend (blanksData already parsed) ──────────
+  const blanksDataRaw = item.blanksData || item.eval_blanksData;
+  let blanks: BlankDef[] = [];
+
+  if (blanksDataRaw && typeof blanksDataRaw === "object" && Object.keys(blanksDataRaw).length > 0) {
+    blanks = Object.entries(blanksDataRaw)
+      .sort(([a], [b]) => parseInt(a) - parseInt(b))
+      .map(([key, bd]: [string, any]) => ({
+        id: parseInt(key, 10),
+        correct: bd.correct || "",
+        options: Array.isArray(bd.options) ? bd.options : [],
+      }))
+      .filter(b => b.correct);
   }
 
-  // Build per-blank dropdown options: correct + one wrong from each pool, shuffled
-  const blanks: BlankDef[] = correctAnswers.map((correct, i) => {
-    const wrongOptions = wrongPools
-      .map(pool => pool[i] || pool[0])
-      .filter(w => w && w !== correct);
-    const options = [correct, ...wrongOptions].sort(() => Math.random() - 0.5);
-    return { id: i + 1, correct, options };
-  });
+  // ── Path 2: raw CSV columns (local CSV fallback) ─────────────────────────────
+  if (blanks.length === 0) {
+    const correctAnswers = parseAnswers(item["Correct Answer_FR"] || item["Correct Answer_EN"] || "");
+    if (correctAnswers.length === 0) return null;
 
-  // Audio recordings: split Audio_FR on sentence boundaries
+    const wrongPools: string[][] = [];
+    let wi = 1;
+    while (item[`Wrong Answer_${wi}_FR`] || item[`Wrong Answer_${wi}_EN`]) {
+      const wrongs = parseAnswers(item[`Wrong Answer_${wi}_FR`] || item[`Wrong Answer_${wi}_EN`] || "");
+      wrongPools.push(wrongs);
+      wi++;
+    }
+
+    blanks = correctAnswers.map((correct, i) => {
+      const wrongOptions = wrongPools
+        .map(pool => pool[i] || pool[0])
+        .filter(w => w && w !== correct);
+      const options = [correct, ...wrongOptions].sort(() => Math.random() - 0.5);
+      return { id: i + 1, correct, options };
+    });
+  }
+
+  if (blanks.length === 0) return null;
+
+  // Audio recordings: split audioText on sentence boundaries
   const sentences = audioText.split(/(?<=[.!?])\s+/).filter(Boolean);
   const audioRecordings = sentences.map((s: string, i: number) => ({
     id: i + 1,
@@ -85,7 +102,7 @@ function buildExercise(item: any): Exercise | null {
   }));
 
   return {
-    id: item.id || item.ExerciseID,
+    id: item.id || item.ExerciseID || item.external_id,
     audioText,
     audioRecordings,
     fillParagraph,
@@ -257,15 +274,12 @@ function AudioDropdownContent() {
                 const isThisPlaying = isSpeaking && playingId === rec.id;
                 return (
                   <div key={rec.id} className="rounded-2xl border border-slate-200 bg-slate-50 dark:bg-slate-900 dark:border-slate-700 p-4">
-                    <div className="flex items-start justify-between gap-3">
-                      <div>
-                        <p className="text-xs tracking-[0.2em] font-semibold text-blue-600 mb-2">{rec.label}</p>
-                        <p className="text-base md:text-lg leading-relaxed font-medium text-slate-700 dark:text-slate-200">{rec.text}</p>
-                      </div>
+                    <div className="flex items-center justify-between gap-3">
+                      <p className="text-xs tracking-[0.2em] font-semibold text-blue-600">{rec.label}</p>
                       <div className="flex items-center gap-2 shrink-0">
                         <button type="button" onClick={() => playRecording(rec.id, rec.text, 0.9)}
                           className={cn("w-9 h-9 rounded-full border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 flex items-center justify-center transition-colors",
-                            isThisPlaying ? "text-blue-600" : "text-slate-400 hover:text-slate-600")}>
+                            isThisPlaying ? "text-blue-600 border-blue-400" : "text-slate-400 hover:text-slate-600")}>
                           <Volume2 className={cn("w-4 h-4", isThisPlaying && "animate-pulse")} />
                         </button>
                         <button type="button" onClick={() => playRecording(rec.id, rec.text, 0.7)}

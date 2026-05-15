@@ -1,7 +1,7 @@
 "use client";
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, Suspense } from "react";
 import { usePracticeExit } from "@/hooks/usePracticeExit";
 import { useExerciseTimer } from "@/hooks/useExerciseTimer";
 import { Volume2, User, XCircle, Languages } from "lucide-react";
@@ -10,10 +10,19 @@ import FeedbackBanner from "@/components/ui/FeedbackBanner";
 import PracticeOptions from "@/components/ui/PracticeOptions";
 import { getFeedbackMessage } from "@/utils/feedbackMessages";
 import { useTextToSpeech } from "@/hooks/useTextToSpeech";
-import { loadMockCSV } from "@/utils/csvLoader";
+import { fetchPracticeData } from "@/utils/practiceFetcher";
+import { useSearchParams } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTranslateText } from "@/hooks/useTranslateText";
+
+export default function ListeningConversationPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-indigo-500" /></div>}>
+      <ListeningConversationContent />
+    </Suspense>
+  );
+}
 
 const parseMaybeJson = (value: any) => {
   if (typeof value !== "string") return value;
@@ -120,9 +129,11 @@ const normalizeConversation = (rawConversation: any) => {
   };
 };
 
-export default function ListeningConversationPage() {
+function ListeningConversationContent() {
   const handleExit = usePracticeExit();
   const { speak } = useTextToSpeech();
+  const searchParams = useSearchParams();
+  const tag = searchParams?.get("tag") ?? undefined;
 
   // Current turn/exchange index (0-based)
   const [conversation, setConversation] = useState<any>(null);
@@ -180,20 +191,18 @@ export default function ListeningConversationPage() {
   useEffect(() => {
     const fetchConversation = async () => {
       try {
-        const data = (await loadMockCSV(
-          "practice/listening/listening_conversation.csv",
-        )) as any[];
+        const data = (await fetchPracticeData("listening_conversation", { tag })) as any[];
         if (data && data.length > 0) {
           setConversation(normalizeConversation(data[0]));
         }
       } catch (error) {
-        console.error("Error loading mock data:", error);
+        console.error("Error loading listening conversation data:", error);
       } finally {
         setIsLoading(false);
       }
     };
     fetchConversation();
-  }, []);
+  }, [tag]);
 
   // Play audio when new turn starts
   useEffect(() => {

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, Suspense } from "react";
 import { usePracticeExit } from "@/hooks/usePracticeExit";
 import { useExerciseTimer } from "@/hooks/useExerciseTimer";
 import { Volume2, GripVertical, Turtle } from "lucide-react";
@@ -10,7 +10,8 @@ import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
 import FeedbackBanner from "@/components/ui/FeedbackBanner";
 import { getFeedbackMessage } from "@/utils/feedbackMessages";
 import { useTextToSpeech } from "@/hooks/useTextToSpeech";
-import { loadMockCSV } from "@/utils/csvLoader";
+import { fetchPracticeData } from "@/utils/practiceFetcher";
+import { useSearchParams } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -25,8 +26,18 @@ const shuffleArray = (array) => {
 };
 
 export default function ListenOrderPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-orange-500" /></div>}>
+      <ListenOrderContent />
+    </Suspense>
+  );
+}
+
+function ListenOrderContent() {
   const handleExit = usePracticeExit();
   const { speak, isSpeaking } = useTextToSpeech();
+  const searchParams = useSearchParams();
+  const tag = searchParams?.get("tag") ?? undefined;
 
   const [questions, setQuestions] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -60,24 +71,52 @@ export default function ListenOrderPage() {
   useEffect(() => {
     const fetchQuestions = async () => {
       try {
-        // Fetch with limit=5 to get only 5 random exercises
-        const data = await loadMockCSV("practice/listening/listen_order.csv", { limit: 5 });
-        
-        // If data has more than 5 items (fallback from local CSV), shuffle and take 5
-        if (data && data.length > 5) {
-          const shuffled = shuffleArray(data);
-          setQuestions(shuffled.slice(0, 5));
+        const data = await fetchPracticeData("listen_order", { tag, limit: 5 });
+        const mapped = (Array.isArray(data) ? data : []).map((item: any) => {
+          const c = item.content || item;
+          // sentences_fr: array of FR sentences in correct order
+          let sentences: string[] = [];
+          if (Array.isArray(c.sentences_fr) && c.sentences_fr.length > 0) {
+            sentences = c.sentences_fr;
+          } else if (typeof c.sentences_fr === "string") {
+            sentences = c.sentences_fr.split("+").map((s: string) => s.trim()).filter(Boolean);
+          }
+          // correctOrder: 0-based indices
+          let correctOrder: any[] = [];
+          if (Array.isArray(c.correctOrder) && c.correctOrder.length > 0) {
+            // If indices, map to sentences; if already strings, use directly
+            if (typeof c.correctOrder[0] === "number") {
+              correctOrder = c.correctOrder.map((i: number) => sentences[i] ?? "").filter(Boolean);
+            } else {
+              correctOrder = c.correctOrder;
+            }
+          } else if (sentences.length > 0) {
+            correctOrder = sentences;
+          } else if (Array.isArray(item.correctOrder)) {
+            correctOrder = item.correctOrder;
+          }
+          return {
+            correctOrder,
+            title_fr: c.title_fr || item.title_fr || "",
+            title_en: c.title_en || item.title_en || "",
+            timeLimitSeconds: Number(c.timeLimitSeconds || item.timeLimitSeconds || item.Time || 90),
+            level: item.Level || item.level || "A1",
+          };
+        }).filter((q: any) => q.correctOrder.length >= 2);
+
+        if (mapped.length > 5) {
+          setQuestions(shuffleArray(mapped).slice(0, 5));
         } else {
-          setQuestions(data || []);
+          setQuestions(mapped);
         }
       } catch (error) {
-        console.error("Error loading mock data:", error);
+        console.error("Error loading listen order data:", error);
       } finally {
         setIsLoading(false);
       }
     };
     fetchQuestions();
-  }, []);
+  }, [tag]);
 
   useEffect(() => {
     if (currentQuestion && !isCompleted) {

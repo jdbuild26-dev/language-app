@@ -18,6 +18,7 @@ const SLUG_TO_CSV: Record<string, string> = {
   listen_order: "practice/listening/listen_order.csv",
   listen_passage: "practice/listening/listen_passage.csv",
   listen_type: "practice/listening/listen_type.csv",
+  type_what_you_hear: "practice/listening/listen_type.csv",
   listening_conversation: "practice/listening/listening_conversation.csv",
   passage_mcq: "practice/reading/comprehension.csv",
   complete_passage_dropdown: "practice/reading/complete_passage_dropdown.csv",

@@ -9,15 +9,27 @@ import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
 import FeedbackBanner from "@/components/ui/FeedbackBanner";
 import { getFeedbackMessage } from "@/utils/feedbackMessages";
 import { useTextToSpeech } from "@/hooks/useTextToSpeech";
-import { loadMockCSV } from "@/utils/csvLoader";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import AccentKeyboard from "@/components/ui/AccentKeyboard";
+import { fetchPracticeData } from "@/utils/practiceFetcher";
+import { useSearchParams } from "next/navigation";
+import { Suspense } from "react";
 
 export default function ListenTypePage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-emerald-500" /></div>}>
+      <ListenTypeContent />
+    </Suspense>
+  );
+}
+
+function ListenTypeContent() {
   const handleExit = usePracticeExit();
   const { speak, isSpeaking } = useTextToSpeech();
   const textareaRef = useRef(null);
+  const searchParams = useSearchParams();
+  const tag = searchParams?.get("tag") ?? undefined;
 
   const [questions, setQuestions] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -51,16 +63,26 @@ export default function ListenTypePage() {
   useEffect(() => {
     const fetchQuestions = async () => {
       try {
-        const data = await loadMockCSV("practice/listening/listen_type.csv");
-        setQuestions(data);
+        const data = await fetchPracticeData("type_what_you_hear", { tag });
+        const mapped = (Array.isArray(data) ? data : []).map((item: any) => {
+          const c = item.content || item;
+          return {
+            audioText:       c.audioText       || item.audioText       || item["Audio_FR"]           || item["Complete Sentence_FR"] || item["Complete Sentence _FR"] || "",
+            englishText:     c.englishText      || item.englishText     || item["Audio_EN"]           || item["Complete Sentence_EN"] || item["Complete Sentence _EN"] || "",
+            hint:            c.hint             || item.hint            || "",
+            timeLimitSeconds: Number(c.timeLimitSeconds || item.timeLimitSeconds || item.TimeLimitSeconds || 45),
+            level:           item.Level         || item.level           || "A1",
+          };
+        }).filter((q: any) => q.audioText);
+        setQuestions(mapped);
       } catch (error) {
-        console.error("Error loading mock data:", error);
+        console.error("Error loading listen type data:", error);
       } finally {
         setIsLoading(false);
       }
     };
     fetchQuestions();
-  }, []);
+  }, [tag]);
 
   // Auto-play audio when question changes (Normal Speed)
   useEffect(() => {

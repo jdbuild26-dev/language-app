@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, Suspense } from "react";
 import { usePracticeExit } from "@/hooks/usePracticeExit";
 import { useExerciseTimer } from "@/hooks/useExerciseTimer";
 import { useTextToSpeech } from "@/hooks/useTextToSpeech";
@@ -9,7 +9,8 @@ import { cn } from "@/lib/utils";
 import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
 import FeedbackBanner from "@/components/ui/FeedbackBanner";
 import { getFeedbackMessage } from "@/utils/feedbackMessages";
-import { loadMockCSV } from "@/utils/csvLoader";
+import { fetchPracticeData } from "@/utils/practiceFetcher";
+import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import TranslationExplainButton from "@/components/ui/TranslationExplainButton";
 
@@ -24,8 +25,18 @@ function shuffleArray(array) {
 }
 
 export default function ListenBubblePage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-blue-500" /></div>}>
+      <ListenBubbleContent />
+    </Suspense>
+  );
+}
+
+function ListenBubbleContent() {
   const handleExit = usePracticeExit();
   const { speak, isSpeaking } = useTextToSpeech();
+  const searchParams = useSearchParams();
+  const tag = searchParams?.get("tag") ?? undefined;
 
   const [questions, setQuestions] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -60,16 +71,53 @@ export default function ListenBubblePage() {
   useEffect(() => {
     const fetchQuestions = async () => {
       try {
-        const data = await loadMockCSV("practice/listening/listen_bubble.csv");
-        setQuestions(data);
+        const data = await fetchPracticeData("listen_bubble", { tag });
+        const mapped = (Array.isArray(data) ? data : []).map((item: any) => {
+          const c = item.content || item;
+          // sentence: the correct FR sentence to reconstruct
+          const sentence =
+            c.sentence || item.sentence ||
+            c.audioText || item.audioText ||
+            item["Complete Sentence_FR"] || item["Complete Sentence _FR"] || "";
+          // audioText: what gets spoken (same as sentence for this exercise)
+          const audioText =
+            c.audioText || item.audioText || sentence;
+          // translation: EN equivalent
+          const translation =
+            c.translation || item.translation ||
+            item["Complete Sentence_EN"] || item["Complete Sentence _EN"] || "";
+          // wordBubbles: pre-built token list, or split from sentence
+          let wordBubbles: string[] = [];
+          if (Array.isArray(c.bubbleTokens) && c.bubbleTokens.length > 0) {
+            wordBubbles = c.bubbleTokens;
+          } else if (Array.isArray(item.wordBubbles) && item.wordBubbles.length > 0) {
+            wordBubbles = item.wordBubbles;
+          } else if (item["BubbleTokens"] && typeof item["BubbleTokens"] === "string") {
+            wordBubbles = item["BubbleTokens"].split("+").map((t: string) => t.trim()).filter(Boolean);
+          } else if (sentence) {
+            wordBubbles = sentence.split(" ").filter(Boolean);
+          }
+          // distractors: extra wrong tokens to add to the word bank
+          const distractors: string[] = Array.isArray(c.distractors) ? c.distractors : [];
+
+          return {
+            sentence,
+            audioText,
+            translation,
+            wordBubbles: [...wordBubbles, ...distractors],
+            timeLimitSeconds: Number(c.timeLimitSeconds || item.timeLimitSeconds || item.TimeLimitSeconds || item["Time Limit"] || 60),
+            level: item.Level || item.level || "A1",
+          };
+        }).filter((q: any) => q.sentence && q.wordBubbles.length > 0);
+        setQuestions(mapped);
       } catch (error) {
-        console.error("Error loading mock data:", error);
+        console.error("Error loading listen bubble data:", error);
       } finally {
         setIsLoading(false);
       }
     };
     fetchQuestions();
-  }, []);
+  }, [tag]);
 
   // Initialize available words when question changes (shuffled)
   useEffect(() => {
