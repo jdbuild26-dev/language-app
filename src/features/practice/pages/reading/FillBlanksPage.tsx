@@ -126,13 +126,13 @@ function FillBlanksContent() {
         const data = await loadMockCSV("practice/reading/fill_blanks.csv", {
           learningLang, knownLang, tag,
         });
-        const mapped = (Array.isArray(data) ? data : []).map((item: any) => {
+        const mapped = (Array.isArray(data) ? data : []).map((item: any, idx: number) => {
           const c = item.content || item;
           const e = item.evaluation || item;
           const cfg = item.config || item;
 
           const segments = parseJson<PassageSegment[]>(
-            c.passageSegments || item.passageSegments, []
+            c.passageSegments || item.passageSegments || [], []
           );
 
           // Fallback: derive segments from passage_fr / passage_en if DB has none stored
@@ -141,8 +141,9 @@ function FillBlanksContent() {
           const derivedSegments = segments.length > 0
             ? segments
             : parseSegmentsFromPassage(passageFr || passageEn);
+
           const blanksRaw = parseJson<Record<string, any>>(
-            e.blanksData || item.blanksData || item.eval_blanksData, {}
+            e.blanksData || item.blanksData || item.eval_blanksData || {}, {}
           );
 
           // Normalise blanksData entries
@@ -160,8 +161,8 @@ function FillBlanksContent() {
             }
           }
 
-          return {
-            external_id:      item.external_id || item.ExerciseID,
+          const ex = {
+            external_id:      item.external_id || item.ExerciseID || `EX-${idx}`,
             level:            item.Level || item.level || '',
             passage_fr:       passageFr,
             passage_en:       passageEn,
@@ -171,11 +172,24 @@ function FillBlanksContent() {
             instructionFr:    item.instructionFr || item.instruction_fr || '',
             instructionEn:    item.instructionEn || item.instruction_en || '',
           } as FillBlanksExercise;
+
+          // Diagnostics
+          if (ex.passageSegments.length === 0 || Object.keys(ex.blanksData).length === 0) {
+            console.warn(`[FILL_BLANKS] Exercise ${ex.external_id} filtered out. Segments: ${ex.passageSegments.length}, Blanks: ${Object.keys(ex.blanksData).length}`, {
+              passageFrLength: passageFr.length,
+              passageEnLength: passageEn.length,
+              blanksRawKeys: Object.keys(blanksRaw)
+            });
+          }
+
+          return ex;
         }).filter(ex => ex.passageSegments.length > 0 && Object.keys(ex.blanksData).length > 0);
 
+        console.log(`[FILL_BLANKS] Final mapped exercises count: ${mapped.length}`);
         if (mapped.length === 0) setError("No fill-in-the-blanks exercises found.");
         else setExercises(mapped);
-      } catch {
+      } catch (err) {
+        console.error("[FILL_BLANKS] Fetch error:", err);
         setError("Failed to load exercises.");
       } finally {
         setLoading(false);

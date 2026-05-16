@@ -214,34 +214,20 @@ export default function WritingConversationPage() {
       ]);
 
       try {
-        const result = await evaluate({
-          task_type: "interactive",
-          user_text: submitted,
-          topic: conversation.scenario,
-          reference: currentExchange.sampleAnswer || "",
-          context: `Prompt: ${promptDisplayText || currentExchange.speakerText}`,
+        // Skip per-sentence evaluation as requested
+        setConversationHistory((prev) => {
+          const updated = [...prev];
+          const last = updated[updated.length - 1];
+          last.isEvaluating = false;
+          last.wasCorrect = true; // Always mark as "neutral/correct" to proceed
+          return updated;
         });
 
-        if (result) {
-          if ((result.score ?? result.overall_score ?? 0) >= 70)
-            setScore((p) => p + 1);
-          setConversationHistory((prev) => {
-            const updated = [...prev];
-            const last = updated[updated.length - 1];
-            last.isEvaluating = false;
-            last.wasCorrect = (result.score ?? result.overall_score ?? 0) >= 70;
-            last.evaluation = result;
-            return updated;
-          });
-          setTimeout(() => {
-            if (currentTurnIndex < totalExchanges - 1)
-              setCurrentTurnIndex((p) => p + 1);
-            else setIsCompleted(true);
-          }, 2500);
-        } else {
-          setHasAnswered(false);
-          setConversationHistory((prev) => prev.slice(0, -1));
-        }
+        setTimeout(() => {
+          if (currentTurnIndex < totalExchanges - 1)
+            setCurrentTurnIndex((p) => p + 1);
+          else setIsCompleted(true);
+        }, 1000);
       } catch {
         setHasAnswered(false);
         setConversationHistory((prev) => prev.slice(0, -1));
