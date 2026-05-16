@@ -85,30 +85,58 @@ export default function WriteDocumentsPage() {
         });
         const raw = Array.isArray(data) ? data : [];
 
-        const normalized: WriteDocumentQuestion[] = raw
+        // Separate new-format (from uploaded CSV) and old-format items
+        const newFormat = raw.filter((item: any) =>
+          (item.main_instruction_fr || item.main_instruction_en ||
+           (Array.isArray(item.topic_bullets_fr) && item.topic_bullets_fr.length > 0)) &&
+          item.ExerciseID && item.ExerciseID !== '' && item.ExerciseID !== null &&
+          (item.Category === "main" || !item.Category)
+        );
+        const oldFormat = raw.filter((item: any) =>
+          (item.prompt || item.topic) &&
+          (!item.ExerciseID || item.ExerciseID === '' || item.ExerciseID === null) &&
+          (item.Category === "main" || !item.Category)
+        );
+
+        // Prefer new-format if available, fall back to old
+        const source = newFormat.length > 0 ? newFormat : oldFormat;
+
+        const normalized: WriteDocumentQuestion[] = source
           .filter((item: any) =>
-            // Standard format
+            // Accept new format OR old format (has topic/prompt fields)
             (item.main_instruction_fr || item.main_instruction_en ||
-             (item.content && (item.content.main_instruction_fr || item.content.main_instruction_en))) &&
+             (Array.isArray(item.topic_bullets_fr) && item.topic_bullets_fr.length > 0) ||
+             item.prompt || item.topic) &&
             (item.Category === "main" || !item.Category)
           )
           .map((item: any) => {
-            const c = item.content || item;
+            // Handle old format: { topic, englishTopic, prompt, hints, sampleAnswer }
+            const isOldFormat = !item.main_instruction_fr && !item.topic_bullets_fr && item.topic;
+            const hintsArray = isOldFormat
+              ? (typeof item.hints === 'string'
+                  ? item.hints.split(/[,+]/).map((h: string) => h.trim()).filter(Boolean)
+                  : Array.isArray(item.hints) ? item.hints : [])
+              : [];
             return {
-              title_fr: c.title_fr || c.passage_title_fr || "",
-              title_en: c.title_en || c.passage_title_en || "",
-              heading_fr: c.heading_fr || "",
-              heading_en: c.heading_en || "",
-              main_instruction_fr: c.main_instruction_fr || "",
-              main_instruction_en: c.main_instruction_en || "",
-              topic_bullets_fr: Array.isArray(c.topic_bullets_fr) ? c.topic_bullets_fr : [],
-              topic_bullets_en: Array.isArray(c.topic_bullets_en) ? c.topic_bullets_en : [],
-              instruction_box_fr: c.instruction_box_fr || "Rédigez le document demandé",
-              instruction_box_en: c.instruction_box_en || "Write the requested document",
-              sample_answers_fr: Array.isArray(c.sample_answers_fr) ? c.sample_answers_fr : [],
-              sample_answers_en: Array.isArray(c.sample_answers_en) ? c.sample_answers_en : [],
-              timeLimitSeconds: c.timeLimitSeconds || item.TimeLimitSeconds || 360,
-              charLimit: c.maxHighlightChars || c.charLimit || 1000,
+              title_fr: item.title_fr || item.passage_title_fr || item.topic || "",
+              title_en: item.title_en || item.passage_title_en || item.englishTopic || "",
+              heading_fr: item.heading_fr || "",
+              heading_en: item.heading_en || "",
+              main_instruction_fr: item.main_instruction_fr || item.prompt || "",
+              main_instruction_en: item.main_instruction_en || item.prompt || "",
+              topic_bullets_fr: Array.isArray(item.topic_bullets_fr) && item.topic_bullets_fr.length > 0
+                ? item.topic_bullets_fr
+                : hintsArray,
+              topic_bullets_en: Array.isArray(item.topic_bullets_en) && item.topic_bullets_en.length > 0
+                ? item.topic_bullets_en
+                : hintsArray,
+              instruction_box_fr: item.instruction_box_fr || "Rédigez le document demandé",
+              instruction_box_en: item.instruction_box_en || "Write the requested document",
+              sample_answers_fr: Array.isArray(item.sample_answers_fr) ? item.sample_answers_fr
+                : item.sampleAnswer ? [item.sampleAnswer] : [],
+              sample_answers_en: Array.isArray(item.sample_answers_en) ? item.sample_answers_en : [],
+              timeLimitSeconds: item.timeLimitSeconds || item.TimeLimitSeconds || 360,
+              charLimit: item.maxHighlightChars || item.charLimit || 1000,
               level: item.level || item.Level || "",
             };
           });
