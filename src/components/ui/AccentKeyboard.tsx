@@ -3,18 +3,20 @@ import { cn } from "@/lib/utils";
 
 const ACCENTS = ["é", "è", "ê", "à", "ç", "â", "î", "ô", "û", "ë", "ï", "ü"];
 
+interface AccentKeyboardProps {
+  onAccentClick: (char: string) => void;
+  disabled?: boolean;
+  className?: string;
+}
+
 /**
  * AccentKeyboard - A row of French accent character buttons.
- *
- * @param {function} onAccentClick - Called with the accent character when a button is clicked.
- * @param {boolean}  disabled      - Disables all buttons (e.g. during feedback).
- * @param {string}   className     - Optional extra classes on the wrapper.
  */
 export default function AccentKeyboard({
   onAccentClick,
   disabled = false,
   className,
-}) {
+}: AccentKeyboardProps) {
   return (
     <div
       className={cn("flex flex-wrap justify-center gap-1.5 py-2", className)}

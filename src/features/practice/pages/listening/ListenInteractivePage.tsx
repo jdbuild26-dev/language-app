@@ -1,10 +1,9 @@
 "use client";
-/* eslint-disable @typescript-eslint/no-explicit-any */
 
 import React, { useState, useEffect, useRef, Suspense } from "react";
 import { usePracticeExit } from "@/hooks/usePracticeExit";
 import { useExerciseTimer } from "@/hooks/useExerciseTimer";
-import { Volume2, User, Languages } from "lucide-react";
+import { Volume2, User, Languages, Loader2, Play, Pause } from "lucide-react";
 import { cn } from "@/lib/utils";
 import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
 import FeedbackBanner from "@/components/ui/FeedbackBanner";
@@ -13,13 +12,40 @@ import { getFeedbackMessage } from "@/utils/feedbackMessages";
 import { useTextToSpeech } from "@/hooks/useTextToSpeech";
 import { fetchPracticeData } from "@/utils/practiceFetcher";
 import { useSearchParams } from "next/navigation";
-import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useTranslateText } from "@/hooks/useTranslateText";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { useQuestionLanguage } from "@/hooks/useQuestionLanguage";
+import { usePracticeComplete } from "@/hooks/usePracticeComplete";
+
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+type ConversationOption = { id: string | number; text: string; text_fr?: string; text_en?: string };
+type ConversationExchange = {
+  speaker?: string;
+  speakerText: string;
+  speakerText_en?: string;
+  questionText?: string;
+  questionText_en?: string;
+  correctOptionId: string | number;
+  options: ConversationOption[];
+};
+type ConversationData = {
+  title?: string;
+  title_fr?: string;
+  title_en?: string;
+  scenario?: string;
+  context?: string;
+  objectives?: string;
+  level?: string;
+  timeLimitSeconds?: number;
+  exchanges: ConversationExchange[];
+};
+
+// ─── Component ────────────────────────────────────────────────────────────────
 
 export default function ListenInteractivePage() {
   return (
-    <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-pink-500" /></div>}>
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-indigo-500" /></div>}>
       <ListenInteractiveContent />
     </Suspense>
   );
@@ -27,273 +53,162 @@ export default function ListenInteractivePage() {
 
 function ListenInteractiveContent() {
   const handleExit = usePracticeExit();
-  const { speak } = useTextToSpeech();
+  const { learningLang = "fr" } = useLanguage();
+  const { speak, isSpeaking, pause, resume, isPaused } = useTextToSpeech();
   const chatEndRef = useRef<HTMLDivElement>(null);
   const searchParams = useSearchParams();
   const tag = searchParams?.get("tag") ?? undefined;
 
   // State
-  const [conversation, setConversation] = useState<any>(null);
+  const [conversations, setConversations] = useState<ConversationData[]>([]);
+  const [convIndex, setConvIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
-  const [currentExchangeIndex, setCurrentExchangeIndex] = useState(0);
-  const [displayedExchanges, setDisplayedExchanges] = useState<any[]>([]);
-  const leftSideMode = "text";
-
-  const [selectedOption, setSelectedOption] = useState<any>(null);
-  const [isCompleted, setIsCompleted] = useState(false);
+  
+  // Current conversation turn
+  const [currentTurnIndex, setCurrentTurnIndex] = useState(0);
+  const [displayedHistory, setDisplayedHistory] = useState<any[]>([]);
+  const [selectedOptionId, setSelectedOptionId] = useState<string | number | null>(null);
+  
+  // Feedback states
   const [showFeedback, setShowFeedback] = useState(false);
   const [isCorrect, setIsCorrect] = useState(false);
   const [feedbackMessage, setFeedbackMessage] = useState("");
   const [score, setScore] = useState(0);
+  const [isCompleted, setIsCompleted] = useState(false);
 
+  const currentConv = conversations[convIndex];
+  const currentExchange = currentConv?.exchanges?.[currentTurnIndex];
+  const { pick } = useQuestionLanguage(currentConv?.level);
+
+  // ── Load ───────────────────────────────────────────────────────────────────
   useEffect(() => {
-    const fetchConversation = async () => {
+    (async () => {
       try {
-        const data = (await fetchPracticeData("listen_interactive", { tag })) as any[];
-        if (data && data.length > 0) {
-          const raw = data[0] as any;
-          const c = raw.content || raw;
-
-          // Build exchanges from parsed DB format (exchanges array) or flat columns
-          let exchanges: any[] = [];
-
-          if (Array.isArray(c.exchanges) && c.exchanges.length > 0) {
-            // New DB format: exchanges array with question_fr/options_fr/correctIndex
-            exchanges = c.exchanges.map((ex: any) => {
-              if (ex.question_fr || ex.question_en) {
-                // MCQ exchange
-                const opts = ex.options_fr || ex.options_en || [];
-                return {
-                  speaker: "Question",
-                  text: ex.question_fr || ex.question_en || "",
-                  question: ex.question_fr || ex.question_en || "",
-                  isQuestion: true,
-                  options: opts,
-                  correctIndex: typeof ex.correctIndex === "number" ? ex.correctIndex : 0,
-                };
-              }
-              // Dialogue exchange
-              return {
-                speaker: ex.speaker_fr || "Speaker",
-                text: ex.prompt_fr || ex.sample_fr || "",
-                isQuestion: false,
-              };
-            }).filter((ex: any) => ex.text);
-          } else {
-            // Legacy flat columns: Speaker_N_FR + Prompt_N_FR + Sample_N_FR
-            let n = 1;
-            while (raw[`Speaker_${n}_FR`] || raw[`Prompt_${n}_FR`]) {
-              const speakerText = raw[`Speaker_${n}_FR`] || "";
-              const question = raw[`Prompt_${n}_FR`] || raw[`Prompt_${n}_EN`] || "";
-              const correctText = raw[`Sample_${n}_FR`] || raw[`Sample_${n}_EN`] || "";
-              const distractors: string[] = [];
-              let d = 1;
-              while (raw[`Sample_${d}_FR`]) {
-                if (d !== n) distractors.push(raw[`Sample_${d}_FR`]);
-                d++;
-              }
-              const options = [correctText, ...distractors.slice(0, 3)].filter(Boolean).sort(() => Math.random() - 0.5);
-              const correctIndex = options.indexOf(correctText);
-              if (speakerText) exchanges.push({ speaker: "Speaker", text: speakerText, isQuestion: false });
-              if (question && options.length > 0) exchanges.push({ speaker: "Question", text: question, question, isQuestion: true, options, correctIndex: correctIndex >= 0 ? correctIndex : 0 });
-              n++;
-            }
+        const data = await fetchPracticeData("listen_interactive", { tag });
+        const raw = Array.isArray(data) ? data : [];
+        const mapped: ConversationData[] = raw.map((item: any) => {
+          const c = item.content || item;
+          let exchanges = c.exchanges || [];
+          if (typeof exchanges === 'string') {
+            try { exchanges = JSON.parse(exchanges); } catch { exchanges = []; }
           }
-
-          setConversation({
-            title: c.title_fr || c.title_en || raw["Scenario Title_FR"] || raw["Scenario Title_EN"] || "",
-            context: c.scenario_fr || c.scenario_en || raw["Scenario_FR"] || raw["Context_FR"] || "",
-            timeLimitSeconds: c.timeLimitSeconds || raw["Time"] || 300,
-            exchanges,
-          });
-        } else {
-          setConversation(null);
-        }
-      } catch (error) {
-        console.error("Error loading listen interactive data:", error);
-        setConversation(null);
+          return {
+            ...c,
+            level: item.Level || item.level || "B1",
+            exchanges: exchanges.map((ex: any) => ({
+              ...ex,
+              options: (ex.options || []).map((o: any) => ({
+                id: o.id ?? 0,
+                text: learningLang === 'fr' ? (o.text_fr || o.text || '') : (o.text_en || o.text || ''),
+                text_fr: o.text_fr || o.text || '',
+                text_en: o.text_en || '',
+              }))
+            }))
+          };
+        }).filter(c => c.exchanges.length > 0);
+        setConversations(mapped);
+      } catch (e) {
+        console.error("ListenInteractive load error:", e);
       } finally {
         setIsLoading(false);
       }
-    };
-    fetchConversation();
-  }, [tag]);
+    })();
+  }, [tag, learningLang]);
 
-  // Derived state
-  const currentExchange = conversation?.exchanges?.[currentExchangeIndex];
-  const timerDuration = conversation?.timeLimitSeconds || 300;
+  // Handle Auto-play of speaker line
+  useEffect(() => {
+    if (currentExchange && !showFeedback && !isCompleted && !isLoading) {
+      // Small delay to let UI settle
+      const timer = setTimeout(() => {
+        speak(currentExchange.speakerText, "fr-FR");
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [currentTurnIndex, convIndex, isLoading]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Translate question per exchange
-  const { displayText: questionDisplayText, isTranslating: isTranslatingQ, toggle: toggleTranslate, reset: resetTranslate } = useTranslateText(currentExchange?.question || "", "fr");
-  useEffect(() => { resetTranslate(); }, [currentExchangeIndex]); // eslint-disable-line react-hooks/exhaustive-deps
+  // Scroll to bottom
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [displayedHistory, currentTurnIndex, showFeedback]);
 
-  // Count total questions
-  const totalQuestions =
-    conversation?.exchanges.filter((e) => e.isQuestion).length || 0;
+  const totalQuestions = conversations.reduce((acc, c) => acc + c.exchanges.length, 0);
+
+  usePracticeComplete({
+    isGameOver: isCompleted,
+    score,
+    totalQuestions: totalQuestions,
+    exerciseType: "listen_interactive",
+    level: currentConv?.level,
+  });
 
   const { timerString } = useExerciseTimer({
-    duration: timerDuration,
+    duration: currentConv?.timeLimitSeconds || 300,
     mode: "timer",
-    onExpire: () => {
-      if (!isCompleted && !showFeedback) {
-        setIsCorrect(false);
-        setFeedbackMessage("Time's up!");
-        setShowFeedback(true);
-      }
-    },
+    onExpire: () => { if (!showFeedback && !isCompleted) handleSubmit(); },
     isPaused: isCompleted || showFeedback || isLoading,
   });
 
-  // Auto-scroll to bottom of chat
-  useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [displayedExchanges, currentExchange]);
-
-  // Initial setup and auto-advance logic
-  useEffect(() => {
-    if (isCompleted) return;
-
-    const handleAutoAdvance = async () => {
-      // If it's the start, or we moved to a new exchange that is NOT a question
-      if (currentExchange && !currentExchange.isQuestion) {
-        // 1. Add to display
-        if (!displayedExchanges.some((e) => e === currentExchange)) {
-          // Only add if not already displayed to prevent dupes in strict mode
-          // (React 18 strict mode double-invokes effects)
-          // But simpler here: we control when index changes.
-        }
-
-        // Logic: When index changes, if it's not a question, we:
-        // a) Speak it
-        // b) Add to displayed list
-        // c) Wait, then move to next
-      }
-    };
-    handleAutoAdvance();
-    // This effect intentionally keys off the exchange index only.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentExchangeIndex, isCompleted]);
-
-  // Effect to handle non-question exchanges automatically
-  useEffect(() => {
-    if (!currentExchange || isCompleted) return;
-
-    if (!currentExchange.isQuestion && !showFeedback) {
-      // It's a statement by the other speaker
-
-      // 1. Speak the text (side effect outside of state updater)
-      // Check if we've already spoken/added this to avoid double speaking
-      const isAlreadyDisplayed = displayedExchanges.some(
-        (ex) =>
-          ex.text === currentExchange.text &&
-          ex.speaker === currentExchange.speaker,
-      );
-
-      if (!isAlreadyDisplayed) {
-        speak(currentExchange.text, "fr-FR");
-        setDisplayedExchanges((prev) => [...prev, currentExchange]);
-      }
-
-      // Advance after delay (simulating listening time + small pause)
-      // Base delay 2s + approx duration based on length
-      const delay = 1500 + currentExchange.text.length * 50;
-
-      const timer = setTimeout(() => {
-        if (currentExchangeIndex < conversation?.exchanges?.length - 1) {
-          setCurrentExchangeIndex((prev) => prev + 1);
-        } else {
-          setIsCompleted(true);
-        }
-      }, delay);
-
-      return () => clearTimeout(timer);
-    }
-    // `speak` and `displayedExchanges` are intentionally excluded to avoid
-    // replaying audio and resetting timers when voice state changes.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
-    currentExchangeIndex,
-    currentExchange,
-    showFeedback,
-    conversation?.exchanges.length,
-    isCompleted,
-    // speak, // INTENTIONAL: Removed to prevent timer resets on voice load
-    // displayedExchanges, // Added to check for duplication locally
-  ]);
-
-  const handlePlayExchange = (text) => {
-    speak(text, "fr-FR");
-  };
-
-  const handleOptionSelect = (index) => {
+  // ── Handlers ───────────────────────────────────────────────────────────────
+  const handleOptionSelect = (id: string | number) => {
     if (showFeedback) return;
-    // Play TTS for the option only if the right panel is in audio mode
-    if (leftSideMode === "text") {
-      speak(currentExchange.options[index], "fr-FR");
-    }
-    setSelectedOption(index);
+    const opt = currentExchange?.options.find(o => o.id === id);
+    if (opt) speak(opt.text, "fr-FR");
+    setSelectedOptionId(id);
   };
 
   const handleSubmit = () => {
-    if (showFeedback || selectedOption === null) return;
+    if (showFeedback || selectedOptionId === null || !currentExchange) return;
 
-    const correct = selectedOption === currentExchange.correctIndex;
+    const correct = selectedOptionId === currentExchange.correctOptionId;
+    const selectedOpt = currentExchange.options.find(o => o.id === selectedOptionId);
+
     setIsCorrect(correct);
     setFeedbackMessage(getFeedbackMessage(correct));
     setShowFeedback(true);
+    if (correct) setScore(s => s + 1);
 
-    // Add user's response to display
-    setDisplayedExchanges((prev) => [
+    // Add current turn to history for display
+    setDisplayedHistory(prev => [
       ...prev,
       {
-        speaker: "You",
-        text: currentExchange.options[selectedOption],
-        isQuestion: false,
-      },
+        speaker: currentExchange.speaker,
+        speakerText: currentExchange.speakerText,
+        userText: selectedOpt?.text || "",
+        wasCorrect: correct
+      }
     ]);
-
-    if (correct) {
-      setScore((prev) => prev + 1);
-    }
   };
 
   const handleContinue = () => {
     setShowFeedback(false);
-    setSelectedOption(null);
+    setSelectedOptionId(null);
 
-    // Move to next exchange
-    if (currentExchangeIndex < conversation?.exchanges?.length - 1) {
-      setCurrentExchangeIndex((prev) => prev + 1);
+    if (currentTurnIndex < currentConv.exchanges.length - 1) {
+      setCurrentTurnIndex(i => i + 1);
+    } else if (convIndex < conversations.length - 1) {
+      setConvIndex(i => i + 1);
+      setCurrentTurnIndex(0);
+      setDisplayedHistory([]);
     } else {
       setIsCompleted(true);
     }
   };
 
-  // Calculate progress
-  // Count how many questions we have passed so far
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-900">
-        <Loader2 className="animate-spin text-pink-500 w-8 h-8" />
-      </div>
-    );
-  }
+  // ── Render ─────────────────────────────────────────────────────────────────
+  if (isLoading) return (
+    <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-900">
+      <Loader2 className="animate-spin text-indigo-500 w-8 h-8" />
+    </div>
+  );
 
-  if (!conversation) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-slate-50 dark:bg-slate-900">
-        <p className="text-xl text-slate-600 dark:text-slate-400">
-          No content available.
-        </p>
-        <Button onClick={() => handleExit()} variant="outline" className="mt-4">
-          Back
-        </Button>
-      </div>
-    );
-  }
+  if (conversations.length === 0) return (
+    <div className="flex flex-col items-center justify-center min-h-screen bg-slate-50 dark:bg-slate-900">
+      <p className="text-xl text-slate-600 dark:text-slate-400">No content available.</p>
+      <Button onClick={() => handleExit()} variant="outline" className="mt-4">Back</Button>
+    </div>
+  );
 
-  const progressLinear =
-    (currentExchangeIndex / (conversation?.exchanges?.length || 1)) * 100;
+  const progress = ((convIndex * 100) / conversations.length) + ((currentTurnIndex + 1) * 100 / (conversations.length * currentConv.exchanges.length));
 
   return (
     <>
@@ -301,223 +216,147 @@ function ListenInteractiveContent() {
         questionType="Listening Conversation"
         instructionFr="Écoutez et choisissez la bonne réponse"
         instructionEn="Listen to the audio and select the best response"
-        progress={progressLinear}
+        progress={progress}
         isGameOver={isCompleted}
         score={score}
         totalQuestions={totalQuestions}
         onExit={handleExit}
-        onNext={handleSubmit}
+        onNext={showFeedback ? handleContinue : handleSubmit}
         onRestart={() => window.location.reload()}
-        isSubmitEnabled={
-          selectedOption !== null &&
-          !showFeedback &&
-          currentExchange?.isQuestion
-        }
-        showSubmitButton={currentExchange?.isQuestion && !showFeedback}
-        submitLabel="Submit"
+        isSubmitEnabled={selectedOptionId !== null && !showFeedback}
+        showSubmitButton={!showFeedback}
+        submitLabel="Submit Response"
         timerValue={timerString}
       >
-        {/* Two-column layout */}
-        <div className="practice-reading-page-shell flex flex-col md:flex-row gap-3 p-3 mx-auto overflow-hidden flex-1 min-h-0">
-          {/* LEFT: Conversation bubbles */}
-          <div className="flex-1 min-h-0 flex flex-col bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm rounded-3xl border border-slate-200/60 dark:border-slate-700/60 shadow-sm overflow-hidden">
-            <div className="px-5 py-3 border-b-[2px] border-slate-100 dark:border-slate-700 flex justify-between items-center">
-              <span className="text-xs font-bold uppercase tracking-widest text-slate-600 dark:text-slate-300">
-                Conversation
-              </span>
+        <div className="practice-reading-page-shell flex flex-col md:flex-row gap-4 p-4 mx-auto overflow-hidden flex-1 min-h-0 bg-slate-50/50 dark:bg-slate-950/50">
+          
+          {/* LEFT: Chat Window */}
+          <div className="flex-1 min-h-0 flex flex-col bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+            <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50/50 dark:bg-slate-800/50">
+              <span className="text-xs font-bold uppercase tracking-widest text-slate-500">Dialogue</span>
+              <div className="flex items-center gap-2">
+                <div className={cn("w-2 h-2 rounded-full", isSpeaking ? "bg-green-500 animate-pulse" : "bg-slate-300")} />
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">Live Audio</span>
+              </div>
             </div>
-            <div className="flex-1 min-h-0 overflow-y-auto scrollbar-hide-until-hover p-4 space-y-4">
-              {/* Show conversation history */}
-              {displayedExchanges.map((exchange, index) => {
-                const isHistorical = index < displayedExchanges.length - 1 || showFeedback;
-                const showSpeakerAsText = leftSideMode === "text" || isHistorical;
-
-                return (
-                <div
-                  key={index}
-                  className={cn(
-                    "flex animate-in fade-in slide-in-from-bottom-2 duration-300",
-                    exchange.speaker === "You"
-                      ? "justify-end"
-                      : "justify-start",
-                  )}
-                >
-                  {exchange.speaker !== "You" && (
-                    <div className="flex items-start gap-2 max-w-[85%]">
-                      <div className="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center flex-shrink-0 mt-1">
-                        <User className="w-4 h-4 text-slate-500 dark:text-slate-300" />
-                      </div>
-                      {showSpeakerAsText ? (
-                        <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 pl-4 pr-11 py-3 rounded-2xl rounded-tl-sm shadow-sm text-slate-700 dark:text-slate-200 relative inline-block text-left w-fit">
-                          <span className="text-[15px] leading-relaxed break-words">{exchange.text}</span>
-                          <button
-                            onClick={() => handlePlayExchange(exchange.text)}
-                            className="absolute top-2 right-2 p-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-full transition-colors text-indigo-500"
-                            title="Replay audio"
-                          >
-                            <Volume2 className="w-4 h-4" />
-                          </button>
-                        </div>
-                      ) : (
-                        <button
-                          onClick={() => handlePlayExchange(exchange.text)}
-                          className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-5 py-3 rounded-2xl rounded-tl-sm shadow-sm flex items-center gap-3 hover:bg-slate-50 dark:hover:bg-slate-750 transition-colors group"
-                        >
-                          <Volume2 className="w-5 h-5 text-indigo-500 group-hover:scale-110 transition-transform" />
-                          <div className="flex gap-1 items-center">
-                            {[1, 2, 3, 4, 5].map((i) => (
-                              <div
-                                key={i}
-                                className={cn(
-                                  "w-1 rounded-full bg-slate-200 dark:bg-slate-700",
-                                  i % 2 === 0 ? "h-3" : "h-5",
-                                )}
-                              />
-                            ))}
-                          </div>
-                        </button>
-                      )}
+            
+            <div className="flex-1 min-h-0 overflow-y-auto p-6 space-y-6 custom-scrollbar">
+              {displayedHistory.map((item, idx) => (
+                <div key={idx} className="space-y-4">
+                  {/* Speaker bubble */}
+                  <div className="flex items-start gap-3 animate-in fade-in slide-in-from-left-2 duration-300">
+                    <div className="w-8 h-8 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center shrink-0 mt-1 border border-indigo-200 dark:border-indigo-800">
+                      <User className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
                     </div>
-                  )}
-
-                  {exchange.speaker === "You" && (
-                    <div className="flex justify-end">
-                      <div className="bg-indigo-600 text-white pl-5 pr-12 py-3 rounded-2xl rounded-br-sm shadow-sm relative inline-block text-left w-fit ">
-                        <span className="text-[15px] leading-relaxed break-words">
-                          {exchange.text}
-                        </span>
-                        <button
-                          onClick={() => handlePlayExchange(exchange.text)}
-                          className="absolute top-2 right-2 p-1.5 hover:bg-white/20 rounded-full transition-colors text-white/90"
-                          title="Replay audio"
-                        >
-                          <Volume2 className="w-4 h-4" />
-                        </button>
-                      </div>
+                    <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-5 py-3 rounded-2xl rounded-tl-sm shadow-sm max-w-[85%] relative group">
+                      <p className="text-[15px] text-slate-700 dark:text-slate-200 leading-relaxed">{item.speakerText}</p>
+                      <button onClick={() => speak(item.speakerText, "fr-FR")} className="absolute -right-10 top-2 p-2 opacity-0 group-hover:opacity-100 transition-opacity text-indigo-500">
+                        <Volume2 className="w-4 h-4" />
+                      </button>
                     </div>
-                  )}
+                  </div>
+                  {/* User response */}
+                  <div className="flex justify-end animate-in fade-in slide-in-from-right-2 duration-300">
+                    <div className={cn("px-5 py-3 rounded-2xl rounded-br-sm shadow-sm max-w-[85%] text-white", item.wasCorrect ? "bg-emerald-600" : "bg-rose-600")}>
+                      <p className="text-[15px]">{item.userText}</p>
+                    </div>
+                  </div>
                 </div>
-              )})}
+              ))}
 
-              {/* Pending User Bubble (before checking) */}
-              {selectedOption !== null && !showFeedback && (
-                <div className="flex justify-end animate-in fade-in slide-in-from-bottom-2 duration-300">
-                  <div className="bg-indigo-600 text-white px-5 py-3 rounded-2xl rounded-br-sm shadow-sm relative inline-block text-left w-fit max-w-[85%] opacity-90">
-                    {leftSideMode === "text" ? (
-                      <div className="flex items-center gap-3">
-                        <Volume2 className="w-5 h-5 text-white/80 shrink-0" />
-                        <span className="text-xs font-bold uppercase tracking-widest">
-                          Selected
-                        </span>
-                      </div>
-                    ) : (
-                      <span className="text-[15px] leading-relaxed">
-                        {currentExchange?.options[selectedOption]}
-                      </span>
-                    )}
+              {/* Current speaker message (if not answered) */}
+              {!showFeedback && currentExchange && (
+                <div className="flex items-start gap-3 animate-in fade-in slide-in-from-left-4 duration-500">
+                  <div className="w-10 h-10 rounded-full bg-indigo-600 flex items-center justify-center shrink-0 mt-1 shadow-lg shadow-indigo-200 dark:shadow-none">
+                    {isSpeaking ? <Pause className="w-5 h-5 text-white" /> : <Volume2 className="w-5 h-5 text-white" />}
+                  </div>
+                  <div className="bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-100 dark:border-indigo-800/50 px-6 py-4 rounded-2xl rounded-tl-sm shadow-sm max-w-[85%]">
+                    <div className="flex flex-col gap-2">
+                       <div className="flex items-center gap-2">
+                          <span className="text-[10px] font-black text-indigo-500 uppercase tracking-widest">{currentExchange.speaker || "Speaker"}</span>
+                          {isSpeaking && <div className="flex gap-0.5 items-end h-3"><div className="w-1 bg-indigo-400 animate-music-1 rounded-full" /><div className="w-1 bg-indigo-400 animate-music-2 rounded-full" /><div className="w-1 bg-indigo-400 animate-music-3 rounded-full" /></div>}
+                       </div>
+                       <p className="text-[15px] text-slate-800 dark:text-slate-100 font-medium leading-relaxed italic">
+                        {isSpeaking ? "Listening to response..." : currentExchange.speakerText}
+                       </p>
+                    </div>
                   </div>
                 </div>
               )}
 
-              {/* Empty state */}
-              {displayedExchanges.length === 0 && (
-                <div className="flex flex-col items-center justify-center h-full text-slate-400 dark:text-slate-500 py-10 opacity-70">
-                  <p className="text-sm">Conversation will appear here...</p>
-                </div>
-              )}
-
-              {/* Invisible element to scroll to */}
               <div ref={chatEndRef} />
             </div>
           </div>
 
-          {/* RIGHT: Objective + question + options */}
-          <div className="flex-1 min-h-0 flex flex-col bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm rounded-3xl border border-slate-200/60 dark:border-slate-700/60 shadow-sm overflow-y-auto">
-            {/* Context card */}
-            <div className="m-4 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 shadow-sm p-5 min-h-[6rem]">
-              <p className="text-xs font-bold border-b-2 border-gray-200 dark:border-slate-600 pb-1 uppercase tracking-widest text-slate-600 dark:text-slate-300 mb-2">
-                Context
-              </p>
-              <p className="text-sm leading-relaxed text-slate-700 dark:text-slate-300 font-medium">
-                {conversation?.context || conversation?.title}
+          {/* RIGHT: Interaction Panel */}
+          <div className="flex-1 min-h-0 flex flex-col bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-y-auto">
+            {/* Context/Objective Card */}
+            <div className="m-6 p-6 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-700/50">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="w-1.5 h-4 bg-indigo-500 rounded-full" />
+                <span className="text-xs font-bold uppercase tracking-widest text-slate-500">Situation</span>
+              </div>
+              <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed font-medium">
+                {currentConv.objectives || currentConv.scenario || currentConv.context || currentConv.title}
               </p>
             </div>
 
             {/* Question */}
-            {currentExchange?.isQuestion && !showFeedback && (
-              <div className="px-4 py-5 animate-in fade-in slide-in-from-bottom-4 duration-500 border-b border-slate-100 dark:border-slate-700/50 mb-2">
-                <h3 className="practice-reading-heading flex items-start gap-3 text-[15px] font-bold text-slate-800 dark:text-slate-200">
-                  <button type="button" onClick={toggleTranslate} disabled={isTranslatingQ} className="inline-flex items-center justify-center shrink-0 text-orange-500 hover:text-orange-600 disabled:opacity-60 transition-colors mt-0.5">
-                    {isTranslatingQ ? <Loader2 className="w-5 h-5 animate-spin" /> : <Languages className="w-5 h-5 shrink-0" />}
-                  </button>
-                  <span className="leading-relaxed">
-                    {questionDisplayText || "Select the best response"}
-                  </span>
+            {!showFeedback && currentExchange && (
+              <div className="px-6 py-4 border-b border-slate-50 dark:border-slate-800">
+                <h3 className="flex items-start gap-3 text-base font-bold text-slate-800 dark:text-slate-100 leading-snug">
+                  <Languages className="w-5 h-5 text-orange-500 shrink-0 mt-0.5" />
+                  {pick(currentExchange.questionText_en, currentExchange.questionText) || "How would you respond?"}
                 </h3>
               </div>
             )}
 
             {/* Options */}
-            {currentExchange?.isQuestion && !showFeedback && (
-              <div className="px-4 pb-6">
+            {!showFeedback && currentExchange && (
+              <div className="p-6">
                 <PracticeOptions
-                  options={currentExchange.options}
-                selectedOption={selectedOption}
-                correctIndex={currentExchange.correctIndex}
-                showFeedback={showFeedback}
-                onSelect={handleOptionSelect}
-                {...(leftSideMode === "text"
-                  ? {
-                      renderLabel: () => (
-                        <div className="flex items-center gap-3 w-full py-0.5">
-                          <Volume2 className="w-5 h-5 text-indigo-500 shrink-0" />
-                          <span className="text-[15px] font-semibold text-slate-600 dark:text-slate-300 uppercase tracking-wider">
-                            Listen
-                          </span>
-                        </div>
-                      ),
-                    }
-                  : {})}
-                renderSuffix={() => null}
-                itemClassName="w-full bg-white dark:bg-slate-800 py-4 px-5 rounded-2xl text-left flex items-center gap-4 border border-slate-200 dark:border-slate-700 shadow-sm transition-colors group"
+                  options={currentExchange.options.map(o => o.text)}
+                  selectedOption={selectedOptionId !== null ? currentExchange.options.findIndex(o => o.id === selectedOptionId) : null}
+                  onSelect={(idx) => handleOptionSelect(currentExchange.options[idx].id)}
+                  itemClassName="w-full bg-white dark:bg-slate-800 py-4 px-5 rounded-2xl text-left flex items-center gap-4 border border-slate-200 dark:border-slate-700 shadow-sm transition-all hover:border-indigo-400 hover:shadow-md group"
+                  renderLabel={(txt) => (
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center shrink-0 group-hover:bg-indigo-50 dark:group-hover:bg-indigo-900/30 transition-colors">
+                        <Volume2 className="w-4 h-4 text-slate-400 group-hover:text-indigo-500" />
+                      </div>
+                      <span className="text-[15px] font-medium text-slate-700 dark:text-slate-200">{txt}</span>
+                    </div>
+                  )}
                 />
               </div>
             )}
 
-            {/* If waiting for other speaker */}
-            {currentExchange &&
-              !currentExchange.isQuestion &&
-              !showFeedback && (
-                <div className="h-24 flex flex-col items-center justify-center text-slate-400 dark:text-slate-500 opacity-80">
-                  <Volume2 className="w-6 h-6 animate-pulse mb-3" />
-                  <div className="text-sm font-medium tracking-wide">
-                    Listening...
-                  </div>
-                </div>
-              )}
+            {/* Empty space filler */}
+            <div className="flex-1" />
           </div>
+
         </div>
       </PracticeGameLayout>
 
-      {/* Feedback Banner */}
       {showFeedback && (
         <FeedbackBanner
           isCorrect={isCorrect}
           feedbackTone={isCorrect ? "success" : "error"}
-          correctAnswer={
-            !isCorrect
-              ? currentExchange.options[currentExchange.correctIndex]
-              : null
-          }
+          correctAnswer={!isCorrect ? currentExchange?.options.find(o => o.id === currentExchange.correctOptionId)?.text : null}
           onContinue={handleContinue}
           message={feedbackMessage}
-          continueLabel={
-            currentExchangeIndex === (conversation?.exchanges?.length || 0) - 1
-              ? "FINISH"
-              : "CONTINUE"
-          }
+          continueLabel={currentTurnIndex === currentConv.exchanges.length - 1 && convIndex === conversations.length - 1 ? "FINISH" : "CONTINUE"}
         />
       )}
+      
+      <style jsx global>{`
+        @keyframes music-1 { 0%, 100% { height: 4px; } 50% { height: 12px; } }
+        @keyframes music-2 { 0%, 100% { height: 8px; } 50% { height: 4px; } }
+        @keyframes music-3 { 0%, 100% { height: 12px; } 50% { height: 6px; } }
+        .animate-music-1 { animation: music-1 0.6s ease-in-out infinite; }
+        .animate-music-2 { animation: music-2 0.7s ease-in-out infinite; }
+        .animate-music-3 { animation: music-3 0.8s ease-in-out infinite; }
+      `}</style>
     </>
   );
 }
