@@ -40,6 +40,45 @@ type ConversationHistoryItem = {
   evaluation?: any;
 };
 
+/**
+ * Normalises exchanges from ConversationParser's MCQ format into the
+ * interactive format expected by this page.
+ *
+ * ConversationParser produces:
+ *   { speakerText, questionText, options: [{id, text}], correctOptionId }
+ *
+ * This page expects:
+ *   { isQuestion, speakerText, speakerAudio, prompt, sampleAnswer, minWords }
+ */
+function normalizeExchanges(raw: any[]): InteractiveExchange[] {
+  return raw.map((ex: any) => {
+    // Already in interactive format — pass through
+    if (typeof ex.isQuestion === 'boolean') return ex as InteractiveExchange;
+
+    const hasOptions = Array.isArray(ex.options) && ex.options.length > 0;
+    if (hasOptions) {
+      // MCQ exchange → interactive question turn
+      const correctOpt = ex.options.find((o: any) => o.id === ex.correctOptionId)
+        ?? ex.options[ex.correctOptionId]
+        ?? ex.options[0];
+      return {
+        isQuestion: true,
+        speakerText: ex.speakerText || ex.speakerText_en || '',
+        speakerAudio: ex.speakerText || ex.speakerText_en || '',
+        prompt: ex.questionText || ex.questionText_en || 'Write the next reply in the conversation',
+        sampleAnswer: correctOpt?.text || correctOpt?.text_fr || '',
+        minWords: 3,
+      } as InteractiveExchange;
+    }
+    // Dialogue-only exchange → speaker turn (auto-advance)
+    return {
+      isQuestion: false,
+      speakerText: ex.speakerText || ex.speakerText_en || '',
+      speakerAudio: ex.speakerText || ex.speakerText_en || '',
+    } as InteractiveExchange;
+  });
+}
+
 export default function WriteInteractivePage() {
   const handleExit = usePracticeExit();
   const { speak } = useTextToSpeech();
@@ -51,6 +90,8 @@ export default function WriteInteractivePage() {
     speakRef.current = speak;
   }, [speak]);
 
+  const [allConversations, setAllConversations] = useState<InteractiveConversation[]>([]);
+  const [convIndex, setConvIndex] = useState(0);
   // Current turn/exchange index (0-based)
   const [conversation, setConversation] = useState<InteractiveConversation | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -86,7 +127,7 @@ export default function WriteInteractivePage() {
   const currentExchange = conversation?.exchanges[currentTurnIndex];
 
   // Translate prompt per exchange
-  const { displayText: promptDisplayText, isTranslating: isTranslatingP, toggle: toggleTranslate, reset: resetTranslate } = useTranslateText(currentExchange?.prompt || "", "fr");
+  const { displayText: promptDisplayText, isTranslating: isTranslatingP, toggle: toggleTranslate, reset: resetTranslate } = useTranslateText(currentExchange?.prompt || currentExchange?.speakerText || "", "fr");
   // eslint-disable-next-line react-hooks/exhaustive-deps
   React.useEffect(() => { resetTranslate(); }, [currentTurnIndex]);
   const totalExchanges = conversation?.exchanges.length || 0;
@@ -94,8 +135,7 @@ export default function WriteInteractivePage() {
   const timerDuration =
     conversation?.timeLimitSeconds || conversation?.TimeLimitSeconds || 300;
 
-  const totalQuestions =
-    conversation?.exchanges.filter((e) => e.isQuestion).length || 0;
+  const totalConversations = allConversations.length;
 
   const { timerString, resetTimer } = useExerciseTimer({
     duration: timerDuration,
@@ -104,6 +144,12 @@ export default function WriteInteractivePage() {
       if (!isCompleted && !hasAnswered) {
         if (currentTurnIndex < totalExchanges - 1) {
           setCurrentTurnIndex((prev) => prev + 1);
+        } else if (convIndex < allConversations.length - 1) {
+          const nextIdx = convIndex + 1;
+          setConvIndex(nextIdx);
+          setConversation(allConversations[nextIdx]);
+          setCurrentTurnIndex(0);
+          setConversationHistory([]);
         } else {
           setIsCompleted(true);
         }
@@ -118,22 +164,67 @@ export default function WriteInteractivePage() {
       try {
         const data = await fetchPracticeData("write_interactive");
         const raw = Array.isArray(data) ? data : [];
-        // Filter to main category, prefer new format (has exchanges array)
         const items = raw.filter((item: any) =>
           (item.exchanges || item.title || item.scenario) &&
           (item.Category === "main" || !item.Category)
         );
         if (items.length > 0) {
-          // Pick a random exercise each session
-          const pick = items[Math.floor(Math.random() * items.length)];
-          // Normalise: backend spreads content flat into item
-          const conv: InteractiveConversation = {
-            title: pick.title || pick.scenario_title || pick.title_en || "",
-            scenario: pick.scenario || pick.scenario_en || "",
-            timeLimitSeconds: pick.timeLimitSeconds || pick.TimeLimitSeconds || 300,
-            exchanges: Array.isArray(pick.exchanges) ? pick.exchanges : [],
-          };
-          setConversation(conv);
+          // ── Deduplicate: group sub-exercises (RCG011_01…) back into parent (RCG011) ──
+          // This handles the case where the CSV was uploaded before the is_grouping_type
+          // fix, producing one DB row per exchange instead of one per exercise.
+          const baseIdOf = (id: string) => id.replace(/_\d{2}$/, '');
+          const parentMap = new Map<string, any>();
+          const childMap = new Map<string, any[]>();
+
+          for (const item of items) {
+            const id: string = item.ExerciseID || item.id || '';
+            const base = baseIdOf(id);
+            if (base === id) {
+              // This is a parent/standalone exercise
+              if (!parentMap.has(id)) parentMap.set(id, item);
+            } else {
+              // This is a sub-exercise (_01, _02 …)
+              if (!childMap.has(base)) childMap.set(base, []);
+              childMap.get(base)!.push(item);
+            }
+          }
+
+          // Build merged list: for each parent, collect all child exchanges
+          const merged: any[] = [];
+          for (const [base, parent] of parentMap) {
+            const children = childMap.get(base) || [];
+            const allExchanges = [
+              ...(Array.isArray(parent.exchanges) ? parent.exchanges : []),
+              ...children.flatMap((c: any) => Array.isArray(c.exchanges) ? c.exchanges : []),
+            ];
+            merged.push({ ...parent, exchanges: allExchanges });
+          }
+          // Also include any items that had no parent (standalone with exchanges)
+          for (const item of items) {
+            const id: string = item.ExerciseID || item.id || '';
+            const base = baseIdOf(id);
+            if (base !== id && !parentMap.has(base)) {
+              // Orphaned sub-exercise with no parent — treat as standalone
+              if (!merged.find((m: any) => (m.ExerciseID || m.id) === id)) {
+                merged.push(item);
+              }
+            }
+          }
+
+          const source = merged.length > 0 ? merged : items;
+          const normalized: InteractiveConversation[] = source
+            .filter((item: any) => Array.isArray(item.exchanges) && item.exchanges.length > 0)
+            .map((item: any) => ({
+              title: item.title || item.scenario_title || item.title_en || item.title_fr || "",
+              scenario: item.scenario || item.scenario_en || item.context_en || "",
+              timeLimitSeconds: item.timeLimitSeconds || item.TimeLimitSeconds || 300,
+              exchanges: normalizeExchanges(item.exchanges),
+            }));
+
+          if (normalized.length > 0) {
+            setAllConversations(normalized);
+            setConversation(normalized[0]);
+          }
         }
       } catch (error) {
         console.error("Error loading interactive writing:", error);
@@ -179,6 +270,13 @@ export default function WriteInteractivePage() {
       const timer = setTimeout(() => {
         if (currentTurnIndex < totalExchanges - 1) {
           setCurrentTurnIndex((prev) => prev + 1);
+          setHasPlayedAudio(false);
+        } else if (convIndex < allConversations.length - 1) {
+          const nextIdx = convIndex + 1;
+          setConvIndex(nextIdx);
+          setConversation(allConversations[nextIdx]);
+          setCurrentTurnIndex(0);
+          setConversationHistory([]);
           setHasPlayedAudio(false);
         } else {
           setIsCompleted(true);
@@ -312,6 +410,12 @@ export default function WriteInteractivePage() {
         setTimeout(() => {
           if (currentTurnIndex < totalExchanges - 1) {
             setCurrentTurnIndex((prev) => prev + 1);
+          } else if (convIndex < allConversations.length - 1) {
+            const nextIdx = convIndex + 1;
+            setConvIndex(nextIdx);
+            setConversation(allConversations[nextIdx]);
+            setCurrentTurnIndex(0);
+            setConversationHistory([]);
           } else {
             setIsCompleted(true);
           }
@@ -351,7 +455,7 @@ export default function WriteInteractivePage() {
   }
 
   const progress =
-    totalExchanges > 0 ? ((currentTurnIndex + 1) / totalExchanges) * 100 : 0;
+    totalConversations > 0 ? ((convIndex + 1) / totalConversations) * 100 : 0;
 
   return (
     <>
@@ -362,7 +466,9 @@ export default function WriteInteractivePage() {
         progress={progress}
         isGameOver={isCompleted}
         score={score}
-        totalQuestions={totalQuestions}
+        totalQuestions={totalConversations}
+        currentQuestionIndex={convIndex}
+        questionCounterValue={convIndex + 1}
         onExit={handleExit}
         onNext={() => {
           void handleSubmit();
@@ -485,11 +591,11 @@ export default function WriteInteractivePage() {
           </div>
 
           <div className="flex-1 min-h-0 flex flex-col bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm rounded-3xl border border-slate-200/60 dark:border-slate-700/60 shadow-sm overflow-y-auto">
-            <div className="m-4 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 shadow-sm p-5 min-h-[6rem]">
+            <div className="m-4 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 shadow-sm p-5">
               <p className="text-xs font-bold border-b-2 border-gray-200 dark:border-slate-600 pb-1 uppercase tracking-widest text-slate-600 dark:text-slate-300 mb-2">
                 Context
               </p>
-              <p className="text-sm leading-relaxed text-slate-700 dark:text-slate-300 font-medium">
+              <p className="text-sm leading-relaxed text-slate-700 dark:text-slate-300 font-medium break-words overflow-hidden">
                 {conversation?.scenario || conversation?.title}
               </p>
             </div>

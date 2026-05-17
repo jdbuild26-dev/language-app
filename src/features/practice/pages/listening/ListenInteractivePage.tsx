@@ -131,12 +131,12 @@ function ListenInteractiveContent() {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [displayedHistory, currentTurnIndex, showFeedback]);
 
-  const totalQuestions = conversations.reduce((acc, c) => acc + c.exchanges.length, 0);
+  const totalConversations = conversations.length;
 
   usePracticeComplete({
     isGameOver: isCompleted,
     score,
-    totalQuestions: totalQuestions,
+    totalQuestions: totalConversations,
     exerciseType: "listen_interactive",
     level: currentConv?.level,
   });
@@ -208,7 +208,7 @@ function ListenInteractiveContent() {
     </div>
   );
 
-  const progress = ((convIndex * 100) / conversations.length) + ((currentTurnIndex + 1) * 100 / (conversations.length * currentConv.exchanges.length));
+  const progress = totalConversations > 0 ? ((convIndex + 1) / totalConversations) * 100 : 0;
 
   return (
     <>
@@ -219,7 +219,9 @@ function ListenInteractiveContent() {
         progress={progress}
         isGameOver={isCompleted}
         score={score}
-        totalQuestions={totalQuestions}
+        totalQuestions={totalConversations}
+        currentQuestionIndex={convIndex}
+        questionCounterValue={convIndex + 1}
         onExit={handleExit}
         onNext={showFeedback ? handleContinue : handleSubmit}
         onRestart={() => window.location.reload()}
