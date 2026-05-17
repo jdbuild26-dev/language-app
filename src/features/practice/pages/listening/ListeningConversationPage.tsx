@@ -135,9 +135,12 @@ function ListeningConversationContent() {
   const searchParams = useSearchParams();
   const tag = searchParams?.get("tag") ?? undefined;
 
-  // Current turn/exchange index (0-based)
+  // All conversations + current index
+  const [allConversations, setAllConversations] = useState<any[]>([]);
+  const [convIndex, setConvIndex] = useState(0);
   const [conversation, setConversation] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
+  // Current turn/exchange index (0-based) within the active conversation
   const [currentTurnIndex, setCurrentTurnIndex] = useState(0);
 
   // User's selected option for current turn
@@ -168,6 +171,7 @@ function ListeningConversationContent() {
 
   const currentExchange = conversation?.exchanges?.[currentTurnIndex];
   const totalExchanges = conversation?.exchanges?.length || 0;
+  const totalConversations = allConversations.length;
 
   // Translate question text per exchange
   const { displayText: questionDisplayText, isTranslating: isTranslatingQ, toggle: toggleTranslate, reset: resetTranslate } = useTranslateText(currentExchange?.questionText || "", "fr");
@@ -193,7 +197,9 @@ function ListeningConversationContent() {
       try {
         const data = (await fetchPracticeData("listening_conversation", { tag })) as any[];
         if (data && data.length > 0) {
-          setConversation(normalizeConversation(data[0]));
+          const normalized = data.map(normalizeConversation).filter(c => c.exchanges.length > 0);
+          setAllConversations(normalized);
+          setConversation(normalized[0] || null);
         }
       } catch (error) {
         console.error("Error loading listening conversation data:", error);
@@ -308,10 +314,19 @@ function ListeningConversationContent() {
     setShowFeedback(false);
 
     if (currentTurnIndex < totalExchanges - 1) {
-      // Move to next turn
+      // Move to next turn within this conversation
       setCurrentTurnIndex((prev) => prev + 1);
+    } else if (convIndex < allConversations.length - 1) {
+      // Move to next conversation
+      const nextIdx = convIndex + 1;
+      setConvIndex(nextIdx);
+      setConversation(allConversations[nextIdx]);
+      setCurrentTurnIndex(0);
+      setConversationHistory([]);
+      setMistakes([]);
+      setScore(0);
     } else {
-      // Conversation complete
+      // All conversations complete
       setIsCompleted(true);
     }
   };
@@ -338,7 +353,7 @@ function ListeningConversationContent() {
   }
 
   const progress =
-    totalExchanges > 0 ? ((currentTurnIndex + 1) / totalExchanges) * 100 : 0;
+    totalConversations > 0 ? ((convIndex + 1) / totalConversations) * 100 : 0;
 
   const customEndGameContent =
     mistakes.length > 0 ? (
@@ -391,7 +406,9 @@ function ListeningConversationContent() {
         progress={progress}
         isGameOver={isCompleted}
         score={score}
-        totalQuestions={totalExchanges}
+        totalQuestions={totalConversations}
+        currentQuestionIndex={convIndex}
+        questionCounterValue={convIndex + 1}
         onExit={handleExit}
         onNext={handleSubmit}
         onRestart={() => window.location.reload()}
@@ -622,7 +639,7 @@ function ListeningConversationContent() {
           onContinue={handleContinue}
           message={feedbackMessage}
           continueLabel={
-            currentTurnIndex + 1 === totalExchanges ? "FINISH" : "CONTINUE"
+            currentTurnIndex + 1 === totalExchanges && convIndex + 1 === totalConversations ? "FINISH" : "CONTINUE"
           }
         />
       )}

@@ -85,6 +85,7 @@ function ConversationContent() {
 
   const currentExchange = conversation?.exchanges?.[currentTurnIndex];
   const totalExchanges = conversation?.exchanges?.length || 0;
+  const totalConversations = allConversations.length;
 
   // Is this exchange interactive (has options) or just a dialogue line to read?
   const isInteractive = !!(currentExchange?.options && currentExchange.options.length > 0);
@@ -97,7 +98,7 @@ function ConversationContent() {
     ? ((currentExchange as any)?.questionText_en || currentExchange?.questionText || "Select the best response")
     : (currentExchange?.questionText || "Sélectionnez la meilleure réponse");
 
-  usePracticeComplete({ isGameOver: isCompleted, score, totalQuestions: totalExchanges, exerciseType: "conversation_dialogue", level: (conversation as any)?.level });
+  usePracticeComplete({ isGameOver: isCompleted, score, totalQuestions: totalConversations, exerciseType: "conversation_dialogue", level: (conversation as any)?.level });
 
   // Timer logic
   const timerDuration = 45;
@@ -278,7 +279,7 @@ function ConversationContent() {
   }
 
   const progress =
-    totalExchanges > 0 ? ((currentTurnIndex + 1) / totalExchanges) * 100 : 0;
+    totalConversations > 0 ? ((convIndex + 1) / totalConversations) * 100 : 0;
 
   const customEndGameContent =
     mistakes.length > 0 ? (
@@ -333,9 +334,9 @@ function ConversationContent() {
       progress={progress}
       isGameOver={isCompleted}
       score={score}
-      totalQuestions={totalExchanges}
-      currentQuestionIndex={currentTurnIndex}
-      questionCounterValue={currentTurnIndex + 1}
+      totalQuestions={totalConversations}
+      currentQuestionIndex={convIndex}
+      questionCounterValue={convIndex + 1}
       feedbackTone={showFeedback ? (isCorrect ? "success" : "error") : "neutral"}
       onExit={handleExit}
       onNext={handleSubmit}

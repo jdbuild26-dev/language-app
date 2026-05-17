@@ -24,6 +24,8 @@ export default function WritingConversationPage() {
     speakRef.current = speak;
   }, [speak]);
 
+  const [allConversations, setAllConversations] = useState<any[]>([]);
+  const [convIndex, setConvIndex] = useState(0);
   const [conversation, setConversation] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [currentTurnIndex, setCurrentTurnIndex] = useState(0);
@@ -43,6 +45,7 @@ export default function WritingConversationPage() {
 
   const currentExchange = conversation?.exchanges?.[currentTurnIndex];
   const totalExchanges = conversation?.exchanges?.length || 0;
+  const totalConversations = allConversations.length;
 
   // Translate the current prompt text on demand
   const {
@@ -59,7 +62,14 @@ export default function WritingConversationPage() {
       if (!isCompleted && !hasAnswered && currentExchange) {
         if (currentTurnIndex < totalExchanges - 1)
           setCurrentTurnIndex((p) => p + 1);
-        else setIsCompleted(true);
+        else if (convIndex < allConversations.length - 1) {
+          const nextIdx = convIndex + 1;
+          setConvIndex(nextIdx);
+          setConversation(allConversations[nextIdx]);
+          setCurrentTurnIndex(0);
+          setConversationHistory([]);
+          setScore(0);
+        } else setIsCompleted(true);
       }
     },
     isPaused: isCompleted || isLoading,
@@ -71,25 +81,52 @@ export default function WritingConversationPage() {
       try {
         const data = await fetchPracticeData("writing_conversation");
         const raw = Array.isArray(data) ? data : [];
-        // Accept both standard exchanges and MCQ-converted exchanges
         const items = raw.filter((item: any) => {
           const exchanges = item.content?.exchanges || item.exchanges;
           return Array.isArray(exchanges) && exchanges.length > 0;
         });
         if (items.length > 0) {
-          // Merge ALL items' exchanges into one session so both RCG001 and RCG002
-          // are played sequentially rather than picking one at random.
-          const allExchanges = items.flatMap((item: any) =>
-            Array.isArray(item.exchanges) ? item.exchanges : []
-          );
-          const first = items[0];
-          setConversation({
-            title: first.title || first.title_en || "",
-            scenario: first.scenario || first.scenario_en || first["context_en"] || "",
-            timeLimitSeconds: first.timeLimitSeconds || (first.Time ? parseInt(first.Time) : 300),
-            exchanges: allExchanges,
-            isMcqConversation: items.some((i: any) => i.isMcqConversation),
-          });
+          // ── Deduplicate: group sub-exercises (RCG011_01…) back into parent (RCG011) ──
+          const baseIdOf = (id: string) => id.replace(/_\d{2}$/, '');
+          const parentMap = new Map<string, any>();
+          const childMap = new Map<string, any[]>();
+          for (const item of items) {
+            const id: string = item.ExerciseID || item.id || '';
+            const base = baseIdOf(id);
+            if (base === id) { if (!parentMap.has(id)) parentMap.set(id, item); }
+            else { if (!childMap.has(base)) childMap.set(base, []); childMap.get(base)!.push(item); }
+          }
+          const merged: any[] = [];
+          for (const [base, parent] of parentMap) {
+            const children = childMap.get(base) || [];
+            const allExchanges = [
+              ...(Array.isArray(parent.exchanges) ? parent.exchanges : []),
+              ...children.flatMap((c: any) => Array.isArray(c.exchanges) ? c.exchanges : []),
+            ];
+            merged.push({ ...parent, exchanges: allExchanges });
+          }
+          const source = merged.length > 0 ? merged : items;
+          const normalized = source
+            .filter((item: any) => Array.isArray(item.exchanges) && item.exchanges.length > 0)
+            .map((item: any) => ({
+              title: item.title || item.title_en || item.title_fr || "",
+              scenario: item.scenario || item.scenario_en || item.context_en || "",
+              objectives: item.objectives || item.objectives_en || "",
+              timeLimitSeconds: item.timeLimitSeconds || (item.Time ? parseInt(item.Time) : 300),
+              exchanges: (item.exchanges as any[]).map((ex: any) => {
+                if (!ex.sampleAnswer && Array.isArray(ex.options) && ex.options.length > 0) {
+                  const correctOpt = ex.options.find((o: any) => o.id === ex.correctOptionId)
+                    ?? ex.options[ex.correctOptionId] ?? ex.options[0];
+                  return { ...ex, prompt: ex.prompt || ex.questionText || ex.speakerText || "", sampleAnswer: correctOpt?.text || correctOpt?.text_fr || "" };
+                }
+                return ex;
+              }),
+              isMcqConversation: !!item.isMcqConversation,
+            }));
+          if (normalized.length > 0) {
+            setAllConversations(normalized);
+            setConversation(normalized[0]);
+          }
         }
       } catch (e) {
         console.error("Error loading writing conversation:", e);
@@ -226,7 +263,14 @@ export default function WritingConversationPage() {
         setTimeout(() => {
           if (currentTurnIndex < totalExchanges - 1)
             setCurrentTurnIndex((p) => p + 1);
-          else setIsCompleted(true);
+          else if (convIndex < allConversations.length - 1) {
+            const nextIdx = convIndex + 1;
+            setConvIndex(nextIdx);
+            setConversation(allConversations[nextIdx]);
+            setCurrentTurnIndex(0);
+            setConversationHistory([]);
+            setScore(0);
+          } else setIsCompleted(true);
         }, 1000);
       } catch {
         setHasAnswered(false);
@@ -242,6 +286,8 @@ export default function WritingConversationPage() {
       conversation,
       currentTurnIndex,
       totalExchanges,
+      convIndex,
+      allConversations,
     ],
   );
 
@@ -265,7 +311,7 @@ export default function WritingConversationPage() {
     );
 
   const progress =
-    totalExchanges > 0 ? ((currentTurnIndex + 1) / totalExchanges) * 100 : 0;
+    totalConversations > 0 ? ((convIndex + 1) / totalConversations) * 100 : 0;
 
   return (
     <>
@@ -276,7 +322,9 @@ export default function WritingConversationPage() {
         progress={progress}
         isGameOver={isCompleted}
         score={score}
-        totalQuestions={totalExchanges}
+        totalQuestions={totalConversations}
+        currentQuestionIndex={convIndex}
+        questionCounterValue={convIndex + 1}
         onExit={handleExit}
         onNext={handleSubmit}
         onRestart={() => window.location.reload()}
@@ -408,11 +456,11 @@ export default function WritingConversationPage() {
           </div>
 
           <div className="flex-1 min-h-0 flex flex-col bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm rounded-3xl border border-slate-200/60 dark:border-slate-700/60 shadow-sm overflow-y-auto">
-            <div className="m-4 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 shadow-sm p-5 min-h-[6rem]">
+            <div className="m-4 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 shadow-sm p-5">
               <p className="text-xs font-bold border-b-2 border-gray-200 dark:border-slate-600 pb-1 uppercase tracking-widest text-slate-600 dark:text-slate-300 mb-2">
                 Context
               </p>
-              <p className="text-sm leading-relaxed text-slate-700 dark:text-slate-300">
+              <p className="text-sm leading-relaxed text-slate-700 dark:text-slate-300 break-words overflow-hidden">
                 {conversation?.scenario || conversation?.title}
               </p>
             </div>
