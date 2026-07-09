@@ -1,5 +1,6 @@
 "use client";
 
+import { usePathname } from "next/navigation";
 import { BookOpen, Target } from "lucide-react";
 import PageTabs from "@/components/ui/PageTabs";
 
@@ -9,6 +10,13 @@ const grammarTabs = [
 ];
 
 export default function GrammarLayout({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
+  const isLessonDetail = /^\/grammar\/lessons\/[^/]+/.test(pathname);
+
+  if (isLessonDetail) {
+    return <>{children}</>;
+  }
+
   return (
     <div className="max-w-7xl mx-auto px-4 py-6">
       <header className="mb-8">
