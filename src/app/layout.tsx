@@ -2,9 +2,7 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import { ClerkProvider } from "@clerk/nextjs";
 import { Providers } from "@/app/providers";
-import Header from "@/components/layout/Header";
-import SecondaryNav from "@/components/layout/SecondaryNav";
-import FooterWrapper from "@/components/layout/FooterWrapper";
+import AppChrome from "@/components/layout/AppChrome";
 import "../styles/globals.css";
 
 const inter = Inter({ subsets: ["latin"] });
@@ -24,10 +22,7 @@ export default function RootLayout({
       <body className={inter.className}>
         <ClerkProvider>
           <Providers>
-            <Header />
-            <SecondaryNav />
-            {children}
-            <FooterWrapper />
+            <AppChrome>{children}</AppChrome>
           </Providers>
         </ClerkProvider>
       </body>
