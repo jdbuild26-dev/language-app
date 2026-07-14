@@ -11,16 +11,21 @@ import { getFeedbackMessage } from "@/utils/feedbackMessages";
 import { loadMockCSV } from "@/utils/csvLoader";
 import { Button } from "@/components/ui/button";
 
+type WordChip = {
+  id: string;
+  text: string;
+};
+
 export default function ReorderWordsPage() {
   const handleExit = usePracticeExit();
 
-  const [questions, setQuestions] = useState([]);
+  const [questions, setQuestions] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [currentIndex, setCurrentIndex] = useState(0);
 
   // Reorder Logic State
-  const [availableWords, setAvailableWords] = useState([]);
-  const [selectedWords, setSelectedWords] = useState([]);
+  const [availableWords, setAvailableWords] = useState<WordChip[]>([]);
+  const [selectedWords, setSelectedWords] = useState<WordChip[]>([]);
 
   const [isCompleted, setIsCompleted] = useState(false);
   const [showFeedback, setShowFeedback] = useState(false);
@@ -48,21 +53,44 @@ export default function ReorderWordsPage() {
   useEffect(() => {
     const fetchQuestions = async () => {
       try {
-        const data = await loadMockCSV("grammar/grammar_reorder.csv");
+        const tag =
+          new URLSearchParams(window.location.search).get("tag") || undefined;
+        const data = await loadMockCSV("grammar/grammar_reorder.csv", { tag });
 
-        const transformed = data.map((item) => {
-          // Parse words string "Le,chat,dort..." -> Array
-          let wordsArray = [];
+        const transformed = (data as any[]).map((item) => {
+          const splitWords = (value) => {
+            if (typeof value !== "string") return [];
+            const separator = value.includes("+") ? "+" : ",";
+            return value
+              .split(separator)
+              .map((w) => w.trim())
+              .filter(Boolean);
+          };
+
+          let wordsArray: string[] = [];
           if (typeof item.words === "string") {
-            // Assuming comma separated as per CSV creation
-            wordsArray = item.words.split(",").map((w) => w.trim());
+            wordsArray = splitWords(item.words);
           } else if (Array.isArray(item.words)) {
             wordsArray = item.words;
+          } else if (Array.isArray(item.wordBubbles)) {
+            wordsArray =
+              item.wordBubbles.length === 1 &&
+              typeof item.wordBubbles[0] === "string"
+                ? splitWords(item.wordBubbles[0])
+                : item.wordBubbles;
+          } else if (typeof item.BubbleTokens === "string") {
+            wordsArray = splitWords(item.BubbleTokens);
           }
 
           return {
             ...item,
+            sentence:
+              item["Complete Sentence_FR"] ??
+              item["Complete Sentence_EN"] ??
+              item.sentence,
+            translation: item["Complete Sentence_EN"] ?? item.translation,
             words: wordsArray,
+            timeLimitSeconds: item.TimeLimitSeconds ?? item.timeLimitSeconds,
           };
         });
 
@@ -203,7 +231,7 @@ export default function ReorderWordsPage() {
         submitLabel="Check"
         timerValue={timerString}
       >
-        <div className="flex flex-col items-center justify-center w-full max-w-4xl mx-auto px-4 py-6 gap-8 min-h-[60vh]">
+        <div className="flex flex-col items-center justify-center w-full h-full flex-1 min-h-0 px-4 py-6 gap-8">
           {/* Sentence Builder Area */}
           <div className="w-full max-w-2xl min-h-[140px] border-2 border-dashed border-slate-300 dark:border-slate-600 rounded-3xl flex flex-wrap items-center justify-center content-center gap-3 p-6 bg-slate-50/50 dark:bg-slate-900/50 transition-all">
             {selectedWords.length === 0 && !showFeedback ? (
@@ -253,6 +281,7 @@ export default function ReorderWordsPage() {
       {showFeedback && (
         <FeedbackBanner
           isCorrect={isCorrect}
+          feedbackTone={isCorrect ? "success" : "error"}
           correctAnswer={!isCorrect ? currentQuestion.sentence : null}
           onContinue={handleContinue}
           message={feedbackMessage}

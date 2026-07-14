@@ -14,7 +14,7 @@ import { Button } from "@/components/ui/button";
 export default function FillBlanksOptionsPage() {
   const handleExit = usePracticeExit();
 
-  const [questions, setQuestions] = useState([]);
+  const [questions, setQuestions] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [currentIndex, setCurrentIndex] = useState(0);
 
@@ -44,7 +44,8 @@ export default function FillBlanksOptionsPage() {
   useEffect(() => {
     const fetchAndTransformQuestions = async () => {
       try {
-        const data = await loadMockCSV("grammar/fill_blanks_options.csv");
+        const tag = new URLSearchParams(window.location.search).get("tag") || undefined;
+        const data = (await loadMockCSV("grammar/fill_blanks_options.csv", { tag })) as any[];
 
         if (!data || data.length === 0) {
           setQuestions([]);
@@ -52,24 +53,68 @@ export default function FillBlanksOptionsPage() {
           return;
         }
 
-        // Transform data: Parse options if needed
-        const transformed = data.map((item) => {
-          let parsedOptions = [];
+        // Transform data into the stable frontend model used by this page.
+        const transformed = (data as any[]).map((item) => {
+          let parsedOptions: any[] = [];
           try {
             if (Array.isArray(item.options)) {
               parsedOptions = item.options;
             } else if (typeof item.options === "string") {
               parsedOptions = JSON.parse(item.options.replace(/'/g, '"'));
+            } else if (Array.isArray(item.Options)) {
+              parsedOptions = item.Options;
+            } else if (typeof item.Options === "string") {
+              parsedOptions = JSON.parse(item.Options.replace(/'/g, '"'));
             }
           } catch (e) {
             console.error("Error parsing options", e);
             parsedOptions = ["Error loading options"];
           }
 
+          const uploadedOptionsFr = [
+            item["Correct Answer_FR"],
+            item["Distractor_1_FR"],
+            item["Distractor_2_FR"],
+            item["Distractor_3_FR"],
+          ].filter(Boolean);
+          const uploadedOptionsEn = [
+            item["Correct Answer_EN"],
+            item["Distractor_1_EN"],
+            item["Distractor_2_EN"],
+            item["Distractor_3_EN"],
+          ].filter(Boolean);
+          const uploadedOptions =
+            uploadedOptionsFr.length > 0 ? uploadedOptionsFr : uploadedOptionsEn;
+          const options = parsedOptions.length > 0 ? parsedOptions : uploadedOptions;
+          const uploadedCorrectIndex = uploadedOptions.length > 0 ? 0 : undefined;
+          const parsedCorrectIndex = Number.parseInt(
+            item.correctIndex ?? item.CorrectIndex,
+            10,
+          );
+
           return {
             ...item,
-            options: parsedOptions,
-            correctIndex: parseInt(item.correctIndex, 10),
+            id: item.id ?? item.ExerciseID,
+            sentence:
+              item.sentence ??
+              item["Complete Sentence_FR"] ??
+              item["Complete Passage_FR"] ??
+              item["Complete Sentence_EN"] ??
+              item["Complete Passage_EN"] ??
+              "",
+            question: item.question ?? item.Question ?? item.Question_EN ?? "",
+            options,
+            correctIndex: Number.isNaN(parsedCorrectIndex)
+              ? uploadedCorrectIndex
+              : parsedCorrectIndex,
+            translation:
+              item.translation ??
+              item["Complete Sentence_EN"] ??
+              item["Complete Passage_EN"] ??
+              item["Correct Answer_EN"] ??
+              "",
+            timeLimitSeconds:
+              item.timeLimitSeconds ?? item.TimeLimitSeconds ?? 45,
           };
         });
 
@@ -164,7 +209,7 @@ export default function FillBlanksOptionsPage() {
         submitLabel="Check"
         timerValue={timerString}
       >
-        <div className="flex flex-col lg:flex-row items-center justify-center w-full max-w-7xl mx-auto px-4 py-6 gap-8 lg:gap-16 min-h-[60vh]">
+        <div className="flex flex-col lg:flex-row items-center justify-center w-full h-full flex-1 min-h-0 px-4 py-6 gap-8 lg:gap-16">
           {/* Left Column - Main Sentence */}
           <div className="flex-1 w-full max-w-2xl flex items-center justify-center">
             <h3 className="text-2xl md:text-3xl lg:text-4xl font-semibold leading-relaxed text-slate-800 dark:text-slate-100 text-center lg:text-left">
@@ -272,6 +317,7 @@ export default function FillBlanksOptionsPage() {
       {showFeedback && (
         <FeedbackBanner
           isCorrect={isCorrect}
+          feedbackTone={isCorrect ? "success" : "error"}
           correctAnswer={!isCorrect ? currentQuestion?.translation : null}
           onContinue={handleContinue}
           message={feedbackMessage}
