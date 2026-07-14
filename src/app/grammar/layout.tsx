@@ -10,10 +10,11 @@ const grammarTabs = [
 ];
 
 export default function GrammarLayout({ children }: { children: React.ReactNode }) {
-  const pathname = usePathname();
+  const pathname = usePathname() ?? "";
   const isLessonDetail = /^\/grammar\/lessons\/[^/]+/.test(pathname);
+  const isPracticeExercise = /^\/grammar\/practice\/[^/]+/.test(pathname);
 
-  if (isLessonDetail) {
+  if (isLessonDetail || isPracticeExercise) {
     return <>{children}</>;
   }
 

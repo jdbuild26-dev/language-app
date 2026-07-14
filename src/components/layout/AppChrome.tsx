@@ -6,10 +6,11 @@ import SecondaryNav from "@/components/layout/SecondaryNav";
 import FooterWrapper from "@/components/layout/FooterWrapper";
 
 export default function AppChrome({ children }: { children: React.ReactNode }) {
-  const pathname = usePathname();
+  const pathname = usePathname() ?? "";
   const isFullScreenLesson = /^\/grammar\/lessons\/[^/]+/.test(pathname);
+  const isFullScreenGrammarPractice = /^\/grammar\/practice\/[^/]+/.test(pathname);
 
-  if (isFullScreenLesson) {
+  if (isFullScreenLesson || isFullScreenGrammarPractice) {
     return <>{children}</>;
   }
 

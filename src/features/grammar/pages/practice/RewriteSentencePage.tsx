@@ -14,7 +14,7 @@ import { Button } from "@/components/ui/button";
 export default function RewriteSentencePage({ mode = "transformation" }) {
   const handleExit = usePracticeExit();
 
-  const [questions, setQuestions] = useState([]);
+  const [questions, setQuestions] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [currentIndex, setCurrentIndex] = useState(0);
 
@@ -49,8 +49,38 @@ export default function RewriteSentencePage({ mode = "transformation" }) {
           file = "grammar/grammar_rewrite.csv";
         }
 
-        const data = await loadMockCSV(file);
-        setQuestions(data || []);
+        const tag = new URLSearchParams(window.location.search).get("tag") || undefined;
+        const data = await loadMockCSV(file, { tag });
+        const transformed = ((data as any[]) || []).map((item) => {
+          const uploadedAnswers = [
+            item["Correct Answer_EN_1"],
+            item["Correct Answer_EN_2"],
+            item["Correct Answer_EN_3"],
+          ].filter(Boolean);
+
+          return {
+            ...item,
+            instruction:
+              item.instruction ??
+              item.Instruction ??
+              item.Instruction_EN ??
+              item.localizedInstruction ??
+              "",
+            sentence:
+              item.sentence ??
+              item["Complete Passage_EN"] ??
+              item["Complete Sentence_EN"] ??
+              item.sourceText ??
+              "",
+            answer:
+              item.answer ??
+              item.Answer ??
+              (uploadedAnswers.length > 0 ? uploadedAnswers.join("|") : ""),
+            timeLimitSeconds:
+              item.timeLimitSeconds ?? item.TimeLimitSeconds ?? 60,
+          };
+        });
+        setQuestions(transformed);
       } catch (error) {
         console.error("Error loading questions:", error);
       } finally {
@@ -161,7 +191,7 @@ export default function RewriteSentencePage({ mode = "transformation" }) {
         submitLabel="Check"
         timerValue={timerString}
       >
-        <div className="flex flex-col items-center justify-center w-full max-w-4xl mx-auto px-4 py-8 gap-8 min-h-[50vh]">
+        <div className="flex flex-col items-center justify-center w-full h-full flex-1 min-h-0 px-4 py-8 gap-8">
           {/* Instruction Bubble */}
           <div className="bg-indigo-50 dark:bg-indigo-900/20 px-6 py-3 rounded-2xl border-2 border-indigo-100 dark:border-indigo-900/50 shadow-sm text-center">
             <h3 className="text-lg md:text-xl font-bold text-indigo-800 dark:text-indigo-200 uppercase tracking-wide">
@@ -206,6 +236,7 @@ export default function RewriteSentencePage({ mode = "transformation" }) {
       {showFeedback && (
         <FeedbackBanner
           isCorrect={isCorrect}
+          feedbackTone={isCorrect ? "success" : "error"}
           correctAnswer={
             !isCorrect ? currentQuestion.answer.split("|")[0] : null
           } // Show first valid option
