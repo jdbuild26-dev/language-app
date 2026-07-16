@@ -2,6 +2,21 @@ import { loadMockCSV } from "@/utils/csvLoader";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
+const practiceDataCache = new Map<string, Promise<any[]>>();
+
+const getPracticeDataCacheKey = (
+  slug: string,
+  options: Record<string, string | number | undefined>,
+) =>
+  JSON.stringify({
+    slug,
+    level: options.level || "",
+    limit: options.limit || "",
+    tag: options.tag || "",
+    learningLang: options.learningLang || "",
+    knownLang: options.knownLang || "",
+  });
+
 // Reverse map: slug → CSV fallback path
 const SLUG_TO_CSV: Record<string, string> = {
   translate_bubbles: "practice/reading/translate_bubbles.csv",
@@ -56,6 +71,11 @@ export async function fetchPracticeData(
   slug: string,
   options: Record<string, string | number | undefined> = {},
 ) {
+  const cacheKey = getPracticeDataCacheKey(slug, options);
+  const cachedLoad = practiceDataCache.get(cacheKey);
+  if (cachedLoad) return cachedLoad;
+
+  const loadPromise = (async () => {
   const { level, limit, tag, learningLang, knownLang } = options;
   const params = new URLSearchParams();
   if (level) params.append("level", String(level));
@@ -85,6 +105,10 @@ export async function fetchPracticeData(
     console.error(`[practiceFetcher] No CSV fallback defined for slug: "${slug}"`);
     return [];
   }
+  })();
+
+  practiceDataCache.set(cacheKey, loadPromise);
+  return loadPromise;
 }
 
 export async function fetchRepeatSentenceData(level: string) {

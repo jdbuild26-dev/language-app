@@ -3,10 +3,11 @@
 import React, { useState, useEffect } from "react";
 import { usePracticeExit } from "@/hooks/usePracticeExit";
 import { useExerciseTimer } from "@/hooks/useExerciseTimer";
-import { Loader2 } from "lucide-react";
+import { Languages, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
 import FeedbackBanner from "@/components/ui/FeedbackBanner";
+import PracticeOptions from "@/components/ui/PracticeOptions";
 import { getFeedbackMessage } from "@/utils/feedbackMessages";
 import { loadMockCSV } from "@/utils/csvLoader";
 import { Button } from "@/components/ui/button";
@@ -18,7 +19,8 @@ export default function FillBlanksOptionsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [currentIndex, setCurrentIndex] = useState(0);
 
-  const [selectedOption, setSelectedOption] = useState(null);
+  const [selectedOption, setSelectedOption] = useState<any[]>([]);
+  const [activeBlankIndex, setActiveBlankIndex] = useState(0);
   const [isCompleted, setIsCompleted] = useState(false);
   const [showFeedback, setShowFeedback] = useState(false);
   const [isCorrect, setIsCorrect] = useState(false);
@@ -55,16 +57,18 @@ export default function FillBlanksOptionsPage() {
 
         // Transform data into the stable frontend model used by this page.
         const transformed = (data as any[]).map((item) => {
+          const content = item.content || item;
+          const evaluation = item.evaluation || item;
           let parsedOptions: any[] = [];
           try {
-            if (Array.isArray(item.options)) {
-              parsedOptions = item.options;
-            } else if (typeof item.options === "string") {
-              parsedOptions = JSON.parse(item.options.replace(/'/g, '"'));
-            } else if (Array.isArray(item.Options)) {
-              parsedOptions = item.Options;
-            } else if (typeof item.Options === "string") {
-              parsedOptions = JSON.parse(item.Options.replace(/'/g, '"'));
+            if (Array.isArray(content.options)) {
+              parsedOptions = content.options;
+            } else if (typeof content.options === "string") {
+              parsedOptions = JSON.parse(content.options.replace(/'/g, '"'));
+            } else if (Array.isArray(content.Options)) {
+              parsedOptions = content.Options;
+            } else if (typeof content.Options === "string") {
+              parsedOptions = JSON.parse(content.Options.replace(/'/g, '"'));
             }
           } catch (e) {
             console.error("Error parsing options", e);
@@ -72,50 +76,93 @@ export default function FillBlanksOptionsPage() {
           }
 
           const uploadedOptionsFr = [
-            item["Correct Answer_FR"],
-            item["Distractor_1_FR"],
-            item["Distractor_2_FR"],
-            item["Distractor_3_FR"],
+            content["Correct Answer_FR"],
+            content["Distractor_1_FR"],
+            content["Distractor_2_FR"],
+            content["Distractor_3_FR"],
           ].filter(Boolean);
           const uploadedOptionsEn = [
-            item["Correct Answer_EN"],
-            item["Distractor_1_EN"],
-            item["Distractor_2_EN"],
-            item["Distractor_3_EN"],
+            content["Correct Answer_EN"],
+            content["Distractor_1_EN"],
+            content["Distractor_2_EN"],
+            content["Distractor_3_EN"],
+          ].filter(Boolean);
+          const optionColumns = [
+            content.Option1,
+            content.Option2,
+            content.Option3,
+            content.Option4,
           ].filter(Boolean);
           const uploadedOptions =
-            uploadedOptionsFr.length > 0 ? uploadedOptionsFr : uploadedOptionsEn;
-          const options = parsedOptions.length > 0 ? parsedOptions : uploadedOptions;
+            uploadedOptionsFr.length > 0
+              ? uploadedOptionsFr
+              : uploadedOptionsEn.length > 0
+                ? uploadedOptionsEn
+                : optionColumns;
+          const options = (parsedOptions.length > 0 ? parsedOptions : uploadedOptions).filter(Boolean).slice(0, 4);
+          const optionTranslations = uploadedOptions === uploadedOptionsFr ? uploadedOptionsEn.slice(0, 4) : [];
           const uploadedCorrectIndex = uploadedOptions.length > 0 ? 0 : undefined;
           const parsedCorrectIndex = Number.parseInt(
-            item.correctIndex ?? item.CorrectIndex,
+            evaluation.correctIndex ??
+              item.correctIndex ??
+              item.CorrectIndex ??
+              item.eval_correctIndex,
             10,
           );
+          const correctIndexes = Array.isArray(evaluation.correctIndexes ?? item.correctIndexes)
+            ? evaluation.correctIndexes ?? item.correctIndexes
+            : [Number.isNaN(parsedCorrectIndex) ? uploadedCorrectIndex : parsedCorrectIndex];
+          const blankCount = (String(
+            content.sentence ??
+              content["Fill Sentence_FR"] ??
+              content["Fill Paragraph_EN"] ??
+              content.SentenceWithBlank ??
+              content["Sentence With Blank"] ??
+              content["Complete Sentence_FR"] ??
+              content["Complete Passage_FR"] ??
+              "",
+          ).match(/_{2,}/g) || []).length || 1;
 
           return {
             ...item,
             id: item.id ?? item.ExerciseID,
+            headingFr: item.instruction_fr ?? content.Heading_FR ?? content.Instruction_FR ?? "Fill in the blanks",
             sentence:
-              item.sentence ??
-              item["Complete Sentence_FR"] ??
-              item["Complete Passage_FR"] ??
-              item["Complete Sentence_EN"] ??
-              item["Complete Passage_EN"] ??
+              content.sentence ??
+              content["Fill Sentence_FR"] ??
+              content["Fill Paragraph_EN"] ??
+              content.SentenceWithBlank ??
+              content["Sentence With Blank"] ??
+              content["Complete Sentence_FR"] ??
+              content["Complete Passage_FR"] ??
+              content["Complete Sentence_EN"] ??
+              content["Complete Passage_EN"] ??
               "",
-            question: item.question ?? item.Question ?? item.Question_EN ?? "",
+            blank: content.blank ?? item.blank,
+            question: content.Question_FR ?? content.question ?? content.Question ?? content.Question_EN ?? "",
             options,
+            optionTranslations,
             correctIndex: Number.isNaN(parsedCorrectIndex)
               ? uploadedCorrectIndex
               : parsedCorrectIndex,
+            correctIndexes: Array.from(
+              { length: blankCount },
+              (_, index) => correctIndexes[index] ?? correctIndexes[0],
+            ),
             translation:
+              evaluation.translation ??
               item.translation ??
-              item["Complete Sentence_EN"] ??
-              item["Complete Passage_EN"] ??
-              item["Correct Answer_EN"] ??
+              item.eval_translation ??
+              content["Complete Sentence_EN"] ??
+              content["Complete Passage_EN"] ??
+              content["Correct Answer_EN"] ??
               "",
             timeLimitSeconds:
               item.timeLimitSeconds ?? item.TimeLimitSeconds ?? 45,
           };
+        }).filter((question) => {
+          const optionCount = question.options.filter(Boolean).length;
+          return optionCount >= 2 && optionCount <= 4;
         });
 
         setQuestions(transformed);
@@ -131,20 +178,37 @@ export default function FillBlanksOptionsPage() {
   // Reset state on question change
   useEffect(() => {
     if (currentQuestion && !isCompleted) {
-      setSelectedOption(null);
+      setSelectedOption([]);
+      setActiveBlankIndex(0);
       resetTimer();
     }
   }, [currentIndex, currentQuestion, isCompleted, resetTimer]);
 
   const handleOptionClick = (index) => {
     if (showFeedback) return;
-    setSelectedOption(index);
+    setSelectedOption((prev) => {
+      const next = [...prev];
+      const correctIndexes = currentQuestion?.correctIndexes || [currentQuestion?.correctIndex];
+      if (correctIndexes.length > 1 && String(currentQuestion?.options?.[index] || "").includes("+")) {
+        correctIndexes.forEach((_, blankIndex) => {
+          next[blankIndex] = index;
+        });
+      } else {
+        next[activeBlankIndex] = index;
+      }
+      const nextBlank = (currentQuestion?.correctIndexes || [currentQuestion?.correctIndex]).findIndex(
+        (_, blankIndex) => next[blankIndex] === undefined,
+      );
+      setActiveBlankIndex(nextBlank === -1 ? activeBlankIndex : nextBlank);
+      return next;
+    });
   };
 
   const handleSubmit = () => {
-    if (showFeedback || selectedOption === null) return;
+    const correctIndexes = currentQuestion?.correctIndexes || [currentQuestion?.correctIndex];
+    if (showFeedback || correctIndexes.some((_, index) => selectedOption[index] === undefined)) return;
 
-    const correct = selectedOption === currentQuestion.correctIndex;
+    const correct = correctIndexes.every((correctIndex, index) => selectedOption[index] === correctIndex);
     setIsCorrect(correct);
     setFeedbackMessage(getFeedbackMessage(correct));
     setShowFeedback(true);
@@ -189,13 +253,21 @@ export default function FillBlanksOptionsPage() {
     questions.length > 0 ? ((currentIndex + 1) / questions.length) * 100 : 0;
 
   // Fill in the blank in the sentence
-  const sentenceWithBlank = currentQuestion?.sentence.replace("___", "______");
+  const sentenceForBlank =
+    currentQuestion?.sentence.match(/_{2,}/)
+      ? currentQuestion.sentence
+      : currentQuestion?.blank
+        ? currentQuestion.sentence.replace(currentQuestion.blank, "___")
+        : currentQuestion?.sentence;
+  const sentenceParts = sentenceForBlank?.split(/_{2,}/g) || [];
+  const correctIndexes = currentQuestion?.correctIndexes || [currentQuestion?.correctIndex];
+  const selectedOptionIndex = selectedOption.find((value) => value !== undefined) ?? null;
 
   return (
     <>
       <PracticeGameLayout
-        questionType="Fill in the Blanks"
-        instructionFr="Choisissez la bonne réponse"
+        questionType="Choose from options"
+        instructionFr={currentQuestion?.headingFr || "Choisissez la bonne réponse"}
         instructionEn="Choose the correct answer"
         progress={progress}
         isGameOver={isCompleted}
@@ -204,42 +276,101 @@ export default function FillBlanksOptionsPage() {
         onExit={handleExit}
         onNext={handleSubmit}
         onRestart={() => window.location.reload()}
-        isSubmitEnabled={selectedOption !== null && !showFeedback}
+        disableContentScroll={showFeedback}
+        isSubmitEnabled={!correctIndexes.some((_, index) => selectedOption[index] === undefined) && !showFeedback}
         showSubmitButton={!showFeedback}
         submitLabel="Check"
         timerValue={timerString}
       >
-        <div className="flex flex-col lg:flex-row items-center justify-center w-full h-full flex-1 min-h-0 px-4 py-6 gap-8 lg:gap-16">
-          {/* Left Column - Main Sentence */}
-          <div className="flex-1 w-full max-w-2xl flex items-center justify-center">
-            <h3 className="text-2xl md:text-3xl lg:text-4xl font-semibold leading-relaxed text-slate-800 dark:text-slate-100 text-center lg:text-left">
-              {sentenceWithBlank}
+        <div
+            className={cn(
+              "flex flex-col w-full h-full flex-1 min-h-0 px-4 md:px-10 bg-[#f7f8fb] dark:bg-slate-950",
+            showFeedback ? "pt-3 pb-[128px] gap-3" : "py-6 gap-6",
+          )}
+        >
+          {/* Main Sentence */}
+          <div
+            className={cn(
+              "w-full rounded-lg border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-950 flex items-center justify-center px-6 transition-all duration-300 ease-out min-h-0",
+              showFeedback ? "min-h-[150px] flex-1" : "min-h-[200px] flex-1",
+            )}
+          >
+            <h3 className="text-2xl md:text-3xl lg:text-4xl font-semibold leading-relaxed text-slate-900 dark:text-slate-100 text-center">
+              {sentenceParts.map((part, index) => (
+                <React.Fragment key={index}>
+                  {part}
+                  {index < sentenceParts.length - 1 && (
+                    <button
+                      type="button"
+                      disabled={showFeedback}
+                      onClick={() => setActiveBlankIndex(index)}
+                      className={cn(
+                        "mx-1 inline-flex min-w-[6rem] justify-center border-b-[3px] border-slate-300 px-2 text-slate-900 transition-colors dark:border-slate-600 dark:text-slate-100",
+                        activeBlankIndex === index && !showFeedback && "border-slate-400 dark:border-slate-500",
+                        showFeedback &&
+                          selectedOption[index] === correctIndexes[index] &&
+                          "border-emerald-500 text-emerald-700 dark:text-emerald-300",
+                        showFeedback &&
+                          selectedOption[index] !== correctIndexes[index] &&
+                          "border-rose-500 text-rose-700 dark:text-rose-300",
+                      )}
+                    >
+                      {selectedOption[index] !== undefined
+                        ? String(currentQuestion.options[selectedOption[index]])
+                            .split(/\s*\+\s*/)[index] || currentQuestion.options[selectedOption[index]]
+                        : "\u00a0"}
+                    </button>
+                  )}
+                </React.Fragment>
+              ))}
             </h3>
           </div>
 
-          {/* Right Column - Question & Options */}
-          <div className="flex-1 w-full max-w-xl flex flex-col gap-8 justify-center">
+          {/* Question & Options */}
+          <div
+            className={cn(
+              "w-full rounded-lg border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900 px-5 md:px-8 flex flex-col",
+              showFeedback ? "py-4 gap-3 flex-none" : "py-6 gap-5",
+            )}
+          >
             {/* Question */}
             <div className="w-full">
-              <h4 className="text-xl md:text-2xl font-bold text-slate-900 dark:text-white mb-2">
-                {currentQuestion?.question || "Fill in the blank"}
-              </h4>
-
-              {/* Translation (Shown after submission) */}
-              {showFeedback && currentQuestion?.translation && (
-                <div className="mt-2 animate-in fade-in slide-in-from-top-2 duration-300">
-                  <p className="text-lg text-indigo-600 dark:text-indigo-400 font-medium italic">
-                    {currentQuestion.translation}
-                  </p>
-                </div>
-              )}
+              <div className="mb-2 flex items-center gap-2">
+                <Languages className="h-5 w-5 text-sky-500" aria-hidden="true" />
+                <h4 className="text-xl md:text-2xl font-bold text-slate-900 dark:text-white">
+                  {currentQuestion?.question || "Fill in the blank"}
+                </h4>
+              </div>
             </div>
 
             {/* Options Grid */}
-            <div className="w-full grid grid-cols-1 gap-4">
+            <PracticeOptions
+              options={currentQuestion?.options || []}
+              selectedOption={selectedOptionIndex}
+              correctIndex={currentQuestion?.correctIndex}
+              showFeedback={showFeedback}
+              onSelect={handleOptionClick}
+              className={cn("grid grid-cols-1 md:grid-cols-2", showFeedback ? "gap-3" : "gap-4")}
+              itemClassName={cn("rounded-[22px] border px-5", showFeedback ? "min-h-[74px] py-3" : "min-h-[76px] py-3.5")}
+              showCheckIcon
+              renderLabel={(option, index) => (
+                <>
+                  <span className="text-lg font-semibold leading-snug">
+                    {option}
+                  </span>
+                  {showFeedback && currentQuestion?.optionTranslations?.[index] && (
+                    <span className="mt-1 flex items-center gap-1.5 text-sm font-medium leading-snug text-slate-500 dark:text-slate-400">
+                      <Languages className="h-3.5 w-3.5 shrink-0 text-slate-400" aria-hidden="true" />
+                      <span>{currentQuestion.optionTranslations[index]}</span>
+                    </span>
+                  )}
+                </>
+              )}
+            />
+            {false && (<div className="w-full grid grid-cols-1 md:grid-cols-2 gap-4">
               {currentQuestion?.options.map((option, index) => {
-                const isSelected = selectedOption === index;
-                const isCorrectOption = index === currentQuestion.correctIndex;
+                const isSelected = selectedOption.includes(index);
+                const isCorrectOption = correctIndexes.includes(index);
                 const isWrongSelection =
                   showFeedback && isSelected && !isCorrectOption;
                 const isCorrectHighlight = showFeedback && isCorrectOption;
@@ -248,21 +379,22 @@ export default function FillBlanksOptionsPage() {
                   <button
                     key={index}
                     onClick={() => handleOptionClick(index)}
-                    disabled={showFeedback}
+                    disabled={showFeedback || !option}
                     className={cn(
-                      "group relative p-4 px-6 rounded-xl border-2 text-left transition-all flex items-center gap-4 bg-white dark:bg-slate-950 shadow-sm min-h-[72px]",
+                      "group relative px-6 rounded-lg border text-left transition-all flex items-center gap-4 bg-white dark:bg-slate-950 shadow-sm",
+                      "min-h-[72px] p-4",
                       // Default state
-                      "border-slate-200 dark:border-slate-800 hover:border-indigo-300 dark:hover:border-indigo-700 hover:shadow-md",
+                      "border-slate-200 dark:border-slate-800 hover:border-sky-300 dark:hover:border-sky-700 hover:bg-sky-50/40 dark:hover:bg-sky-950/20 hover:shadow-md",
                       // Selected (pre-submission)
                       isSelected &&
                         !showFeedback &&
-                        "border-indigo-500 bg-indigo-50 dark:bg-indigo-900/10 ring-2 ring-indigo-500",
+                        "border-sky-500 bg-sky-50 dark:bg-sky-950/30 ring-2 ring-sky-100 dark:ring-sky-900/60 shadow-md",
                       // Feedback: Correct
                       isCorrectHighlight &&
-                        "border-green-500 bg-green-50 dark:bg-green-900/20 ring-2 ring-green-500",
+                        "border-emerald-500 bg-emerald-50 dark:bg-emerald-950/30 ring-2 ring-emerald-100 dark:ring-emerald-900/60",
                       // Feedback: Wrong
                       isWrongSelection &&
-                        "border-red-500 bg-red-50 dark:bg-red-900/20 ring-2 ring-red-500",
+                        "border-rose-500 bg-rose-50 dark:bg-rose-950/30 ring-2 ring-rose-100 dark:ring-rose-900/60",
                     )}
                   >
                     {/* Selection Indicator */}
@@ -270,10 +402,10 @@ export default function FillBlanksOptionsPage() {
                       className={cn(
                         "w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors flex-shrink-0",
                         isSelected || isCorrectHighlight
-                          ? "border-indigo-500 bg-indigo-500 text-white"
-                          : "border-slate-300 dark:border-slate-600 group-hover:border-indigo-300",
-                        isCorrectHighlight && "border-green-500 bg-green-500",
-                        isWrongSelection && "border-red-500 bg-red-500",
+                          ? "border-sky-500 bg-sky-500 text-white"
+                          : "border-slate-300 dark:border-slate-600 group-hover:border-sky-300",
+                        isCorrectHighlight && "border-emerald-500 bg-emerald-500",
+                        isWrongSelection && "border-rose-500 bg-rose-500",
                       )}
                     >
                       {isCorrectHighlight && (
@@ -294,12 +426,12 @@ export default function FillBlanksOptionsPage() {
                       <p
                         className={cn(
                           "text-lg font-medium transition-colors",
-                          isSelected && !showFeedback && "text-indigo-700",
-                          isCorrectHighlight && "text-green-700",
-                          isWrongSelection && "text-red-700",
+                          isSelected && !showFeedback && "text-sky-800 dark:text-sky-200",
+                          isCorrectHighlight && "text-emerald-800 dark:text-emerald-200",
+                          isWrongSelection && "text-rose-800 dark:text-rose-200",
                           !isSelected &&
                             !showFeedback &&
-                            "text-slate-700 dark:text-slate-200",
+                            "text-slate-800 dark:text-slate-200",
                         )}
                       >
                         {option}
@@ -308,7 +440,7 @@ export default function FillBlanksOptionsPage() {
                   </button>
                 );
               })}
-            </div>
+            </div>)}
           </div>
         </div>
       </PracticeGameLayout>

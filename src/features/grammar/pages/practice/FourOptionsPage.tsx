@@ -3,10 +3,11 @@
 import React, { useState, useEffect } from "react";
 import { usePracticeExit } from "@/hooks/usePracticeExit";
 import { useExerciseTimer } from "@/hooks/useExerciseTimer";
-import { Loader2 } from "lucide-react";
+import { Languages, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
 import FeedbackBanner from "@/components/ui/FeedbackBanner";
+import PracticeOptions from "@/components/ui/PracticeOptions";
 import { getFeedbackMessage } from "@/utils/feedbackMessages";
 import { loadMockCSV } from "@/utils/csvLoader";
 import { Button } from "@/components/ui/button";
@@ -56,57 +57,101 @@ export default function FourOptionsPage() {
 
         // Transform data into the stable frontend model used by this page.
         const transformed = (data as any[]).map((item) => {
+          const escapeRegExp = (value: string) =>
+            value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+          const replaceAnswer = (sentence: string, answer: string, replacement: string) => {
+            if (!sentence || !answer) return sentence;
+            const pattern = new RegExp(escapeRegExp(answer.trim()), "i");
+            return pattern.test(sentence)
+              ? sentence.replace(pattern, replacement)
+              : sentence;
+          };
+          const looksLikeSentence = (value: string) =>
+            /[.!?]$/.test(value.trim()) || value.trim().split(/\s+/).length >= 5;
+          const content = item.content || item;
+          const evaluation = item.evaluation || item;
           let parsedOptions: any[] = [];
           try {
-            if (Array.isArray(item.options)) {
-              parsedOptions = item.options;
-            } else if (typeof item.options === "string") {
-              parsedOptions = JSON.parse(item.options.replace(/'/g, '"'));
-            } else if (Array.isArray(item.Options)) {
-              parsedOptions = item.Options;
-            } else if (typeof item.Options === "string") {
-              parsedOptions = JSON.parse(item.Options.replace(/'/g, '"'));
+            if (Array.isArray(content.options)) {
+              parsedOptions = content.options;
+            } else if (typeof content.options === "string") {
+              parsedOptions = JSON.parse(content.options.replace(/'/g, '"'));
+            } else if (Array.isArray(content.Options)) {
+              parsedOptions = content.Options;
+            } else if (typeof content.Options === "string") {
+              parsedOptions = JSON.parse(content.Options.replace(/'/g, '"'));
             }
           } catch (e) {
             console.error("Error parsing options", e);
             parsedOptions = ["Option A", "Option B", "Option C", "Option D"]; // Default fallback
           }
 
-          const uploadedOptions = [
-            item["Correct Answer_EN"],
-            item["Distractor_1_EN"],
-            item["Distractor_2_EN"],
-            item["Distractor_3_EN"],
+          const uploadedOptionsFr = [
+            content["Correct Answer_FR"],
+            content["Distractor_1_FR"],
+            content["Distractor_2_FR"],
+            content["Distractor_3_FR"],
           ].filter(Boolean);
-          const options = parsedOptions.length > 0 ? parsedOptions : uploadedOptions;
+          const uploadedOptionsEn = [
+            content["Correct Answer_EN"],
+            content["Distractor_1_EN"],
+            content["Distractor_2_EN"],
+            content["Distractor_3_EN"],
+          ].filter(Boolean);
+          const uploadedOptions =
+            uploadedOptionsFr.length > 0
+              ? uploadedOptionsFr
+              : uploadedOptionsEn.length > 0
+                ? uploadedOptionsEn
+                : [];
+          const options = (parsedOptions.length > 0 ? parsedOptions : uploadedOptions).filter(Boolean).slice(0, 4);
+          const optionTranslations = uploadedOptions === uploadedOptionsFr ? uploadedOptionsEn.slice(0, 4) : [];
           const uploadedCorrectIndex = uploadedOptions.length > 0 ? 0 : undefined;
           const parsedCorrectIndex = Number.parseInt(
-            item.correctIndex ?? item.CorrectIndex,
+            evaluation.correctIndex ?? item.correctIndex ?? item.CorrectIndex ?? item.eval_correctIndex,
             10,
           );
+          const correctIndex = Number.isNaN(parsedCorrectIndex)
+            ? uploadedCorrectIndex
+            : parsedCorrectIndex;
+          const completeSentence =
+            content.sentence ??
+            content["Complete Passage_FR"] ??
+            content["Complete Sentence_FR"] ??
+            content["Complete Passage_EN"] ??
+            content["Complete Sentence_EN"] ??
+            content.sourceText ??
+            "";
+          const correctAnswer = options[correctIndex ?? 0] || options[0] || "";
+          const hasSentenceOptions = options.some((option) => looksLikeSentence(String(option)));
+          const sentenceOptions = hasSentenceOptions
+            ? options
+            : options.map((option) =>
+                replaceAnswer(String(completeSentence), String(correctAnswer), String(option)),
+              );
 
           return {
             ...item,
             id: item.id ?? item.ExerciseID,
-            sentence:
-              item.sentence ??
-              item["Complete Passage_EN"] ??
-              item["Complete Sentence_EN"] ??
-              item.sourceText ??
-              "",
-            question: item.question ?? item.Question ?? item.Question_EN ?? "",
-            options,
-            correctIndex: Number.isNaN(parsedCorrectIndex)
-              ? uploadedCorrectIndex
-              : parsedCorrectIndex,
+            sentence: replaceAnswer(String(completeSentence), String(correctAnswer), "_____"),
+            completedSentence: completeSentence,
+            question: content.Question_FR ?? content.question ?? content.Question ?? content.Question_EN ?? "",
+            options: sentenceOptions,
+            optionTranslations,
+            correctIndex,
             translation:
+              evaluation.translation ??
               item.translation ??
-              item["Complete Sentence_FR"] ??
-              item["Correct Answer_FR"] ??
+              item.eval_translation ??
+              content["Complete Sentence_EN"] ??
+              content["Complete Passage_EN"] ??
               "",
             timeLimitSeconds:
               item.timeLimitSeconds ?? item.TimeLimitSeconds ?? 45,
           };
+        }).filter((question) => {
+          const optionCount = question.options.filter(Boolean).length;
+          return optionCount >= 2 && optionCount <= 4;
         });
 
         setQuestions(transformed);
@@ -192,12 +237,74 @@ export default function FourOptionsPage() {
         onExit={handleExit}
         onNext={handleSubmit}
         onRestart={() => window.location.reload()}
+        disableContentScroll={showFeedback}
         isSubmitEnabled={selectedOption !== null && !showFeedback}
         showSubmitButton={!showFeedback}
         submitLabel="Check"
         timerValue={timerString}
       >
-        <div className="flex flex-col lg:flex-row items-center justify-center w-full h-full flex-1 min-h-0 px-4 py-6 gap-8 lg:gap-16">
+        <div
+          className={cn(
+            "flex flex-col w-full h-full flex-1 min-h-0 px-4 md:px-10 bg-[#f7f8fb] dark:bg-slate-950",
+            showFeedback ? "pt-3 pb-[128px] gap-3" : "py-6 gap-6",
+          )}
+        >
+          {/* Main Sentence */}
+          <div
+            className={cn(
+              "w-full rounded-lg border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-950 flex items-center justify-center px-6 transition-all duration-300 ease-out min-h-0",
+              showFeedback ? "min-h-[150px] flex-1" : "min-h-[200px] flex-1",
+            )}
+          >
+            <h3 className="text-2xl md:text-3xl lg:text-4xl font-semibold leading-relaxed text-slate-900 dark:text-slate-100 text-center">
+              {showFeedback
+                ? currentQuestion?.completedSentence || currentQuestion?.sentence
+                : currentQuestion?.sentence}
+            </h3>
+          </div>
+
+          {/* Question & Options */}
+          <div
+            className={cn(
+              "w-full rounded-lg border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900 px-5 md:px-8 flex flex-col",
+              showFeedback ? "py-4 gap-3 flex-none" : "py-6 gap-5",
+            )}
+          >
+            <div className="w-full">
+              <div className="mb-2 flex items-center gap-2">
+                <Languages className="h-5 w-5 text-sky-500" aria-hidden="true" />
+                <h4 className="text-xl md:text-2xl font-bold text-slate-900 dark:text-white">
+                  {currentQuestion?.question || "Choose the correct option"}
+                </h4>
+              </div>
+            </div>
+
+            <PracticeOptions
+              options={currentQuestion?.options || []}
+              selectedOption={selectedOption}
+              correctIndex={currentQuestion?.correctIndex}
+              showFeedback={showFeedback}
+              onSelect={handleOptionClick}
+              className={cn("grid grid-cols-1 md:grid-cols-2", showFeedback ? "gap-3" : "gap-4")}
+              itemClassName={cn("rounded-[22px] border px-5", showFeedback ? "min-h-[74px] py-3" : "min-h-[76px] py-3.5")}
+              showCheckIcon
+              renderLabel={(option, index) => (
+                <>
+                  <span className="text-lg font-semibold leading-snug">
+                    {option}
+                  </span>
+                  {showFeedback && currentQuestion?.optionTranslations?.[index] && (
+                    <span className="mt-1 flex items-center gap-1.5 text-sm font-medium leading-snug text-slate-500 dark:text-slate-400">
+                      <Languages className="h-3.5 w-3.5 shrink-0 text-slate-400" aria-hidden="true" />
+                      <span>{currentQuestion.optionTranslations[index]}</span>
+                    </span>
+                  )}
+                </>
+              )}
+            />
+          </div>
+        </div>
+        {false && (<div className="flex flex-col lg:flex-row items-center justify-center w-full h-full flex-1 min-h-0 px-4 py-6 gap-8 lg:gap-16">
           {/* Left Column - Sentence/Passage */}
           <div className="flex-1 w-full max-w-2xl flex items-center justify-center">
             <div className="bg-slate-50 dark:bg-slate-800 rounded-2xl p-8 border-2 border-slate-200 dark:border-slate-700 shadow-sm w-full">
@@ -238,7 +345,7 @@ export default function FourOptionsPage() {
                   <button
                     key={index}
                     onClick={() => handleOptionClick(index)}
-                    disabled={showFeedback}
+                    disabled={showFeedback || !option}
                     className={cn(
                       "group relative p-4 px-6 rounded-xl border-2 text-left transition-all flex items-center gap-4 bg-white dark:bg-slate-950 shadow-sm min-h-[70px]",
                       "border-slate-200 dark:border-slate-800 hover:border-indigo-300 dark:hover:border-indigo-700 hover:shadow-md",
@@ -294,7 +401,7 @@ export default function FourOptionsPage() {
               })}
             </div>
           </div>
-        </div>
+        </div>)}
       </PracticeGameLayout>
 
       {/* Feedback Banner */}

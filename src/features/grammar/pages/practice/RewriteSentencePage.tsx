@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { usePracticeExit } from "@/hooks/usePracticeExit";
 import { useExerciseTimer } from "@/hooks/useExerciseTimer";
-import { Loader2, ArrowRight } from "lucide-react";
+import { Languages, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
 import FeedbackBanner from "@/components/ui/FeedbackBanner";
@@ -24,6 +24,7 @@ export default function RewriteSentencePage({ mode = "transformation" }) {
   const [isCorrect, setIsCorrect] = useState(false);
   const [feedbackMessage, setFeedbackMessage] = useState("");
   const [score, setScore] = useState(0);
+  const [showInstructionTranslation, setShowInstructionTranslation] = useState(false);
 
   const currentQuestion = questions[currentIndex];
   const timerDuration = currentQuestion?.timeLimitSeconds || 60;
@@ -52,30 +53,59 @@ export default function RewriteSentencePage({ mode = "transformation" }) {
         const tag = new URLSearchParams(window.location.search).get("tag") || undefined;
         const data = await loadMockCSV(file, { tag });
         const transformed = ((data as any[]) || []).map((item) => {
+          const content = item.content || item;
+          const evaluation = item.evaluation || item;
           const uploadedAnswers = [
-            item["Correct Answer_EN_1"],
-            item["Correct Answer_EN_2"],
-            item["Correct Answer_EN_3"],
-          ].filter(Boolean);
+            content["Correct Answer_FR_1"],
+            content["Correct Answer_FR_2"],
+            content["Correct Answer_FR_3"],
+            content["Correct Answer_1_FR"],
+            content["Correct Answer_2_FR"],
+            content["Correct Answer_3_FR"],
+            content["Correct Answer_FR"],
+            content["Correct answer_FR"],
+            content["CorrectAnswer_FR"]
+          ].flatMap((answer) =>
+            Array.isArray(answer)
+              ? answer
+              : String(answer || "")
+                  .split("|")
+                  .map((value) => value.trim()),
+          ).filter(Boolean);
 
           return {
             ...item,
             instruction:
-              item.instruction ??
-              item.Instruction ??
-              item.Instruction_EN ??
-              item.localizedInstruction ??
+              content.instruction ??
+              content.Instruction ??
+              content.Instruction_FR ??
+              content.Instruction_EN ??
+              content.localizedInstruction ??
+              "",
+            instructionTranslation:
+              content.instructionTranslation ??
+              content.Instruction_EN ??
+              content["Instruction_EN"] ??
               "",
             sentence:
-              item.sentence ??
-              item["Complete Passage_EN"] ??
-              item["Complete Sentence_EN"] ??
-              item.sourceText ??
+              content.sentence ??
+              content.CompleteSentence_FR ??
+              content["CompleteSentence_FR"] ??
+              content["Complete Sentence_FR"] ??
+              content["Complete Passage_FR"] ??
+              content["Complete Sentence_EN"] ??
+              content.sourceText ??
               "",
-            answer:
-              item.answer ??
-              item.Answer ??
-              (uploadedAnswers.length > 0 ? uploadedAnswers.join("|") : ""),
+            acceptedAnswers: uploadedAnswers,
+            answer: uploadedAnswers.join("|"),
+            translation:
+              evaluation.translation ??
+              item.translation ??
+              item.eval_translation ??
+              content.CompleteSentence_EN ??
+              content["CompleteSentence_EN"] ??
+              content["Complete Sentence_EN"] ??
+              "",
             timeLimitSeconds:
               item.timeLimitSeconds ?? item.TimeLimitSeconds ?? 60,
           };
@@ -94,6 +124,7 @@ export default function RewriteSentencePage({ mode = "transformation" }) {
     if (currentQuestion && !isCompleted) {
       setUserInput("");
       setShowFeedback(false);
+      setShowInstructionTranslation(false);
       resetTimer();
     }
   }, [currentIndex, currentQuestion, isCompleted, resetTimer]);
@@ -112,7 +143,10 @@ export default function RewriteSentencePage({ mode = "transformation" }) {
 
     // Validation Logic
     // We support multiple correct answers separated by '|'
-    const allowedAnswers = currentQuestion.answer.split("|");
+    const allowedAnswers =
+      currentQuestion.acceptedAnswers?.length > 0
+        ? currentQuestion.acceptedAnswers
+        : currentQuestion.answer.split("|");
 
     // Check if user input matches any of the allowed variants
     const userNorm = normalize(userInput);
@@ -160,6 +194,10 @@ export default function RewriteSentencePage({ mode = "transformation" }) {
 
   const progress =
     questions.length > 0 ? ((currentIndex + 1) / questions.length) * 100 : 0;
+  const displayInstruction =
+    currentQuestion?.instruction || "Rewrite the sentence";
+  const displayInstructionTranslation =
+    currentQuestion?.instructionTranslation || "";
 
   return (
     <>
@@ -167,11 +205,15 @@ export default function RewriteSentencePage({ mode = "transformation" }) {
         questionType={
           mode === "combination"
             ? "Combine Sentences"
-            : mode === "rewrite"
+            : false && mode === "rewrite"
               ? "Rewrite – Type in"
-              : "Sentence Transformation"
+              : "Rewrite the sentence"
         }
-        instructionFr={currentQuestion.instruction}
+        instructionFr={
+          mode === "combination"
+            ? currentQuestion.instruction
+            : displayInstruction
+        }
         instructionEn={
           mode === "combination"
             ? "Combine the sentences using the target structure"
@@ -186,38 +228,60 @@ export default function RewriteSentencePage({ mode = "transformation" }) {
         onExit={handleExit}
         onNext={handleSubmit}
         onRestart={() => window.location.reload()}
+        disableContentScroll={showFeedback}
         isSubmitEnabled={userInput.length > 0}
         showSubmitButton={!showFeedback}
         submitLabel="Check"
         timerValue={timerString}
       >
-        <div className="flex flex-col items-center justify-center w-full h-full flex-1 min-h-0 px-4 py-8 gap-8">
-          {/* Instruction Bubble */}
-          <div className="bg-indigo-50 dark:bg-indigo-900/20 px-6 py-3 rounded-2xl border-2 border-indigo-100 dark:border-indigo-900/50 shadow-sm text-center">
-            <h3 className="text-lg md:text-xl font-bold text-indigo-800 dark:text-indigo-200 uppercase tracking-wide">
-              {currentQuestion.instruction}
+        <div
+          className={cn(
+            "flex flex-col items-center w-[calc(100%-4rem)] max-w-[1500px] mx-auto h-full flex-1 min-h-0 px-8 md:px-14 rounded-[2rem]",
+            showFeedback ? "pt-4 pb-[150px] gap-4" : "py-8 gap-5",
+          )}
+        >
+          <div className="w-full max-w-5xl flex items-center justify-center gap-2 text-center">
+ {displayInstructionTranslation && (
+              <button
+                type="button"
+                className="shrink-0 text-slate-400 hover:text-sky-500 transition-colors"
+                title="Toggle translation"
+                aria-label="Toggle translation"
+                onClick={() => setShowInstructionTranslation((value) => !value)}
+              >
+                <Languages className="h-4 w-4" />
+              </button>
+            )}
+            <h3 className="text-xl md:text-2xl font-bold text-slate-900 dark:text-white">
+              {showInstructionTranslation && displayInstructionTranslation
+                ? displayInstructionTranslation
+                : displayInstruction}
             </h3>
           </div>
 
           {/* Source Sentence */}
-          <div className="bg-white dark:bg-slate-800 p-8 rounded-3xl shadow-lg border border-slate-100 dark:border-slate-700 w-full max-w-2xl text-center">
-            <p className="text-2xl md:text-3xl text-slate-700 dark:text-slate-200 font-medium leading-relaxed">
+          <div
+            className={cn(
+              "w-full max-w-5xl flex items-center justify-center text-center",
+              showFeedback ? "min-h-[86px] flex-none" : "min-h-[110px] flex-none",
+            )}
+          >
+            <p className="text-2xl md:text-3xl lg:text-4xl text-slate-800 dark:text-slate-100 font-semibold leading-relaxed">
               {currentQuestion.sentence}
             </p>
           </div>
 
-          <ArrowRight className="w-8 h-8 text-slate-300 dark:text-slate-600 animate-pulse hidden md:block" />
-
           {/* Input Area */}
-          <div className="w-full max-w-2xl">
+          <div className="w-full max-w-none">
             <textarea
               value={userInput}
               onChange={(e) => setUserInput(e.target.value)}
               disabled={showFeedback}
               placeholder="Type your answer here..."
               className={cn(
-                "w-full bg-white dark:bg-slate-800 border-2 rounded-2xl p-6 text-xl md:text-2xl text-center resize-none outline-none transition-all shadow-sm min-h-[140px]",
-                "focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 placeholder:text-slate-300 dark:placeholder:text-slate-600",
+                "w-full bg-slate-100 dark:bg-slate-800 border rounded-xl p-6 text-xl md:text-2xl resize-none outline-none transition-all",
+                showFeedback ? "min-h-[130px]" : "min-h-[220px]",
+                "focus:border-sky-400 focus:ring-2 focus:ring-sky-400/20 placeholder:text-slate-300 dark:placeholder:text-slate-600",
                 showFeedback &&
                   isCorrect &&
                   "border-green-500 bg-green-50 dark:bg-green-900/10 text-green-700 dark:text-green-300",
@@ -228,6 +292,22 @@ export default function RewriteSentencePage({ mode = "transformation" }) {
               )}
               autoFocus
             />
+
+            {showFeedback && currentQuestion?.acceptedAnswers?.length > 0 && (
+              <div className="mt-4 rounded-2xl border border-slate-200 bg-white p-4 text-left shadow-sm dark:border-slate-700 dark:bg-slate-800">
+                <p className="text-sm font-semibold text-slate-500 dark:text-slate-400">
+                  Correct rewritten sentence:
+                </p>
+                <p className="mt-2 text-base md:text-lg font-semibold text-emerald-700 dark:text-emerald-300">
+                  {currentQuestion.acceptedAnswers[0]}
+                </p>
+                {currentQuestion.translation && (
+                  <p className="mt-3 text-sm md:text-base font-medium italic text-slate-500 dark:text-slate-400">
+                    {currentQuestion.translation}
+                  </p>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </PracticeGameLayout>
@@ -237,9 +317,7 @@ export default function RewriteSentencePage({ mode = "transformation" }) {
         <FeedbackBanner
           isCorrect={isCorrect}
           feedbackTone={isCorrect ? "success" : "error"}
-          correctAnswer={
-            !isCorrect ? currentQuestion.answer.split("|")[0] : null
-          } // Show first valid option
+          correctAnswer={!isCorrect ? currentQuestion.acceptedAnswers?.[0] || currentQuestion.answer.split("|")[0] : null}
           onContinue={handleContinue}
           message={feedbackMessage}
           continueLabel={

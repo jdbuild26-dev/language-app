@@ -2,6 +2,26 @@ import Papa from "papaparse";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
+type LoadMockCSVOptions = {
+  level?: string;
+  learningLang?: string;
+  knownLang?: string;
+  tag?: string;
+  limit?: number;
+};
+
+const csvLoadCache = new Map<string, Promise<any[]>>();
+
+const getCsvLoadCacheKey = (fileName: string, options: LoadMockCSVOptions) =>
+  JSON.stringify({
+    fileName,
+    level: options.level || "",
+    learningLang: options.learningLang || "",
+    knownLang: options.knownLang || "",
+    tag: options.tag || "",
+    limit: options.limit || "",
+  });
+
 // Mapping of CSV file paths to backend practice slugs
 const FILE_TO_SLUG = {
   "practice/reading/bubble_selection.csv": "translate_bubbles",
@@ -76,14 +96,13 @@ const FILE_TO_SLUG = {
  */
 export const loadMockCSV = async (
   fileName: string,
-  options: {
-    level?: string;
-    learningLang?: string;
-    knownLang?: string;
-    tag?: string;
-    limit?: number;
-  } = {},
+  options: LoadMockCSVOptions = {},
 ) => {
+  const cacheKey = getCsvLoadCacheKey(fileName, options);
+  const cachedLoad = csvLoadCache.get(cacheKey);
+  if (cachedLoad) return cachedLoad;
+
+  const loadPromise = (async () => {
   const slug = FILE_TO_SLUG[fileName];
 
   if (slug) {
@@ -171,4 +190,8 @@ export const loadMockCSV = async (
     console.error(`Error loading CSV ${fileName}:`, error);
     return [];
   }
+  })();
+
+  csvLoadCache.set(cacheKey, loadPromise);
+  return loadPromise;
 };
