@@ -1,5 +1,5 @@
 const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL || "https://language-api-mine.onrender.com";
+  process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -73,15 +73,21 @@ export async function fetchSubtopicNotes(
  * Returns the URL to fetch the rendered HTML for a note.
  * Used in an <iframe> or fetched directly.
  */
-export function getGrammarNoteHtmlUrl(noteId: number): string {
-  return `${API_BASE_URL}/api/grammar/notes/${noteId}/html`;
+export function getGrammarNoteHtmlUrl(noteId: number, cacheKey?: string | number): string {
+  const url = new URL(`${API_BASE_URL}/api/grammar/notes/${noteId}/html`);
+  if (cacheKey !== undefined) {
+    url.searchParams.set("v", String(cacheKey));
+  }
+  return url.toString();
 }
 
 /**
  * Fetch the raw HTML content of a grammar note (for inline rendering).
  */
 export async function fetchGrammarNoteHtml(noteId: number): Promise<string> {
-  const res = await fetch(`${API_BASE_URL}/api/grammar/notes/${noteId}/html`);
+  const res = await fetch(getGrammarNoteHtmlUrl(noteId, Date.now()), {
+    cache: "no-store",
+  });
   if (!res.ok) throw new Error("Failed to fetch grammar note HTML");
   return res.text();
 }
