@@ -89,7 +89,7 @@ export default function PracticeOptions({
           >
             {/* Radio dot / check icon */}
             {showCheckIcon && isCorrect ? (
-              <CheckCircle2 className="w-5 h-5 pt-2 text-emerald-500 shrink-0" />
+              <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0" />
             ) : (
               <motion.span
                 transition={{ duration: 0.2 }}

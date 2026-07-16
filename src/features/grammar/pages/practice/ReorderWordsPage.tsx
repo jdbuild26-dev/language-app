@@ -11,6 +11,11 @@ import { getFeedbackMessage } from "@/utils/feedbackMessages";
 import { loadMockCSV } from "@/utils/csvLoader";
 import { Button } from "@/components/ui/button";
 
+const PRACTICE_READING_OPTION_TEXT_CLASS =
+  "font-sans text-lg md:text-xl font-semibold leading-relaxed";
+const PRACTICE_READING_SECTION_TEXT_CLASS =
+  "font-sans text-2xl md:text-3xl font-medium leading-relaxed";
+
 type WordChip = {
   id: string;
   text: string;
@@ -81,13 +86,20 @@ export default function ReorderWordsPage() {
           } else if (typeof item.BubbleTokens === "string") {
             wordsArray = splitWords(item.BubbleTokens);
           }
+          const sentence =
+            item["Complete Sentence_FR"] ??
+            item["Complete Sentence_EN"] ??
+            item.sentence;
+          if (wordsArray.length === 0 && sentence) {
+            wordsArray = String(sentence)
+              .replace(/[.,!?;:]/g, "")
+              .split(/\s+/)
+              .filter(Boolean);
+          }
 
           return {
             ...item,
-            sentence:
-              item["Complete Sentence_FR"] ??
-              item["Complete Sentence_EN"] ??
-              item.sentence,
+            sentence,
             translation: item["Complete Sentence_EN"] ?? item.translation,
             words: wordsArray,
             timeLimitSeconds: item.TimeLimitSeconds ?? item.timeLimitSeconds,
@@ -212,6 +224,7 @@ export default function ReorderWordsPage() {
 
   const progress =
     questions.length > 0 ? ((currentIndex + 1) / questions.length) * 100 : 0;
+  const promptSentence = currentQuestion?.translation || currentQuestion?.sentence;
 
   return (
     <>
@@ -231,48 +244,76 @@ export default function ReorderWordsPage() {
         submitLabel="Check"
         timerValue={timerString}
       >
-        <div className="flex flex-col items-center justify-center w-full h-full flex-1 min-h-0 px-4 py-6 gap-8">
-          {/* Sentence Builder Area */}
-          <div className="w-full max-w-2xl min-h-[140px] border-2 border-dashed border-slate-300 dark:border-slate-600 rounded-3xl flex flex-wrap items-center justify-center content-center gap-3 p-6 bg-slate-50/50 dark:bg-slate-900/50 transition-all">
-            {selectedWords.length === 0 && !showFeedback ? (
-              <p className="text-slate-400 dark:text-slate-500 text-lg italic select-none">
-                Tap words below to build the sentence
-              </p>
-            ) : (
-              selectedWords.map((word) => (
+        <div className="practice-reading-page-shell flex flex-col items-center justify-center max-w-7xl mx-auto px-4 sm:px-6 py-8 md:py-10 flex-1 min-h-0">
+          {/* Source Sentence */}
+          <div className="w-full mb-10 md:mb-12 flex justify-center items-center">
+            <p
+              className={`${PRACTICE_READING_SECTION_TEXT_CLASS} text-center text-slate-800 dark:text-slate-100`}
+            >
+              {promptSentence}
+            </p>
+          </div>
+
+          <div className="w-full max-w-5xl border-t border-slate-200 dark:border-slate-700 py-8 flex flex-col gap-6">
+            {/* Answer Area - Selected Words */}
+            <div className="w-full min-h-[90px] md:min-h-[100px] flex flex-wrap gap-3 justify-center items-center px-1">
+              {selectedWords.length === 0 ? (
+                <span className="w-[2px] h-10 bg-slate-500 dark:bg-slate-300 rounded-full animate-caret-blink" />
+              ) : (
+                <>
+                  {selectedWords.map((word) => (
+                    <button
+                      key={word.id}
+                      onClick={() => handleWordDeselect(word)}
+                      disabled={showFeedback}
+                      className={cn(
+                        `px-6 py-3.5 rounded-2xl transition-all duration-200 border ${PRACTICE_READING_OPTION_TEXT_CLASS}`,
+                        showFeedback && isCorrect
+                          ? "bg-emerald-100 text-emerald-700 border-emerald-400 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-700"
+                          : showFeedback && !isCorrect
+                            ? "bg-red-100 text-red-700 border-red-400 dark:bg-red-950/40 dark:text-red-300 dark:border-red-700"
+                            : "bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border-slate-300 dark:border-slate-600 hover:border-blue-400 active:scale-95",
+                      )}
+                    >
+                      {word.text}
+                    </button>
+                  ))}
+                  {!showFeedback && (
+                    <span className="w-[2px] h-8 bg-slate-500 dark:bg-slate-300 rounded-full animate-caret-blink" />
+                  )}
+                </>
+              )}
+            </div>
+
+            {/* Translation (Shown after submission) */}
+            {showFeedback && currentQuestion?.translation && (
+              <div className="animate-in fade-in slide-in-from-top-2 duration-300 text-center">
+                <p className="text-lg text-green-600 dark:text-slate-300 font-medium italic">
+                  {currentQuestion.translation}
+                </p>
+              </div>
+            )}
+
+            {/* Word Bank */}
+            <div className="w-full flex flex-wrap gap-3 border-t border-slate-200 dark:border-slate-700 pt-6 justify-center px-1">
+              {availableWords.map((word) => (
                 <button
                   key={word.id}
-                  onClick={() => handleWordDeselect(word)}
+                  onClick={() => handleWordSelect(word)}
                   disabled={showFeedback}
-                  className="animate-in zoom-in-50 duration-200 px-5 py-2.5 bg-white dark:bg-slate-800 border-2 border-indigo-200 dark:border-indigo-900 text-slate-800 dark:text-slate-100 rounded-2xl shadow-sm text-lg font-medium hover:border-indigo-400 dark:hover:border-indigo-700 hover:-translate-y-0.5 transition-all"
+                  className={cn(
+                    `px-6 py-3.5 rounded-2xl transition-all duration-200 border ${PRACTICE_READING_OPTION_TEXT_CLASS}`,
+                    "bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-200",
+                    "border-slate-300 dark:border-slate-600",
+                    "hover:border-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700",
+                    "active:scale-95",
+                    showFeedback && "opacity-50 cursor-not-allowed",
+                  )}
                 >
                   {word.text}
                 </button>
-              ))
-            )}
-          </div>
-
-          {/* Translation (Shown after submission) */}
-          {showFeedback && currentQuestion?.translation && (
-            <div className="animate-in fade-in slide-in-from-top-2 duration-300">
-              <p className="text-lg text-indigo-600 dark:text-indigo-400 font-medium italic">
-                {currentQuestion.translation}
-              </p>
+              ))}
             </div>
-          )}
-
-          {/* Word Bank */}
-          <div className="w-full max-w-2xl flex flex-wrap justify-center gap-3">
-            {availableWords.map((word) => (
-              <button
-                key={word.id}
-                onClick={() => handleWordSelect(word)}
-                disabled={showFeedback}
-                className="px-5 py-2.5 bg-white dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100 rounded-2xl shadow-sm text-lg font-medium hover:bg-slate-50 dark:hover:bg-slate-800 hover:border-slate-300 dark:hover:border-slate-600 hover:-translate-y-0.5 transition-all active:scale-95"
-              >
-                {word.text}
-              </button>
-            ))}
           </div>
         </div>
       </PracticeGameLayout>

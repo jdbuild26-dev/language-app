@@ -10,6 +10,11 @@ export function usePracticeExit() {
   const router = useRouter();
 
   const handleExit = () => {
+    if (typeof window !== "undefined" && window.history.length > 1) {
+      router.back();
+      return;
+    }
+
     // Read search params at call time (client-side) to avoid useSearchParams Suspense requirement
     const params = typeof window !== "undefined"
       ? new URLSearchParams(window.location.search)
