@@ -83,6 +83,34 @@ const GRAMMAR_PRACTICE_ROUTES: Record<string, string> = {
   grammar_rewrite: "/grammar/practice/rewrite",
 };
 
+function renderLocalizedGrammarName(
+  item: Pick<GrammarTopic, "name_en" | "name_fr" | "name_de" | "name_es">,
+  learningLang?: string | null,
+) {
+  const language = (learningLang || "").toLowerCase();
+  const localizedName =
+    language.startsWith("fr") || language === "french"
+      ? item.name_fr
+      : language.startsWith("de") || language === "german"
+        ? item.name_de
+        : language.startsWith("es") || language === "spanish"
+          ? item.name_es
+          : null;
+
+  if (localizedName && item.name_en && localizedName !== item.name_en) {
+    return (
+      <>
+        {localizedName}{" "}
+        <span className="font-medium text-slate-500 dark:text-slate-400">
+          ({item.name_en})
+        </span>
+      </>
+    );
+  }
+
+  return localizedName || item.name_en;
+}
+
 function TopicChooser({ onSelect }: { onSelect: (topic: GrammarTopic) => void }) {
   const [topics, setTopics] = useState<GrammarTopic[]>([]);
   const [loading, setLoading] = useState(true);
@@ -134,6 +162,7 @@ function TopicChooser({ onSelect }: { onSelect: (topic: GrammarTopic) => void })
             "from-indigo-400 to-violet-500",
           ];
           const gradient = gradients[i % gradients.length];
+          const topicName = renderLocalizedGrammarName(topic, topic.learning_lang);
           return (
             <button
               key={topic.id}
@@ -144,10 +173,9 @@ function TopicChooser({ onSelect }: { onSelect: (topic: GrammarTopic) => void })
                 <BookOpen className="h-5 w-5" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="font-semibold text-sm text-slate-900 dark:text-white truncate">{topic.name_en}</p>
+                <p className="font-semibold text-sm text-slate-900 dark:text-white truncate">{topicName}</p>
                 <p className="text-xs text-slate-500 dark:text-slate-400">
                   {topic.subtopics.length} subtopic{topic.subtopics.length !== 1 ? 's' : ''}
-                  {topic.name_fr && <span className="ml-1 opacity-60">· {topic.name_fr}</span>}
                 </p>
               </div>
               <ChevronRight className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -250,6 +278,10 @@ export default function GrammarPracticePage() {
   }
 
   const subtopics = selectedTopic.subtopics;
+  const selectedTopicDisplayName = renderLocalizedGrammarName(
+    selectedTopic,
+    selectedTopic.learning_lang,
+  );
 
   // Show learner-facing exercise entries for the selected topic.
   return (
@@ -269,16 +301,13 @@ export default function GrammarPracticePage() {
           {selectedTopic && (
             <>
               <span className="text-slate-300 dark:text-slate-600">/</span>
-              <span className="text-sm font-semibold text-slate-900 dark:text-white">{selectedTopic.name_en}</span>
+              <span className="text-sm font-semibold text-slate-900 dark:text-white">{selectedTopicDisplayName}</span>
             </>
           )}
         </div>
         <h2 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">
-          {selectedTopic.name_en}
+          {selectedTopicDisplayName}
         </h2>
-        {selectedTopic?.name_fr && (
-          <p className="text-sm text-slate-500 dark:text-slate-400">{selectedTopic.name_fr}</p>
-        )}
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -295,6 +324,10 @@ export default function GrammarPracticePage() {
           ];
           const gradient = gradients[index % gradients.length];
           const lookup = exerciseLookups[subtopic.id];
+          const subtopicName = renderLocalizedGrammarName(
+            subtopic,
+            selectedTopic.learning_lang,
+          );
 
           return (
           <button
@@ -311,10 +344,7 @@ export default function GrammarPracticePage() {
                   <BookOpen className="h-6 w-6" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <h3 className="font-bold text-base text-slate-900 dark:text-white mb-0.5">{subtopic.name_en}</h3>
-                  {subtopic.name_fr && (
-                    <p className="text-sm text-slate-500 dark:text-slate-400 line-clamp-1">{subtopic.name_fr}</p>
-                  )}
+                  <h3 className="font-bold text-base text-slate-900 dark:text-white mb-0.5">{subtopicName}</h3>
                   {lookup?.isLoading && (
                     <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">
                       Checking practice exercises...
