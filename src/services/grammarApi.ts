@@ -74,7 +74,7 @@ export async function fetchSubtopicNotes(
  * Used in an <iframe> or fetched directly.
  */
 export function getGrammarNoteHtmlUrl(noteId: number, cacheKey?: string | number): string {
-  const url = new URL(`${API_BASE_URL}/api/grammar/notes/${noteId}/html`);
+  const url = new URL(`${API_BASE_URL}/api/admin/grammar/notes/${noteId}/html`);
   if (cacheKey !== undefined) {
     url.searchParams.set("v", String(cacheKey));
   }
