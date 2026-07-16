@@ -1,5 +1,5 @@
 const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL || "https://language-backend-v8sy.onrender.com";
+  process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
