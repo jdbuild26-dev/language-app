@@ -19,6 +19,7 @@ export default function GrammarNotePage() {
   const [activeNote, setActiveNote] = useState<GrammarNote | null>(null);
   const [loadingNotes, setLoadingNotes] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [htmlCacheKey, setHtmlCacheKey] = useState(() => Date.now());
 
   const loadNotes = useCallback(async () => {
     if (!noteId) return;
@@ -31,6 +32,7 @@ export default function GrammarNotePage() {
       }
       setNotes(data);
       setActiveNote(data[0] ?? null);
+      setHtmlCacheKey(Date.now());
     } catch (e: any) {
       setError(e.message ?? "Failed to load notes");
     } finally {
@@ -57,7 +59,10 @@ export default function GrammarNotePage() {
             return (
               <button
                 key={n.id}
-                onClick={() => setActiveNote(n)}
+                onClick={() => {
+                  setActiveNote(n);
+                  setHtmlCacheKey(Date.now());
+                }}
                 title={n.title ?? undefined}
                 className={`px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap transition-all ${
                   activeNote?.id === n.id
@@ -99,7 +104,7 @@ export default function GrammarNotePage() {
           <iframe
             key={activeNote.id}
             title={activeNote.title ?? "Grammar lesson"}
-            src={getGrammarNoteHtmlUrl(activeNote.id)}
+            src={getGrammarNoteHtmlUrl(activeNote.id, htmlCacheKey)}
             className="h-screen min-h-screen w-full border-0 bg-white dark:bg-slate-900"
           />
         )}

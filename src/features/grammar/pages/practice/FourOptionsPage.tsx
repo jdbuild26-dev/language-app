@@ -66,8 +66,6 @@ export default function FourOptionsPage() {
               ? sentence.replace(pattern, replacement)
               : sentence;
           };
-          const looksLikeSentence = (value: string) =>
-            /[.!?]$/.test(value.trim()) || value.trim().split(/\s+/).length >= 5;
           const content = item.content || item;
           const evaluation = item.evaluation || item;
           let parsedOptions: any[] = [];
@@ -98,13 +96,23 @@ export default function FourOptionsPage() {
             content["Distractor_2_EN"],
             content["Distractor_3_EN"],
           ].filter(Boolean);
+          const uploadedOptionsGeneric = [
+            content["Correct Answer"],
+            content.CorrectAnswer,
+            content.answer,
+            content["Distractor_1"],
+            content["Distractor_2"],
+            content["Distractor_3"],
+          ].filter(Boolean);
           const uploadedOptions =
             uploadedOptionsFr.length > 0
               ? uploadedOptionsFr
               : uploadedOptionsEn.length > 0
                 ? uploadedOptionsEn
-                : [];
-          const options = (parsedOptions.length > 0 ? parsedOptions : uploadedOptions).filter(Boolean).slice(0, 4);
+                : uploadedOptionsGeneric;
+          const options = Array.from(
+            new Set((parsedOptions.length > 0 ? parsedOptions : uploadedOptions).filter(Boolean).map(String)),
+          ).slice(0, 4);
           const optionTranslations = uploadedOptions === uploadedOptionsFr ? uploadedOptionsEn.slice(0, 4) : [];
           const uploadedCorrectIndex = uploadedOptions.length > 0 ? 0 : undefined;
           const parsedCorrectIndex = Number.parseInt(
@@ -115,28 +123,46 @@ export default function FourOptionsPage() {
             ? uploadedCorrectIndex
             : parsedCorrectIndex;
           const completeSentence =
+            content["Fill Paragraph_FR"] ??
+            content["Masked Answer_FR"] ??
+            content["Question_FR"] ??
+            content.Question_FR ??
+            content.question_fr ??
             content.sentence ??
             content["Complete Passage_FR"] ??
             content["Complete Sentence_FR"] ??
+            content["Fill Paragraph_EN"] ??
+            content["Masked Answer_EN"] ??
+            content["Question_EN"] ??
             content["Complete Passage_EN"] ??
             content["Complete Sentence_EN"] ??
             content.sourceText ??
             "";
           const correctAnswer = options[correctIndex ?? 0] || options[0] || "";
-          const hasSentenceOptions = options.some((option) => looksLikeSentence(String(option)));
-          const sentenceOptions = hasSentenceOptions
-            ? options
-            : options.map((option) =>
-                replaceAnswer(String(completeSentence), String(correctAnswer), String(option)),
-              );
+          const promptWithBlank = replaceAnswer(String(completeSentence), String(correctAnswer), "_____");
+          const rawQuestion =
+            content.instruction_fr ??
+            content.Instruction_FR ??
+            content.instruction ??
+            content.question ??
+            content.Question ??
+            content.instruction_en ??
+            content.Instruction_EN ??
+            "";
+          const normalizedPrompt = promptWithBlank.trim().toLowerCase();
+          const normalizedQuestion = String(rawQuestion).trim().toLowerCase();
+          const question =
+            normalizedQuestion && normalizedQuestion !== normalizedPrompt
+              ? rawQuestion
+              : "Choose the correct option";
 
           return {
             ...item,
             id: item.id ?? item.ExerciseID,
-            sentence: replaceAnswer(String(completeSentence), String(correctAnswer), "_____"),
+            sentence: promptWithBlank,
             completedSentence: completeSentence,
-            question: content.Question_FR ?? content.question ?? content.Question ?? content.Question_EN ?? "",
-            options: sentenceOptions,
+            question,
+            options,
             optionTranslations,
             correctIndex,
             translation:
