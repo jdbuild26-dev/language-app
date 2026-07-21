@@ -5,7 +5,7 @@
  *
  * FEATURE SUMMARY:
  * Adds a dynamic topic chooser screen before the grammar exercise type grid.
- * Topics are fetched live from the public backend API (/api/grammar/topics).
+ * Topics are fetched live from the public backend API (/api/grammar-practice/topics).
  *
  * CHANGES IN THIS FILE:
  * - Added `GrammarTopic` interface
@@ -17,7 +17,7 @@
  *   ready for exercise pages to filter by topic.
  *
  * API DEPENDENCY:
- * GET /api/grammar/topics
+ * GET /api/grammar-practice/topics
  * Returns: { topics: GrammarTopic[] }
  *
  * BRANCH: feature/grammar-topic-chooser
@@ -117,7 +117,7 @@ function TopicChooser({ onSelect }: { onSelect: (topic: GrammarTopic) => void })
   const [error, setError] = useState(false);
 
   useEffect(() => {
-    fetch(`${API_URL}/api/grammar/topics`)
+    fetch(`${API_URL}/api/grammar-practice/topics`)
       .then(r => r.ok ? r.json() : Promise.reject())
       .then(data => { setTopics(data.topics || []); })
       .catch(() => setError(true))
@@ -206,7 +206,7 @@ export default function GrammarPracticePage() {
     }));
 
     try {
-      const response = await fetch(`${API_URL}/api/grammar/subtopics/${subtopic.id}/practice`);
+      const response = await fetch(`${API_URL}/api/grammar-practice/subtopics/${subtopic.id}/practice`);
 
       if (!response.ok) {
         if (response.status === 404) {
