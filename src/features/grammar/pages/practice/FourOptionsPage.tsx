@@ -57,15 +57,6 @@ export default function FourOptionsPage() {
 
         // Transform data into the stable frontend model used by this page.
         const transformed = (data as any[]).map((item) => {
-          const escapeRegExp = (value: string) =>
-            value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-          const replaceAnswer = (sentence: string, answer: string, replacement: string) => {
-            if (!sentence || !answer) return sentence;
-            const pattern = new RegExp(escapeRegExp(answer.trim()), "i");
-            return pattern.test(sentence)
-              ? sentence.replace(pattern, replacement)
-              : sentence;
-          };
           const content = item.content || item;
           const evaluation = item.evaluation || item;
           let parsedOptions: any[] = [];
@@ -122,49 +113,54 @@ export default function FourOptionsPage() {
           const correctIndex = Number.isNaN(parsedCorrectIndex)
             ? uploadedCorrectIndex
             : parsedCorrectIndex;
+          const correctAnswer = options[correctIndex ?? 0] || options[0] || "";
+          const englishCorrectAnswer = optionTranslations[correctIndex ?? 0] || "";
           const completeSentence =
+            content["Complete Sentence_FR"] ??
+            content["Complete Sentence _FR"] ??
+            content["Complete Passage_FR"] ??
             content["Fill Paragraph_FR"] ??
             content["Masked Answer_FR"] ??
+            content.sentence ??
+            content["Complete Sentence_EN"] ??
+            content["Complete Sentence _EN"] ??
+            content["Complete Passage_EN"] ??
+            content["Fill Paragraph_EN"] ??
+            content["Masked Answer_EN"] ??
+            content.sourceText ??
+            "";
+          const promptQuestion =
             content["Question_FR"] ??
             content.Question_FR ??
             content.question_fr ??
-            content.sentence ??
-            content["Complete Passage_FR"] ??
-            content["Complete Sentence_FR"] ??
-            content["Fill Paragraph_EN"] ??
-            content["Masked Answer_EN"] ??
+            content.question ??
+            content.Question ??
             content["Question_EN"] ??
-            content["Complete Passage_EN"] ??
-            content["Complete Sentence_EN"] ??
-            content.sourceText ??
+            content.Question_EN ??
+            content.translation ??
+            item.question ??
+            item.Question ??
+            completeSentence ??
             "";
-          const correctAnswer = options[correctIndex ?? 0] || options[0] || "";
-          const promptWithBlank = replaceAnswer(String(completeSentence), String(correctAnswer), "_____");
-          const rawQuestion =
+          const instruction =
             content.instruction_fr ??
             content.Instruction_FR ??
             content.instruction ??
-            content.question ??
-            content.Question ??
             content.instruction_en ??
             content.Instruction_EN ??
-            "";
-          const normalizedPrompt = promptWithBlank.trim().toLowerCase();
-          const normalizedQuestion = String(rawQuestion).trim().toLowerCase();
-          const question =
-            normalizedQuestion && normalizedQuestion !== normalizedPrompt
-              ? rawQuestion
-              : "Choose the correct option";
+            "Choose the correct option";
 
           return {
             ...item,
             id: item.id ?? item.ExerciseID,
-            sentence: promptWithBlank,
+            sentence: promptQuestion,
             completedSentence: completeSentence,
-            question,
+            question: instruction,
             options,
             optionTranslations,
             correctIndex,
+            correctAnswer,
+            englishCorrectAnswer,
             translation:
               evaluation.translation ??
               item.translation ??
@@ -279,7 +275,7 @@ export default function FourOptionsPage() {
           <div
             className={cn(
               "w-full rounded-lg border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-950 flex items-center justify-center px-6 transition-all duration-300 ease-out min-h-0",
-              showFeedback ? "min-h-[150px] flex-1" : "min-h-[200px] flex-1",
+              showFeedback ? "min-h-[120px] flex-[0.8]" : "min-h-[150px] flex-[0.85]",
             )}
           >
             <h3 className="text-2xl md:text-3xl lg:text-4xl font-semibold leading-relaxed text-slate-900 dark:text-slate-100 text-center">
@@ -312,7 +308,7 @@ export default function FourOptionsPage() {
               showFeedback={showFeedback}
               onSelect={handleOptionClick}
               className={cn("grid grid-cols-1 md:grid-cols-2", showFeedback ? "gap-3" : "gap-4")}
-              itemClassName={cn("rounded-[22px] border px-5", showFeedback ? "min-h-[74px] py-3" : "min-h-[76px] py-3.5")}
+              itemClassName={cn("rounded-[22px] border px-5", showFeedback ? "min-h-[82px] py-3.5" : "min-h-[88px] py-4")}
               showCheckIcon
               renderLabel={(option, index) => (
                 <>
@@ -435,7 +431,8 @@ export default function FourOptionsPage() {
         <FeedbackBanner
           isCorrect={isCorrect}
           feedbackTone={isCorrect ? "success" : "error"}
-          correctAnswer={!isCorrect ? currentQuestion?.translation : null}
+          correctAnswer={!isCorrect ? currentQuestion?.correctAnswer : null}
+          englishCorrectAnswer={!isCorrect ? currentQuestion?.englishCorrectAnswer : ""}
           onContinue={handleContinue}
           message={feedbackMessage}
           continueLabel={
