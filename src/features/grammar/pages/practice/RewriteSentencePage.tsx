@@ -55,33 +55,47 @@ export default function RewriteSentencePage({ mode = "transformation" }) {
         const transformed = ((data as any[]) || []).map((item) => {
           const content = item.content || item;
           const evaluation = item.evaluation || item;
-          const uploadedAnswers = [
-            content["Correct Answer_FR_1"],
-            content["Correct Answer_FR_2"],
-            content["Correct Answer_FR_3"],
-            content["Correct Answer_1_FR"],
-            content["Correct Answer_2_FR"],
-            content["Correct Answer_3_FR"],
+          const answerChoices = [
+            content["Correct Answer_FR_1"] ?? content["Correct Answer_1_FR"],
+            content["Correct Answer_FR_2"] ?? content["Correct Answer_2_FR"],
+            content["Correct Answer_FR_3"] ?? content["Correct Answer_3_FR"],
+            content["Correct Answer 1_FR"] ?? content["Correct 1_FR"],
+            content["Correct Answer 2_FR"] ?? content["Correct 2_FR"],
+            content["Correct Answer 3_FR"] ?? content["Correct 3_FR"],
+          ];
+          const uploadedAnswers = Array.from(new Set([
+            ...answerChoices,
             content["Correct Answer_FR"],
             content["Correct answer_FR"],
-            content["CorrectAnswer_FR"]
+            content["CorrectAnswer_FR"],
+            content.answer,
+            content.Answer,
           ].flatMap((answer) =>
             Array.isArray(answer)
               ? answer
               : String(answer || "")
                   .split("|")
                   .map((value) => value.trim()),
-          ).filter(Boolean);
+          ).filter(Boolean)));
 
           return {
             ...item,
+            question:
+              content["Question_FR"] ??
+              content.Question_FR ??
+              content.question_fr ??
+              content["Question_EN"] ??
+              content.Question_EN ??
+              "",
             instruction:
+              content.Instruction_FR ??
+              content["Instruction_FR"] ??
               content.instruction ??
               content.Instruction ??
-              content.Instruction_FR ??
               content.Instruction_EN ??
+              content["Instruction_EN"] ??
               content.localizedInstruction ??
-              "",
+              "Rewrite the sentence",
             instructionTranslation:
               content.instructionTranslation ??
               content.Instruction_EN ??
@@ -97,6 +111,7 @@ export default function RewriteSentencePage({ mode = "transformation" }) {
               content.sourceText ??
               "",
             acceptedAnswers: uploadedAnswers,
+            displayAnswer: uploadedAnswers.join(" / "),
             answer: uploadedAnswers.join("|"),
             translation:
               evaluation.translation ??
@@ -196,6 +211,8 @@ export default function RewriteSentencePage({ mode = "transformation" }) {
     questions.length > 0 ? ((currentIndex + 1) / questions.length) * 100 : 0;
   const displayInstruction =
     currentQuestion?.instruction || "Rewrite the sentence";
+  const displayQuestion =
+    currentQuestion?.question || displayInstruction;
   const displayInstructionTranslation =
     currentQuestion?.instructionTranslation || "";
 
@@ -255,7 +272,7 @@ export default function RewriteSentencePage({ mode = "transformation" }) {
             <h3 className="text-xl md:text-2xl font-bold text-slate-900 dark:text-white">
               {showInstructionTranslation && displayInstructionTranslation
                 ? displayInstructionTranslation
-                : displayInstruction}
+                : displayQuestion}
             </h3>
           </div>
 
@@ -298,9 +315,16 @@ export default function RewriteSentencePage({ mode = "transformation" }) {
                 <p className="text-sm font-semibold text-slate-500 dark:text-slate-400">
                   Correct rewritten sentence:
                 </p>
-                <p className="mt-2 text-base md:text-lg font-semibold text-emerald-700 dark:text-emerald-300">
-                  {currentQuestion.acceptedAnswers[0]}
-                </p>
+                <div className="mt-2 flex flex-col gap-1.5">
+                  {currentQuestion.acceptedAnswers.map((answer, index) => (
+                    <p
+                      key={`${answer}-${index}`}
+                      className="text-base md:text-lg font-semibold text-emerald-700 dark:text-emerald-300"
+                    >
+                      {answer}
+                    </p>
+                  ))}
+                </div>
                 {currentQuestion.translation && (
                   <p className="mt-3 text-sm md:text-base font-medium italic text-slate-500 dark:text-slate-400">
                     {currentQuestion.translation}
@@ -317,7 +341,7 @@ export default function RewriteSentencePage({ mode = "transformation" }) {
         <FeedbackBanner
           isCorrect={isCorrect}
           feedbackTone={isCorrect ? "success" : "error"}
-          correctAnswer={!isCorrect ? currentQuestion.acceptedAnswers?.[0] || currentQuestion.answer.split("|")[0] : null}
+          correctAnswer={!isCorrect ? currentQuestion.displayAnswer || currentQuestion.acceptedAnswers?.[0] || currentQuestion.answer.split("|")[0] : null}
           onContinue={handleContinue}
           message={feedbackMessage}
           continueLabel={
