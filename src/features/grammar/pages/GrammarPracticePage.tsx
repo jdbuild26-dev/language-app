@@ -78,9 +78,13 @@ interface GrammarPracticeMetadata {
 
 const GRAMMAR_PRACTICE_ROUTES: Record<string, string> = {
   four_options: "/grammar/practice/four-options",
-  fill_blanks_options: "/grammar/practice/fill-blanks-options",
+  three_options: "/grammar/practice/three-options",
+  two_options: "/grammar/practice/two-options",
+  fill_blanks_options: "/grammar/practice/fill-blanks",
   grammar_reorder: "/grammar/practice/reorder-words",
   grammar_rewrite: "/grammar/practice/rewrite",
+  grammar_fill_blanks: "/grammar/practice/fill-blanks",
+  grammar_fill_blanks_question: "/grammar/practice/fill-blanks-question",
 };
 
 function renderLocalizedGrammarName(

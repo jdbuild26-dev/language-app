@@ -51,7 +51,7 @@ const VOCAB_SLUG_MAP: Record<string, string> = {
 // ─── Grammar ──────────────────────────────────────────────────────────────────
 const GRAMMAR_SLUG_MAP: Record<string, string> = {
   // from GrammarPracticePage exercise.id (kebab-case)
-  "fill-blanks-options":  "/grammar/practice/fill-blanks-options",
+  "fill-blanks-options":  "/grammar/practice/fill-blanks",
   "four-options":         "/grammar/practice/four-options",
   "two-options":          "/grammar/practice/two-options",
   "three-options":        "/grammar/practice/three-options",
@@ -68,7 +68,7 @@ const GRAMMAR_SLUG_MAP: Record<string, string> = {
   "four_options":           "/grammar/practice/four-options",
   "three_options":          "/grammar/practice/three-options",
   "two_options":            "/grammar/practice/two-options",
-  "fill_blanks_options":    "/grammar/practice/fill-blanks-options",
+  "fill_blanks_options":    "/grammar/practice/fill-blanks",
   "grammar_find_error":     "/grammar/practice/find-error",
   "grammar_reorder":        "/grammar/practice/reorder-words",
   "grammar_transformation": "/grammar/practice/transformation",
@@ -168,7 +168,7 @@ const KEBAB_TO_DB: Record<string, string> = {
   "dictation":          "dictation_image",
 
   // Grammar
-  "fill-blanks-options":  "fill_blanks_options",
+  "fill-blanks-options":  "fill_blanks",
   "four-options":         "four_options",
   "two-options":          "two_options",
   "three-options":        "three_options",
