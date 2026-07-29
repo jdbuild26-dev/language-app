@@ -11,6 +11,24 @@ import { getFeedbackMessage } from "@/utils/feedbackMessages";
 import { loadMockCSV } from "@/utils/csvLoader";
 import { Button } from "@/components/ui/button";
 
+const splitAnswerParts = (value, { preserveEmpty = false } = {}) => {
+  if (value === undefined || value === null || String(value) === "") return [];
+  const parts = String(value)
+    .split(/\s*\+\s*/)
+    .map((part) => part.trim());
+  return preserveEmpty ? parts : parts.filter(Boolean);
+};
+
+const alignHintsToBlanks = (hints, blankCount) =>
+  Array.from({ length: blankCount }, (_, index) => hints[index] || "");
+
+const normalizeAnswer = (value) =>
+  String(value || "")
+    .toLowerCase()
+    .replace(/[.,!?;:'"()[\]{}\-_/\\]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
 export default function FillBlanksGroupPage({ type = "simple" }) {
   const handleExit = usePracticeExit();
 
@@ -48,28 +66,74 @@ export default function FillBlanksGroupPage({ type = "simple" }) {
   useEffect(() => {
     const fetchQuestions = async () => {
       try {
+        const tag = new URLSearchParams(window.location.search).get("tag") || undefined;
         const file =
           type === "question"
             ? "grammar/grammar_fill_blanks_question.csv"
             : "grammar/grammar_fill_blanks.csv";
-        const data = await loadMockCSV(file);
+        let data = await loadMockCSV(file, { tag });
 
-        // Transform blank/hint strings to array if needed (though CSV loader usually handles basic strings,
-        // we might get JSON string fields if consistent with previous patterns.
-        // Based on my CSV creation, they are simple strings for single blank or maybe JSON for mulitple.
-        // Let's safe parse or wrap in array if it's a single string)
+        if (type === "simple" && tag && (!data || data.length === 0)) {
+          data = await loadMockCSV("grammar/fill_blanks_options.csv", { tag });
+        }
 
         const transformed = data.map((item) => {
-          // Basic normalization
+          const content = item.content || item;
+          const evaluation = item.evaluation || item;
+          const blanksData = evaluation.blanksData || item.blanksData || {};
+          const blanksFromEvaluation = Object.keys(blanksData)
+            .sort((a, b) => Number(a) - Number(b))
+            .map((key) => blanksData[key]?.correct || blanksData[key])
+            .filter(Boolean);
+          const answerFrValue =
+            content["Correct Answer_FR"] ||
+            content["Correct answer_FR"] ||
+            content.CorrectAnswer_FR ||
+            item.blanks;
+          const answerEnValue =
+            content["Correct Answer_EN"] ||
+            content["Correct answer_EN"] ||
+            content.CorrectAnswer_EN ||
+            item.hints;
+          const hasCsvEnglishAnswers =
+            content["Correct Answer_EN"] !== undefined ||
+            content["Correct answer_EN"] !== undefined ||
+            content.CorrectAnswer_EN !== undefined;
+
+          const blanks =
+            blanksFromEvaluation.length > 0
+              ? blanksFromEvaluation
+              : Array.isArray(item.blanks)
+                ? item.blanks
+                : splitAnswerParts(answerFrValue);
+          const hintParts = Array.isArray(item.hints)
+            ? item.hints.map((hint) => String(hint || "").trim())
+            : splitAnswerParts(answerEnValue, { preserveEmpty: hasCsvEnglishAnswers });
+          const sentence =
+            content.sentence ||
+            content["Fill Sentence_FR"] ||
+            content["Fill Paragraph_FR"] ||
+            content.SentenceWithBlank ||
+            content["Sentence With Blank"] ||
+            content["Complete Sentence_FR"] ||
+            content["Complete Passage_FR"] ||
+            item.sentence ||
+            "";
+
           return {
             ...item,
-            // If blanks/hints are JSON strings, parse them. If simple strings, wrap in array if needed or use as is.
-            // My CSVs used simple strings for blanks/hints. But code below assumes possibly multiple blanks.
-            // Let's ensure they are arrays for consistent processing.
-            blanks: Array.isArray(item.blanks) ? item.blanks : [item.blanks],
-            hints: Array.isArray(item.hints) ? item.hints : [item.hints],
+            question: content.Question_FR || content.question || item.question || "",
+            sentence,
+            blanks,
+            hints: alignHintsToBlanks(hintParts, blanks.length),
+            translation:
+              content["Complete Passage_EN"] ||
+              content["Complete Sentence_EN"] ||
+              content["Fill Paragraph_EN"] ||
+              item.translation ||
+              "",
           };
-        });
+        }).filter((item) => item.sentence && item.blanks.length > 0);
 
         setQuestions(transformed || []);
       } catch (error) {
@@ -111,8 +175,8 @@ export default function FillBlanksGroupPage({ type = "simple" }) {
     // If we have 1 blank, input index 0 corresponds to blank 0.
 
     for (let i = 0; i < blankValues.length; i++) {
-      const userVal = (inputs[i] || "").trim().toLowerCase();
-      const correctVal = blankValues[i].trim().toLowerCase();
+      const userVal = normalizeAnswer(inputs[i]);
+      const correctVal = normalizeAnswer(blankValues[i]);
       if (userVal !== correctVal) {
         allCorrect = false;
       }
@@ -163,7 +227,7 @@ export default function FillBlanksGroupPage({ type = "simple" }) {
 
   // Helper to render sentence with inputs
   const renderSentence = () => {
-    const parts = currentQuestion.sentence.split("___");
+    const parts = currentQuestion.sentence.split(/(?:\[\d+\]\s*)?_{2,}/g);
     // parts length will be blanks.length + 1
 
     const elements = [];
@@ -182,15 +246,15 @@ export default function FillBlanksGroupPage({ type = "simple" }) {
 
         const isWrong =
           showFeedback &&
-          val.toLowerCase() !== currentQuestion.blanks[index].toLowerCase();
+          normalizeAnswer(val) !== normalizeAnswer(currentQuestion.blanks[index]);
         const isRight =
           showFeedback &&
-          val.toLowerCase() === currentQuestion.blanks[index].toLowerCase();
+          normalizeAnswer(val) === normalizeAnswer(currentQuestion.blanks[index]);
 
         elements.push(
           <span
             key={`input-${index}`}
-            className="inline-block relative mx-1 align-bottom"
+            className="relative inline-block mx-2 align-baseline"
           >
             <input
               type="text"
@@ -200,7 +264,7 @@ export default function FillBlanksGroupPage({ type = "simple" }) {
               onBlur={() => setFocusedInput(null)}
               disabled={showFeedback}
               className={cn(
-                "border-b-2 bg-transparent text-center outline-none transition-all w-32 font-medium text-lg px-1",
+                "w-36 border-0 border-b-2 bg-transparent px-1 pb-1 text-center text-[1em] leading-none font-medium outline-none transition-all",
                 "border-slate-300 dark:border-slate-600 focus:border-indigo-500 dark:focus:border-indigo-400",
                 // Placeholder styling simulation mechanism if we want hint to disappear on CLICK/FOCUS
                 // Native placeholder disappears on type usually, but user asked: "Word will be given in English... when they click on it... the English word goes"
@@ -220,7 +284,7 @@ export default function FillBlanksGroupPage({ type = "simple" }) {
             />
             {/* Custom Placeholder Overlay that disappears on Focus */}
             {val === "" && !isFocused && (
-              <span className="absolute inset-0 flex items-center justify-center text-slate-400 pointer-events-none italic">
+              <span className="pointer-events-none absolute inset-x-1 bottom-1 flex items-baseline justify-center text-[1em] leading-none text-slate-400 italic">
                 {hint}
               </span>
             )}

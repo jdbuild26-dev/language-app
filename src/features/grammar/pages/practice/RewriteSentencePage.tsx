@@ -145,10 +145,9 @@ export default function RewriteSentencePage({ mode = "transformation" }) {
   }, [currentIndex, currentQuestion, isCompleted, resetTimer]);
 
   const normalize = (str) => {
-    // Remove trailing punctuation, multiple spaces, and lowercase
-    return str
+    return String(str || "")
       .toLowerCase()
-      .replace(/[.,!?;:]/g, "")
+      .replace(/[.,!?;:'"()[\]{}\-_/\\]/g, " ")
       .replace(/\s+/g, " ")
       .trim();
   };

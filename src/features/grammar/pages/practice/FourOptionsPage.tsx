@@ -122,12 +122,29 @@ export default function FourOptionsPage() {
             content["Fill Paragraph_FR"] ??
             content["Masked Answer_FR"] ??
             content.sentence ??
+            "";
+          const completeSentenceEn =
             content["Complete Sentence_EN"] ??
             content["Complete Sentence _EN"] ??
             content["Complete Passage_EN"] ??
             content["Fill Paragraph_EN"] ??
             content["Masked Answer_EN"] ??
-            content.sourceText ??
+            "";
+          const optionSentence =
+            content["Option Sentence_FR"] ??
+            content["Option Sentence _FR"] ??
+            content["OptionSentence_FR"] ??
+            content["Fill Sentence_FR"] ??
+            content["Fill Paragraph_FR"] ??
+            content["Masked Answer_FR"] ??
+            "";
+          const optionSentenceEn =
+            content["Option Sentence_EN"] ??
+            content["Option Sentence _EN"] ??
+            content["OptionSentence_EN"] ??
+            content["Fill Sentence_EN"] ??
+            content["Fill Paragraph_EN"] ??
+            content["Masked Answer_EN"] ??
             "";
           const promptQuestion =
             content["Question_FR"] ??
@@ -153,9 +170,12 @@ export default function FourOptionsPage() {
           return {
             ...item,
             id: item.id ?? item.ExerciseID,
-            sentence: promptQuestion,
+            sentence: optionSentence || promptQuestion,
+            sentenceTranslation: "",
             completedSentence: completeSentence,
+            completedSentenceEn: completeSentenceEn,
             question: instruction,
+            promptQuestion,
             options,
             optionTranslations,
             correctIndex,
@@ -165,8 +185,7 @@ export default function FourOptionsPage() {
               evaluation.translation ??
               item.translation ??
               item.eval_translation ??
-              content["Complete Sentence_EN"] ??
-              content["Complete Passage_EN"] ??
+              completeSentenceEn ??
               "",
             timeLimitSeconds:
               item.timeLimitSeconds ?? item.TimeLimitSeconds ?? 45,
@@ -268,7 +287,7 @@ export default function FourOptionsPage() {
         <div
           className={cn(
             "flex flex-col w-full h-full flex-1 min-h-0 px-4 md:px-10 bg-[#f7f8fb] dark:bg-slate-950",
-            showFeedback ? "pt-3 pb-[128px] gap-3" : "py-6 gap-6",
+            showFeedback ? "pt-3 pb-[128px] gap-3" : "pt-6 gap-6",
           )}
         >
           {/* Main Sentence */}
@@ -278,11 +297,18 @@ export default function FourOptionsPage() {
               showFeedback ? "min-h-[120px] flex-[0.8]" : "min-h-[150px] flex-[0.85]",
             )}
           >
-            <h3 className="text-2xl md:text-3xl lg:text-4xl font-semibold leading-relaxed text-slate-900 dark:text-slate-100 text-center">
-              {showFeedback
-                ? currentQuestion?.completedSentence || currentQuestion?.sentence
-                : currentQuestion?.sentence}
-            </h3>
+            <div className="flex flex-col items-center gap-2 text-center">
+              <h3 className="text-2xl md:text-3xl lg:text-4xl font-semibold leading-relaxed text-slate-900 dark:text-slate-100">
+                {showFeedback
+                  ? currentQuestion?.completedSentence || currentQuestion?.sentence
+                  : currentQuestion?.sentence}
+              </h3>
+              {currentQuestion?.sentenceTranslation && !showFeedback && (
+                <p className="text-sm md:text-base font-medium italic text-slate-500 dark:text-slate-400">
+                  {currentQuestion.sentenceTranslation}
+                </p>
+              )}
+            </div>
           </div>
 
           {/* Question & Options */}
@@ -296,7 +322,7 @@ export default function FourOptionsPage() {
               <div className="mb-2 flex items-center gap-2">
                 <Languages className="h-5 w-5 text-sky-500" aria-hidden="true" />
                 <h4 className="text-xl md:text-2xl font-bold text-slate-900 dark:text-white">
-                  {currentQuestion?.question || "Choose the correct option"}
+                  {currentQuestion?.promptQuestion || currentQuestion?.question || "Choose the correct option"}
                 </h4>
               </div>
             </div>
@@ -308,7 +334,7 @@ export default function FourOptionsPage() {
               showFeedback={showFeedback}
               onSelect={handleOptionClick}
               className={cn("grid grid-cols-1 md:grid-cols-2", showFeedback ? "gap-3" : "gap-4")}
-              itemClassName={cn("rounded-[22px] border px-5", showFeedback ? "min-h-[82px] py-3.5" : "min-h-[88px] py-4")}
+              itemClassName={cn("rounded-[22px] border px-5", showFeedback ? "min-h-[80px] py-3.5" : "min-h-[70px] py-4")}
               showCheckIcon
               renderLabel={(option, index) => (
                 <>
@@ -431,8 +457,8 @@ export default function FourOptionsPage() {
         <FeedbackBanner
           isCorrect={isCorrect}
           feedbackTone={isCorrect ? "success" : "error"}
-          correctAnswer={!isCorrect ? currentQuestion?.correctAnswer : null}
-          englishCorrectAnswer={!isCorrect ? currentQuestion?.englishCorrectAnswer : ""}
+          correctAnswer={!isCorrect ? currentQuestion?.completedSentence || currentQuestion?.correctAnswer : null}
+          englishCorrectAnswer={!isCorrect ? currentQuestion?.completedSentenceEn || currentQuestion?.englishCorrectAnswer : ""}
           onContinue={handleContinue}
           message={feedbackMessage}
           continueLabel={
