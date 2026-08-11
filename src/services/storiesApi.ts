@@ -265,7 +265,7 @@ export interface StoryTopic {
   name_fr?: string;
   name_de?: string;
   name_es?: string;
-  learning_lang: string;
+  learning_lang?: string | null;
   level_code: string;
   story_type?: "dialogue" | "monologue" | null;
   order_index: number;
@@ -283,11 +283,10 @@ export interface StoryNote {
 }
 
 export async function fetchStoryTopics(
-  learningLang: string,
   levelCode: string,
   storyType?: "dialogue" | "monologue"
 ): Promise<StoryTopic[]> {
-  const params = new URLSearchParams({ learning_lang: learningLang, level_code: levelCode });
+  const params = new URLSearchParams({ level_code: levelCode });
   if (storyType) params.set("story_type", storyType);
   const res = await fetch(`${API_BASE_URL}/api/stories/topics?${params}`);
   if (!res.ok) throw new Error("Failed to fetch story topics");
@@ -308,12 +307,13 @@ export async function fetchStorySubtopicNotes(
   return data.notes ?? [];
 }
 
-export function getStoryNoteHtmlUrl(noteId: number): string {
-  return `${API_BASE_URL}/api/stories/notes/${noteId}/html`;
+export function getStoryNoteHtmlUrl(noteId: number, learningLang?: string): string {
+  const params = learningLang ? `?learning_lang=${encodeURIComponent(learningLang)}` : "";
+  return `${API_BASE_URL}/api/stories/notes/${noteId}/html${params}`;
 }
 
-export async function fetchStoryNoteHtml(noteId: number): Promise<string> {
-  const res = await fetch(`${API_BASE_URL}/api/stories/notes/${noteId}/html`);
+export async function fetchStoryNoteHtml(noteId: number, learningLang?: string): Promise<string> {
+  const res = await fetch(getStoryNoteHtmlUrl(noteId, learningLang));
   if (!res.ok) throw new Error("Failed to fetch story note HTML");
   return res.text();
 }

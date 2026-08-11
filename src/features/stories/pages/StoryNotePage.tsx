@@ -16,7 +16,7 @@ export default function StoryNotePage() {
   const params = useParams<{ subtopicId: string }>();
   const subtopicId = params?.subtopicId;
   const router = useRouter();
-  const { knownLang } = useLanguage();
+  const { learningLang, knownLang } = useLanguage();
 
   const [notes, setNotes] = useState<StoryNote[]>([]);
   const [activeNote, setActiveNote] = useState<StoryNote | null>(null);
@@ -58,7 +58,7 @@ export default function StoryNotePage() {
     setQuizQuestions([]);
     setActiveTab("story");
     try {
-      const content = await fetchStoryNoteHtml(noteId);
+      const content = await fetchStoryNoteHtml(noteId, learningLang);
       setQuizQuestions(parseQuizFromHtml(content));
       setHtml(content);
     } catch (e: any) {
@@ -66,7 +66,7 @@ export default function StoryNotePage() {
     } finally {
       setLoadingHtml(false);
     }
-  }, []);
+  }, [learningLang]);
 
   useEffect(() => {
     loadNotes();
