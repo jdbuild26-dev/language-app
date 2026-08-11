@@ -42,8 +42,8 @@ export function StoryOverviewPanel({
   onSpeed,
 }: StoryOverviewPanelProps) {
   return (
-    <aside className={`w-full shrink-0 border-r lg:w-[340px] ${darkMode ? "border-[#32353a] bg-[#1d2025]" : "border-[#e9e5df] bg-[#fbf9f6]"}`}>
-      <div className="sticky top-[76px] flex max-h-[calc(100vh-76px)] flex-col px-6 py-5">
+    <aside className={`w-full shrink-0 border-r lg:w-[clamp(280px,22vw,340px)] ${darkMode ? "border-[#32353a] bg-[#1d2025]" : "border-[#e9e5df] bg-[#fbf9f6]"}`}>
+      <div className="sticky top-[76px] flex max-h-[calc(100vh-76px)] flex-col overflow-y-auto px-[clamp(1rem,1.7vw,1.5rem)] py-[clamp(1rem,1.4vw,1.25rem)] max-lg:static max-lg:max-h-none max-lg:overflow-visible">
         <nav className="mb-5 flex items-center gap-4 border-b border-[#e9e5df] pb-3 text-sm font-bold text-[#252c3a]">
           <button onClick={() => setActiveTab("story")} className={`pb-2 transition-colors active:scale-[0.98] ${activeTab === "story" ? "border-b-2 border-[#54643b] text-[#54643b]" : "text-[#252c3a] hover:text-[#54643b]"}`}>
             Conversation
@@ -57,7 +57,7 @@ export function StoryOverviewPanel({
         </nav>
 
         <div className="relative mb-6 overflow-hidden rounded-xl">
-          <img src="/images/kitchen.jpg" alt="" className="h-56 w-full object-cover" />
+          <img src="/images/kitchen.jpg" alt="" className="h-[clamp(10rem,15vw,14rem)] w-full object-cover" />
           <div className="absolute bottom-3 right-3 rounded-md bg-[#54643b] p-2 text-white shadow-md">
             <BookOpen className="h-5 w-5" />
           </div>
@@ -69,8 +69,8 @@ export function StoryOverviewPanel({
           ))}
         </div>
 
-        <h2 className={`mb-3 font-serif text-3xl font-bold leading-tight ${darkMode ? "text-[#e1e2e9]" : "text-[#1b1c1b]"}`}>{story.title}</h2>
-        <p className={`mb-6 text-sm font-semibold leading-6 ${darkMode ? "text-[#c6c6ca]" : "text-[#586170]"}`}>{story.description}</p>
+        <h2 className={`mb-3 font-serif text-[clamp(1.75rem,2.2vw,1.875rem)] font-bold leading-tight ${darkMode ? "text-[#e1e2e9]" : "text-[#1b1c1b]"}`}>{story.title}</h2>
+        <p className={`mb-6 text-[clamp(0.8rem,0.9vw,0.875rem)] font-semibold leading-6 ${darkMode ? "text-[#c6c6ca]" : "text-[#586170]"}`}>{story.description}</p>
 
         <div className={`w-full max-w-[260px] shrink-0 rounded-xl p-3 shadow-sm ${darkMode ? "bg-[#272a2f]" : "bg-white"}`}>
           <div className="mb-3 flex items-center justify-between">

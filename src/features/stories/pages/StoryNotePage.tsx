@@ -110,7 +110,7 @@ export default function StoryNotePage() {
                 <img src="/favicon.svg" alt="" className="h-7 w-7" />
               </div>
               <div className="pointer-events-none absolute inset-x-24 flex items-center justify-center">
-                <h1 className="pointer-events-auto max-w-[48vw] truncate text-center font-serif text-4xl font-bold text-[#54643b]">{storyData.title}</h1>
+                <h1 className="pointer-events-auto max-w-[48vw] truncate text-center font-serif text-[clamp(1.75rem,2.5vw,2.25rem)] font-bold text-[#54643b]">{storyData.title}</h1>
               </div>
               <div className="ml-auto flex shrink-0 items-center gap-3">
                 <button onClick={() => router.push("/stories")} className="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-slate-50 text-slate-500 transition hover:bg-slate-100 hover:text-slate-700" title="Exit">
