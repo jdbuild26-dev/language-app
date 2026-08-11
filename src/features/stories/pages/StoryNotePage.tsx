@@ -26,6 +26,8 @@ export default function StoryNotePage() {
   const [loadingNotes, setLoadingNotes] = useState(true);
   const [loadingHtml, setLoadingHtml] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [revealSequenceActive, setRevealSequenceActive] = useState(false);
+  const [revealRunId, setRevealRunId] = useState(0);
 
   const darkMode = false;
   const knownLangRef = useRef(knownLang);
@@ -74,14 +76,25 @@ export default function StoryNotePage() {
     if (activeNote?.id) loadHtml(activeNote.id);
   }, [activeNote?.id, loadHtml]);
 
+  useEffect(() => {
+    setRevealSequenceActive(false);
+    setRevealRunId(0);
+  }, [activeNote?.id]);
+
   const isLoading = loadingNotes || loadingHtml;
   const storyData = useMemo(() => html ? parseStoryDisplayData(html, activeNote) : null, [activeNote, html]);
   const audio = useStoryAudio(storyData, activeNote?.id);
+  const startConversationReveal = useCallback(() => {
+    setRevealSequenceActive(true);
+    setRevealRunId((value) => value + 1);
+    audio.playFromStart();
+  }, [audio.playFromStart]);
 
   return (
     <div className={`min-h-screen ${darkMode ? "bg-[#101418] text-[#e1e2e9]" : "bg-[#fbf9f7] text-[#1b1c1b]"}`}>
       <style jsx global>{`
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Playfair+Display:wght@400;600;700;800&display=swap');
+        html { scrollbar-gutter: stable; }
         .font-serif { font-family: 'Playfair Display', Georgia, serif; }
       `}</style>
 
@@ -140,6 +153,7 @@ export default function StoryNotePage() {
               onPrevious={() => audio.handleAudioStep(-1)}
               onNext={() => audio.handleAudioStep(1)}
               onSpeed={() => audio.setSpeedIndex((index) => (index + 1) % audio.speedCount)}
+              onSeek={audio.seekAudio}
             />
             {activeTab === "story" ? (
               <StoryReadingView
@@ -147,6 +161,12 @@ export default function StoryNotePage() {
                 darkMode={darkMode}
                 activeAudioIndex={audio.isPlaying ? audio.activeAudioLineIndex : null}
                 onSpeakLine={audio.handleSpeakLine}
+                isPlaying={audio.isPlaying}
+                onStartReveal={startConversationReveal}
+                onPauseResume={audio.handlePlayPause}
+                onRestartReveal={startConversationReveal}
+                revealSequenceActive={revealSequenceActive}
+                revealRunId={revealRunId}
               />
             ) : (
               <StoryQuizView questions={quizQuestions} darkMode={darkMode} />
