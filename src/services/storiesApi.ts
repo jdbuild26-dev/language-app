@@ -267,6 +267,7 @@ export interface StoryTopic {
   name_es?: string;
   learning_lang: string;
   level_code: string;
+  story_type?: "dialogue" | "monologue" | null;
   order_index: number;
   subtopics: StorySubtopic[];
 }
@@ -283,9 +284,11 @@ export interface StoryNote {
 
 export async function fetchStoryTopics(
   learningLang: string,
-  levelCode: string
+  levelCode: string,
+  storyType?: "dialogue" | "monologue"
 ): Promise<StoryTopic[]> {
   const params = new URLSearchParams({ learning_lang: learningLang, level_code: levelCode });
+  if (storyType) params.set("story_type", storyType);
   const res = await fetch(`${API_BASE_URL}/api/stories/topics?${params}`);
   if (!res.ok) throw new Error("Failed to fetch story topics");
   const data = await res.json();

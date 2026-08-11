@@ -7,6 +7,10 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { fetchStoryTopics, StoryTopic } from "@/services/storiesApi";
 
 const CEFR_LEVELS = ["A1", "A2", "B1", "B2"];
+const STORY_TYPES = [
+  { value: "dialogue" as const, label: "Dialogues" },
+  { value: "monologue" as const, label: "Monologues" },
+];
 
 const TOPIC_COLOURS = [
   { bg: "bg-sky-50 dark:bg-sky-950/30", border: "border-sky-200 dark:border-sky-800", badge: "bg-sky-100 dark:bg-sky-900/50 text-sky-800 dark:text-sky-200", dot: "bg-sky-400" },
@@ -76,6 +80,7 @@ function TopicBlock({ topic, colourIdx }: { topic: StoryTopic; colourIdx: number
 export default function StoryConceptsPage() {
   const { learningLang } = useLanguage();
   const [level, setLevel] = useState("A1");
+  const [storyType, setStoryType] = useState<"dialogue" | "monologue">("dialogue");
   const [topics, setTopics] = useState<StoryTopic[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -84,14 +89,14 @@ export default function StoryConceptsPage() {
     setLoading(true);
     setError(null);
     try {
-      const data = await fetchStoryTopics(learningLang, level);
+      const data = await fetchStoryTopics(learningLang, level, storyType);
       setTopics(data);
     } catch (e: any) {
       setError(e.message ?? "Failed to load story topics");
     } finally {
       setLoading(false);
     }
-  }, [learningLang, level]);
+  }, [learningLang, level, storyType]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -124,6 +129,20 @@ export default function StoryConceptsPage() {
         </div>
       </div>
 
+      <div className="flex gap-2 flex-wrap">
+        {STORY_TYPES.map((type) => (
+          <button
+            key={type.value}
+            onClick={() => setStoryType(type.value)}
+            className={storyType === type.value
+              ? "px-4 py-2 rounded-lg text-sm font-medium bg-sky-600 text-white shadow-sm"
+              : "px-4 py-2 rounded-lg text-sm font-medium bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700"}
+          >
+            {type.label}
+          </button>
+        ))}
+      </div>
+
       {loading && (
         <div className="flex justify-center items-center py-20">
           <Loader2 className="w-8 h-8 animate-spin text-slate-400" />
@@ -141,7 +160,7 @@ export default function StoryConceptsPage() {
         <div className="text-center py-16 bg-slate-50 dark:bg-slate-900 rounded-2xl border border-dashed border-slate-300 dark:border-slate-700">
           <BookOpen className="w-10 h-10 text-slate-300 dark:text-slate-600 mx-auto mb-3" />
           <p className="text-slate-500 dark:text-slate-400 font-medium">
-            No story topics for {learningLang.toUpperCase()} · {level} yet.
+            No {storyType} categories for {learningLang.toUpperCase()} · {level} yet.
           </p>
           <p className="text-sm text-slate-400 dark:text-slate-500 mt-1">
             Add topics in the admin panel to see them here.

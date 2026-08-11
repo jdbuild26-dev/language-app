@@ -30,7 +30,7 @@ export function ConversationBubble({
   return (
     <article className="grid md:grid-cols-2 md:gap-8">
       <div className={cn("w-full max-w-[520px]", line.side === "right" ? "md:col-start-2 md:justify-self-end" : "md:col-start-1 md:justify-self-start")}>
-        <div className={cn("rounded-xl border border-[#f0eeeb] px-4 py-3.5 transition-[transform,background-color,border-color,box-shadow] duration-150 ease-out", isExpanded && "scale-[1.01] shadow-[0_14px_34px_rgba(120,113,108,0.1)]", line.side === "right" ? "bg-[#fbfaf7]" : "bg-white", isActive && "scale-[1.025] border-[#87986a]", darkMode && "border-[#45474a] bg-[#272a2f]")}>
+        <div className={cn("rounded-xl border border-[#f0eeeb] px-[clamp(0.75rem,1.2vw,1rem)] py-[clamp(0.75rem,1.1vw,0.875rem)] transition-[transform,background-color,border-color,box-shadow] duration-150 ease-out", isExpanded && "scale-[1.01] shadow-[0_14px_34px_rgba(120,113,108,0.1)]", line.side === "right" ? "bg-[#fbfaf7]" : "bg-white", isActive && "scale-[1.025] border-[#87986a]", darkMode && "border-[#45474a] bg-[#272a2f]")}>
           <div className="mb-3 flex items-center justify-between gap-3">
             <button onClick={onToggleExpanded} className="flex min-w-0 items-center gap-2 text-left transition-colors hover:text-[#54643b]">
               <span className={cn("h-2 w-2 shrink-0 rounded-full bg-[#849967] transition-[transform,background-color] duration-150 ease-out", isActive && "scale-125 bg-[#54643b]")} />
@@ -43,8 +43,8 @@ export function ConversationBubble({
             </div>
           </div>
           <button onClick={onToggleExpanded} className="w-full text-left">
-            <p className="font-serif text-lg leading-7 text-[#1b1c1b]">{line.text}</p>
-            {line.translation && isTranslationShown && <p className="mt-3 border-t border-[#dfe7d4] pt-3 text-base italic leading-7 text-[#54643b]">{line.translation}</p>}
+            <p className="font-serif text-[clamp(1rem,1.2vw,1.125rem)] leading-7 text-[#1b1c1b]">{line.text}</p>
+            {line.translation && isTranslationShown && <p className="mt-3 border-t border-[#dfe7d4] pt-3 text-[clamp(0.875rem,1vw,1rem)] italic leading-7 text-[#54643b]">{line.translation}</p>}
           </button>
         </div>
       </div>
