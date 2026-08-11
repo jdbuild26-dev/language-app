@@ -120,6 +120,22 @@ export function useStoryAudio(story: StoryDisplayData | null, activeNoteId: numb
     speakAudio(audioText, audioLines.length > 0 ? audioLines[audioIndex]?.lineIndex ?? null : null, audioLines.length > 0 ? audioIndex : null);
   }, [audioIndex, audioLines, audioText, isPlaying, speakAudio, stopAudio]);
 
+  const playFromStart = useCallback(() => {
+    if (typeof window === "undefined" || !window.speechSynthesis) return;
+    setAudioIndex(0);
+    setAudioElapsed(0);
+    setAutoAdvanceFromIndex(null);
+
+    if (audioLines.length === 0) {
+      setIsSequencePlaying(false);
+      speakAudio(story?.monologue);
+      return;
+    }
+
+    setIsSequencePlaying(true);
+    speakAudio(audioLines[0]?.text, audioLines[0]?.lineIndex ?? null, 0);
+  }, [audioLines, speakAudio, story?.monologue]);
+
   const handleAudioStep = useCallback((direction: -1 | 1) => {
     if (audioLines.length === 0) {
       setIsSequencePlaying(false);
@@ -138,6 +154,38 @@ export function useStoryAudio(story: StoryDisplayData | null, activeNoteId: numb
     setIsSequencePlaying(false);
     speakAudio(text, index);
   }, [audioLines, speakAudio]);
+
+  const seekAudio = useCallback((percentage: number) => {
+    if (totalAudioDuration <= 0) return;
+    const targetElapsed = Math.min(totalAudioDuration, Math.max(0, (percentage / 100) * totalAudioDuration));
+    if (audioLines.length === 0) {
+      setAudioElapsed(targetElapsed);
+      return;
+    }
+
+    let accumulated = 0;
+    let targetIndex = audioLines.length - 1;
+    for (let index = 0; index < audioDurations.length; index += 1) {
+      if (targetElapsed <= accumulated + audioDurations[index]) {
+        targetIndex = index;
+        break;
+      }
+      accumulated += audioDurations[index];
+    }
+
+    const wasPlaying = isPlaying;
+    const wasSequencePlaying = isSequencePlaying;
+    const targetLine = audioLines[targetIndex];
+    setAudioIndex(targetIndex);
+    setAudioElapsed(Math.max(0, targetElapsed - accumulated));
+    if (wasPlaying && targetLine?.text) {
+      speakAudio(targetLine.text, targetLine.lineIndex, wasSequencePlaying ? targetIndex : null);
+    } else {
+      stopAudio(false);
+      setAudioIndex(targetIndex);
+      setAudioElapsed(Math.max(0, targetElapsed - accumulated));
+    }
+  }, [audioDurations, audioLines, isPlaying, isSequencePlaying, speakAudio, stopAudio, totalAudioDuration]);
 
   useEffect(() => {
     if (autoAdvanceFromIndex === null) return;
@@ -171,6 +219,8 @@ export function useStoryAudio(story: StoryDisplayData | null, activeNoteId: numb
     handleAudioStep,
     handlePlayPause,
     handleSpeakLine,
+    playFromStart,
+    seekAudio,
     isPlaying,
     progress,
     setSpeedIndex,

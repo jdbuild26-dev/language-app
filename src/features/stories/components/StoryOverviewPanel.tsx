@@ -1,6 +1,6 @@
 "use client";
 
-import { BookOpen, Pause, Play, Settings, SkipBack, SkipForward } from "lucide-react";
+import { BookOpen, Pause, Play, SkipBack, SkipForward } from "lucide-react";
 import { StoryNote } from "@/services/storiesApi";
 import { StoryContentTab, StoryDisplayData } from "../types";
 
@@ -21,6 +21,7 @@ interface StoryOverviewPanelProps {
   onPrevious: () => void;
   onNext: () => void;
   onSpeed: () => void;
+  onSeek: (percentage: number) => void;
 }
 
 export function StoryOverviewPanel({
@@ -40,6 +41,7 @@ export function StoryOverviewPanel({
   onPrevious,
   onNext,
   onSpeed,
+  onSeek,
 }: StoryOverviewPanelProps) {
   return (
     <aside className={`w-full shrink-0 border-r lg:w-[clamp(280px,22vw,340px)] ${darkMode ? "border-[#32353a] bg-[#1d2025]" : "border-[#e9e5df] bg-[#fbf9f6]"}`}>
@@ -74,17 +76,19 @@ export function StoryOverviewPanel({
 
         <div className={`w-full max-w-[260px] shrink-0 rounded-xl p-3 shadow-sm ${darkMode ? "bg-[#272a2f]" : "bg-white"}`}>
           <div className="mb-3 flex items-center justify-between">
-            <div className="flex items-center gap-3 text-[#54643b]">
+            <div className="flex items-center gap-2.5 text-[#54643b]">
               <button onClick={onPrevious} className="transition-transform active:scale-[0.94]" aria-label="Previous audio"><SkipBack className="h-4 w-4" /></button>
               <button onClick={onPlayPause} className="transition-transform active:scale-[0.94]" aria-label={isPlaying ? "Pause audio" : "Play audio"}>{isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4 fill-current" />}</button>
               <button onClick={onNext} className="transition-transform active:scale-[0.94]" aria-label="Next audio"><SkipForward className="h-4 w-4" /></button>
             </div>
-            <button onClick={onSpeed} className="text-xs font-bold text-[#54643b]">{speed}x</button>
-            <Settings className="h-4 w-4 text-[#7f8874]" />
+            <button onClick={onSpeed} className="min-w-8 text-right text-xs font-bold text-[#54643b] transition-transform active:scale-[0.94]" aria-label="Change audio speed">{speed}x</button>
           </div>
-          <div className="h-1.5 rounded-full bg-[#e6e5e1]">
-            <div className="h-1.5 rounded-full bg-[#54643b] transition-[width] duration-150 ease-linear" style={{ width: `${progress}%` }} />
-          </div>
+          <label className="group relative block h-4 cursor-pointer" aria-label="Seek audio">
+            <span className="absolute inset-x-0 top-1.5 h-1.5 rounded-full bg-[#e6e5e1]" />
+            <span className="absolute left-0 top-1.5 h-1.5 rounded-full bg-[#54643b] transition-[width] duration-150 ease-linear" style={{ width: `${progress}%` }} />
+            <input type="range" min="0" max="100" step="0.1" value={progress} onChange={(event) => onSeek(Number(event.target.value))} className="absolute inset-0 h-4 w-full cursor-pointer opacity-0" />
+            <span className="pointer-events-none absolute top-0 h-4 w-4 -translate-x-1/2 rounded-full border-2 border-[#54643b] bg-white opacity-0 shadow-sm transition-opacity group-hover:opacity-100" style={{ left: `${progress}%` }} />
+          </label>
           <div className="mt-2 flex justify-between text-[11px] font-bold text-[#8a9085]">
             <span>{elapsedTime}</span><span>{durationTime}</span>
           </div>
