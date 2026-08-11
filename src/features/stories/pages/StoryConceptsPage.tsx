@@ -3,7 +3,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { ChevronDown, ChevronUp, BookOpen, Loader2, AlertCircle } from "lucide-react";
-import { useLanguage } from "@/contexts/LanguageContext";
 import { fetchStoryTopics, StoryTopic } from "@/services/storiesApi";
 
 const CEFR_LEVELS = ["A1", "A2", "B1", "B2"];
@@ -78,7 +77,6 @@ function TopicBlock({ topic, colourIdx }: { topic: StoryTopic; colourIdx: number
 }
 
 export default function StoryConceptsPage() {
-  const { learningLang } = useLanguage();
   const [level, setLevel] = useState("A1");
   const [storyType, setStoryType] = useState<"dialogue" | "monologue">("dialogue");
   const [topics, setTopics] = useState<StoryTopic[]>([]);
@@ -89,14 +87,14 @@ export default function StoryConceptsPage() {
     setLoading(true);
     setError(null);
     try {
-      const data = await fetchStoryTopics(learningLang, level, storyType);
+      const data = await fetchStoryTopics(level, storyType);
       setTopics(data);
     } catch (e: any) {
       setError(e.message ?? "Failed to load story topics");
     } finally {
       setLoading(false);
     }
-  }, [learningLang, level, storyType]);
+  }, [level, storyType]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -160,7 +158,7 @@ export default function StoryConceptsPage() {
         <div className="text-center py-16 bg-slate-50 dark:bg-slate-900 rounded-2xl border border-dashed border-slate-300 dark:border-slate-700">
           <BookOpen className="w-10 h-10 text-slate-300 dark:text-slate-600 mx-auto mb-3" />
           <p className="text-slate-500 dark:text-slate-400 font-medium">
-            No {storyType} categories for {learningLang.toUpperCase()} · {level} yet.
+            No {storyType} categories for {level} yet.
           </p>
           <p className="text-sm text-slate-400 dark:text-slate-500 mt-1">
             Add topics in the admin panel to see them here.
