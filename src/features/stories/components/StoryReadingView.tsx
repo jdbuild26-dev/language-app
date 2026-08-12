@@ -83,7 +83,9 @@ export function StoryReadingView({
                 </button>
               </>
             )}
-            <button onClick={() => setShownTranslations(Object.fromEntries(story.lines.map((_, index) => [index, !allTranslationsShown])))} className="inline-flex w-fit items-center gap-2 rounded-full border border-[#c6c8ba] bg-white px-[clamp(0.75rem,1.2vw,1rem)] py-[clamp(0.5rem,0.8vw,0.625rem)] text-[clamp(0.75rem,0.9vw,0.875rem)] font-bold text-[#54643b] shadow-sm transition-[transform,background-color] duration-150 ease-out active:scale-[0.97] hover:bg-[#f4f6ee]"><Languages className="h-4 w-4" /> Translate all</button>
+            {hasDialogue && (
+              <button onClick={() => setShownTranslations(Object.fromEntries(story.lines.map((_, index) => [index, !allTranslationsShown])))} className="inline-flex w-fit items-center gap-2 rounded-full border border-[#c6c8ba] bg-white px-[clamp(0.75rem,1.2vw,1rem)] py-[clamp(0.5rem,0.8vw,0.625rem)] text-[clamp(0.75rem,0.9vw,0.875rem)] font-bold text-[#54643b] shadow-sm transition-[transform,background-color] duration-150 ease-out active:scale-[0.97] hover:bg-[#f4f6ee]"><Languages className="h-4 w-4" /> Translate all</button>
+            )}
           </div>
         </section>
 
@@ -107,14 +109,14 @@ export function StoryReadingView({
             </div>
           </section>
         ) : (
-          <section>
+          <section className="w-full">
             <div className="mb-5 flex items-center justify-between">
               <h1 className="text-lg font-semibold text-[#54643b]">Monologue <span className="ml-1 inline-block h-2 w-2 rounded-full bg-[#54643b]" /></h1>
               {story.translatedMonologue && (
                 <button onClick={() => setShowHeroTranslation((value) => !value)} className="inline-flex items-center gap-2 rounded-full border border-[#c6c8ba] bg-white px-5 py-2.5 text-sm font-bold text-[#54643b]"><Languages className="h-4 w-4" /> Translate</button>
               )}
             </div>
-            <article className={`max-w-[760px] rounded-xl border px-6 py-5 font-serif text-xl leading-9 shadow-[0_10px_24px_rgba(120,113,108,0.06)] ${darkMode ? "border-[#45474a] bg-[#272a2f]" : "border-[#f0eeeb] bg-white"}`}>
+            <article className={`w-full font-serif text-[clamp(1.1rem,1.45vw,1.45rem)] leading-[1.8] ${darkMode ? "text-[#e1e2e9]" : "text-[#11140f]"}`}>
               {(showHeroTranslation && story.translatedMonologue ? story.translatedMonologue : story.monologue) || "Story content is not available yet."}
             </article>
           </section>
