@@ -319,6 +319,30 @@ export async function fetchStorySubtopicNotes(
   return data.notes ?? [];
 }
 
+export async function fetchStorySubtopicNotesForType(
+  subtopicId: number,
+  knownLang?: string,
+  storyType?: "dialogue" | "monologue",
+): Promise<StoryNote[]> {
+  const filterByType = (notes: StoryNote[]) => storyType
+    ? notes.filter((note) => getStoryNoteType(note) === storyType)
+    : notes;
+  let fetchedNotes = await fetchStorySubtopicNotes(subtopicId, knownLang, storyType);
+  let notes = filterByType(fetchedNotes);
+
+  if (notes.length === 0 && knownLang) {
+    fetchedNotes = await fetchStorySubtopicNotes(subtopicId, undefined, storyType);
+    notes = filterByType(fetchedNotes);
+  }
+
+  if (storyType && notes.length === 0) {
+    const returnedType = fetchedNotes.map(getStoryNoteType).find(Boolean);
+    if (returnedType) throw new Error(`This chapter contains a ${returnedType}, not a ${storyType}. Please choose a ${storyType} chapter.`);
+  }
+
+  return notes;
+}
+
 export function getStoryNoteHtmlUrl(noteId: number, learningLang?: string): string {
   const params = learningLang ? `?learning_lang=${encodeURIComponent(learningLang)}` : "";
   return `${API_BASE_URL}/api/stories/notes/${noteId}/html${params}`;
