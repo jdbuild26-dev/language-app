@@ -1,9 +1,13 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { keepPreviousData, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ChevronDown, ChevronUp, BookOpen, Loader2, AlertCircle } from "lucide-react";
-import { fetchStoryTopics, StoryTopic } from "@/services/storiesApi";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { fetchStorySubtopicNotesForType, fetchStoryTopics, StoryTopic } from "@/services/storiesApi";
+
+const STORY_CACHE_TIME = 10 * 60 * 1000;
 
 const CEFR_LEVELS = ["A1", "A2", "B1", "B2"];
 const STORY_TYPES = [
@@ -20,7 +24,7 @@ const TOPIC_COLOURS = [
   { bg: "bg-orange-50 dark:bg-orange-950/30", border: "border-orange-200 dark:border-orange-800", badge: "bg-orange-100 dark:bg-orange-900/50 text-orange-800 dark:text-orange-200", dot: "bg-orange-400" },
 ];
 
-function TopicBlock({ topic, colourIdx, storyType }: { topic: StoryTopic; colourIdx: number; storyType: "dialogue" | "monologue" }) {
+function TopicBlock({ topic, colourIdx, storyType, onPrefetchChapter }: { topic: StoryTopic; colourIdx: number; storyType: "dialogue" | "monologue"; onPrefetchChapter: (subtopicId: number, storyType: "dialogue" | "monologue") => void }) {
   const router = useRouter();
   const [expanded, setExpanded] = useState(true);
   const c = TOPIC_COLOURS[colourIdx % TOPIC_COLOURS.length];
@@ -53,6 +57,8 @@ function TopicBlock({ topic, colourIdx, storyType }: { topic: StoryTopic; colour
             <button
               key={sub.id}
               onClick={() => router.push(`/stories/learn/${sub.id}?type=${storyType}`)}
+              onPointerEnter={() => onPrefetchChapter(sub.id, storyType)}
+              onFocus={() => onPrefetchChapter(sub.id, storyType)}
               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm text-slate-700 dark:text-slate-200 hover:border-slate-400 dark:hover:border-slate-500 hover:shadow-sm transition-all duration-150 cursor-pointer"
             >
               <BookOpen className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500" />
@@ -79,24 +85,32 @@ function TopicBlock({ topic, colourIdx, storyType }: { topic: StoryTopic; colour
 export default function StoryConceptsPage() {
   const [level, setLevel] = useState("A1");
   const [storyType, setStoryType] = useState<"dialogue" | "monologue">("dialogue");
-  const [topics, setTopics] = useState<StoryTopic[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const { knownLang } = useLanguage();
+  const queryClient = useQueryClient();
+  const { data: topics = [], error, isPending } = useQuery({
+    queryKey: ["story-topics", level, storyType],
+    queryFn: () => fetchStoryTopics(level, storyType),
+    staleTime: STORY_CACHE_TIME,
+    gcTime: 30 * 60 * 1000,
+    placeholderData: keepPreviousData,
+  });
+  const alternateStoryType = storyType === "dialogue" ? "monologue" : "dialogue";
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const data = await fetchStoryTopics(level, storyType);
-      setTopics(data);
-    } catch (e: any) {
-      setError(e.message ?? "Failed to load story topics");
-    } finally {
-      setLoading(false);
-    }
-  }, [level, storyType]);
+  useEffect(() => {
+    queryClient.prefetchQuery({
+      queryKey: ["story-topics", level, alternateStoryType],
+      queryFn: () => fetchStoryTopics(level, alternateStoryType),
+      staleTime: STORY_CACHE_TIME,
+    });
+  }, [alternateStoryType, level, queryClient]);
 
-  useEffect(() => { load(); }, [load]);
+  const prefetchChapter = useCallback((subtopicId: number, type: "dialogue" | "monologue") => {
+    queryClient.prefetchQuery({
+      queryKey: ["story-notes", subtopicId, knownLang, type],
+      queryFn: () => fetchStorySubtopicNotesForType(subtopicId, knownLang, type),
+      staleTime: STORY_CACHE_TIME,
+    });
+  }, [knownLang, queryClient]);
 
   return (
     <div className="space-y-6">
@@ -141,20 +155,20 @@ export default function StoryConceptsPage() {
         ))}
       </div>
 
-      {loading && (
+      {isPending && (
         <div className="flex justify-center items-center py-20">
           <Loader2 className="w-8 h-8 animate-spin text-slate-400" />
         </div>
       )}
 
-      {!loading && error && (
+      {!isPending && error && (
         <div className="flex items-center gap-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 p-4 rounded-xl">
           <AlertCircle className="w-5 h-5 flex-shrink-0" />
-          <span>{error}</span>
+          <span>{error.message}</span>
         </div>
       )}
 
-      {!loading && !error && topics.length === 0 && (
+      {!isPending && !error && topics.length === 0 && (
         <div className="text-center py-16 bg-slate-50 dark:bg-slate-900 rounded-2xl border border-dashed border-slate-300 dark:border-slate-700">
           <BookOpen className="w-10 h-10 text-slate-300 dark:text-slate-600 mx-auto mb-3" />
           <p className="text-slate-500 dark:text-slate-400 font-medium">
@@ -166,10 +180,10 @@ export default function StoryConceptsPage() {
         </div>
       )}
 
-      {!loading && !error && topics.length > 0 && (
+      {!isPending && !error && topics.length > 0 && (
         <div className="space-y-4">
           {topics.map((topic, idx) => (
-            <TopicBlock key={topic.id} topic={topic} colourIdx={idx} storyType={storyType} />
+            <TopicBlock key={topic.id} topic={topic} colourIdx={idx} storyType={storyType} onPrefetchChapter={prefetchChapter} />
           ))}
         </div>
       )}
