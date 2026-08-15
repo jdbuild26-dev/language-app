@@ -1,10 +1,10 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { AlertCircle, BookOpen, Loader2, X } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { fetchStoryNoteHtml, fetchStorySubtopicNotes, StoryNote } from "@/services/storiesApi";
+import { fetchStoryNoteHtml, fetchStorySubtopicNotes, getStoryNoteType, StoryNote } from "@/services/storiesApi";
 import { StoryOverviewPanel } from "../components/StoryOverviewPanel";
 import { StoryQuizView } from "../components/StoryQuizView";
 import { StoryReadingView } from "../components/StoryReadingView";
@@ -14,7 +14,10 @@ import { parseQuizFromHtml, parseStoryDisplayData } from "../utils/storyParsers"
 
 export default function StoryNotePage() {
   const params = useParams<{ subtopicId: string }>();
+  const searchParams = useSearchParams();
   const subtopicId = params?.subtopicId;
+  const requestedStoryType = searchParams?.get("type");
+  const storyType = requestedStoryType === "monologue" ? "monologue" : requestedStoryType === "dialogue" ? "dialogue" : undefined;
   const router = useRouter();
   const { learningLang, knownLang } = useLanguage();
 
@@ -28,6 +31,7 @@ export default function StoryNotePage() {
   const [error, setError] = useState<string | null>(null);
   const [revealSequenceActive, setRevealSequenceActive] = useState(false);
   const [revealRunId, setRevealRunId] = useState(0);
+  const [quizProgress, setQuizProgress] = useState(0);
 
   const darkMode = false;
   const knownLangRef = useRef(knownLang);
@@ -41,21 +45,33 @@ export default function StoryNotePage() {
     setLoadingNotes(true);
     setError(null);
     try {
-      let data = await fetchStorySubtopicNotes(Number(subtopicId), knownLangRef.current);
-      if (data.length === 0) data = await fetchStorySubtopicNotes(Number(subtopicId));
+      const filterByRequestedType = (notes: StoryNote[]) => storyType
+        ? notes.filter((note) => getStoryNoteType(note) === storyType)
+        : notes;
+      let fetchedNotes = await fetchStorySubtopicNotes(Number(subtopicId), knownLangRef.current, storyType);
+      let data = filterByRequestedType(fetchedNotes);
+      if (data.length === 0) {
+        fetchedNotes = await fetchStorySubtopicNotes(Number(subtopicId), undefined, storyType);
+        data = filterByRequestedType(fetchedNotes);
+      }
+      if (storyType && data.length === 0) {
+        const returnedType = fetchedNotes.map(getStoryNoteType).find(Boolean);
+        if (returnedType) throw new Error(`This chapter contains a ${returnedType}, not a ${storyType}. Please choose a ${storyType} chapter.`);
+      }
       setNotes(data);
-      setActiveNote((prev) => prev ?? data[0] ?? null);
+      setActiveNote(data[0] ?? null);
     } catch (e: any) {
       setError(e.message ?? "Failed to load story");
     } finally {
       setLoadingNotes(false);
     }
-  }, [subtopicId]);
+  }, [storyType, subtopicId]);
 
   const loadHtml = useCallback(async (noteId: number) => {
     setLoadingHtml(true);
     setHtml(null);
     setQuizQuestions([]);
+    setQuizProgress(0);
     setActiveTab("story");
     try {
       const content = await fetchStoryNoteHtml(noteId, learningLang);
@@ -84,6 +100,8 @@ export default function StoryNotePage() {
   const isLoading = loadingNotes || loadingHtml;
   const storyData = useMemo(() => html ? parseStoryDisplayData(html, activeNote) : null, [activeNote, html]);
   const audio = useStoryAudio(storyData, activeNote?.id);
+  const isMonologue = storyData ? !storyData.lines.some((line) => line.text) && storyData.monologueSections.some((section) => section.text) : false;
+  const topProgress = activeTab === "quiz" ? quizProgress : audio.progress;
   const startConversationReveal = useCallback(() => {
     setRevealSequenceActive(true);
     setRevealRunId((value) => value + 1);
@@ -92,12 +110,6 @@ export default function StoryNotePage() {
 
   return (
     <div className={`min-h-screen ${darkMode ? "bg-[#101418] text-[#e1e2e9]" : "bg-[#fbf9f7] text-[#1b1c1b]"}`}>
-      <style jsx global>{`
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Playfair+Display:wght@400;600;700;800&display=swap');
-        html { scrollbar-gutter: stable; }
-        .font-serif { font-family: 'Playfair Display', Georgia, serif; }
-      `}</style>
-
       {isLoading && (
         <div className="flex min-h-[60vh] items-center justify-center"><Loader2 className="h-10 w-10 animate-spin text-[#87986a]" /></div>
       )}
@@ -123,7 +135,7 @@ export default function StoryNotePage() {
                 <img src="/favicon.svg" alt="" className="h-7 w-7" />
               </div>
               <div className="pointer-events-none absolute inset-x-24 flex items-center justify-center">
-                <h1 className="pointer-events-auto max-w-[48vw] truncate text-center font-serif text-[clamp(1.75rem,2.5vw,2.25rem)] font-bold text-[#54643b]">{storyData.title}</h1>
+              <h1 className="story-page-heading pointer-events-auto max-w-[48vw] truncate text-center font-extrabold tracking-[-0.02em] text-[#00333a]">{storyData.title}</h1>
               </div>
               <div className="ml-auto flex shrink-0 items-center gap-3">
                 <button onClick={() => router.push("/stories")} className="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-slate-50 text-slate-500 transition hover:bg-slate-100 hover:text-slate-700" title="Exit">
@@ -132,7 +144,7 @@ export default function StoryNotePage() {
               </div>
             </div>
             <div className="h-[3px] w-full bg-slate-200">
-              <div className="h-full w-1/5 bg-[#2f73ff]" />
+              <div className="h-full bg-[#85bac3] transition-[width] duration-150 ease-linear" style={{ width: `${topProgress}%` }} />
             </div>
           </header>
           <div className="flex min-h-[calc(100vh-76px)] flex-col lg:flex-row">
@@ -145,15 +157,23 @@ export default function StoryNotePage() {
               setActiveTab={setActiveTab}
               darkMode={darkMode}
               isPlaying={audio.isPlaying}
+              isPaused={audio.isPaused}
               speed={audio.speed}
               progress={audio.progress}
               elapsedTime={audio.elapsedTime}
               durationTime={audio.durationTime}
+              audioSegments={audio.audioSegments}
               onPlayPause={audio.handlePlayPause}
               onPrevious={() => audio.handleAudioStep(-1)}
               onNext={() => audio.handleAudioStep(1)}
               onSpeed={() => audio.setSpeedIndex((index) => (index + 1) % audio.speedCount)}
               onSeek={audio.seekAudio}
+              hasContent={storyData.lines.some((line) => line.text) || storyData.monologueSections.some((section) => section.text)}
+              isMonologue={isMonologue}
+              revealSequenceActive={revealSequenceActive}
+              onStartReveal={startConversationReveal}
+              onPauseResume={audio.handlePlayPause}
+              onRestartReveal={startConversationReveal}
             />
             {activeTab === "story" ? (
               <StoryReadingView
@@ -161,15 +181,11 @@ export default function StoryNotePage() {
                 darkMode={darkMode}
                 activeAudioIndex={audio.isPlaying ? audio.activeAudioLineIndex : null}
                 onSpeakLine={audio.handleSpeakLine}
-                isPlaying={audio.isPlaying}
-                onStartReveal={startConversationReveal}
-                onPauseResume={audio.handlePlayPause}
-                onRestartReveal={startConversationReveal}
                 revealSequenceActive={revealSequenceActive}
                 revealRunId={revealRunId}
               />
             ) : (
-              <StoryQuizView questions={quizQuestions} darkMode={darkMode} />
+              <StoryQuizView questions={quizQuestions} darkMode={darkMode} onProgressChange={setQuizProgress} />
             )}
           </div>
         </div>

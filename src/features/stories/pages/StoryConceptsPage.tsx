@@ -20,7 +20,7 @@ const TOPIC_COLOURS = [
   { bg: "bg-orange-50 dark:bg-orange-950/30", border: "border-orange-200 dark:border-orange-800", badge: "bg-orange-100 dark:bg-orange-900/50 text-orange-800 dark:text-orange-200", dot: "bg-orange-400" },
 ];
 
-function TopicBlock({ topic, colourIdx }: { topic: StoryTopic; colourIdx: number }) {
+function TopicBlock({ topic, colourIdx, storyType }: { topic: StoryTopic; colourIdx: number; storyType: "dialogue" | "monologue" }) {
   const router = useRouter();
   const [expanded, setExpanded] = useState(true);
   const c = TOPIC_COLOURS[colourIdx % TOPIC_COLOURS.length];
@@ -52,7 +52,7 @@ function TopicBlock({ topic, colourIdx }: { topic: StoryTopic; colourIdx: number
           {topic.subtopics.map((sub) => (
             <button
               key={sub.id}
-              onClick={() => router.push(`/stories/learn/${sub.id}`)}
+              onClick={() => router.push(`/stories/learn/${sub.id}?type=${storyType}`)}
               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm text-slate-700 dark:text-slate-200 hover:border-slate-400 dark:hover:border-slate-500 hover:shadow-sm transition-all duration-150 cursor-pointer"
             >
               <BookOpen className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500" />
@@ -169,7 +169,7 @@ export default function StoryConceptsPage() {
       {!loading && !error && topics.length > 0 && (
         <div className="space-y-4">
           {topics.map((topic, idx) => (
-            <TopicBlock key={topic.id} topic={topic} colourIdx={idx} />
+            <TopicBlock key={topic.id} topic={topic} colourIdx={idx} storyType={storyType} />
           ))}
         </div>
       )}

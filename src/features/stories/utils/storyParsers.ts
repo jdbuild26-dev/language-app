@@ -1,5 +1,15 @@
 import { StoryNote } from "@/services/storiesApi";
-import { QuizQuestion, StoryDisplayData } from "../types";
+import { MonologueSection, QuizQuestion, StoryDisplayData } from "../types";
+
+function getParagraphs(container: Element | null): string[] {
+  if (!container) return [];
+  const paragraphs = Array.from(container.querySelectorAll("p"))
+    .map((paragraph) => paragraph.textContent?.trim() ?? "")
+    .filter(Boolean);
+  if (paragraphs.length > 0) return paragraphs;
+  const text = container.textContent?.trim() ?? "";
+  return text ? [text] : [];
+}
 
 export function parseQuizFromHtml(html: string): QuizQuestion[] {
   if (typeof window === "undefined") return [];
@@ -10,11 +20,14 @@ export function parseQuizFromHtml(html: string): QuizQuestion[] {
       const options = Array.from(card.querySelectorAll(".quiz-option"))
         .map((opt) => ({
           text: opt.querySelector(".quiz-option-text")?.textContent?.trim() ?? "",
+          translation: (opt as HTMLElement).dataset.en?.trim() || opt.querySelector(".quiz-option-translation")?.textContent?.trim() || "",
           isCorrect: opt.getAttribute("data-type") === "correct",
         }))
         .filter((opt) => opt.text);
       const explanation = card.querySelector(".feedback-text")?.textContent?.trim() ?? "";
-      return { num: i + 1, question, options, explanation };
+      const explanationTranslation = (card.querySelector(".feedback-text") as HTMLElement | null)?.dataset.en?.trim() || card.querySelector(".feedback-translation")?.textContent?.trim() || "";
+      const translation = (card.querySelector(".quiz-question-content") as HTMLElement | null)?.dataset.en?.trim() || card.querySelector(".quiz-question-translation")?.textContent?.trim() || "";
+      return { num: i + 1, question, translation, options, explanation, explanationTranslation };
     })
     .filter((q) => q.question && q.options.length > 0);
 }
@@ -31,6 +44,7 @@ export function parseStoryDisplayData(html: string, activeNote: StoryNote | null
       lines: [],
       monologue: "",
       translatedMonologue: "",
+      monologueSections: [],
     };
   }
 
@@ -54,7 +68,13 @@ export function parseStoryDisplayData(html: string, activeNote: StoryNote | null
     side: index % 2 === 0 ? "left" as const : "right" as const,
   }));
 
-  const monologue = doc.querySelector("#primaryParagraph")?.textContent?.trim() || "";
-  const translatedMonologue = doc.querySelector("#translationParagraph")?.textContent?.trim() || "";
-  return { title, translatedTitle, description, translatedDescription, tags, lines, monologue, translatedMonologue };
+  const monologueParagraphs = getParagraphs(doc.querySelector("#primaryParagraph"));
+  const translatedMonologueParagraphs = getParagraphs(doc.querySelector("#translationParagraph"));
+  const monologueSections: MonologueSection[] = monologueParagraphs.map((text, index) => ({
+    text,
+    translation: translatedMonologueParagraphs[index] || "",
+  }));
+  const monologue = monologueParagraphs.join("\n\n");
+  const translatedMonologue = translatedMonologueParagraphs.join("\n\n");
+  return { title, translatedTitle, description, translatedDescription, tags, lines, monologue, translatedMonologue, monologueSections };
 }
