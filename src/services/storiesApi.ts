@@ -280,6 +280,14 @@ export interface StoryNote {
   title: string | null;
   description: string | null;
   order_index: number;
+  story_type?: "dialogue" | "monologue" | null;
+}
+
+export function getStoryNoteType(note: StoryNote): "dialogue" | "monologue" | undefined {
+  if (note.story_type === "dialogue" || note.story_type === "monologue") return note.story_type;
+  if (note.concept_id.startsWith("DLG-")) return "dialogue";
+  if (note.concept_id.startsWith("MON-")) return "monologue";
+  return undefined;
 }
 
 export async function fetchStoryTopics(
@@ -296,9 +304,13 @@ export async function fetchStoryTopics(
 
 export async function fetchStorySubtopicNotes(
   subtopicId: number,
-  knownLang?: string
+  knownLang?: string,
+  storyType?: "dialogue" | "monologue"
 ): Promise<StoryNote[]> {
-  const params = knownLang ? `?known_lang=${knownLang}` : "";
+  const query = new URLSearchParams();
+  if (knownLang) query.set("known_lang", knownLang);
+  if (storyType) query.set("story_type", storyType);
+  const params = query.toString() ? `?${query.toString()}` : "";
   const res = await fetch(
     `${API_BASE_URL}/api/stories/subtopics/${subtopicId}/notes${params}`
   );

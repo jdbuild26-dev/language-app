@@ -18,6 +18,7 @@ function estimateAudioDuration(text: string | undefined, speed: number) {
 
 export function useStoryAudio(story: StoryDisplayData | null, activeNoteId: number | undefined) {
   const [isPlaying, setIsPlaying] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
   const [audioIndex, setAudioIndex] = useState(0);
   const [activeAudioLineIndex, setActiveAudioLineIndex] = useState<number | null>(null);
   const [audioElapsed, setAudioElapsed] = useState(0);
@@ -32,7 +33,11 @@ export function useStoryAudio(story: StoryDisplayData | null, activeNoteId: numb
 
   const currentSpeed = audioSpeeds[speedIndex];
   const audioLines = useMemo(
-    () => story?.lines.map((line, lineIndex) => ({ ...line, lineIndex })).filter((line) => line.text) ?? [],
+    () => {
+      const dialogueLines = story?.lines.map((line, lineIndex) => ({ text: line.text, lineIndex })).filter((line) => line.text) ?? [];
+      if (dialogueLines.length > 0) return dialogueLines;
+      return story?.monologueSections.map((section, lineIndex) => ({ text: section.text, lineIndex })).filter((section) => section.text) ?? [];
+    },
     [story],
   );
   const audioText = audioLines.length > 0 ? audioLines[audioIndex]?.text : story?.monologue;
@@ -42,6 +47,15 @@ export function useStoryAudio(story: StoryDisplayData | null, activeNoteId: numb
   );
   const monologueDuration = useMemo(() => estimateAudioDuration(story?.monologue, currentSpeed), [story?.monologue, currentSpeed]);
   const totalAudioDuration = audioDurations.length > 0 ? audioDurations.reduce((sum, duration) => sum + duration, 0) : monologueDuration;
+  const audioSegments = useMemo(() => {
+    if (!story?.lines.some((line) => line.text) || audioLines.length < 2 || totalAudioDuration <= 0) return [];
+    let elapsed = 0;
+    return audioLines.map((line, index) => {
+      const startPercentage = (elapsed / totalAudioDuration) * 100;
+      elapsed += audioDurations[index] ?? 0;
+      return { lineIndex: line.lineIndex, startPercentage, endPercentage: (elapsed / totalAudioDuration) * 100 };
+    });
+  }, [audioDurations, audioLines, story?.lines, totalAudioDuration]);
   const elapsedBeforeCurrentLine = audioDurations.slice(0, audioIndex).reduce((sum, duration) => sum + duration, 0);
   const totalAudioElapsed = audioDurations.length > 0 ? Math.min(totalAudioDuration, elapsedBeforeCurrentLine + audioElapsed) : Math.min(totalAudioDuration, audioElapsed);
   const progress = totalAudioDuration > 0 ? Math.min(100, (totalAudioElapsed / totalAudioDuration) * 100) : 0;
@@ -78,12 +92,14 @@ export function useStoryAudio(story: StoryDisplayData | null, activeNoteId: numb
         return;
       }
       setIsPlaying(false);
+      setIsPaused(false);
       setIsSequencePlaying(false);
       setActiveAudioLineIndex(null);
     };
     utterance.onerror = () => {
       clearAudioTimer();
       setIsPlaying(false);
+      setIsPaused(false);
       setIsSequencePlaying(false);
       setActiveAudioLineIndex(null);
     };
@@ -92,6 +108,7 @@ export function useStoryAudio(story: StoryDisplayData | null, activeNoteId: numb
     setAudioElapsed(0);
     setActiveAudioLineIndex(lineIndex);
     setIsPlaying(true);
+    setIsPaused(false);
     audioTimerRef.current = setInterval(() => {
       const elapsed = (Date.now() - audioStartedAtRef.current) / 1000;
       setAudioElapsed(Math.min(audioDurationRef.current, elapsed));
@@ -104,6 +121,7 @@ export function useStoryAudio(story: StoryDisplayData | null, activeNoteId: numb
     window.speechSynthesis.cancel();
     clearAudioTimer();
     setIsPlaying(false);
+    setIsPaused(false);
     setIsSequencePlaying(false);
     setAutoAdvanceFromIndex(null);
     setActiveAudioLineIndex(null);
@@ -112,13 +130,27 @@ export function useStoryAudio(story: StoryDisplayData | null, activeNoteId: numb
 
   const handlePlayPause = useCallback(() => {
     if (typeof window === "undefined" || !window.speechSynthesis) return;
-    if (isPlaying) {
-      stopAudio(false);
+    if (isPlaying && !isPaused) {
+      const elapsed = Math.min(audioDurationRef.current, (Date.now() - audioStartedAtRef.current) / 1000);
+      setAudioElapsed(elapsed);
+      clearAudioTimer();
+      window.speechSynthesis.pause();
+      setIsPaused(true);
+      return;
+    }
+    if (isPlaying && isPaused) {
+      audioStartedAtRef.current = Date.now() - audioElapsed * 1000;
+      window.speechSynthesis.resume();
+      setIsPaused(false);
+      audioTimerRef.current = setInterval(() => {
+        const elapsed = (Date.now() - audioStartedAtRef.current) / 1000;
+        setAudioElapsed(Math.min(audioDurationRef.current, elapsed));
+      }, 200);
       return;
     }
     setIsSequencePlaying(audioLines.length > 0);
     speakAudio(audioText, audioLines.length > 0 ? audioLines[audioIndex]?.lineIndex ?? null : null, audioLines.length > 0 ? audioIndex : null);
-  }, [audioIndex, audioLines, audioText, isPlaying, speakAudio, stopAudio]);
+  }, [audioElapsed, audioIndex, audioLines, audioText, clearAudioTimer, isPaused, isPlaying, speakAudio]);
 
   const playFromStart = useCallback(() => {
     if (typeof window === "undefined" || !window.speechSynthesis) return;
@@ -149,11 +181,16 @@ export function useStoryAudio(story: StoryDisplayData | null, activeNoteId: numb
   }, [audioIndex, audioLines, speakAudio, story?.monologue]);
 
   const handleSpeakLine = useCallback((index: number, text: string) => {
+    if (isPlaying && activeAudioLineIndex === index) {
+      stopAudio();
+      return;
+    }
+
     const nextAudioIndex = audioLines.findIndex((line) => line.lineIndex === index);
     if (nextAudioIndex !== -1) setAudioIndex(nextAudioIndex);
     setIsSequencePlaying(false);
     speakAudio(text, index);
-  }, [audioLines, speakAudio]);
+  }, [activeAudioLineIndex, audioLines, isPlaying, speakAudio, stopAudio]);
 
   const seekAudio = useCallback((percentage: number) => {
     if (totalAudioDuration <= 0) return;
@@ -173,7 +210,7 @@ export function useStoryAudio(story: StoryDisplayData | null, activeNoteId: numb
       accumulated += audioDurations[index];
     }
 
-    const wasPlaying = isPlaying;
+    const wasPlaying = isPlaying && !isPaused;
     const wasSequencePlaying = isSequencePlaying;
     const targetLine = audioLines[targetIndex];
     setAudioIndex(targetIndex);
@@ -185,7 +222,7 @@ export function useStoryAudio(story: StoryDisplayData | null, activeNoteId: numb
       setAudioIndex(targetIndex);
       setAudioElapsed(Math.max(0, targetElapsed - accumulated));
     }
-  }, [audioDurations, audioLines, isPlaying, isSequencePlaying, speakAudio, stopAudio, totalAudioDuration]);
+  }, [audioDurations, audioLines, isPaused, isPlaying, isSequencePlaying, speakAudio, stopAudio, totalAudioDuration]);
 
   useEffect(() => {
     if (autoAdvanceFromIndex === null) return;
@@ -194,6 +231,7 @@ export function useStoryAudio(story: StoryDisplayData | null, activeNoteId: numb
     const nextIndex = autoAdvanceFromIndex + 1;
     if (nextIndex >= audioLines.length) {
       setIsPlaying(false);
+      setIsPaused(false);
       setIsSequencePlaying(false);
       setActiveAudioLineIndex(null);
       return;
@@ -214,6 +252,7 @@ export function useStoryAudio(story: StoryDisplayData | null, activeNoteId: numb
 
   return {
     activeAudioLineIndex,
+    audioSegments,
     durationTime: formatAudioTime(totalAudioDuration),
     elapsedTime: formatAudioTime(totalAudioElapsed),
     handleAudioStep,
@@ -222,6 +261,7 @@ export function useStoryAudio(story: StoryDisplayData | null, activeNoteId: numb
     playFromStart,
     seekAudio,
     isPlaying,
+    isPaused,
     progress,
     setSpeedIndex,
     speed: currentSpeed,

@@ -1,13 +1,16 @@
 export interface QuizOption {
   text: string;
+  translation?: string;
   isCorrect: boolean;
 }
 
 export interface QuizQuestion {
   num: number;
   question: string;
+  translation?: string;
   options: QuizOption[];
   explanation: string;
+  explanationTranslation?: string;
 }
 
 export interface StoryLine {
@@ -16,6 +19,11 @@ export interface StoryLine {
   text: string;
   translation: string;
   side: "left" | "right";
+}
+
+export interface MonologueSection {
+  text: string;
+  translation: string;
 }
 
 export interface StoryDisplayData {
@@ -27,6 +35,7 @@ export interface StoryDisplayData {
   lines: StoryLine[];
   monologue: string;
   translatedMonologue: string;
+  monologueSections: MonologueSection[];
 }
 
 export type StoryContentTab = "story" | "quiz";
