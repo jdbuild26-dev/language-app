@@ -1,50 +1,49 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
+import { useQuery } from "@tanstack/react-query";
 import { Loader2, AlertCircle, BookOpen } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import {
-  fetchSubtopicNotes,
-  getGrammarNoteHtmlUrl,
+  fetchGrammarNoteHtml,
+  fetchGrammarSubtopicNotes,
   GrammarNote,
 } from "@/services/grammarApi";
+
+const GRAMMAR_CACHE_TIME = 10 * 60 * 1000;
 
 export default function GrammarNotePage() {
   const params = useParams<{ noteId: string }>();
   const noteId = params?.noteId;
   const { knownLang } = useLanguage();
 
-  const [notes, setNotes] = useState<GrammarNote[]>([]);
   const [activeNote, setActiveNote] = useState<GrammarNote | null>(null);
-  const [loadingNotes, setLoadingNotes] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [htmlCacheKey, setHtmlCacheKey] = useState(() => Date.now());
-
-  const loadNotes = useCallback(async () => {
-    if (!noteId) return;
-    setLoadingNotes(true);
-    setError(null);
-    try {
-      let data = await fetchSubtopicNotes(Number(noteId), knownLang);
-      if (data.length === 0) {
-        data = await fetchSubtopicNotes(Number(noteId));
-      }
-      setNotes(data);
-      setActiveNote(data[0] ?? null);
-      setHtmlCacheKey(Date.now());
-    } catch (e: any) {
-      setError(e.message ?? "Failed to load notes");
-    } finally {
-      setLoadingNotes(false);
-    }
-  }, [noteId, knownLang]);
+  const numericNoteId = Number(noteId);
+  const canLoadNotes = Number.isFinite(numericNoteId) && numericNoteId > 0;
+  const notesQuery = useQuery({
+    queryKey: ["grammar-notes", numericNoteId, knownLang],
+    queryFn: () => fetchGrammarSubtopicNotes(numericNoteId, knownLang),
+    enabled: canLoadNotes,
+    staleTime: GRAMMAR_CACHE_TIME,
+    gcTime: 30 * 60 * 1000,
+  });
+  const notes = notesQuery.data ?? [];
 
   useEffect(() => {
-    loadNotes();
-  }, [loadNotes]);
+    setActiveNote((current) => notes.find((note) => note.id === current?.id) ?? notes[0] ?? null);
+  }, [notes]);
 
-  const isLoading = loadingNotes;
+  const htmlQuery = useQuery({
+    queryKey: ["grammar-note-html", activeNote?.id],
+    queryFn: () => fetchGrammarNoteHtml(activeNote!.id),
+    enabled: Boolean(activeNote?.id),
+    staleTime: GRAMMAR_CACHE_TIME,
+    gcTime: 30 * 60 * 1000,
+  });
+  const html = htmlQuery.data ?? null;
+  const error = notesQuery.error ?? htmlQuery.error;
+  const isLoading = notesQuery.isPending || (htmlQuery.isPending && !html);
 
   return (
     <div className="min-h-screen bg-[#f9f5f0] dark:bg-slate-950">
@@ -59,10 +58,7 @@ export default function GrammarNotePage() {
             return (
               <button
                 key={n.id}
-                onClick={() => {
-                  setActiveNote(n);
-                  setHtmlCacheKey(Date.now());
-                }}
+                onClick={() => setActiveNote(n)}
                 title={n.title ?? undefined}
                 className={`px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap transition-all ${
                   activeNote?.id === n.id
@@ -87,7 +83,7 @@ export default function GrammarNotePage() {
         {!isLoading && error && (
           <div className="flex items-center gap-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 p-4 rounded-xl">
             <AlertCircle className="w-5 h-5 flex-shrink-0" />
-            <span>{error}</span>
+            <span>{error.message}</span>
           </div>
         )}
 
@@ -104,7 +100,7 @@ export default function GrammarNotePage() {
           <iframe
             key={activeNote.id}
             title={activeNote.title ?? "Grammar lesson"}
-            src={getGrammarNoteHtmlUrl(activeNote.id, htmlCacheKey)}
+            srcDoc={html ?? undefined}
             className="h-screen min-h-screen w-full border-0 bg-white dark:bg-slate-900"
           />
         )}

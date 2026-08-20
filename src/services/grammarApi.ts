@@ -69,6 +69,15 @@ export async function fetchSubtopicNotes(
   return data.notes ?? [];
 }
 
+export async function fetchGrammarSubtopicNotes(
+  subtopicId: number,
+  knownLang?: string,
+): Promise<GrammarNote[]> {
+  let notes = await fetchSubtopicNotes(subtopicId, knownLang);
+  if (notes.length === 0 && knownLang) notes = await fetchSubtopicNotes(subtopicId);
+  return notes;
+}
+
 /**
  * Returns the URL to fetch the rendered HTML for a note.
  * Used in an <iframe> or fetched directly.
@@ -85,9 +94,7 @@ export function getGrammarNoteHtmlUrl(noteId: number, cacheKey?: string | number
  * Fetch the raw HTML content of a grammar note (for inline rendering).
  */
 export async function fetchGrammarNoteHtml(noteId: number): Promise<string> {
-  const res = await fetch(getGrammarNoteHtmlUrl(noteId, Date.now()), {
-    cache: "no-store",
-  });
+  const res = await fetch(getGrammarNoteHtmlUrl(noteId));
   if (!res.ok) throw new Error("Failed to fetch grammar note HTML");
   return res.text();
 }

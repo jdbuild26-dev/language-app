@@ -178,12 +178,12 @@
 
   .story-quiz-option--correct .story-quiz-option-label {
     background: var(--story-success);
-    color: var(--story-surface);
+    color: #ffffff;
   }
 
   .story-quiz-option--incorrect .story-quiz-option-label {
     background: var(--story-error);
-    color: var(--story-surface);
+    color: #ffffff;
   }
 
   .story-quiz-feedback {
@@ -193,13 +193,13 @@
   .story-quiz-feedback--correct {
     border-color: var(--story-success-border);
     background: var(--story-success-feedback-surface);
-    color: var(--story-success-text);
+    color: #ffffff;
   }
 
   .story-quiz-feedback--incorrect {
     border-color: var(--story-error-border);
     background: var(--story-error-feedback-surface);
-    color: var(--story-error-text);
+    color: #ffffff;
   }
 
   @media (hover: hover) and (pointer: fine) {
@@ -295,16 +295,17 @@
     --story-on-disabled: #ffffff;
     --story-audio: #54643b;
     --story-audio-track: #e6e5e1;
-    --story-success: #6e8a4d;
-    --story-error: #d98276;
-    --story-success-surface: #edf3e4;
-    --story-success-feedback-surface: #f2f7ec;
-    --story-success-border: #c9d9b8;
-    --story-success-text: #344628;
-    --story-error-surface: #fff1ef;
-    --story-error-feedback-surface: #fff4f2;
-    --story-error-border: #efc8c2;
-    --story-error-text: #9b4036;
+    --story-success: #22c55e;
+    /* Match the main Practice feedback banner: green-500 / red-500. */
+    --story-success-surface: #f0fdf4;
+    --story-success-feedback-surface: #22c55e;
+    --story-success-border: #22c55e;
+    --story-success-text: #166534;
+    --story-error: #ef4444;
+    --story-error-surface: #fef2f2;
+    --story-error-feedback-surface: #ef4444;
+    --story-error-border: #ef4444;
+    --story-error-text: #991b1b;
     --story-option-hover: #f8fcfd;
     --story-option-selected: var(--story-secondary-container);
     --story-ease-out: cubic-bezier(0.23, 1, 0.32, 1);
