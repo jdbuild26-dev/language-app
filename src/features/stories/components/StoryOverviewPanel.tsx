@@ -1,9 +1,15 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { BookOpen, Languages, Pause, Play, RotateCcw, SkipBack, SkipForward } from "lucide-react";
+import { BookOpen, ChevronLeft, ChevronRight, Languages, Pause, Play, RotateCcw, SkipBack, SkipForward } from "lucide-react";
 import { StoryNote } from "@/services/storiesApi";
 import { StoryContentTab, StoryDisplayData } from "../types";
+
+const STORY_IMAGES = [
+  { src: "/images/kitchen.jpg", alt: "Kitchen interior" },
+  { src: "https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?auto=format&fit=crop&q=80&w=900", alt: "People talking at a café" },
+  { src: "https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?auto=format&fit=crop&q=80&w=900", alt: "Travel landscape" },
+];
 
 interface StoryOverviewPanelProps {
   story: StoryDisplayData;
@@ -31,6 +37,7 @@ interface StoryOverviewPanelProps {
   onStartReveal: () => void;
   onPauseResume: () => void;
   onRestartReveal: () => void;
+  onOpenImage: (image: { src: string; alt: string }) => void;
 }
 
 export function StoryOverviewPanel({
@@ -59,11 +66,14 @@ export function StoryOverviewPanel({
   onStartReveal,
   onPauseResume,
   onRestartReveal,
+  onOpenImage,
 }: StoryOverviewPanelProps) {
   const [seekPreview, setSeekPreview] = useState<number | null>(null);
+  const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const seekPreviewRef = useRef<number | null>(null);
   const displayedProgress = seekPreview ?? progress;
   const contentLabel = isMonologue ? "monologue" : "conversation";
+  const selectedImage = STORY_IMAGES[selectedImageIndex];
 
   useEffect(() => {
     if (seekPreviewRef.current === null) setSeekPreview(null);
@@ -75,6 +85,10 @@ export function StoryOverviewPanel({
     seekPreviewRef.current = null;
     setSeekPreview(null);
     onSeek(nextProgress);
+  };
+
+  const showAdjacentImage = (direction: -1 | 1) => {
+    setSelectedImageIndex((index) => (index + direction + STORY_IMAGES.length) % STORY_IMAGES.length);
   };
 
   return (
@@ -92,12 +106,22 @@ export function StoryOverviewPanel({
           </button>
         </nav>
 
-        <div className="relative mb-6 overflow-hidden rounded-xl">
-          <img src="/images/kitchen.jpg" alt="" className="h-[clamp(10rem,15vw,14rem)] w-full object-cover" />
-          <div className="absolute bottom-3 right-3 rounded-md bg-[#00333a] p-2 text-white shadow-md">
+        <section className="mb-6" aria-label="Story image gallery">
+          <div className="relative overflow-hidden rounded-xl">
+            <button onClick={() => onOpenImage(selectedImage)} className="block w-full" aria-label={`View ${selectedImage.alt} in full size`}>
+              <img src={selectedImage.src} alt={selectedImage.alt} className="h-[clamp(11rem,17vw,15.5rem)] w-full object-cover transition-transform duration-200 hover:scale-[1.02]" />
+            </button>
+          <button onClick={() => showAdjacentImage(-1)} className="absolute left-2 top-1/2 z-10 inline-flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-[#00333a] shadow-sm transition-[transform,background-color] duration-150 hover:scale-105 hover:bg-white active:scale-95" aria-label="Show previous image">
+            <ChevronLeft className="h-4 w-4" />
+          </button>
+          <button onClick={() => showAdjacentImage(1)} className="absolute right-2 top-1/2 z-10 inline-flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-[#00333a] shadow-sm transition-[transform,background-color] duration-150 hover:scale-105 hover:bg-white active:scale-95" aria-label="Show next image">
+            <ChevronRight className="h-4 w-4" />
+          </button>
+          <div className="pointer-events-none absolute bottom-3 right-3 rounded-md bg-[#00333a] p-2 text-white shadow-md">
             <BookOpen className="h-5 w-5" />
           </div>
-        </div>
+          </div>
+        </section>
 
         <h2 className={`mb-3 text-[clamp(1.35rem,1.8vw,1.6rem)] font-bold leading-tight tracking-[-0.02em] ${darkMode ? "text-[#e1e2e9]" : "text-[#1b1c1b]"}`}>{story.title}</h2>
         <p className={`mb-6 text-[clamp(0.8rem,0.9vw,0.875rem)] font-semibold leading-6 ${darkMode ? "text-[#c6c6ca]" : "text-[#586170]"}`}>{story.description}</p>

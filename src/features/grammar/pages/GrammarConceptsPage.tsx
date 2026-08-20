@@ -1,10 +1,13 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useCallback, useState } from "react";
 import { useRouter } from "next/navigation";
+import { keepPreviousData, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ChevronDown, ChevronUp, BookOpen, Loader2, AlertCircle } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { fetchGrammarTopics, GrammarTopic } from "@/services/grammarApi";
+import { fetchGrammarSubtopicNotes, fetchGrammarTopics, GrammarTopic } from "@/services/grammarApi";
+
+const GRAMMAR_CACHE_TIME = 10 * 60 * 1000;
 
 const CEFR_LEVELS = ["A1", "A2", "B1", "B2"];
 
@@ -21,9 +24,11 @@ const TOPIC_COLOURS = [
 function TopicBlock({
   topic,
   colourIdx,
+  onPrefetchLesson,
 }: {
   topic: GrammarTopic;
   colourIdx: number;
+  onPrefetchLesson: (subtopicId: number) => void;
 }) {
   const router = useRouter();
   const [expanded, setExpanded] = useState(true);
@@ -59,6 +64,8 @@ function TopicBlock({
             <button
               key={sub.id}
               onClick={() => router.push(`/grammar/lessons/${sub.id}`)}
+              onPointerEnter={() => onPrefetchLesson(sub.id)}
+              onFocus={() => onPrefetchLesson(sub.id)}
               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm text-slate-700 dark:text-slate-200 hover:border-slate-400 dark:hover:border-slate-500 hover:shadow-sm transition-all duration-150 cursor-pointer"
             >
               <BookOpen className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500" />
@@ -85,26 +92,21 @@ function TopicBlock({
 export default function GrammarConceptsPage() {
   const { learningLang } = useLanguage();
   const [level, setLevel] = useState("A1");
-  const [topics, setTopics] = useState<GrammarTopic[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const load = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const data = await fetchGrammarTopics(learningLang, level);
-      setTopics(data);
-    } catch (e: any) {
-      setError(e.message ?? "Failed to load grammar topics");
-    } finally {
-      setLoading(false);
-    }
-  }, [learningLang, level]);
-
-  useEffect(() => {
-    load();
-  }, [load]);
+  const queryClient = useQueryClient();
+  const { data: topics = [], error, isPending } = useQuery({
+    queryKey: ["grammar-topics", learningLang, level],
+    queryFn: () => fetchGrammarTopics(learningLang, level),
+    staleTime: GRAMMAR_CACHE_TIME,
+    gcTime: 30 * 60 * 1000,
+    placeholderData: keepPreviousData,
+  });
+  const prefetchLesson = useCallback((subtopicId: number) => {
+    queryClient.prefetchQuery({
+      queryKey: ["grammar-notes", subtopicId, learningLang],
+      queryFn: () => fetchGrammarSubtopicNotes(subtopicId, learningLang),
+      staleTime: GRAMMAR_CACHE_TIME,
+    });
+  }, [learningLang, queryClient]);
 
   return (
     <div className="space-y-6">
@@ -125,6 +127,8 @@ export default function GrammarConceptsPage() {
             <button
               key={l}
               onClick={() => setLevel(l)}
+              onPointerEnter={() => queryClient.prefetchQuery({ queryKey: ["grammar-topics", learningLang, l], queryFn: () => fetchGrammarTopics(learningLang, l), staleTime: GRAMMAR_CACHE_TIME })}
+              onFocus={() => queryClient.prefetchQuery({ queryKey: ["grammar-topics", learningLang, l], queryFn: () => fetchGrammarTopics(learningLang, l), staleTime: GRAMMAR_CACHE_TIME })}
               className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all ${
                 level === l
                   ? "bg-slate-800 dark:bg-white text-white dark:text-slate-900 shadow-sm"
@@ -138,22 +142,22 @@ export default function GrammarConceptsPage() {
       </div>
 
       {/* Loading */}
-      {loading && (
+      {isPending && (
         <div className="flex justify-center items-center py-20">
           <Loader2 className="w-8 h-8 animate-spin text-slate-400" />
         </div>
       )}
 
       {/* Error */}
-      {!loading && error && (
+      {!isPending && error && (
         <div className="flex items-center gap-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 p-4 rounded-xl">
           <AlertCircle className="w-5 h-5 flex-shrink-0" />
-          <span>{error}</span>
+          <span>{error.message}</span>
         </div>
       )}
 
       {/* Empty state */}
-      {!loading && !error && topics.length === 0 && (
+      {!isPending && !error && topics.length === 0 && (
         <div className="text-center py-16 bg-slate-50 dark:bg-slate-900 rounded-2xl border border-dashed border-slate-300 dark:border-slate-700">
           <BookOpen className="w-10 h-10 text-slate-300 dark:text-slate-600 mx-auto mb-3" />
           <p className="text-slate-500 dark:text-slate-400 font-medium">
@@ -166,10 +170,10 @@ export default function GrammarConceptsPage() {
       )}
 
       {/* Topic blocks */}
-      {!loading && !error && topics.length > 0 && (
+      {!isPending && !error && topics.length > 0 && (
         <div className="space-y-4">
           {topics.map((topic, idx) => (
-            <TopicBlock key={topic.id} topic={topic} colourIdx={idx} />
+            <TopicBlock key={topic.id} topic={topic} colourIdx={idx} onPrefetchLesson={prefetchLesson} />
           ))}
         </div>
       )}

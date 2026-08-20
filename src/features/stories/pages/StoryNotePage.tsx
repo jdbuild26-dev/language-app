@@ -5,6 +5,7 @@ import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { AlertCircle, BookOpen, Loader2, X } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { fetchStoryNoteHtml, fetchStorySubtopicNotesForType, StoryNote } from "@/services/storiesApi";
 import { StoryOverviewPanel } from "../components/StoryOverviewPanel";
 import { StoryQuizView } from "../components/StoryQuizView";
@@ -29,6 +30,7 @@ export default function StoryNotePage() {
   const [revealSequenceActive, setRevealSequenceActive] = useState(false);
   const [revealRunId, setRevealRunId] = useState(0);
   const [quizProgress, setQuizProgress] = useState(0);
+  const [expandedImage, setExpandedImage] = useState<{ src: string; alt: string } | null>(null);
 
   const darkMode = false;
   const numericSubtopicId = Number(subtopicId);
@@ -121,7 +123,7 @@ export default function StoryNotePage() {
               activeNote={activeNote}
               setActiveNote={setActiveNote}
               activeTab={activeTab}
-              setActiveTab={setActiveTab}
+              setActiveTab={(tab) => { setExpandedImage(null); setActiveTab(tab); }}
               darkMode={darkMode}
               isPlaying={audio.isPlaying}
               isPaused={audio.isPaused}
@@ -141,6 +143,7 @@ export default function StoryNotePage() {
               onStartReveal={startConversationReveal}
               onPauseResume={audio.handlePlayPause}
               onRestartReveal={startConversationReveal}
+              onOpenImage={setExpandedImage}
             />
             {activeTab === "story" ? (
               <StoryReadingView
@@ -154,6 +157,12 @@ export default function StoryNotePage() {
             ) : (
               <StoryQuizView questions={quizQuestions} darkMode={darkMode} onProgressChange={setQuizProgress} />
             )}
+            <Dialog open={Boolean(expandedImage)} onOpenChange={(open) => { if (!open) setExpandedImage(null); }}>
+              <DialogContent onPointerDownOutside={() => setExpandedImage(null)} className="h-[min(78vh,40rem)] w-[min(82vw,60rem)] max-w-none border-0 bg-transparent p-0 shadow-none [&>button]:right-3 [&>button]:top-3 [&>button]:z-10 [&>button]:rounded-full [&>button]:bg-white/90 [&>button]:p-2 [&>button]:text-[#00333a] [&>button]:opacity-100 [&>button]:shadow-md">
+                <DialogTitle className="sr-only">{expandedImage?.alt ?? "Full-size story image"}</DialogTitle>
+                {expandedImage && <img src={expandedImage.src} alt={expandedImage.alt} className="h-full w-full rounded-2xl object-contain shadow-[0_24px_64px_rgba(0,31,36,0.28)]" />}
+              </DialogContent>
+            </Dialog>
           </div>
         </div>
       )}
