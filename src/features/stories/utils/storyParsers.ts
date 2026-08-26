@@ -20,13 +20,13 @@ export function parseQuizFromHtml(html: string): QuizQuestion[] {
       const options = Array.from(card.querySelectorAll(".quiz-option"))
         .map((opt) => ({
           text: opt.querySelector(".quiz-option-text")?.textContent?.trim() ?? "",
-          translation: (opt as HTMLElement).dataset.en?.trim() || opt.querySelector(".quiz-option-translation")?.textContent?.trim() || "",
+          translation: (opt as HTMLElement).dataset.en?.trim() || opt.querySelector(".quiz-translation-option, .quiz-option-translation")?.textContent?.trim() || "",
           isCorrect: opt.getAttribute("data-type") === "correct",
         }))
         .filter((opt) => opt.text);
       const explanation = card.querySelector(".feedback-text")?.textContent?.trim() ?? "";
       const explanationTranslation = (card.querySelector(".feedback-text") as HTMLElement | null)?.dataset.en?.trim() || card.querySelector(".feedback-translation")?.textContent?.trim() || "";
-      const translation = (card.querySelector(".quiz-question-content") as HTMLElement | null)?.dataset.en?.trim() || card.querySelector(".quiz-question-translation")?.textContent?.trim() || "";
+      const translation = (card.querySelector(".quiz-question-content") as HTMLElement | null)?.dataset.en?.trim() || card.querySelector(".quiz-translation-question, .quiz-question-translation")?.textContent?.trim() || "";
       return { num: i + 1, question, translation, options, explanation, explanationTranslation };
     })
     .filter((q) => q.question && q.options.length > 0);
@@ -45,6 +45,7 @@ export function parseStoryDisplayData(html: string, activeNote: StoryNote | null
       monologue: "",
       translatedMonologue: "",
       monologueSections: [],
+      imageUrls: [],
     };
   }
 
@@ -59,6 +60,9 @@ export function parseStoryDisplayData(html: string, activeNote: StoryNote | null
     .map((tag) => tag.textContent?.trim() ?? "")
     .filter(Boolean)
     .slice(0, 4);
+  const imageUrls = Array.from(doc.querySelectorAll<HTMLElement>(".story-image-metadata [data-url]"))
+    .map((image) => image.dataset.url?.trim() ?? "")
+    .filter(Boolean);
 
   const lines = Array.from(doc.querySelectorAll(".msg-row")).map((row, index) => ({
     speaker: row.querySelector(".msg-label span")?.textContent?.trim() || (index % 2 === 0 ? "Speaker A" : "Speaker B"),
@@ -76,5 +80,5 @@ export function parseStoryDisplayData(html: string, activeNote: StoryNote | null
   }));
   const monologue = monologueParagraphs.join("\n\n");
   const translatedMonologue = translatedMonologueParagraphs.join("\n\n");
-  return { title, translatedTitle, description, translatedDescription, tags, lines, monologue, translatedMonologue, monologueSections };
+  return { title, translatedTitle, description, translatedDescription, tags, lines, monologue, translatedMonologue, monologueSections, imageUrls };
 }

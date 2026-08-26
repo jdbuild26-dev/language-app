@@ -1,11 +1,16 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { BookOpen, ChevronLeft, ChevronRight, Languages, Pause, Play, RotateCcw, SkipBack, SkipForward } from "lucide-react";
+import { ChevronLeft, ChevronRight, Languages, Pause, Play, RotateCcw, SkipBack, SkipForward } from "lucide-react";
 import { StoryNote } from "@/services/storiesApi";
 import { StoryContentTab, StoryDisplayData } from "../types";
 
-const STORY_IMAGES = [
+export interface StoryImage {
+  src: string;
+  alt: string;
+}
+
+export const FALLBACK_STORY_IMAGES: StoryImage[] = [
   { src: "/images/kitchen.jpg", alt: "Kitchen interior" },
   { src: "https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?auto=format&fit=crop&q=80&w=900", alt: "People talking at a café" },
   { src: "https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?auto=format&fit=crop&q=80&w=900", alt: "Travel landscape" },
@@ -35,8 +40,9 @@ interface StoryOverviewPanelProps {
   isMonologue: boolean;
   revealSequenceActive: boolean;
   onStartReveal: () => void;
-  onPauseResume: () => void;
   onRestartReveal: () => void;
+  onShowFullConversation: () => void;
+  images: StoryImage[];
   onOpenImage: (image: { src: string; alt: string }) => void;
 }
 
@@ -64,8 +70,9 @@ export function StoryOverviewPanel({
   isMonologue,
   revealSequenceActive,
   onStartReveal,
-  onPauseResume,
   onRestartReveal,
+  onShowFullConversation,
+  images,
   onOpenImage,
 }: StoryOverviewPanelProps) {
   const [seekPreview, setSeekPreview] = useState<number | null>(null);
@@ -73,11 +80,15 @@ export function StoryOverviewPanel({
   const seekPreviewRef = useRef<number | null>(null);
   const displayedProgress = seekPreview ?? progress;
   const contentLabel = isMonologue ? "monologue" : "conversation";
-  const selectedImage = STORY_IMAGES[selectedImageIndex];
+  const selectedImage = images[selectedImageIndex] ?? images[0];
 
   useEffect(() => {
     if (seekPreviewRef.current === null) setSeekPreview(null);
   }, [progress]);
+
+  useEffect(() => {
+    setSelectedImageIndex(0);
+  }, [images]);
 
   const commitSeek = () => {
     const nextProgress = seekPreviewRef.current;
@@ -88,13 +99,12 @@ export function StoryOverviewPanel({
   };
 
   const showAdjacentImage = (direction: -1 | 1) => {
-    setSelectedImageIndex((index) => (index + direction + STORY_IMAGES.length) % STORY_IMAGES.length);
+    setSelectedImageIndex((index) => (index + direction + images.length) % images.length);
   };
 
   return (
-    <aside className={`w-full shrink-0 border-r lg:w-[clamp(280px,22vw,340px)] ${darkMode ? "border-[#32353a] bg-[#1d2025]" : "border-[#bfc8ca] bg-white"}`}>
-      <div className="sticky top-[76px] flex max-h-[calc(100vh-76px)] flex-col overflow-y-auto px-[clamp(1rem,1.7vw,1.5rem)] py-[clamp(1rem,1.4vw,1.25rem)] max-lg:static max-lg:max-h-none max-lg:overflow-visible">
-        <nav className="mb-5 flex items-center gap-4 border-b border-[#bfc8ca] pb-3 text-sm font-bold text-[#191c1d]">
+    <aside className={`sticky top-[76px] flex h-[calc(100vh-76px)] w-full shrink-0 flex-col border-r lg:w-[clamp(280px,22vw,340px)] max-lg:static max-lg:h-auto ${darkMode ? "border-[#32353a] bg-[#1d2025]" : "border-[#bfc8ca] bg-white"}`}>
+        <nav className={`flex shrink-0 items-center gap-4 border-b border-[#bfc8ca] px-[clamp(1rem,1.7vw,1.5rem)] pt-[clamp(1rem,1.4vw,1.25rem)] text-sm font-bold text-[#191c1d] ${darkMode ? "bg-[#1d2025]" : "bg-white"}`}>
           <button onClick={() => setActiveTab("story")} className={`pb-2 transition-colors active:scale-[0.98] ${activeTab === "story" ? "border-b-2 border-[#00333a] text-[#00333a]" : "text-[#191c1d] hover:text-[#00333a]"}`}>
             {isMonologue ? "Monologue" : "Conversation"}
           </button>
@@ -106,25 +116,22 @@ export function StoryOverviewPanel({
           </button>
         </nav>
 
+      <div className="story-sidebar-scroll min-h-0 flex-1 overflow-y-auto px-[clamp(1rem,1.7vw,1.5rem)] py-[clamp(1rem,1.4vw,1.25rem)] max-lg:overflow-visible">
         <section className="mb-6" aria-label="Story image gallery">
           <div className="relative overflow-hidden rounded-xl">
             <button onClick={() => onOpenImage(selectedImage)} className="block w-full" aria-label={`View ${selectedImage.alt} in full size`}>
               <img src={selectedImage.src} alt={selectedImage.alt} className="h-[clamp(11rem,17vw,15.5rem)] w-full object-cover transition-transform duration-200 hover:scale-[1.02]" />
             </button>
-          <button onClick={() => showAdjacentImage(-1)} className="absolute left-2 top-1/2 z-10 inline-flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-[#00333a] shadow-sm transition-[transform,background-color] duration-150 hover:scale-105 hover:bg-white active:scale-95" aria-label="Show previous image">
-            <ChevronLeft className="h-4 w-4" />
-          </button>
-          <button onClick={() => showAdjacentImage(1)} className="absolute right-2 top-1/2 z-10 inline-flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-[#00333a] shadow-sm transition-[transform,background-color] duration-150 hover:scale-105 hover:bg-white active:scale-95" aria-label="Show next image">
-            <ChevronRight className="h-4 w-4" />
-          </button>
-          <div className="pointer-events-none absolute bottom-3 right-3 rounded-md bg-[#00333a] p-2 text-white shadow-md">
-            <BookOpen className="h-5 w-5" />
-          </div>
+          {images.length > 1 && <>
+            <button onClick={() => showAdjacentImage(-1)} className="absolute left-2 top-1/2 z-10 inline-flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-[#00333a] shadow-sm transition-[transform,background-color] duration-150 hover:scale-105 hover:bg-white active:scale-95" aria-label="Show previous image">
+              <ChevronLeft className="h-4 w-4" />
+            </button>
+            <button onClick={() => showAdjacentImage(1)} className="absolute right-2 top-1/2 z-10 inline-flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-[#00333a] shadow-sm transition-[transform,background-color] duration-150 hover:scale-105 hover:bg-white active:scale-95" aria-label="Show next image">
+              <ChevronRight className="h-4 w-4" />
+            </button>
+          </>}
           </div>
         </section>
-
-        <h2 className={`mb-3 text-[clamp(1.35rem,1.8vw,1.6rem)] font-bold leading-tight tracking-[-0.02em] ${darkMode ? "text-[#e1e2e9]" : "text-[#1b1c1b]"}`}>{story.title}</h2>
-        <p className={`mb-6 text-[clamp(0.8rem,0.9vw,0.875rem)] font-semibold leading-6 ${darkMode ? "text-[#c6c6ca]" : "text-[#586170]"}`}>{story.description}</p>
 
         {hasContent && (
           <div className="mb-4 grid grid-cols-2 gap-2">
@@ -139,11 +146,11 @@ export function StoryOverviewPanel({
               </>
             ) : (
               <>
-                <button onClick={onPauseResume} className="story-primary-action inline-flex w-full items-center justify-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-2.5 text-xs font-bold transition-[transform,box-shadow] duration-150 ease-out active:scale-[0.97]" aria-label={isPaused ? `Resume ${contentLabel}` : `Pause ${contentLabel}`}>
-                  {isPaused ? <Play className="h-3.5 w-3.5 fill-current" /> : <Pause className="h-3.5 w-3.5" />} {isPaused ? "Resume" : "Pause"}
-                </button>
-                <button onClick={onRestartReveal} className="story-secondary-action inline-flex w-full items-center justify-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-2.5 text-xs font-bold transition-[transform,background-color] duration-150 ease-out active:scale-[0.97]" aria-label="Restart conversation">
+                <button onClick={onRestartReveal} className="story-primary-action inline-flex w-full items-center justify-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-2.5 text-xs font-bold transition-[transform,box-shadow] duration-150 ease-out active:scale-[0.97]" aria-label={`Restart ${contentLabel}`}>
                   <RotateCcw className="h-3.5 w-3.5" /> Restart
+                </button>
+                <button onClick={onShowFullConversation} className="story-secondary-action inline-flex w-full items-center justify-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-2.5 text-xs font-bold transition-[transform,background-color] duration-150 ease-out active:scale-[0.97]" aria-label="Show full conversation">
+                  <Play className="h-3.5 w-3.5 fill-current" /> Full conversation
                 </button>
                 <button onClick={() => window.dispatchEvent(new CustomEvent("story:translate-all"))} className="story-secondary-action col-span-2 inline-flex w-full items-center justify-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-2.5 text-xs font-bold transition-[transform,background-color] duration-150 ease-out active:scale-[0.97]" aria-label={`Translate all ${contentLabel} sections`}>
                   <Languages className="h-3.5 w-3.5" /> Translate all
@@ -175,6 +182,8 @@ export function StoryOverviewPanel({
             <span>{elapsedTime}</span><span>{durationTime}</span>
           </div>
         </div>
+
+        <p className={`mt-6 text-[clamp(0.8rem,0.9vw,0.875rem)] font-semibold leading-6 ${darkMode ? "text-[#c6c6ca]" : "text-[#586170]"}`}>{story.description}</p>
 
         {notes.length > 1 && (
           <div className={`mt-6 rounded-2xl border p-4 ${darkMode ? "border-[#45474a] bg-[#272a2f]" : "border-[#e4e2e0] bg-white"}`}>

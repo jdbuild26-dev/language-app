@@ -29,12 +29,16 @@ export function StoryQuizView({ questions, darkMode, onProgressChange }: { quest
   const toggleQuestionTranslation = (question: QuizQuestion) => {
     const next = !translatedQuestions[question.num];
     setTranslatedQuestions((prev) => ({ ...prev, [question.num]: next }));
-    if (submitted) {
-      setTranslatedOptions((prev) => ({
-        ...prev,
-        ...Object.fromEntries(question.options.map((_, idx) => [`${question.num}-${idx}`, next])),
-      }));
-    }
+  };
+
+  const toggleFeedbackTranslation = (question: QuizQuestion) => {
+    const next = !translatedExplanations[question.num];
+    setTranslatedQuestions((prev) => ({ ...prev, [question.num]: next }));
+    setTranslatedExplanations((prev) => ({ ...prev, [question.num]: next }));
+    setTranslatedOptions((prev) => ({
+      ...prev,
+      ...Object.fromEntries(question.options.map((_, idx) => [`${question.num}-${idx}`, next])),
+    }));
   };
 
   return (
@@ -53,7 +57,9 @@ export function StoryQuizView({ questions, darkMode, onProgressChange }: { quest
                   <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#edeeee] text-sm font-bold text-[#191c1d]">{q.num}</span>
                   <div className="min-w-0 flex-1">
                     <h2 className="pt-1 text-xl font-bold leading-snug text-[#191c1d]">{q.question}</h2>
-                    {translatedQuestions[q.num] && <p className="mt-2 text-base italic text-[#4a6267]">{q.translation || "Translation is not available for this question."}</p>}
+                    <div className={cn("story-quiz-translation-slot", translatedQuestions[q.num] && q.translation && "story-quiz-translation-slot--visible")}>
+                      <p>{q.translation}</p>
+                    </div>
                   </div>
                   <button onClick={() => toggleQuestionTranslation(q)} className="story-icon-action flex h-8 w-8 shrink-0 items-center justify-center rounded transition-[transform,background-color,color] duration-150 ease-out active:scale-[0.97]" aria-label="Translate question"><Languages className="h-4 w-4" /></button>
                 </div>
@@ -68,23 +74,32 @@ export function StoryQuizView({ questions, darkMode, onProgressChange }: { quest
                         <span className="story-quiz-option-label flex h-8 w-8 shrink-0 items-center justify-center rounded text-sm font-bold">
                           {showCorrect ? <CheckCircle2 className="h-4 w-4" /> : showWrong ? <XCircle className="h-4 w-4" /> : String.fromCharCode(65 + idx)}
                         </span>
-                        <span className="leading-6">{translatedOptions[`${q.num}-${idx}`] && option.translation ? option.translation : option.text}</span>
+                        <span className="min-w-0 leading-6">
+                          <span className="block">{option.text}</span>
+                          <span className={cn("story-quiz-option-translation", translatedOptions[`${q.num}-${idx}`] && option.translation && "story-quiz-option-translation--visible")}>
+                            <span>{option.translation}</span>
+                          </span>
+                        </span>
                       </button>
                     );
                   })}
                 </div>
                 {submitted && (
                   <div className={cn("story-quiz-feedback mt-5 rounded-xl p-4 text-sm leading-6", q.options[answers[q.num]]?.isCorrect ? "story-quiz-feedback--correct" : "story-quiz-feedback--incorrect")}>
-                    <p className="mb-1 flex items-center gap-2 font-bold">{q.options[answers[q.num]]?.isCorrect ? <CheckCircle2 className="h-4 w-4" /> : <XCircle className="h-4 w-4" />} {q.options[answers[q.num]]?.isCorrect ? "Correct" : "Not quite"}</p>
-                    {!q.options[answers[q.num]]?.isCorrect && <p className="font-semibold">Correct answer: {q.options.find((option) => option.isCorrect)?.text || "Not available"}</p>}
-                    {q.explanation && <div className="mt-3 flex items-start justify-between gap-3"><p className="italic">{translatedExplanations[q.num] && q.explanationTranslation ? q.explanationTranslation : q.explanation}</p><button onClick={() => setTranslatedExplanations((prev) => ({ ...prev, [q.num]: !prev[q.num] }))} className="shrink-0 rounded-md border border-current px-2 py-1 text-xs font-bold" aria-label="Translate explanation"><Languages className="h-3.5 w-3.5" /></button></div>}
+                    <div className="flex items-center justify-between gap-3">
+                      <p className="flex items-center gap-2 font-bold">{q.options[answers[q.num]]?.isCorrect ? <CheckCircle2 className="h-4 w-4" /> : <XCircle className="h-4 w-4" />} {q.options[answers[q.num]]?.isCorrect ? "Correct" : "Not quite"}</p>
+                      <button onClick={() => toggleFeedbackTranslation(q)} className="shrink-0 rounded-md border border-current p-1.5 transition-transform duration-150 ease-out active:scale-[0.97]" aria-label="Translate answer options and explanation">
+                        <Languages className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                    {q.explanation && <p className="mt-3 italic">{translatedExplanations[q.num] && q.explanationTranslation ? q.explanationTranslation : q.explanation}</p>}
                   </div>
                 )}
               </section>
             ))}
             <div className="flex justify-end pt-10">
               <div className="flex gap-4">
-                <button onClick={() => { setAnswers({}); setSubmitted(false); }} className="story-secondary-action rounded-full px-6 py-2.5 text-sm font-bold transition-[transform,background-color] duration-150 ease-out active:scale-[0.97]">Reset</button>
+                <button onClick={() => { setAnswers({}); setSubmitted(false); setTranslatedQuestions({}); setTranslatedOptions({}); setTranslatedExplanations({}); }} className="story-secondary-action rounded-full px-6 py-2.5 text-sm font-bold transition-[transform,background-color] duration-150 ease-out active:scale-[0.97]">Reset</button>
                 <button disabled={!allAnswered || submitted} onClick={() => setSubmitted(true)} className="story-primary-action inline-flex items-center gap-2 rounded-full px-6 py-2.5 text-sm font-bold transition-[transform,box-shadow] duration-150 ease-out active:scale-[0.97] disabled:cursor-not-allowed">Submit <ArrowRight className="h-4 w-4" /></button>
               </div>
             </div>

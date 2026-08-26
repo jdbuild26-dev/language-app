@@ -70,7 +70,7 @@ export function StoryReadingView({
   }, [hasDialogue, story.lines, story.monologueSections]);
 
   return (
-    <main className={`min-h-full min-w-0 flex-1 px-[clamp(1rem,3vw,2.5rem)] py-[clamp(1.5rem,3vw,2rem)] ${darkMode ? "bg-[#101418] text-[#e1e2e9]" : "bg-[var(--story-surface-hover)] text-[#191c1d]"}`}>
+    <main className={`min-h-full min-w-0 flex-1 px-[clamp(1rem,3vw,2.5rem)] pb-[clamp(7rem,12vh,10rem)] pt-[clamp(1.5rem,3vw,2rem)] ${darkMode ? "bg-[#101418] text-[#e1e2e9]" : "bg-[var(--story-surface-hover)] text-[#191c1d]"}`}>
       <div className="w-full">
         {hasDialogue ? (
           <section className="w-full">
