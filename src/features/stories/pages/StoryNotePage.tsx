@@ -3,11 +3,11 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
-import { AlertCircle, BookOpen, Loader2, X } from "lucide-react";
+import { AlertCircle, BookOpen, ChevronLeft, ChevronRight, Loader2, X } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { fetchStoryNoteHtml, fetchStorySubtopicNotesForType, StoryNote } from "@/services/storiesApi";
-import { StoryOverviewPanel } from "../components/StoryOverviewPanel";
+import { FALLBACK_STORY_IMAGES, StoryImage, StoryOverviewPanel } from "../components/StoryOverviewPanel";
 import { StoryQuizView } from "../components/StoryQuizView";
 import { StoryReadingView } from "../components/StoryReadingView";
 import { useStoryAudio } from "../hooks/useStoryAudio";
@@ -68,6 +68,15 @@ export default function StoryNotePage() {
   const error = notesQuery.error ?? storyHtmlQuery.error;
   const isLoading = notesQuery.isPending || (storyHtmlQuery.isPending && !html);
   const storyData = useMemo(() => html ? parseStoryDisplayData(html, activeNote) : null, [activeNote, html]);
+  const storyImages = useMemo<StoryImage[]>(() => {
+    const uploadedImages = storyData?.imageUrls.map((src, index) => ({ src, alt: `${storyData.title} image ${index + 1}` })) ?? [];
+    return uploadedImages.length > 0 ? uploadedImages : FALLBACK_STORY_IMAGES;
+  }, [storyData]);
+  const expandedImageIndex = useMemo(() => Math.max(0, storyImages.findIndex((image) => image.src === expandedImage?.src)), [expandedImage, storyImages]);
+  const showAdjacentExpandedImage = (direction: -1 | 1) => {
+    const nextIndex = (expandedImageIndex + direction + storyImages.length) % storyImages.length;
+    setExpandedImage(storyImages[nextIndex]);
+  };
   const audio = useStoryAudio(storyData, activeNote?.id);
   const isMonologue = storyData ? !storyData.lines.some((line) => line.text) && storyData.monologueSections.some((section) => section.text) : false;
   const topProgress = activeTab === "quiz" ? quizProgress : audio.progress;
@@ -98,7 +107,7 @@ export default function StoryNotePage() {
 
       {!isLoading && !error && storyData && (
         <div className="relative min-h-screen">
-          <header className={`sticky top-0 z-10 flex h-[76px] flex-col border-b ${darkMode ? "border-[#32353a] bg-[#101418]" : "border-[#e9e5df] bg-white"}`}>
+          <header className={`sticky top-0 z-30 flex h-[76px] flex-col border-b ${darkMode ? "border-[#32353a] bg-[#101418]" : "border-[#e9e5df] bg-white"}`}>
             <div className="relative flex flex-1 items-center px-6">
               <div className="flex w-12 shrink-0 items-center">
                 <img src="/favicon.svg" alt="" className="h-7 w-7" />
@@ -141,8 +150,9 @@ export default function StoryNotePage() {
               isMonologue={isMonologue}
               revealSequenceActive={revealSequenceActive}
               onStartReveal={startConversationReveal}
-              onPauseResume={audio.handlePlayPause}
               onRestartReveal={startConversationReveal}
+              onShowFullConversation={() => setRevealSequenceActive(false)}
+              images={storyImages}
               onOpenImage={setExpandedImage}
             />
             {activeTab === "story" ? (
@@ -158,9 +168,26 @@ export default function StoryNotePage() {
               <StoryQuizView questions={quizQuestions} darkMode={darkMode} onProgressChange={setQuizProgress} />
             )}
             <Dialog open={Boolean(expandedImage)} onOpenChange={(open) => { if (!open) setExpandedImage(null); }}>
-              <DialogContent onPointerDownOutside={() => setExpandedImage(null)} className="h-[min(78vh,40rem)] w-[min(82vw,60rem)] max-w-none border-0 bg-transparent p-0 shadow-none [&>button]:right-3 [&>button]:top-3 [&>button]:z-10 [&>button]:rounded-full [&>button]:bg-white/90 [&>button]:p-2 [&>button]:text-[#00333a] [&>button]:opacity-100 [&>button]:shadow-md">
+              <DialogContent onPointerDownOutside={() => setExpandedImage(null)} className="story-image-dialog relative max-w-none border-0 bg-transparent p-0 shadow-none [&>button]:right-3 [&>button]:top-3 [&>button]:z-10 [&>button]:inline-flex [&>button]:h-10 [&>button]:w-10 [&>button]:items-center [&>button]:justify-center [&>button]:rounded-full [&>button]:border [&>button]:border-[#b9c5c7] [&>button]:bg-[#edf1f1] [&>button]:p-0 [&>button]:text-[#00333a] [&>button]:opacity-100 [&>button]:shadow-[0_6px_16px_rgba(0,0,0,0.2)] [&>button]:focus:ring-0 [&>button]:focus:ring-offset-0 [&>button]:focus-visible:ring-2 [&>button]:focus-visible:ring-white [&>button>svg]:h-5 [&>button>svg]:w-5">
                 <DialogTitle className="sr-only">{expandedImage?.alt ?? "Full-size story image"}</DialogTitle>
-                {expandedImage && <img src={expandedImage.src} alt={expandedImage.alt} className="h-full w-full rounded-2xl object-contain shadow-[0_24px_64px_rgba(0,31,36,0.28)]" />}
+                <div className="pointer-events-none absolute inset-x-0 -top-6 flex justify-center gap-4" aria-label={`Image ${expandedImageIndex + 1} of ${storyImages.length}`}>
+                  {storyImages.map((image, index) => <span key={image.src} className={`h-1.5 w-14 rounded-full ${index === expandedImageIndex ? "bg-[#00c9fc]" : "bg-white/75"}`} />)}
+                </div>
+                <div className="h-full w-full overflow-hidden rounded-2xl shadow-[0_24px_64px_rgba(0,31,36,0.28)]">
+                  {expandedImage && <img src={expandedImage.src} alt={expandedImage.alt} className="h-full w-full object-cover" />}
+                </div>
+                {storyImages.length > 1 && <>
+                  <div className="absolute left-[-5.5rem] top-1/2 -translate-y-1/2">
+                    <button onClick={() => showAdjacentExpandedImage(-1)} className="group flex h-14 w-14 items-center justify-center rounded-full border border-white/30 bg-white/10 text-white shadow-[0_8px_24px_rgba(0,0,0,0.2)] backdrop-blur-sm transition-[transform,background-color,border-color] duration-150 ease-out hover:scale-105 hover:border-white/50 hover:bg-white/20 active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-white" aria-label="Show previous image">
+                      <ChevronLeft className="h-7 w-7 transition-transform duration-150 group-hover:-translate-x-0.5" strokeWidth={2} />
+                    </button>
+                  </div>
+                  <div className="absolute right-[-5.5rem] top-1/2 -translate-y-1/2">
+                    <button onClick={() => showAdjacentExpandedImage(1)} className="group flex h-14 w-14 items-center justify-center rounded-full border border-white/30 bg-white/10 text-white shadow-[0_8px_24px_rgba(0,0,0,0.2)] backdrop-blur-sm transition-[transform,background-color,border-color] duration-150 ease-out hover:scale-105 hover:border-white/50 hover:bg-white/20 active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-white" aria-label="Show next image">
+                      <ChevronRight className="h-7 w-7 transition-transform duration-150 group-hover:translate-x-0.5" strokeWidth={2} />
+                    </button>
+                  </div>
+                </>}
               </DialogContent>
             </Dialog>
           </div>

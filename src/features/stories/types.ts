@@ -36,6 +36,7 @@ export interface StoryDisplayData {
   monologue: string;
   translatedMonologue: string;
   monologueSections: MonologueSection[];
+  imageUrls: string[];
 }
 
 export type StoryContentTab = "story" | "quiz";
