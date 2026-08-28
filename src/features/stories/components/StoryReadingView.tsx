@@ -95,13 +95,13 @@ export function StoryReadingView({
           <section className="w-full">
             <div className="space-y-8">
               {story.monologueSections.map((section, index) => (
-                <article key={`${index}-${section.text.slice(0, 24)}`} className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-4">
-                  <div className="mt-0.5 flex flex-col gap-2 text-[#9aaeb1]">
-                    <button onClick={() => onSpeakLine(index, section.text)} className={cn("inline-flex h-7 w-7 items-center justify-center rounded-md transition-[transform,background-color,color] duration-150 ease-out active:scale-[0.96] hover:bg-[#e5f7fa] hover:text-[#00333a]", activeAudioIndex === index && "bg-[#d9f4f8] text-[#00333a]")} aria-label={activeAudioIndex === index ? "Stop section audio" : "Play section audio"}>
+                <article key={`${index}-${section.text.slice(0, 24)}`} className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-3.5">
+                  <div className="mt-1 flex h-7 items-center gap-1">
+                    <button onClick={() => onSpeakLine(index, section.text)} className={cn("inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full border transition-[transform,background-color,color,border-color] duration-150 ease-out active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#39cbe1] focus-visible:ring-offset-2", darkMode ? "border-[#667277] text-[#f3f4f6] hover:border-[#9cf1fc] hover:bg-[#263e43] hover:text-white focus-visible:ring-offset-[#101418]" : "border-[#879194] text-[#1b1c1b] hover:border-[#00333a] hover:bg-[#dff1f4] hover:text-[#00333a]", activeAudioIndex === index && (darkMode ? "border-[#9cf1fc] bg-[#263e43] text-white" : "border-[#00333a] bg-[#dff1f4] text-[#00333a]"))} aria-label={activeAudioIndex === index ? "Stop section audio" : "Play section audio"}>
                       <Volume2 className="h-3.5 w-3.5" />
                     </button>
                     {section.translation && (
-                      <button onClick={() => setShownMonologueTranslations((current) => ({ ...current, [index]: !current[index] }))} className={cn("inline-flex h-7 w-7 items-center justify-center rounded-md transition-[transform,background-color,color] duration-150 ease-out active:scale-[0.96] hover:bg-[#e5f7fa] hover:text-[#00333a]", shownMonologueTranslations[index] && "bg-[#e5f7fa] text-[#176b8f]")} aria-label={shownMonologueTranslations[index] ? "Hide section translation" : "Translate section"}>
+                      <button onClick={() => setShownMonologueTranslations((current) => ({ ...current, [index]: !current[index] }))} className={cn("inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full border transition-[transform,background-color,color,border-color] duration-150 ease-out active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#39cbe1] focus-visible:ring-offset-2", darkMode ? "border-[#667277] text-[#f3f4f6] hover:border-[#9cf1fc] hover:bg-[#263e43] hover:text-white focus-visible:ring-offset-[#101418]" : "border-[#879194] text-[#1b1c1b] hover:border-[#00333a] hover:bg-[#dff1f4] hover:text-[#00333a]", shownMonologueTranslations[index] && (darkMode ? "border-[#9cf1fc] bg-[#263e43] text-[#9cf1fc]" : "border-[#176b8f] bg-[#dff1f4] text-[#176b8f]"))} aria-label={shownMonologueTranslations[index] ? "Hide section translation" : "Translate section"}>
                         <Languages className="h-3.5 w-3.5" />
                       </button>
                     )}
