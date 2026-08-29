@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { BookOpenIcon, CheckCircleIcon } from "@heroicons/react/24/outline";
 import { CheckCircleIcon as CheckCircleSolidIcon } from "@heroicons/react/24/solid";
 import { useStoriesByLevel } from "@/services/storiesApi";
+import { StoryCardGridSkeleton } from "../components/StoryLoadingSkeleton";
 
 // Level colors config
 const levelColors = {
@@ -108,9 +109,9 @@ function StoryCard({ story, levelColor }) {
 }
 
 export default function StoriesByLevelPage() {
-  const { level } = useParams();
+  const { level } = useParams<{ level: string }>() ?? {};
   const { stories, loading, error, getStoriesByLevel } = useStoriesByLevel();
-  const colors = levelColors[level] || levelColors.a1;
+  const colors = levelColors[level?.toLowerCase() as keyof typeof levelColors] || levelColors.a1;
 
   useEffect(() => {
     if (level) {
@@ -122,14 +123,7 @@ export default function StoriesByLevelPage() {
   if (loading) {
     return (
       <div className="max-w-7xl mx-auto px-4 py-6">
-        <div className="flex items-center justify-center min-h-[40vh]">
-          <div className="text-center">
-            <div className="w-12 h-12 border-4 border-sky-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-            <p className="text-gray-600 dark:text-slate-400">
-              Loading stories...
-            </p>
-          </div>
-        </div>
+        <StoryCardGridSkeleton />
       </div>
     );
   }
@@ -142,7 +136,7 @@ export default function StoriesByLevelPage() {
           <div className="text-center">
             <p className="text-red-500 mb-4">{error}</p>
             <button
-              onClick={() => getStoriesByLevel(level)}
+              onClick={() => { if (level) void getStoriesByLevel(level); }}
               className="px-4 py-2 bg-sky-500 text-white rounded-lg hover:bg-sky-600 transition-colors"
             >
               Retry

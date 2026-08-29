@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
 import Link from "next/link";
 import { ArrowRightIcon, BookOpenIcon } from "@heroicons/react/24/outline";
 import { useStoriesGrammarTopics } from "@/services/storiesApi";
+import { StoryCardGridSkeleton } from "../components/StoryLoadingSkeleton";
 
 // Default grammar topics if API returns empty
 const defaultTopics = [
@@ -51,7 +52,7 @@ function GrammarCard({ topic, storyCount }) {
 }
 
 export default function StoriesGrammarPage() {
-  const { topics, loading, error, getTopics } = useStoriesGrammarTopics();
+  const { topics, loading, getTopics } = useStoriesGrammarTopics();
 
   useEffect(() => {
     getTopics();
@@ -63,14 +64,7 @@ export default function StoriesGrammarPage() {
   if (loading) {
     return (
       <div className="max-w-7xl mx-auto px-4 py-6">
-        <div className="flex items-center justify-center min-h-[40vh]">
-          <div className="text-center">
-            <div className="w-12 h-12 border-4 border-sky-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-            <p className="text-gray-600 dark:text-slate-400">
-              Loading grammar topics...
-            </p>
-          </div>
-        </div>
+        <StoryCardGridSkeleton count={4} />
       </div>
     );
   }

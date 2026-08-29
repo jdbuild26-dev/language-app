@@ -3,9 +3,10 @@
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { keepPreviousData, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ChevronDown, ChevronUp, BookOpen, Loader2, AlertCircle } from "lucide-react";
+import { AlertCircle, ArrowLeft, ArrowRight, BookOpen, BriefcaseBusiness, Compass, Coffee, Landmark, MessagesSquare, Plane } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { fetchStorySubtopicNotesForType, fetchStoryTopics, StoryTopic } from "@/services/storiesApi";
+import { fetchStoryNoteHtml, fetchStorySubtopicNotesForType, fetchStoryTopics, StoryTopic } from "@/services/storiesApi";
+import { StoryTopicSkeleton } from "../components/StoryLoadingSkeleton";
 
 const STORY_CACHE_TIME = 10 * 60 * 1000;
 
@@ -24,67 +25,84 @@ const TOPIC_COLOURS = [
   { bg: "bg-orange-50 dark:bg-orange-950/30", border: "border-orange-200 dark:border-orange-800", badge: "bg-orange-100 dark:bg-orange-900/50 text-orange-800 dark:text-orange-200", dot: "bg-orange-400" },
 ];
 
-function TopicBlock({ topic, colourIdx, storyType, onPrefetchChapter }: { topic: StoryTopic; colourIdx: number; storyType: "dialogue" | "monologue"; onPrefetchChapter: (subtopicId: number, storyType: "dialogue" | "monologue") => void }) {
+const CATEGORY_ICONS = [Compass, MessagesSquare, BriefcaseBusiness, Coffee, Plane, Landmark];
+const CATEGORY_CARD_STYLES = [
+  "from-sky-600 via-sky-500 to-cyan-400",
+  "from-emerald-700 via-emerald-600 to-teal-400",
+  "from-violet-700 via-violet-600 to-fuchsia-500",
+  "from-amber-600 via-orange-500 to-rose-400",
+  "from-rose-700 via-rose-600 to-pink-400",
+  "from-indigo-700 via-blue-600 to-sky-400",
+];
+
+function CategoryCard({ topic, colourIdx, level, storyType, onOpen }: { topic: StoryTopic; colourIdx: number; level: string; storyType: "dialogue" | "monologue"; onOpen: () => void }) {
+  const Icon = CATEGORY_ICONS[colourIdx % CATEGORY_ICONS.length];
+  const surface = CATEGORY_CARD_STYLES[colourIdx % CATEGORY_CARD_STYLES.length];
+
+  return (
+    <button
+      onClick={onOpen}
+      className={`group relative min-h-40 overflow-hidden rounded-2xl bg-gradient-to-br p-4 text-left text-white shadow-[0_12px_24px_rgba(15,23,42,0.12)] transition-[transform,box-shadow] duration-150 ease-out hover:-translate-y-0.5 hover:shadow-[0_18px_32px_rgba(15,23,42,0.2)] active:scale-[0.985] ${surface}`}
+    >
+      <div aria-hidden className="pointer-events-none absolute -bottom-14 -right-14 h-44 w-44 rounded-full border-[14px] border-white opacity-20" />
+      <div aria-hidden className="pointer-events-none absolute -bottom-7 -right-7 h-28 w-28 rounded-full border-2 border-white opacity-30" />
+      <div aria-hidden className="pointer-events-none absolute bottom-6 right-6 h-2 w-2 rounded-full bg-white/70" />
+      <div className="relative flex h-full flex-col">
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/25 bg-white/15 shadow-sm backdrop-blur-sm">
+            <Icon className="h-4 w-4" />
+          </div>
+          <span className="flex h-8 w-8 items-center justify-center rounded-full border border-white/35 bg-white/15 text-white shadow-sm backdrop-blur-sm transition-transform duration-150 ease-out group-hover:translate-x-0.5">
+            <ArrowRight className="h-3.5 w-3.5" />
+          </span>
+        </div>
+        <div className="mt-auto pr-8">
+          <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-white/75">
+            {level} · {storyType}
+          </p>
+          <h3 className="mt-1 line-clamp-2 text-base font-bold leading-tight text-white">{topic.name_en}</h3>
+          <p className="mt-1.5 flex items-center gap-1.5 text-sm text-white/85">
+            <span className="h-1.5 w-1.5 rounded-full bg-white/85" /> {topic.subtopics.length} {topic.subtopics.length === 1 ? "story" : "stories"} to explore
+          </p>
+        </div>
+      </div>
+    </button>
+  );
+}
+
+function StoryCard({ topic, subtopic, colourIdx, storyType, onPrefetchChapter }: { topic: StoryTopic; subtopic: StoryTopic["subtopics"][number]; colourIdx: number; storyType: "dialogue" | "monologue"; onPrefetchChapter: (subtopicId: number, storyType: "dialogue" | "monologue") => void }) {
   const router = useRouter();
-  const [expanded, setExpanded] = useState(true);
   const c = TOPIC_COLOURS[colourIdx % TOPIC_COLOURS.length];
 
   return (
-    <div className={`rounded-2xl border ${c.border} ${c.bg} overflow-hidden transition-all duration-200`}>
-      <button
-        onClick={() => setExpanded((v) => !v)}
-        className="w-full flex items-center justify-between px-5 py-4 text-left group"
-      >
-        <div className="flex items-center gap-3">
-          <div className={`w-3 h-3 rounded-full ${c.dot} flex-shrink-0`} />
-          <span className="text-base font-semibold text-slate-800 dark:text-white">
-            {topic.name_en}
-          </span>
-          <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${c.badge}`}>
-            {topic.subtopics.length} chapter{topic.subtopics.length !== 1 ? "s" : ""}
-          </span>
-        </div>
-        {expanded ? (
-          <ChevronUp className="w-4 h-4 text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-300 flex-shrink-0" />
-        ) : (
-          <ChevronDown className="w-4 h-4 text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-300 flex-shrink-0" />
-        )}
-      </button>
-
-      {expanded && topic.subtopics.length > 0 && (
-        <div className="px-5 pb-4 flex flex-wrap gap-2">
-          {topic.subtopics.map((sub) => (
-            <button
-              key={sub.id}
-              onClick={() => router.push(`/stories/learn/${sub.id}?type=${storyType}`)}
-              onPointerEnter={() => onPrefetchChapter(sub.id, storyType)}
-              onFocus={() => onPrefetchChapter(sub.id, storyType)}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm text-slate-700 dark:text-slate-200 hover:border-slate-400 dark:hover:border-slate-500 hover:shadow-sm transition-all duration-150 cursor-pointer"
-            >
-              <BookOpen className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500" />
-              {sub.name_en}
-              {sub.notes_count > 0 && (
-                <span className="text-xs text-slate-400 dark:text-slate-500">
-                  ({sub.notes_count})
-                </span>
-              )}
-            </button>
-          ))}
-        </div>
-      )}
-
-      {expanded && topic.subtopics.length === 0 && (
-        <p className="px-5 pb-4 text-sm text-slate-400 dark:text-slate-500 italic">
-          No chapters yet.
-        </p>
-      )}
-    </div>
+    <button
+      onClick={() => router.push(`/stories/learn/${subtopic.id}?type=${storyType}`)}
+      onPointerEnter={() => onPrefetchChapter(subtopic.id, storyType)}
+      onFocus={() => onPrefetchChapter(subtopic.id, storyType)}
+      className={`group relative min-h-40 overflow-hidden rounded-2xl border border-slate-200 bg-white p-5 text-left shadow-sm transition-[transform,box-shadow,border-color] duration-150 ease-out hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-lg active:scale-[0.985] dark:border-slate-700 dark:bg-slate-900 dark:hover:border-slate-600 ${c.bg}`}
+    >
+      <span aria-hidden className={`absolute inset-y-0 left-0 w-1.5 ${c.dot}`} />
+      <BookOpen aria-hidden className="pointer-events-none absolute -bottom-5 -right-5 h-28 w-28 text-slate-900 opacity-[0.055] dark:text-white" />
+      <div className="flex items-start justify-between gap-4">
+        <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-bold ${c.badge}`}>
+          <span className={`h-1.5 w-1.5 rounded-full ${c.dot}`} /> {topic.name_en}
+        </span>
+        <span className="flex h-8 w-8 items-center justify-center rounded-full border border-slate-200/80 bg-white/80 text-slate-600 shadow-sm transition-transform duration-150 ease-out group-hover:translate-x-0.5 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
+          <ArrowRight className="h-4 w-4" />
+        </span>
+      </div>
+      <h3 className="relative mt-5 max-w-[85%] text-lg font-bold leading-tight text-slate-900 dark:text-white">{subtopic.name_en}</h3>
+      <p className="relative mt-2 flex items-center gap-1.5 text-sm font-medium text-slate-600 dark:text-slate-300">
+        <BookOpen className="h-3.5 w-3.5" /> {subtopic.notes_count || 0} {subtopic.notes_count === 1 ? "story" : "stories"} · Start learning
+      </p>
+    </button>
   );
 }
 
 export default function StoryConceptsPage() {
   const [level, setLevel] = useState("A1");
   const [storyType, setStoryType] = useState<"dialogue" | "monologue">("dialogue");
+  const [selectedTopicId, setSelectedTopicId] = useState<number | null>(null);
   const { knownLang } = useLanguage();
   const queryClient = useQueryClient();
   const { data: topics = [], error, isPending } = useQuery({
@@ -95,6 +113,7 @@ export default function StoryConceptsPage() {
     placeholderData: keepPreviousData,
   });
   const alternateStoryType = storyType === "dialogue" ? "monologue" : "dialogue";
+  const selectedTopic = topics.find((topic) => topic.id === selectedTopicId) ?? null;
 
   useEffect(() => {
     queryClient.prefetchQuery({
@@ -105,10 +124,21 @@ export default function StoryConceptsPage() {
   }, [alternateStoryType, level, queryClient]);
 
   const prefetchChapter = useCallback((subtopicId: number, type: "dialogue" | "monologue") => {
-    queryClient.prefetchQuery({
+    void queryClient.fetchQuery({
       queryKey: ["story-notes", subtopicId, knownLang, type],
       queryFn: () => fetchStorySubtopicNotesForType(subtopicId, knownLang, type),
       staleTime: STORY_CACHE_TIME,
+    }).then((notes) => {
+      const firstNote = notes[0];
+      if (!firstNote) return;
+
+      return queryClient.prefetchQuery({
+        queryKey: ["story-html", firstNote.id, knownLang],
+        queryFn: () => fetchStoryNoteHtml(firstNote.id, knownLang),
+        staleTime: STORY_CACHE_TIME,
+      });
+    }).catch(() => {
+      // Prefetching is opportunistic; the destination screen renders its own error state.
     });
   }, [knownLang, queryClient]);
 
@@ -120,7 +150,7 @@ export default function StoryConceptsPage() {
             Story Concepts
           </h2>
           <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-            Select a level, then click any chapter to read its story.
+            {selectedTopic ? `Choose a story in ${selectedTopic.name_en}.` : "Choose a category, then select a story."}
           </p>
         </div>
 
@@ -128,7 +158,7 @@ export default function StoryConceptsPage() {
           {CEFR_LEVELS.map((l) => (
             <button
               key={l}
-              onClick={() => setLevel(l)}
+              onClick={() => { setLevel(l); setSelectedTopicId(null); }}
               className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all ${
                 level === l
                   ? "bg-slate-800 dark:bg-white text-white dark:text-slate-900 shadow-sm"
@@ -145,7 +175,7 @@ export default function StoryConceptsPage() {
         {STORY_TYPES.map((type) => (
           <button
             key={type.value}
-            onClick={() => setStoryType(type.value)}
+            onClick={() => { setStoryType(type.value); setSelectedTopicId(null); }}
             className={storyType === type.value
               ? "px-4 py-2 rounded-lg text-sm font-medium bg-sky-600 text-white shadow-sm"
               : "px-4 py-2 rounded-lg text-sm font-medium bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700"}
@@ -156,9 +186,7 @@ export default function StoryConceptsPage() {
       </div>
 
       {isPending && (
-        <div className="flex justify-center items-center py-20">
-          <Loader2 className="w-8 h-8 animate-spin text-slate-400" />
-        </div>
+        <StoryTopicSkeleton />
       )}
 
       {!isPending && error && (
@@ -180,12 +208,35 @@ export default function StoryConceptsPage() {
         </div>
       )}
 
-      {!isPending && !error && topics.length > 0 && (
-        <div className="space-y-4">
+      {!isPending && !error && topics.length > 0 && !selectedTopic && (
+        <div className="grid max-w-[52rem] gap-4 sm:grid-cols-2">
           {topics.map((topic, idx) => (
-            <TopicBlock key={topic.id} topic={topic} colourIdx={idx} storyType={storyType} onPrefetchChapter={prefetchChapter} />
+            <CategoryCard key={topic.id} topic={topic} colourIdx={idx} level={level} storyType={storyType} onOpen={() => setSelectedTopicId(topic.id)} />
           ))}
         </div>
+      )}
+
+      {!isPending && !error && selectedTopic && (
+        <section>
+          <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <button onClick={() => setSelectedTopicId(null)} className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 transition-[background-color,border-color,transform] duration-150 ease-out hover:border-slate-300 hover:bg-slate-50 active:scale-[0.97] dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:border-slate-600 dark:hover:bg-slate-800">
+                <ArrowLeft className="h-4 w-4" /> Categories
+              </button>
+              <p className="text-sm font-semibold text-slate-500 dark:text-slate-400">{selectedTopic.subtopics.length} {selectedTopic.subtopics.length === 1 ? "story" : "stories"}</p>
+            </div>
+            <h3 className="text-lg font-bold text-slate-900 dark:text-white">{selectedTopic.name_en}</h3>
+          </div>
+          {selectedTopic.subtopics.length > 0 ? (
+            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+              {selectedTopic.subtopics.map((subtopic, idx) => (
+                <StoryCard key={subtopic.id} topic={selectedTopic} subtopic={subtopic} colourIdx={idx} storyType={storyType} onPrefetchChapter={prefetchChapter} />
+              ))}
+            </div>
+          ) : (
+            <p className="rounded-2xl border border-dashed border-slate-300 py-12 text-center text-sm text-slate-500 dark:border-slate-700 dark:text-slate-400">No stories have been added to this category yet.</p>
+          )}
+        </section>
       )}
     </div>
   );

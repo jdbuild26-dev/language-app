@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { BookOpenIcon, CheckCircleIcon } from "@heroicons/react/24/outline";
 import { CheckCircleIcon as CheckCircleSolidIcon } from "@heroicons/react/24/solid";
 import { useStoriesByTheme } from "@/services/storiesApi";
+import { StoryCardGridSkeleton } from "../components/StoryLoadingSkeleton";
 
 // Story Card Component
 function StoryCard({ story }) {
@@ -72,8 +73,8 @@ function StoryCard({ story }) {
 }
 
 export default function StoriesByThemePage() {
-  const { theme } = useParams();
-  const { stories, loading, error, getStoriesByTheme } = useStoriesByTheme();
+  const { theme } = useParams<{ theme: string }>() ?? {};
+  const { stories, loading, getStoriesByTheme } = useStoriesByTheme();
 
   useEffect(() => {
     if (theme) {
@@ -88,14 +89,7 @@ export default function StoriesByThemePage() {
   if (loading) {
     return (
       <div className="max-w-7xl mx-auto px-4 py-6">
-        <div className="flex items-center justify-center min-h-[40vh]">
-          <div className="text-center">
-            <div className="w-12 h-12 border-4 border-purple-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-            <p className="text-gray-600 dark:text-slate-400">
-              Loading stories...
-            </p>
-          </div>
-        </div>
+        <StoryCardGridSkeleton />
       </div>
     );
   }

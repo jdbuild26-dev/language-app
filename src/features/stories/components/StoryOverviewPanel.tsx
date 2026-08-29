@@ -103,30 +103,37 @@ export function StoryOverviewPanel({
   };
 
   return (
-    <aside className={`sticky top-[76px] flex h-[calc(100vh-76px)] w-full shrink-0 flex-col border-r lg:w-[clamp(280px,22vw,340px)] max-lg:static max-lg:h-auto ${darkMode ? "border-[#32353a] bg-[#1d2025]" : "border-[#bfc8ca] bg-white"}`}>
-        <nav className={`flex shrink-0 items-center gap-4 border-b border-[#bfc8ca] px-[clamp(1rem,1.7vw,1.5rem)] pt-[clamp(1rem,1.4vw,1.25rem)] text-sm font-bold text-[#191c1d] ${darkMode ? "bg-[#1d2025]" : "bg-white"}`}>
-          <button onClick={() => setActiveTab("story")} className={`pb-2 transition-colors active:scale-[0.98] ${activeTab === "story" ? "border-b-2 border-[#00333a] text-[#00333a]" : "text-[#191c1d] hover:text-[#00333a]"}`}>
+    <aside className={`sticky top-[76px] flex h-[calc(100vh-76px)] w-full shrink-0 flex-col border-r lg:w-[clamp(280px,22vw,340px)] max-lg:static max-lg:h-auto max-lg:border-r-0 ${darkMode ? "border-[#3b474d] bg-[#182126]" : "border-[#bfc8ca] bg-white"}`}>
+        <nav className={`flex shrink-0 items-center gap-4 overflow-x-auto border-b px-[clamp(1rem,1.7vw,1.5rem)] pt-[clamp(0.75rem,1.4vw,1.25rem)] text-sm font-bold ${darkMode ? "border-[#3b474d] bg-[#182126] text-[#e7f0f2]" : "border-[#bfc8ca] bg-white text-[#191c1d]"}`}>
+          <button onClick={() => setActiveTab("story")} className={`shrink-0 pb-2 transition-colors active:scale-[0.98] ${activeTab === "story" ? darkMode ? "border-b-2 border-[#9cf1fc] text-[#9cf1fc]" : "border-b-2 border-[#00333a] text-[#00333a]" : darkMode ? "text-[#c6d3d6] hover:text-[#9cf1fc]" : "text-[#191c1d] hover:text-[#00333a]"}`}>
             {isMonologue ? "Monologue" : "Conversation"}
           </button>
-          <button onClick={() => setActiveTab("quiz")} className={`pb-2 transition-colors active:scale-[0.98] ${activeTab === "quiz" ? "border-b-2 border-[#00333a] text-[#00333a]" : "text-[#191c1d] hover:text-[#00333a]"}`}>
+          <button onClick={() => setActiveTab("quiz")} className={`shrink-0 pb-2 transition-colors active:scale-[0.98] ${activeTab === "quiz" ? darkMode ? "border-b-2 border-[#9cf1fc] text-[#9cf1fc]" : "border-b-2 border-[#00333a] text-[#00333a]" : darkMode ? "text-[#c6d3d6] hover:text-[#9cf1fc]" : "text-[#191c1d] hover:text-[#00333a]"}`}>
             Questions
           </button>
-          <button disabled className="pb-2 text-[#b6b9ad]" title="Vocabulary will be added later">
+          <button disabled className={`shrink-0 pb-2 ${darkMode ? "text-[#69777c]" : "text-[#b6b9ad]"}`} title="Vocabulary will be added later">
             Vocabulary
           </button>
         </nav>
 
-      <div className="story-sidebar-scroll min-h-0 flex-1 overflow-y-auto px-[clamp(1rem,1.7vw,1.5rem)] py-[clamp(1rem,1.4vw,1.25rem)] max-lg:overflow-visible">
-        <section className="mb-6" aria-label="Story image gallery">
+      <div className="story-sidebar-scroll scrollbar-hide min-h-0 flex-1 overflow-y-auto px-[clamp(1rem,1.7vw,1.5rem)] py-[clamp(1rem,1.4vw,1.25rem)] max-lg:overflow-visible max-lg:pb-7">
+        <section className="mb-5 sm:mb-6" aria-label="Story image gallery">
           <div className="relative overflow-hidden rounded-xl">
             <button onClick={() => onOpenImage(selectedImage)} className="block w-full" aria-label={`View ${selectedImage.alt} in full size`}>
-              <img src={selectedImage.src} alt={selectedImage.alt} className="h-[clamp(11rem,17vw,15.5rem)] w-full object-cover transition-transform duration-200 hover:scale-[1.02]" />
+              <img
+                src={selectedImage.src}
+                alt={selectedImage.alt}
+                loading={selectedImageIndex === 0 ? "eager" : "lazy"}
+                fetchPriority={selectedImageIndex === 0 ? "high" : "auto"}
+                decoding="async"
+                className="h-48 w-full object-cover transition-transform duration-200 hover:scale-[1.02] sm:h-[clamp(11rem,17vw,15.5rem)]"
+              />
             </button>
           {images.length > 1 && <>
-            <button onClick={() => showAdjacentImage(-1)} className="absolute left-2 top-1/2 z-10 inline-flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-[#00333a] shadow-sm transition-[transform,background-color] duration-150 hover:scale-105 hover:bg-white active:scale-95" aria-label="Show previous image">
+            <button onClick={() => showAdjacentImage(-1)} className={`absolute left-2 top-1/2 z-10 inline-flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full shadow-sm transition-[transform,background-color] duration-150 hover:scale-105 active:scale-95 ${darkMode ? "bg-[#1d2a2f]/90 text-[#9cf1fc] hover:bg-[#263b42]" : "bg-white/90 text-[#00333a] hover:bg-white"}`} aria-label="Show previous image">
               <ChevronLeft className="h-4 w-4" />
             </button>
-            <button onClick={() => showAdjacentImage(1)} className="absolute right-2 top-1/2 z-10 inline-flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-[#00333a] shadow-sm transition-[transform,background-color] duration-150 hover:scale-105 hover:bg-white active:scale-95" aria-label="Show next image">
+            <button onClick={() => showAdjacentImage(1)} className={`absolute right-2 top-1/2 z-10 inline-flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full shadow-sm transition-[transform,background-color] duration-150 hover:scale-105 active:scale-95 ${darkMode ? "bg-[#1d2a2f]/90 text-[#9cf1fc] hover:bg-[#263b42]" : "bg-white/90 text-[#00333a] hover:bg-white"}`} aria-label="Show next image">
               <ChevronRight className="h-4 w-4" />
             </button>
           </>}
@@ -160,7 +167,7 @@ export function StoryOverviewPanel({
           </div>
         )}
 
-        <div className={`w-full shrink-0 rounded-xl p-3 shadow-sm ${darkMode ? "bg-[#272a2f]" : "bg-white"}`}>
+        <div className={`w-full shrink-0 rounded-xl p-3 shadow-sm ${darkMode ? "bg-[#202c31]" : "bg-white"}`}>
           <div className="mb-3 flex items-center justify-between">
             <div className="story-audio-control flex items-center gap-2.5">
               <button onClick={onPrevious} className="transition-transform active:scale-[0.94]" aria-label="Previous audio"><SkipBack className="h-4 w-4" /></button>
@@ -176,7 +183,7 @@ export function StoryOverviewPanel({
               <span key={segment.lineIndex} className={`pointer-events-none absolute top-1.5 z-10 h-1.5 w-1.5 -translate-x-1/2 ${darkMode ? "bg-[#272a2f]" : "bg-white"}`} style={{ left: `${segment.startPercentage}%` }} />
             ))}
             <input type="range" min="0" max="100" step="0.1" value={displayedProgress} onChange={(event) => { const value = Number(event.target.value); seekPreviewRef.current = value; setSeekPreview(value); }} onPointerUp={commitSeek} onBlur={commitSeek} onKeyUp={(event) => { if (event.key.startsWith("Arrow") || event.key === "Home" || event.key === "End") commitSeek(); }} className="absolute inset-0 h-4 w-full cursor-pointer opacity-0" />
-            <span className="story-audio-control pointer-events-none absolute top-0 h-4 w-4 -translate-x-1/2 rounded-full border-2 border-current bg-white opacity-0 shadow-sm transition-opacity group-hover:opacity-100" style={{ left: `${displayedProgress}%` }} />
+            <span className={`story-audio-control pointer-events-none absolute top-0 h-4 w-4 -translate-x-1/2 rounded-full border-2 border-current opacity-0 shadow-sm transition-opacity group-hover:opacity-100 ${darkMode ? "bg-[#202c31]" : "bg-white"}`} style={{ left: `${displayedProgress}%` }} />
           </div>
           <div className="mt-2 flex justify-between text-[11px] font-bold text-[#8a9085]">
             <span>{elapsedTime}</span><span>{durationTime}</span>

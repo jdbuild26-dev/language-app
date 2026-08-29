@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 import Link from "next/link";
 import { ArrowRightIcon, BookOpenIcon } from "@heroicons/react/24/outline";
 import { useStoriesThemes } from "@/services/storiesApi";
+import { StoryCardGridSkeleton } from "../components/StoryLoadingSkeleton";
 
 // Default themes if API returns empty
 const defaultThemes = [
@@ -86,7 +86,7 @@ function ThemeCard({ theme, storyCount, image }) {
 }
 
 export default function StoriesThemesPage() {
-  const { themes, loading, error, getThemes } = useStoriesThemes();
+  const { themes, loading, getThemes } = useStoriesThemes();
 
   useEffect(() => {
     getThemes();
@@ -98,14 +98,7 @@ export default function StoriesThemesPage() {
   if (loading) {
     return (
       <div className="max-w-7xl mx-auto px-4 py-6">
-        <div className="flex items-center justify-center min-h-[40vh]">
-          <div className="text-center">
-            <div className="w-12 h-12 border-4 border-sky-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-            <p className="text-gray-600 dark:text-slate-400">
-              Loading themes...
-            </p>
-          </div>
-        </div>
+        <StoryCardGridSkeleton />
       </div>
     );
   }
