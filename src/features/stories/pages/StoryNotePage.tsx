@@ -5,6 +5,7 @@ import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { AlertCircle, BookOpen, ChevronLeft, ChevronRight, Moon, Sun, X } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useTheme } from "@/hooks/useTheme";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { fetchStoryNoteHtml, fetchStorySubtopicNotesForType, StoryNote } from "@/services/storiesApi";
 import { FALLBACK_STORY_IMAGES, StoryImage, StoryOverviewPanel } from "../components/StoryOverviewPanel";
@@ -33,7 +34,8 @@ export default function StoryNotePage() {
   const [revealRunId, setRevealRunId] = useState(0);
   const [quizProgress, setQuizProgress] = useState(0);
   const [expandedImage, setExpandedImage] = useState<{ src: string; alt: string } | null>(null);
-  const [darkMode, setDarkMode] = useState(false);
+  const { theme, toggleTheme } = useTheme();
+  const darkMode = theme === "dark";
   const numericSubtopicId = Number(subtopicId);
   const canLoadNotes = Number.isFinite(numericSubtopicId) && numericSubtopicId > 0;
   const notesQuery = useQuery({
@@ -44,18 +46,6 @@ export default function StoryNotePage() {
     gcTime: 30 * 60 * 1000,
   });
   const notes = notesQuery.data ?? EMPTY_STORY_NOTES;
-
-  useEffect(() => {
-    setDarkMode(window.localStorage.getItem("story-dark-mode") === "true");
-  }, []);
-
-  const toggleDarkMode = () => {
-    setDarkMode((current) => {
-      const next = !current;
-      window.localStorage.setItem("story-dark-mode", String(next));
-      return next;
-    });
-  };
 
   useEffect(() => {
     setActiveNote((current) => notes.find((note) => note.id === current?.id) ?? notes[0] ?? null);
@@ -129,7 +119,7 @@ export default function StoryNotePage() {
               <h1 className={`story-page-heading pointer-events-auto max-w-[62vw] truncate text-center font-extrabold tracking-[-0.02em] sm:max-w-[48vw] ${darkMode ? "text-[#baf5fd]" : "text-[#00333a]"}`}>{storyData.title}</h1>
               </div>
               <div className="ml-auto flex shrink-0 items-center gap-2 sm:gap-3">
-                <button onClick={toggleDarkMode} className={`inline-flex h-9 w-9 items-center justify-center rounded-xl border transition-[transform,background-color,color,border-color] duration-150 ease-out active:scale-[0.96] ${darkMode ? "border-[#4d5a60] bg-[#1d2a2f] text-[#9cf1fc] hover:bg-[#263b42]" : "border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100 hover:text-[#00333a]"}`} title={darkMode ? "Use light mode" : "Use dark mode"} aria-label={darkMode ? "Use light mode" : "Use dark mode"}>
+                <button onClick={toggleTheme} className={`inline-flex h-9 w-9 items-center justify-center rounded-xl border transition-[transform,background-color,color,border-color] duration-150 ease-out active:scale-[0.96] ${darkMode ? "border-[#4d5a60] bg-[#1d2a2f] text-[#9cf1fc] hover:bg-[#263b42]" : "border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100 hover:text-[#00333a]"}`} title={darkMode ? "Use light mode" : "Use dark mode"} aria-label={darkMode ? "Use light mode" : "Use dark mode"}>
                   {darkMode ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
                 </button>
                 <button onClick={() => router.push("/stories")} className={`flex h-9 w-9 items-center justify-center rounded-xl border transition-[transform,background-color,color,border-color] duration-150 ease-out active:scale-[0.96] ${darkMode ? "border-[#4d5a60] bg-[#1d2a2f] text-[#c5d0d3] hover:bg-[#263b42] hover:text-white" : "border-slate-200 bg-slate-50 text-slate-500 hover:bg-slate-100 hover:text-slate-700"}`} title="Exit">
