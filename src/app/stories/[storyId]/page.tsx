@@ -4,10 +4,11 @@ import { useEffect } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { useStoryContent } from "@/services/storiesApi";
-import { Loader2, ChevronLeft } from "lucide-react";
+import { ChevronLeft } from "lucide-react";
+import { StoryCardGridSkeleton } from "@/features/stories/components/StoryLoadingSkeleton";
 
 export default function StoryPlayerPage() {
-  const { storyId } = useParams();
+  const { storyId } = useParams<{ storyId: string }>() ?? {};
   const { content, loading, error, getStoryContent } = useStoryContent();
 
   useEffect(() => {
@@ -15,15 +16,6 @@ export default function StoryPlayerPage() {
       getStoryContent(storyId);
     }
   }, [storyId, getStoryContent]);
-
-  // Process content to strip html/body tags if present
-  const processedContent = content
-    ? (() => {
-        const parser = new DOMParser();
-        const doc = parser.parseFromString(content, "text/html");
-        return doc.body.innerHTML;
-      })()
-    : "";
 
   return (
     <div className="bg-slate-50 min-h-screen">
@@ -37,9 +29,7 @@ export default function StoryPlayerPage() {
         </Link>
 
         {loading && (
-          <div className="flex justify-center items-center h-64">
-            <Loader2 className="w-8 h-8 animate-spin text-indigo-600" />
-          </div>
+          <div className="py-4"><StoryCardGridSkeleton count={3} /></div>
         )}
 
         {error && (

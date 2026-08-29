@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { StoryDisplayData } from "../types";
 
 const audioSpeeds = [0.75, 1, 1.25, 1.5, 2];
+const AUDIO_PROGRESS_TICK_MS = 500;
 
 function formatAudioTime(seconds: number) {
   const safeSeconds = Math.max(0, Math.floor(seconds));
@@ -112,7 +113,7 @@ export function useStoryAudio(story: StoryDisplayData | null, activeNoteId: numb
     audioTimerRef.current = setInterval(() => {
       const elapsed = (Date.now() - audioStartedAtRef.current) / 1000;
       setAudioElapsed(Math.min(audioDurationRef.current, elapsed));
-    }, 200);
+    }, AUDIO_PROGRESS_TICK_MS);
   }, [clearAudioTimer, currentSpeed]);
 
   const stopAudio = useCallback((resetElapsed = true) => {
@@ -145,7 +146,7 @@ export function useStoryAudio(story: StoryDisplayData | null, activeNoteId: numb
       audioTimerRef.current = setInterval(() => {
         const elapsed = (Date.now() - audioStartedAtRef.current) / 1000;
         setAudioElapsed(Math.min(audioDurationRef.current, elapsed));
-      }, 200);
+      }, AUDIO_PROGRESS_TICK_MS);
       return;
     }
     setIsSequencePlaying(audioLines.length > 0);

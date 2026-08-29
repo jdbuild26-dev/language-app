@@ -163,13 +163,22 @@ export const useStoriesGrammarTopics = () => {
   return { topics, loading, error, getTopics };
 };
 
+type LegacyStory = {
+  id: string | number;
+  title: string;
+  description?: string;
+  estimatedMinutes?: number;
+  type?: string;
+  hasQuiz?: boolean;
+};
+
 // Hook to fetch stories by level
 export const useStoriesByLevel = () => {
-  const [stories, setStories] = useState([]);
+  const [stories, setStories] = useState<LegacyStory[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  const getStoriesByLevel = useCallback(async (level) => {
+  const getStoriesByLevel = useCallback(async (level: string) => {
     setLoading(true);
     setError(null);
     try {
@@ -191,11 +200,11 @@ export const useStoriesByLevel = () => {
 
 // Hook to fetch stories by theme
 export const useStoriesByTheme = () => {
-  const [stories, setStories] = useState([]);
+  const [stories, setStories] = useState<LegacyStory[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  const getStoriesByTheme = useCallback(async (theme) => {
+  const getStoriesByTheme = useCallback(async (theme: string) => {
     setLoading(true);
     setError(null);
     try {
@@ -217,11 +226,11 @@ export const useStoriesByTheme = () => {
 
 // Hook to fetch stories by grammar topic
 export const useStoriesByGrammar = () => {
-  const [stories, setStories] = useState([]);
+  const [stories, setStories] = useState<LegacyStory[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  const getStoriesByGrammar = useCallback(async (topic) => {
+  const getStoriesByGrammar = useCallback(async (topic: string) => {
     setLoading(true);
     setError(null);
     try {
@@ -305,11 +314,13 @@ export async function fetchStoryTopics(
 export async function fetchStorySubtopicNotes(
   subtopicId: number,
   knownLang?: string,
-  storyType?: "dialogue" | "monologue"
+  storyType?: "dialogue" | "monologue",
+  fallbackKnownLang = false,
 ): Promise<StoryNote[]> {
   const query = new URLSearchParams();
   if (knownLang) query.set("known_lang", knownLang);
   if (storyType) query.set("story_type", storyType);
+  if (fallbackKnownLang) query.set("fallback_known_lang", "true");
   const params = query.toString() ? `?${query.toString()}` : "";
   const res = await fetch(
     `${API_BASE_URL}/api/stories/subtopics/${subtopicId}/notes${params}`
@@ -327,13 +338,8 @@ export async function fetchStorySubtopicNotesForType(
   const filterByType = (notes: StoryNote[]) => storyType
     ? notes.filter((note) => getStoryNoteType(note) === storyType)
     : notes;
-  let fetchedNotes = await fetchStorySubtopicNotes(subtopicId, knownLang, storyType);
-  let notes = filterByType(fetchedNotes);
-
-  if (notes.length === 0 && knownLang) {
-    fetchedNotes = await fetchStorySubtopicNotes(subtopicId, undefined, storyType);
-    notes = filterByType(fetchedNotes);
-  }
+  const fetchedNotes = await fetchStorySubtopicNotes(subtopicId, knownLang, storyType, Boolean(knownLang));
+  const notes = filterByType(fetchedNotes);
 
   if (storyType && notes.length === 0) {
     const returnedType = fetchedNotes.map(getStoryNoteType).find(Boolean);

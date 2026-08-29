@@ -42,10 +42,10 @@ export function StoryQuizView({ questions, darkMode, onProgressChange }: { quest
   };
 
   return (
-    <main className={`min-h-full flex-1 px-5 py-8 md:px-8 lg:px-10 ${darkMode ? "bg-[#101418] text-[#e1e2e9]" : "bg-white text-[#191c1d]"}`}>
+    <main className={`min-h-full flex-1 px-4 py-6 sm:px-5 sm:py-8 md:px-8 lg:px-10 ${darkMode ? "bg-[#101418] text-[#e1e2e9]" : "bg-white text-[#191c1d]"}`}>
       <div className="w-full">
         {questions.length === 0 ? (
-          <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-[#d9d5cc] bg-white py-20 text-[#76786d] shadow-[0_12px_32px_rgba(70,65,54,0.04)]">
+          <div className={`flex flex-col items-center justify-center rounded-2xl border border-dashed py-20 shadow-[0_12px_32px_rgba(70,65,54,0.04)] ${darkMode ? "border-[#48565c] bg-[#1d282d] text-[#abb7bb]" : "border-[#d9d5cc] bg-white text-[#76786d]"}`}>
             <BookOpen className="mb-4 h-10 w-10 opacity-50" />
             <p className="font-bold">No quiz questions available for this story.</p>
           </div>
@@ -53,10 +53,10 @@ export function StoryQuizView({ questions, darkMode, onProgressChange }: { quest
           <div className="space-y-6">
             {questions.map((q) => (
               <section key={q.num} className="pb-5">
-                <div className="mb-5 flex items-start gap-3">
-                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#edeeee] text-sm font-bold text-[#191c1d]">{q.num}</span>
+                <div className="mb-5 flex items-start gap-2.5 sm:gap-3">
+                  <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-bold ${darkMode ? "bg-[#2b3a40] text-[#f1f8f9]" : "bg-[#edeeee] text-[#191c1d]"}`}>{q.num}</span>
                   <div className="min-w-0 flex-1">
-                    <h2 className="pt-1 text-xl font-bold leading-snug text-[#191c1d]">{q.question}</h2>
+                    <h2 className={`pt-1 text-lg font-bold leading-snug sm:text-xl ${darkMode ? "text-[#f1f8f9]" : "text-[#191c1d]"}`}>{q.question}</h2>
                     <div className={cn("story-quiz-translation-slot", translatedQuestions[q.num] && q.translation && "story-quiz-translation-slot--visible")}>
                       <p>{q.translation}</p>
                     </div>
@@ -70,7 +70,7 @@ export function StoryQuizView({ questions, darkMode, onProgressChange }: { quest
                     const showCorrect = submitted && isCorrect;
                     const showWrong = submitted && selected && !isCorrect;
                     return (
-                      <button key={idx} disabled={submitted} onClick={() => setAnswers((prev) => ({ ...prev, [q.num]: idx }))} className={cn("story-quiz-option group flex items-center gap-4 rounded-2xl border p-4 text-left text-sm font-medium", showCorrect ? "story-quiz-option--correct" : showWrong ? "story-quiz-option--incorrect" : selected ? "story-quiz-option--selected" : darkMode ? "border-[#45474a] bg-[#1d2025]" : "")}>
+                      <button key={idx} disabled={submitted} onClick={() => setAnswers((prev) => ({ ...prev, [q.num]: idx }))} className={cn("story-quiz-option group flex items-center gap-4 rounded-2xl border p-4 text-left text-[0.9375rem] font-medium md:text-base", showCorrect ? "story-quiz-option--correct" : showWrong ? "story-quiz-option--incorrect" : selected ? "story-quiz-option--selected" : darkMode ? "border-[#45474a] bg-[#1d2025]" : "")}>
                         <span className="story-quiz-option-label flex h-8 w-8 shrink-0 items-center justify-center rounded text-sm font-bold">
                           {showCorrect ? <CheckCircle2 className="h-4 w-4" /> : showWrong ? <XCircle className="h-4 w-4" /> : String.fromCharCode(65 + idx)}
                         </span>
@@ -97,8 +97,8 @@ export function StoryQuizView({ questions, darkMode, onProgressChange }: { quest
                 )}
               </section>
             ))}
-            <div className="flex justify-end pt-10">
-              <div className="flex gap-4">
+            <div className="flex justify-end pt-8 sm:pt-10">
+              <div className="flex w-full flex-col-reverse gap-3 sm:w-auto sm:flex-row sm:gap-4">
                 <button onClick={() => { setAnswers({}); setSubmitted(false); setTranslatedQuestions({}); setTranslatedOptions({}); setTranslatedExplanations({}); }} className="story-secondary-action rounded-full px-6 py-2.5 text-sm font-bold transition-[transform,background-color] duration-150 ease-out active:scale-[0.97]">Reset</button>
                 <button disabled={!allAnswered || submitted} onClick={() => setSubmitted(true)} className="story-primary-action inline-flex items-center gap-2 rounded-full px-6 py-2.5 text-sm font-bold transition-[transform,box-shadow] duration-150 ease-out active:scale-[0.97] disabled:cursor-not-allowed">Submit <ArrowRight className="h-4 w-4" /></button>
               </div>

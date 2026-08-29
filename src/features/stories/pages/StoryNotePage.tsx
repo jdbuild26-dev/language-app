@@ -1,20 +1,22 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
-import { AlertCircle, BookOpen, ChevronLeft, ChevronRight, Loader2, X } from "lucide-react";
+import { AlertCircle, BookOpen, ChevronLeft, ChevronRight, Moon, Sun, X } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { fetchStoryNoteHtml, fetchStorySubtopicNotesForType, StoryNote } from "@/services/storiesApi";
 import { FALLBACK_STORY_IMAGES, StoryImage, StoryOverviewPanel } from "../components/StoryOverviewPanel";
 import { StoryQuizView } from "../components/StoryQuizView";
 import { StoryReadingView } from "../components/StoryReadingView";
+import { StoryLessonSkeleton } from "../components/StoryLoadingSkeleton";
 import { useStoryAudio } from "../hooks/useStoryAudio";
 import { QuizQuestion, StoryContentTab } from "../types";
 import { parseQuizFromHtml, parseStoryDisplayData } from "../utils/storyParsers";
 
 const STORY_CACHE_TIME = 10 * 60 * 1000;
+const EMPTY_STORY_NOTES: StoryNote[] = [];
 
 export default function StoryNotePage() {
   const params = useParams<{ subtopicId: string }>();
@@ -31,8 +33,7 @@ export default function StoryNotePage() {
   const [revealRunId, setRevealRunId] = useState(0);
   const [quizProgress, setQuizProgress] = useState(0);
   const [expandedImage, setExpandedImage] = useState<{ src: string; alt: string } | null>(null);
-
-  const darkMode = false;
+  const [darkMode, setDarkMode] = useState(false);
   const numericSubtopicId = Number(subtopicId);
   const canLoadNotes = Number.isFinite(numericSubtopicId) && numericSubtopicId > 0;
   const notesQuery = useQuery({
@@ -42,7 +43,19 @@ export default function StoryNotePage() {
     staleTime: STORY_CACHE_TIME,
     gcTime: 30 * 60 * 1000,
   });
-  const notes = notesQuery.data ?? [];
+  const notes = notesQuery.data ?? EMPTY_STORY_NOTES;
+
+  useEffect(() => {
+    setDarkMode(window.localStorage.getItem("story-dark-mode") === "true");
+  }, []);
+
+  const toggleDarkMode = () => {
+    setDarkMode((current) => {
+      const next = !current;
+      window.localStorage.setItem("story-dark-mode", String(next));
+      return next;
+    });
+  };
 
   useEffect(() => {
     setActiveNote((current) => notes.find((note) => note.id === current?.id) ?? notes[0] ?? null);
@@ -80,26 +93,26 @@ export default function StoryNotePage() {
   const audio = useStoryAudio(storyData, activeNote?.id);
   const isMonologue = storyData ? !storyData.lines.some((line) => line.text) && storyData.monologueSections.some((section) => section.text) : false;
   const topProgress = activeTab === "quiz" ? quizProgress : audio.progress;
-  const startConversationReveal = useCallback(() => {
+  const startConversationReveal = () => {
     setRevealSequenceActive(true);
     setRevealRunId((value) => value + 1);
     audio.playFromStart();
-  }, [audio.playFromStart]);
+  };
 
   return (
-    <div className={`story-lesson-page min-h-screen ${darkMode ? "bg-[#101418] text-[#e1e2e9]" : "bg-[#fbf9f7] text-[#1b1c1b]"}`}>
+    <div className={`story-lesson-page min-h-screen ${darkMode ? "story-lesson-page--dark bg-[#101418] text-[#e1e2e9]" : "bg-[#fbf9f7] text-[#1b1c1b]"}`}>
       {isLoading && (
-        <div className="flex min-h-[60vh] items-center justify-center"><Loader2 className="h-10 w-10 animate-spin text-[#87986a]" /></div>
+        <StoryLessonSkeleton darkMode={darkMode} />
       )}
 
       {!isLoading && error && (
-        <div className="mx-auto mt-10 flex max-w-3xl items-center gap-3 rounded-2xl border border-red-200 bg-red-50 p-5 text-red-600">
+        <div className={`mx-auto mt-10 flex max-w-3xl items-center gap-3 rounded-2xl border p-5 ${darkMode ? "border-red-900 bg-red-950/50 text-red-200" : "border-red-200 bg-red-50 text-red-600"}`}>
           <AlertCircle className="h-5 w-5 shrink-0" /><span>{error.message}</span>
         </div>
       )}
 
       {!isLoading && !error && notes.length === 0 && (
-        <div className="flex min-h-[60vh] flex-col items-center justify-center text-[#76786d]">
+        <div className={`flex min-h-[60vh] flex-col items-center justify-center ${darkMode ? "text-[#abb7bb]" : "text-[#76786d]"}`}>
           <BookOpen className="mb-4 h-10 w-10 opacity-50" />
           <p className="font-bold">No content available for this chapter yet.</p>
         </div>
@@ -108,20 +121,23 @@ export default function StoryNotePage() {
       {!isLoading && !error && storyData && (
         <div className="relative min-h-screen">
           <header className={`sticky top-0 z-30 flex h-[76px] flex-col border-b ${darkMode ? "border-[#32353a] bg-[#101418]" : "border-[#e9e5df] bg-white"}`}>
-            <div className="relative flex flex-1 items-center px-6">
-              <div className="flex w-12 shrink-0 items-center">
+            <div className="relative flex flex-1 items-center px-3 sm:px-6">
+              <div className="flex w-9 shrink-0 items-center sm:w-12">
                 <img src="/favicon.svg" alt="" className="h-7 w-7" />
               </div>
-              <div className="pointer-events-none absolute inset-x-24 flex items-center justify-center">
-              <h1 className="story-page-heading pointer-events-auto max-w-[48vw] truncate text-center font-extrabold tracking-[-0.02em] text-[#00333a]">{storyData.title}</h1>
+              <div className="pointer-events-none absolute inset-x-14 flex items-center justify-center sm:inset-x-24">
+              <h1 className={`story-page-heading pointer-events-auto max-w-[62vw] truncate text-center font-extrabold tracking-[-0.02em] sm:max-w-[48vw] ${darkMode ? "text-[#baf5fd]" : "text-[#00333a]"}`}>{storyData.title}</h1>
               </div>
-              <div className="ml-auto flex shrink-0 items-center gap-3">
-                <button onClick={() => router.push("/stories")} className="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-slate-50 text-slate-500 transition hover:bg-slate-100 hover:text-slate-700" title="Exit">
+              <div className="ml-auto flex shrink-0 items-center gap-2 sm:gap-3">
+                <button onClick={toggleDarkMode} className={`inline-flex h-9 w-9 items-center justify-center rounded-xl border transition-[transform,background-color,color,border-color] duration-150 ease-out active:scale-[0.96] ${darkMode ? "border-[#4d5a60] bg-[#1d2a2f] text-[#9cf1fc] hover:bg-[#263b42]" : "border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100 hover:text-[#00333a]"}`} title={darkMode ? "Use light mode" : "Use dark mode"} aria-label={darkMode ? "Use light mode" : "Use dark mode"}>
+                  {darkMode ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+                </button>
+                <button onClick={() => router.push("/stories")} className={`flex h-9 w-9 items-center justify-center rounded-xl border transition-[transform,background-color,color,border-color] duration-150 ease-out active:scale-[0.96] ${darkMode ? "border-[#4d5a60] bg-[#1d2a2f] text-[#c5d0d3] hover:bg-[#263b42] hover:text-white" : "border-slate-200 bg-slate-50 text-slate-500 hover:bg-slate-100 hover:text-slate-700"}`} title="Exit">
                   <X className="h-4 w-4" />
                 </button>
               </div>
             </div>
-            <div className="h-[3px] w-full bg-slate-200">
+            <div className={`h-[3px] w-full ${darkMode ? "bg-[#29373c]" : "bg-slate-200"}`}>
               <div className="h-full bg-[#85bac3] transition-[width] duration-150 ease-linear" style={{ width: `${topProgress}%` }} />
             </div>
           </header>
@@ -174,7 +190,7 @@ export default function StoryNotePage() {
                   {storyImages.map((image, index) => <span key={image.src} className={`h-1.5 w-14 rounded-full ${index === expandedImageIndex ? "bg-[#00c9fc]" : "bg-white/75"}`} />)}
                 </div>
                 <div className="h-full w-full overflow-hidden rounded-2xl shadow-[0_24px_64px_rgba(0,31,36,0.28)]">
-                  {expandedImage && <img src={expandedImage.src} alt={expandedImage.alt} className="h-full w-full object-cover" />}
+                  {expandedImage && <img src={expandedImage.src} alt={expandedImage.alt} decoding="async" className="h-full w-full object-cover" />}
                 </div>
                 {storyImages.length > 1 && <>
                   <div className="absolute left-[-5.5rem] top-1/2 -translate-y-1/2">
