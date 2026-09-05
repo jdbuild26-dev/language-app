@@ -5,8 +5,10 @@ import { Play } from "lucide-react";
 interface Props {
   scenario: {
     title: string;
+    topic?: string;
     level: string;
-    objective?: string | null;
+    learnerInstruction?: string;
+    instructionEn?: string;
     icon?: string;
   };
   onStart: () => void;
@@ -47,13 +49,10 @@ export default function ConversationPreviewModal({ scenario, onStart, onClose }:
         <div className="mx-6 my-5 bg-white rounded-xl shadow-sm p-4 flex gap-4 items-start">
           <div className="flex-1 min-w-0">
             <h3 className="font-bold text-gray-900 mb-2">
-              {levelLabels[scenario.level] || scenario.level}: {scenario.title}
+              {levelLabels[scenario.level] || scenario.level}: {scenario.topic || scenario.title}
             </h3>
-            {scenario.objective && (
-              <p className="text-sm text-gray-600 leading-relaxed">
-                <span className="font-semibold">Goal:</span> {scenario.objective}
-              </p>
-            )}
+            {scenario.learnerInstruction && <p className="text-sm text-gray-600 leading-relaxed mb-2"><span className="font-semibold">Your scenario:</span> {scenario.learnerInstruction}</p>}
+            {scenario.instructionEn && <p className="text-sm text-gray-600 leading-relaxed mb-2"><span className="font-semibold">Instruction (English):</span> {scenario.instructionEn}</p>}
           </div>
           {scenario.icon && (
             <div className="w-28 h-24 flex-shrink-0 rounded-xl overflow-hidden bg-gray-100 flex items-center justify-center text-5xl">

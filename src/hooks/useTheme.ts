@@ -1,30 +1,66 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+
+type Theme = "light" | "dark";
+
+const THEME_EVENT = "language-app:theme-change";
+
+function resolveTheme(): Theme {
+  const savedTheme = window.localStorage.getItem("theme");
+  if (savedTheme === "dark" || savedTheme === "light") return savedTheme;
+  return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+}
+
+function applyTheme(theme: Theme) {
+  const root = window.document.documentElement;
+  root.classList.remove("light", "dark");
+  root.classList.add(theme);
+}
 
 export function useTheme() {
-  const [theme, setTheme] = useState("light"); // always "light" on SSR
+  // Keep the server's initial light render deterministic. The mounted effect
+  // resolves the persisted preference without a second hook instance resetting
+  // the document back to light during navigation.
+  const [theme, setTheme] = useState<Theme>("light");
 
-  // After mount, sync to saved preference
   useEffect(() => {
-    const saved = localStorage.getItem("theme");
-    if (saved) {
-      setTheme(saved);
-    } else if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
-      setTheme("dark");
-    }
+    const syncTheme = (nextTheme: Theme) => {
+      applyTheme(nextTheme);
+      setTheme((currentTheme) => currentTheme === nextTheme ? currentTheme : nextTheme);
+    };
+
+    const syncFromStorage = () => syncTheme(resolveTheme());
+    const onThemeChange = (event: Event) => {
+      const nextTheme = event instanceof CustomEvent && (event.detail === "dark" || event.detail === "light")
+        ? event.detail
+        : resolveTheme();
+      syncTheme(nextTheme);
+    };
+    const onStorageChange = (event: StorageEvent) => {
+      if (event.key === "theme") syncFromStorage();
+    };
+
+    syncFromStorage();
+    window.addEventListener(THEME_EVENT, onThemeChange);
+    window.addEventListener("storage", onStorageChange);
+
+    return () => {
+      window.removeEventListener(THEME_EVENT, onThemeChange);
+      window.removeEventListener("storage", onStorageChange);
+    };
   }, []);
 
-  useEffect(() => {
-    const root = window.document.documentElement;
-    root.classList.remove("light", "dark");
-    root.classList.add(theme);
-    localStorage.setItem("theme", theme);
-  }, [theme]);
+  const setSharedTheme = useCallback((nextTheme: Theme) => {
+    window.localStorage.setItem("theme", nextTheme);
+    applyTheme(nextTheme);
+    setTheme(nextTheme);
+    window.dispatchEvent(new CustomEvent<Theme>(THEME_EVENT, { detail: nextTheme }));
+  }, []);
 
-  const toggleTheme = () => {
-    setTheme((prev) => (prev === "light" ? "dark" : "light"));
-  };
+  const toggleTheme = useCallback(() => {
+    setSharedTheme(theme === "light" ? "dark" : "light");
+  }, [setSharedTheme, theme]);
 
   return { theme, toggleTheme };
 }

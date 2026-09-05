@@ -11,7 +11,7 @@ A production-ready React web application with **Clerk authentication**, persiste
 
 ## Unreleased
 
-- Refined the Stories learner experience with responsive and dark-mode support, stable audio playback, hidden lesson scrollbars, and skeleton loading states.
+- Refined the Stories learner experience with app-wide dark-mode support, stable audio playback, hidden lesson scrollbars, and skeleton loading states.
 - Added category-first Stories navigation with richer category and story-card treatments, plus intent-based story prefetching.
 - Reduced the story-note request waterfall when a learner's known-language variant is unavailable.
 

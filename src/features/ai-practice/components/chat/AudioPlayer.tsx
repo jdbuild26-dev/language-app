@@ -4,6 +4,12 @@ import { useState, useEffect, useRef } from "react";
 import { Play, Pause, Volume2 } from "lucide-react";
 
 const SPEED_OPTIONS = ["0.5x", "0.7x", "0.8x", "1x"];
+const AUTO_PLAY_DEDUPLICATION_WINDOW_MS = 1500;
+
+// React Strict Mode intentionally re-runs effects in development. Remember a
+// just-started automatic playback briefly so the same chat message cannot
+// create two browser speech utterances. Manual playback is never deduplicated.
+const recentAutoPlayKeys = new Map<string, number>();
 
 /** Returns a promise that resolves once voices are available. */
 function waitForVoices(): Promise<SpeechSynthesisVoice[]> {
@@ -16,7 +22,11 @@ function waitForVoices(): Promise<SpeechSynthesisVoice[]> {
   });
 }
 
-export default function AudioPlayer({ text, autoPlay = false }) {
+export default function AudioPlayer({ text, autoPlay = false, autoPlayKey }: {
+  text: string;
+  autoPlay?: boolean;
+  autoPlayKey?: string;
+}) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [speed, setSpeed] = useState("1x");
   const [showSpeedMenu, setShowSpeedMenu] = useState(false);
@@ -26,9 +36,17 @@ export default function AudioPlayer({ text, autoPlay = false }) {
   useEffect(() => { currentSpeedRef.current = speed; }, [speed]);
 
   useEffect(() => {
-    if (autoPlay && text) playAudio();
+    if (!autoPlay || !text) return;
+
+    const key = autoPlayKey || text;
+    const now = Date.now();
+    const lastAutoPlay = recentAutoPlayKeys.get(key);
+    if (lastAutoPlay && now - lastAutoPlay < AUTO_PLAY_DEDUPLICATION_WINDOW_MS) return;
+
+    recentAutoPlayKeys.set(key, now);
+    void playAudio();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [autoPlay, text]);
+  }, [autoPlay, autoPlayKey, text]);
 
   useEffect(() => {
     return () => {

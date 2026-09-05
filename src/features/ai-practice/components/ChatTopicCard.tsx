@@ -46,6 +46,8 @@ export default function ChatTopicCard({ topic }) {
             aiRole: topic.aiRole,
             userRole: topic.userRole,
             formality: topic.formality,
+            isV2: topic.isV2,
+            availableLevels: topic.availableLevels,
           }}
           onClose={(e?: React.MouseEvent) => {
             e?.stopPropagation();

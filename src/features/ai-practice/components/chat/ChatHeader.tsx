@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowLeft, User, Sparkles } from "lucide-react";
+import { ArrowLeft, User } from "lucide-react";
 import Link from "next/link";
 
 // Level badge colors
@@ -66,11 +66,10 @@ export default function ChatHeader({ scenario, onEndSession }) {
           {scenario.title}
         </h1>
 
-        {/* Objective */}
-        {scenario.objective && (
-          <p className="text-sm text-gray-500 dark:text-slate-400 flex items-start gap-2">
-            <Sparkles className="w-4 h-4 mt-0.5 flex-shrink-0 text-sky-500" />
-            <span>{scenario.objective}</span>
+        {scenario.instructionEn && (
+          <p className="text-sm text-gray-500 dark:text-slate-400 flex items-start gap-2 mt-2">
+            <User className="w-4 h-4 mt-0.5 flex-shrink-0 text-sky-500" />
+            <span><strong>Instruction (English):</strong> {scenario.instructionEn}</span>
           </p>
         )}
       </div>
