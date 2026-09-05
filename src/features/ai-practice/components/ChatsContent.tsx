@@ -1,183 +1,83 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Search, Filter, SlidersHorizontal, Loader2 } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Filter, Loader2, Search } from "lucide-react";
 import ChatTopicCard from "@/features/ai-practice/components/ChatTopicCard";
-import { fetchChatTopics, fetchDbTopics } from "@/services/aiPracticeApi";
+import { fetchChatV2Topics } from "@/services/aiPracticeApi";
+import { useLanguage } from "@/contexts/LanguageContext";
 
-const difficultyFilters = ["all", "beginner", "intermediate", "advanced"];
-
-// Map CEFR level → difficulty label used by the card
-const levelToDifficulty = (level: string) => {
-  const l = (level || "").toUpperCase();
-  if (l === "A1" || l === "A2") return "beginner";
-  if (l === "B1" || l === "B2") return "intermediate";
-  return "advanced";
+type ChatCardTopic = {
+  id: string;
+  slug: string;
+  title: string;
+  description: string;
+  icon: string;
+  difficulty: string;
+  estimatedTime: string;
+  messageCount: number;
+  aiRole: string;
+  userRole: string;
+  formality: string;
+  availableLevels: string[];
+  isV2: true;
+  rating: null;
 };
 
-// Transform a DB topic row into the shape ChatTopicCard expects
-function dbTopicToCard(t: any, index: number) {
-  // Pick the first non-null level to determine difficulty
-  const levels = ["A1", "A2", "B1", "B2", "C1", "C2"];
-  const firstLevel = levels.find((l) => t.instructions?.[l] || t.ai_prompts?.[l]) || "A1";
-  const icons = ["☕", "🛒", "🏥", "✈️", "🏨", "📞", "🍽️", "🏦", "📚", "🎭"];
-  return {
-    id: t.id ?? index,
-    slug: t.slug,
-    title: t.topic,
-    description: `Practice French conversation as ${t.user_role || "yourself"} with ${t.ai_role || "an AI partner"}.`,
-    icon: icons[index % icons.length],
-    difficulty: levelToDifficulty(firstLevel),
-    estimatedTime: "10-15 min",
-    messageCount: "10+",
-    aiRole: t.ai_role || "Conversation Partner",
-    userRole: t.user_role || "Learner",
-    formality: "casual",
-    rating: null,
-  };
-}
+const icons = ["☕", "🛒", "🏥", "✈️", "🏨", "📞", "🍽️", "🏦"];
 
 export default function ChatsContent() {
-  const [topics, setTopics] = useState([]);
+  const { learningLang } = useLanguage();
+  const [topics, setTopics] = useState<ChatCardTopic[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedDifficulty, setSelectedDifficulty] = useState("all");
 
   useEffect(() => {
+    let cancelled = false;
     async function loadTopics() {
       try {
         setIsLoading(true);
         setError(null);
-
-        // Try DB topics first (no external dependency)
-        try {
-          const dbData = await fetchDbTopics();
-          if (dbData.topics && dbData.topics.length > 0) {
-            setTopics(dbData.topics.map(dbTopicToCard));
-            return;
-          }
-        } catch {
-          // DB unavailable, fall through to Google Sheets
+        const result = await fetchChatV2Topics(learningLang);
+        if (!cancelled) {
+          setTopics(result.topics.map((item, index) => ({
+            id: item.exercise_id,
+            slug: item.exercise_id,
+            title: item.topic,
+            description: `Practice with ${item.ai_role}.`,
+            icon: icons[index % icons.length],
+            difficulty: "beginner",
+            estimatedTime: "5–10 min",
+            messageCount: item.turn_limit,
+            aiRole: item.ai_role,
+            userRole: item.user_role,
+            formality: "",
+            availableLevels: item.levels,
+            isV2: true,
+            rating: null,
+          })));
         }
-
-        // Fallback: Google Sheets
-        const data = await fetchChatTopics();
-        setTopics(data.topics || []);
-      } catch (err) {
-        console.error("Failed to fetch chat topics:", err);
-        setError("Could not load topics right now. Please try again in a moment.");
+      } catch {
+        if (!cancelled) setError("Could not load AI Practice topics. Please try again.");
       } finally {
-        setIsLoading(false);
+        if (!cancelled) setIsLoading(false);
       }
     }
     loadTopics();
-  }, []);
+    return () => { cancelled = true; };
+  }, [learningLang]);
 
-  // Filter topics based on search and difficulty
-  const filteredTopics = topics.filter((topic) => {
-    const matchesSearch =
-      topic.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      topic.description.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesDifficulty =
-      selectedDifficulty === "all" || topic.difficulty === selectedDifficulty;
-    return matchesSearch && matchesDifficulty;
-  });
+  const filteredTopics = topics.filter((topic) => (
+    topic.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    topic.description.toLowerCase().includes(searchQuery.toLowerCase())
+  ));
 
-  // Loading state
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-[40vh]">
-        <div className="text-center">
-          <Loader2 className="w-10 h-10 text-sky-500 animate-spin mx-auto mb-4" />
-          <p className="text-gray-600 dark:text-slate-400">Loading topics...</p>
-        </div>
-      </div>
-    );
-  }
+  if (isLoading) return <div className="flex min-h-[40vh] items-center justify-center"><div className="text-center"><Loader2 className="mx-auto mb-4 h-10 w-10 animate-spin text-sky-500" /><p className="text-gray-600 dark:text-slate-400">Loading AI Practice topics...</p></div></div>;
+  if (error) return <div className="flex min-h-[40vh] items-center justify-center"><div className="text-center"><p className="mb-4 text-red-500">{error}</p><button onClick={() => window.location.reload()} className="rounded-lg bg-sky-500 px-4 py-2 text-white hover:bg-sky-600">Retry</button></div></div>;
 
-  // Error state
-  if (error) {
-    return (
-      <div className="flex items-center justify-center min-h-[40vh]">
-        <div className="text-center">
-          <p className="text-red-500 mb-4">{error}</p>
-          <button
-            onClick={() => window.location.reload()}
-            className="px-4 py-2 bg-sky-500 text-white rounded-lg hover:bg-sky-600 transition-colors"
-          >
-            Retry
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div>
-      {/* Header */}
-      <div className="mb-6">
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-          Conversation Topics
-        </h2>
-        <p className="text-gray-500 dark:text-slate-400">
-          Choose a topic to practice your French conversation skills with our AI
-          tutor.
-        </p>
-      </div>
-
-      {/* Filters */}
-      <div className="flex flex-col sm:flex-row gap-4 mb-6">
-        {/* Search */}
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-          <input
-            type="text"
-            placeholder="Search topics..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent transition-all"
-          />
-        </div>
-
-        {/* Difficulty Filter */}
-        <div className="flex items-center gap-2">
-          <SlidersHorizontal className="w-5 h-5 text-gray-400" />
-          <div className="flex gap-2">
-            {difficultyFilters.map((filter) => (
-              <button
-                key={filter}
-                onClick={() => setSelectedDifficulty(filter)}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  selectedDifficulty === filter
-                    ? "bg-sky-500 text-white"
-                    : "bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-slate-300 hover:bg-gray-200 dark:hover:bg-slate-700"
-                }`}
-              >
-                {filter.charAt(0).toUpperCase() + filter.slice(1)}
-              </button>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Topics Grid */}
-      {filteredTopics.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {filteredTopics.map((topic) => (
-            <ChatTopicCard key={topic.id} topic={topic} />
-          ))}
-        </div>
-      ) : (
-        <div className="text-center py-12">
-          <div className="w-16 h-16 bg-gray-100 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-4">
-            <Filter className="w-8 h-8 text-gray-400" />
-          </div>
-          <p className="text-gray-500 dark:text-slate-400">
-            No topics found matching your criteria.
-          </p>
-        </div>
-      )}
-    </div>
-  );
+  return <div>
+    <div className="mb-6"><h2 className="mb-2 text-2xl font-bold text-gray-900 dark:text-white">Conversation Topics</h2><p className="text-gray-500 dark:text-slate-400">Choose a topic to practise a conversation with AI.</p></div>
+    <div className="relative mb-6"><Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" /><input type="text" placeholder="Search topics..." value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} className="w-full rounded-xl border border-gray-200 bg-white py-2.5 pl-10 pr-4 text-gray-900 placeholder-gray-400 transition-all focus:border-transparent focus:outline-none focus:ring-2 focus:ring-sky-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white" /></div>
+    {filteredTopics.length ? <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">{filteredTopics.map((topic) => <ChatTopicCard key={topic.id} topic={topic} />)}</div> : <div className="py-12 text-center"><div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gray-100 dark:bg-slate-800"><Filter className="h-8 w-8 text-gray-400" /></div><p className="text-gray-500 dark:text-slate-400">No AI Practice topics match your search.</p></div>}
+  </div>;
 }

@@ -5,6 +5,17 @@ import { Languages, PenLine, Loader2 } from "lucide-react";
 import AudioPlayer from "@/features/ai-practice/components/chat/AudioPlayer";
 import { translateText } from "@/services/aiPracticeApi";
 
+interface MessageBubbleMessage {
+  id: string;
+  sender: "ai" | "user";
+  text: string;
+  timestamp?: string;
+  correction?: string | null;
+  translation?: string | null;
+  autoPlay?: boolean;
+  usage?: { input_tokens: number; output_tokens: number; total_tokens: number; estimated_cost_usd: number };
+}
+
 // ---------------------------------------------------------------------------
 // Inline diff: word-level comparison of original vs correction
 // ---------------------------------------------------------------------------
@@ -76,7 +87,7 @@ function InlineDiff({ original, corrected }: { original: string; corrected: stri
 // ---------------------------------------------------------------------------
 // MessageBubble
 // ---------------------------------------------------------------------------
-export default function MessageBubble({ message }) {
+export default function MessageBubble({ message }: { message: MessageBubbleMessage }) {
   const [showTranslation, setShowTranslation] = useState(false);
   const [showCorrection, setShowCorrection] = useState(false);
   const [translation, setTranslation] = useState(message.translation || null);
@@ -84,6 +95,9 @@ export default function MessageBubble({ message }) {
 
   const isAI = message.sender === "ai";
   const hasCorrection = !isAI && !!message.correction;
+  // Usage is useful while testing prompt changes, but it is internal cost
+  // information and must stay hidden in normal production learner builds.
+  const showUsage = process.env.NEXT_PUBLIC_AI_PRACTICE_SHOW_USAGE === "true";
 
   const handleTranslate = async () => {
     if (showTranslation) { setShowTranslation(false); return; }
@@ -131,7 +145,11 @@ export default function MessageBubble({ message }) {
         <div className={`flex items-center gap-2 mt-2 ${isAI ? "" : "justify-end"}`}>
           {isAI && (
             <>
-              <AudioPlayer text={message.text} autoPlay={message.autoPlay} />
+              <AudioPlayer
+                text={message.text}
+                autoPlay={message.autoPlay}
+                autoPlayKey={`${message.id}-${message.timestamp || "greeting"}`}
+              />
               <button
                 onClick={handleTranslate}
                 className={`p-1.5 rounded-lg transition-colors ${
@@ -162,19 +180,21 @@ export default function MessageBubble({ message }) {
                 {isTranslating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Languages className="w-4 h-4" />}
               </button>
 
-              {hasCorrection && (
-                <button
-                  onClick={() => setShowCorrection(!showCorrection)}
-                  className={`p-1.5 rounded-lg transition-colors ${
-                    showCorrection
-                      ? "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400"
-                      : "hover:bg-gray-100 dark:hover:bg-slate-700 text-gray-500 dark:text-slate-400"
-                  }`}
-                  title="Show correction"
-                >
-                  <PenLine className="w-4 h-4" />
-                </button>
-              )}
+              <button
+                onClick={() => hasCorrection && setShowCorrection(!showCorrection)}
+                disabled={!hasCorrection}
+                className={`p-1.5 rounded-lg transition-colors ${
+                  showCorrection
+                    ? "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400"
+                    : hasCorrection
+                      ? "hover:bg-gray-100 dark:hover:bg-slate-700 text-gray-500 dark:text-slate-400"
+                      : "cursor-not-allowed text-gray-300 dark:text-slate-600"
+                }`}
+                title={hasCorrection ? "Show correction" : "No correction needed"}
+                aria-label={hasCorrection ? "Show correction" : "No correction needed"}
+              >
+                <PenLine className="w-4 h-4" />
+              </button>
             </>
           )}
         </div>
@@ -183,6 +203,11 @@ export default function MessageBubble({ message }) {
         <div className={`text-xs text-gray-400 dark:text-slate-500 mt-1 ${isAI ? "" : "text-right"}`}>
           {message.timestamp}
         </div>
+        {showUsage && isAI && message.usage && (
+          <div className="mt-1 text-[11px] text-violet-600 dark:text-violet-300">
+            Test usage: {message.usage.input_tokens.toLocaleString()} in · {message.usage.output_tokens.toLocaleString()} out · {message.usage.total_tokens.toLocaleString()} total · ${message.usage.estimated_cost_usd.toFixed(5)}
+          </div>
+        )}
       </div>
     </div>
   );

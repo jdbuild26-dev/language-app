@@ -1,21 +1,22 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { useRouter, useParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Loader2, AlertCircle, BarChart2, FileDown, LogOut, X } from "lucide-react";
 import ChatHeader from "@/features/ai-practice/components/chat/ChatHeader";
 import ChatInput from "@/features/ai-practice/components/chat/ChatInput";
 import MessageBubble from "@/features/ai-practice/components/chat/MessageBubble";
 import {
-  fetchTopicBySlug,
-  sendChatMessage,
-  getInitialGreeting,
-  analyzeSession,
-  getHint,
-  getFeedbackReport,
+  completeChatV2Session,
+  getChatV2Feedback,
+  getChatV2Greeting,
+  getChatV2Hint,
+  getChatV2Session,
+  getChatV2Transcript,
+  RetryableFeedbackError,
+  sendChatV2Message,
+  type ChatUsage,
 } from "@/services/aiPracticeApi";
-import { useLanguage } from "@/contexts/LanguageContext";
-import { getLangName } from "@/utils/languages";
 
 interface Scenario {
   title: string;
@@ -25,10 +26,15 @@ interface Scenario {
   aiRole: string;
   userRole: string;
   aiPrompt: string;
-  objective?: string | null;
   icon?: string;
   learning_lang: string;
   known_lang: string;
+  sessionId?: string;
+  turnLimit?: number;
+  topic?: string;
+  learnerInstruction?: string;
+  instructionEn?: string;
+  remainingTurns?: number;
 }
 
 interface Message {
@@ -38,14 +44,15 @@ interface Message {
   timestamp?: string;
   correction?: string | null;
   autoPlay?: boolean;
+  usage?: ChatUsage;
 }
 
 export default function ChatPage() {
-  const params = useParams();
-  const topicSlug = params?.topicSlug as string | undefined;
   const router = useRouter();
-  const { learningLang, knownLang } = useLanguage();
+  const searchParams = useSearchParams();
+  const sessionFromUrl = searchParams?.get("session") || null;
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const initializedRef = useRef(false);
 
   const [scenario, setScenario] = useState<Scenario | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -58,15 +65,34 @@ export default function ChatPage() {
   const [showEndConfirm, setShowEndConfirm] = useState(false);
   const [analysisData, setAnalysisData] = useState<any>(null);
   const [isLoadingReport, setIsLoadingReport] = useState(false);
+  const [isCompleted, setIsCompleted] = useState(false);
+  const [sessionUsage, setSessionUsage] = useState<ChatUsage | null>(null);
+  const [remainingTurns, setRemainingTurns] = useState<number | null>(null);
+  const [feedbackRetryMessage, setFeedbackRetryMessage] = useState<string | null>(null);
+  const showUsageDiagnostics = process.env.NEXT_PUBLIC_AI_PRACTICE_SHOW_USAGE === "true";
 
   // Auto-scroll on new messages
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // Load scenario + initial greeting
+  const messageFromStored = (message: { sequence: number; sender: "ai" | "user"; text: string; correction?: string | null; created_at?: string | null; usage?: ChatUsage | null }): Message => ({
+    id: `stored-${message.sequence}`,
+    sender: message.sender,
+    text: message.text,
+    correction: message.correction,
+    timestamp: message.created_at ? new Date(message.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : undefined,
+    autoPlay: false,
+    usage: message.usage || undefined,
+  });
+
+  // Restore the persisted V2 session, then create a greeting only when needed.
   useEffect(() => {
     async function init() {
+      // React Strict Mode intentionally runs effects twice in local development.
+      // Do not consume the session scenario twice and then fall back to a legacy ID.
+      if (initializedRef.current) return;
+      initializedRef.current = true;
       try {
         setIsInitializing(true);
         setInitError(null);
@@ -75,60 +101,27 @@ export default function ChatPage() {
         const stored = sessionStorage.getItem("chatScenario");
         if (stored) {
           scenarioData = JSON.parse(stored);
-          sessionStorage.removeItem("chatScenario");
-        } else if (topicSlug) {
-          try {
-            const topic = await fetchTopicBySlug(topicSlug);
-            scenarioData = {
-              title: topic.title,
-              level: topic.level || "A1",
-              formality: topic.formality || "casual",
-              mode: "chat",
-              aiRole: topic.aiRole || "Conversation Partner",
-              userRole: topic.userRole || "Learner",
-              aiPrompt: topic.aiPrompt || "",
-              objective: null,
-              icon: topic.icon,
-              learning_lang: learningLang,
-              known_lang: knownLang,
-            };
-          } catch {
-            router.replace("/ai-practice/scenarios/chats");
-            return;
-          }
+        } else if (sessionFromUrl) {
+          scenarioData = { title: "", level: "A1", formality: "", mode: "chat", aiRole: "", userRole: "", aiPrompt: "", learning_lang: "", known_lang: "", sessionId: sessionFromUrl };
         } else {
-          throw new Error("No scenario provided");
+          router.replace("/ai-practice/scenarios/chats");
+          return;
         }
-
+        const sessionId = scenarioData.sessionId;
+        if (!sessionId) throw new Error("No AI Practice session was found.");
+        const restored = await getChatV2Session(sessionId);
+        scenarioData = { ...scenarioData, title: restored.scenario_title, topic: restored.topic, level: restored.level, aiRole: restored.ai_role, userRole: restored.user_role, learnerInstruction: restored.scenario, instructionEn: restored.instruction_en, turnLimit: restored.turn_limit, remainingTurns: restored.remaining_turns };
         setScenario(scenarioData);
- 
-        let greetingText = `Hello! How can I help you? (Greeting in ${getLangName(scenarioData.learning_lang)})`;
-        try {
-          const greeting = await getInitialGreeting({
-            level: scenarioData.level,
-            formality: scenarioData.formality,
-            title: scenarioData.title,
-            aiPrompt: scenarioData.aiPrompt,
-            aiRole: scenarioData.aiRole,
-            userRole: scenarioData.userRole,
-            mode: scenarioData.mode || "chat",
-            objective: scenarioData.objective,
-            learning_lang: scenarioData.learning_lang,
-            known_lang: scenarioData.known_lang,
-          });
-          greetingText = greeting.ai_response;
-        } catch (greetErr) {
-          console.warn("Greeting fetch failed, using fallback:", greetErr);
+        setSessionUsage(restored.session_usage);
+        setRemainingTurns(restored.remaining_turns);
+        setIsCompleted(restored.completed);
+        if (restored.messages.length) {
+          setMessages(restored.messages.map(messageFromStored));
+        } else {
+          const greeting = await getChatV2Greeting(sessionId);
+          setSessionUsage(greeting.session_usage || restored.session_usage);
+          setMessages([{ id: "greeting", sender: "ai", text: greeting.ai_response, autoPlay: true, usage: greeting.usage }]);
         }
-
-        setMessages([
-          {
-            id: "greeting",
-            sender: "ai",
-            text: greetingText,
-            autoPlay: true,
-          },
-        ]);
       } catch (err) {
         console.error("Failed to initialize chat:", err);
         setInitError("Failed to start conversation. Please try again.");
@@ -138,10 +131,10 @@ export default function ChatPage() {
     }
 
     init();
-  }, [topicSlug, learningLang, knownLang]);
+  }, [router, sessionFromUrl]);
 
   const handleSendMessage = async (text: string) => {
-    if (!text.trim() || isSending || !scenario) return;
+    if (!text.trim() || isSending || !scenario || isCompleted) return;
 
     const timestamp = new Date().toLocaleTimeString([], {
       hour: "2-digit",
@@ -160,28 +153,8 @@ export default function ChatPage() {
     setSendError(null);
 
     try {
-      const history = messages.map((m) => ({
-        sender: m.sender,
-        text: m.text,
-        correction: m.correction ?? null,
-      }));
-
-      const response = await sendChatMessage({
-        message: text,
-        conversationHistory: history,
-        scenario: {
-          level: scenario.level,
-          formality: scenario.formality,
-          title: scenario.title,
-          aiPrompt: scenario.aiPrompt,
-          aiRole: scenario.aiRole,
-          userRole: scenario.userRole,
-          mode: scenario.mode || "chat",
-          objective: scenario.objective,
-          learning_lang: scenario.learning_lang,
-          known_lang: scenario.known_lang,
-        },
-      });
+      if (!scenario.sessionId) throw new Error("Chat session is unavailable.");
+      const response = await sendChatV2Message(scenario.sessionId, text);
 
       setMessages((prev) => {
         const updated = [...prev];
@@ -202,9 +175,17 @@ export default function ChatPage() {
               hour: "2-digit",
               minute: "2-digit",
             }),
+            usage: response.usage,
           },
         ];
       });
+      setSessionUsage(response.session_usage);
+      setRemainingTurns(response.remaining_turns);
+      if (response.completed) {
+        setIsCompleted(true);
+        setShowEndModal(true);
+        handleQuickAnalyze();
+      }
     } catch (err) {
       console.error("Failed to send message:", err);
       setSendError("Failed to get response. Please try again.");
@@ -214,74 +195,29 @@ export default function ChatPage() {
     }
   };
 
-  // "End Session" button → show modal with analytics + action buttons
-  const handleEndSession = () => {
-    if (!scenario) return;
+  const handleEndSession = async () => {
+    if (!scenario?.sessionId) return;
     setAnalysisData(null);
     setShowEndModal(true);
-
-    // Kick off analysis immediately in the background
-    const history = messages.map((m) => ({
-      sender: m.sender,
-      text: m.text,
-      correction: m.correction ?? null,
-    }));
-
-    analyzeSession(history, {
-      level: scenario.level,
-      formality: scenario.formality,
-      title: scenario.title,
-      aiPrompt: scenario.aiPrompt,
-      aiRole: scenario.aiRole,
-      userRole: scenario.userRole,
-      mode: scenario.mode || "chat",
-      objective: scenario.objective,
-      learning_lang: scenario.learning_lang,
-      known_lang: scenario.known_lang,
-    })
-      .then((data) => { setAnalysisData(data); })
-      .catch((err) => {
-        console.error("Failed to analyze session:", err);
-        setAnalysisData({
-          cefr_assessment: scenario.level || "A1",
-          overall_score: 0,
-          overall_rating: "Very Weak",
-          grammar_score: 0,
-          vocabulary_score: 0,
-          fluency_note: "Analysis failed. Please try again.",
-          parameters: [],
-          feedback_points: [],
-        });
-      });
+    try {
+      const completed = await completeChatV2Session(scenario.sessionId);
+      setIsCompleted(completed.completed);
+      setSessionUsage(completed.session_usage);
+      await handleQuickAnalyze();
+    } catch {
+      setSendError("Could not end this session. Please try again.");
+    }
   };
 
   // Fallback quick-analyze (used as fallback from handleGetFeedback)
   const handleQuickAnalyze = async () => {
-    if (!scenario) return;
+    if (!scenario?.sessionId) return;
     setAnalysisData(null);
     setShowEndModal(true);
 
     try {
-      const history = messages.map((m) => ({
-        sender: m.sender,
-        text: m.text,
-        correction: m.correction ?? null,
-      }));
-
-      const analysis = await analyzeSession(history, {
-        level: scenario.level,
-        formality: scenario.formality,
-        title: scenario.title,
-        aiPrompt: scenario.aiPrompt,
-        aiRole: scenario.aiRole,
-        userRole: scenario.userRole,
-        mode: scenario.mode || "chat",
-        objective: scenario.objective,
-        learning_lang: scenario.learning_lang,
-        known_lang: scenario.known_lang,
-      });
-
-      setAnalysisData(analysis);
+      const feedback = await getChatV2Feedback(scenario.sessionId);
+      setAnalysisData(feedback.analysis);
     } catch (err) {
       console.error("Failed to analyze session:", err);
       setAnalysisData({
@@ -299,62 +235,29 @@ export default function ChatPage() {
 
   // Full CEFR feedback report → navigates to /ai-practice/report
   const handleGetFeedback = async () => {
-    if (!scenario || isLoadingReport) return;
+    if (!scenario?.sessionId || isLoadingReport) return;
     setIsLoadingReport(true);
+    setFeedbackRetryMessage(null);
 
     try {
-      const history = messages.map((m) => ({
-        sender: m.sender,
-        text: m.text,
-        correction: m.correction ?? null,
-      }));
-
-      const report = await getFeedbackReport(history, {
-        level: scenario.level,
-        formality: scenario.formality,
-        title: scenario.title,
-        aiPrompt: scenario.aiPrompt,
-        aiRole: scenario.aiRole,
-        userRole: scenario.userRole,
-        mode: scenario.mode || "chat",
-        objective: scenario.objective,
-        learning_lang: scenario.learning_lang,
-        known_lang: scenario.known_lang,
-      });
-
-      // Also fetch analysis parameters if not already available
-      let analysis = analysisData;
-      if (!analysis) {
-        try {
-          analysis = await analyzeSession(history, {
-            level: scenario.level,
-            formality: scenario.formality,
-            title: scenario.title,
-            aiPrompt: scenario.aiPrompt,
-            aiRole: scenario.aiRole,
-            userRole: scenario.userRole,
-            mode: scenario.mode || "chat",
-            objective: scenario.objective,
-            learning_lang: scenario.learning_lang,
-            known_lang: scenario.known_lang,
-          });
-        } catch {
-          analysis = null;
-        }
-      }
+      const [feedback, transcript] = await Promise.all([
+        getChatV2Feedback(scenario.sessionId),
+        getChatV2Transcript(scenario.sessionId),
+      ]);
+      const report = { ...feedback.report, title: scenario.title, date: new Date().toISOString().slice(0, 10) };
 
       // Store report + transcript in sessionStorage for the report page
       sessionStorage.setItem(
         "feedbackReport",
         JSON.stringify({
           ...report,
-          parameters: analysis?.parameters ?? [],
-          overall_score: analysis?.overall_score ?? null,
-          messages: messages.map((m) => ({
+          parameters: feedback.analysis.parameters ?? [],
+          overall_score: feedback.analysis.overall_score ?? null,
+          messages: transcript.messages.map((m) => ({
             sender: m.sender,
             text: m.text,
             correction: m.correction ?? null,
-            timestamp: m.timestamp,
+            timestamp: m.created_at ? new Date(m.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : undefined,
           })),
         })
       );
@@ -362,22 +265,27 @@ export default function ChatPage() {
       router.push("/ai-practice/report");
     } catch (err) {
       console.error("Failed to get feedback report:", err);
-      // Fallback: show quick analyze modal
-      handleQuickAnalyze();
+      if (err instanceof RetryableFeedbackError) {
+        setFeedbackRetryMessage(err.message);
+      } else {
+        // Preserve the current fallback for non-timeout failures.
+        handleQuickAnalyze();
+      }
     } finally {
       setIsLoadingReport(false);
     }
   };
 
   // Download transcript as PDF via window.print()
-  const handleDownloadTranscript = () => {
+  const handleDownloadTranscript = async () => {
     const printContainer = document.getElementById("transcript-print-container");
-    if (!printContainer) return;
+    if (!printContainer || !scenario?.sessionId) return;
+    const transcript = await getChatV2Transcript(scenario.sessionId);
 
-    const lines = messages
+    const lines = transcript.messages
       .map((m) => {
         const sender = m.sender === "ai" ? "AI" : "You";
-        const time = m.timestamp ? ` (${m.timestamp})` : "";
+        const time = m.created_at ? ` (${new Date(m.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })})` : "";
         let html = `<div class="msg-block">
           <div class="msg-sender">${sender}${time}</div>
           <div class="msg-text">${escapeHtml(m.text)}</div>`;
@@ -406,28 +314,12 @@ export default function ChatPage() {
   };
 
   const handleHint = async (): Promise<string> => {
-    if (!scenario) return `I'm not sure what to say... (Hint in ${getLangName(learningLang)})`;
+    if (!scenario?.sessionId) return "Hint unavailable.";
     try {
-      const history = messages.map((m) => ({
-        sender: m.sender,
-        text: m.text,
-        correction: m.correction ?? null,
-      }));
-      const response = await getHint(history, {
-        level: scenario.level,
-        formality: scenario.formality,
-        title: scenario.title,
-        aiPrompt: scenario.aiPrompt,
-        aiRole: scenario.aiRole,
-        userRole: scenario.userRole,
-        mode: scenario.mode || "chat",
-        objective: scenario.objective,
-        learning_lang: scenario.learning_lang,
-        known_lang: scenario.known_lang,
-      });
+      const response = await getChatV2Hint(scenario.sessionId);
       return response.hint;
     } catch {
-      return `I'm not sure what to say... (Hint in ${getLangName(learningLang)})`;
+      return "Hint unavailable. Please try again.";
     }
   };
 
@@ -478,6 +370,7 @@ export default function ChatPage() {
               </p>
             </div>
             <div className="flex gap-3">
+              {feedbackRetryMessage && <div className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:border-amber-700 dark:bg-amber-950/30 dark:text-amber-100">{feedbackRetryMessage}</div>}
               <button
                 onClick={() => setShowEndConfirm(false)}
                 className="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 dark:border-slate-700 text-gray-700 dark:text-slate-300 font-medium text-sm hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors"
@@ -536,7 +429,7 @@ export default function ChatPage() {
                 className="flex items-center gap-3 w-full px-4 py-3 rounded-xl bg-sky-500 hover:bg-sky-600 text-white font-medium text-sm transition-colors disabled:opacity-60"
               >
                 <BarChart2 className="w-4 h-4 shrink-0" />
-                {isLoadingReport ? "Generating report..." : "Get my feedback report"}
+                {isLoadingReport ? "Generating report..." : feedbackRetryMessage ? "Retry feedback" : "Get my feedback report"}
               </button>
               <button
                 onClick={() => { setShowEndModal(false); handleDownloadTranscript(); }}
@@ -558,6 +451,17 @@ export default function ChatPage() {
       )}
 
       <ChatHeader scenario={scenario} onEndSession={() => setShowEndConfirm(true)} />
+
+      {showUsageDiagnostics && scenario?.sessionId && sessionUsage && (
+        <div className="border-b border-violet-200 bg-violet-50 px-4 py-2 text-xs text-violet-800 dark:border-violet-900/60 dark:bg-violet-950/30 dark:text-violet-200">
+          <div className="mx-auto flex max-w-3xl flex-wrap items-center gap-x-4 gap-y-1">
+            <span className="font-semibold">Testing usage</span>
+            {remainingTurns !== null && <span>{remainingTurns} learner turn{remainingTurns === 1 ? "" : "s"} remaining</span>}
+            <span>Session: {sessionUsage.total_tokens.toLocaleString()} tokens</span>
+            <span>Estimated: ${sessionUsage.estimated_cost_usd.toFixed(5)}</span>
+          </div>
+        </div>
+      )}
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto px-4 py-6">
@@ -595,7 +499,7 @@ export default function ChatPage() {
       <ChatInput
         onSend={handleSendMessage}
         onHint={handleHint}
-        disabled={isSending}
+        disabled={isSending || isCompleted}
       />
 
       {/* Hidden transcript print container */}

@@ -1,24 +1,9 @@
 "use client";
 
-import { Sparkles, MessageCircle, Target, Briefcase, Settings } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 
-export const aiPracticeTabs = [
-  {
-    label: "Scenarios",
-    path: "scenarios",
-    icon: Sparkles,
-    subTabs: [
-      { label: "Chats", path: "chats", icon: MessageCircle },
-      { label: "Missions", path: "missions", icon: Target },
-      { label: "Profession", path: "profession", icon: Briefcase },
-    ],
-  },
-  { label: "General", path: "general", icon: Settings },
-];
-
-// Root /ai-practice → redirect to default tab
+// AI Practice currently exposes the CSV-backed Chat experience only.
 export default function AIPracticePage() {
   const router = useRouter();
   useEffect(() => {

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { X, Loader2 } from "lucide-react";
-import { fetchTopicForLevel } from "@/services/aiPracticeApi";
+import { fetchTopicForLevel, startChatV2Session } from "@/services/aiPracticeApi";
 import { useRouter } from "next/navigation";
 import { useLanguage } from "@/contexts/LanguageContext";
 import ConversationPreviewModal from "@/features/ai-practice/components/ConversationPreviewModal";
@@ -23,6 +23,8 @@ interface Props {
     aiRole?: string;
     userRole?: string;
     formality?: string;
+    isV2?: boolean;
+    availableLevels?: string[];
   };
   onClose: (e?: React.MouseEvent) => void;
 }
@@ -35,28 +37,36 @@ export default function LevelSelectModal({ topic, onClose }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [previewScenario, setPreviewScenario] = useState<any>(null);
   const [pendingSlug, setPendingSlug] = useState<string>("");
+  const [pendingSessionId, setPendingSessionId] = useState<string>("");
 
   const handleStart = async () => {
     if (!selected) return;
     setLoading(true);
     setError(null);
     try {
-      const data = await fetchTopicForLevel(topic.slug, selected);
-      const scenario = {
-        title: data.topic,
-        level: data.level,
-        formality: topic.formality || "casual",
-        mode: "chat",
-        aiRole: data.ai_role || topic.aiRole || "Conversation Partner",
-        userRole: data.user_role || topic.userRole || "Learner",
-        aiPrompt: data.ai_prompt || "",
-        objective: data.objective || null,
-        icon: topic.icon,
-        learning_lang: learningLang,
-        known_lang: knownLang,
-      };
+      let scenario: Record<string, unknown>;
+      let sessionId = "";
+      if (topic.isV2) {
+        const data = await startChatV2Session(topic.slug, selected, learningLang);
+        sessionId = data.session_id;
+        scenario = {
+          title: data.scenario_title, topic: data.topic, level: data.level, formality: "", mode: "chat",
+          aiRole: data.ai_role, userRole: data.user_role, aiPrompt: "", learnerInstruction: data.scenario,
+          instructionEn: data.instruction_en, icon: topic.icon, learning_lang: learningLang, known_lang: knownLang,
+          sessionId: data.session_id, turnLimit: data.turn_limit, remainingTurns: data.remaining_turns,
+        };
+      } else {
+        const data = await fetchTopicForLevel(topic.slug, selected);
+        scenario = {
+          title: data.topic, level: data.level, formality: topic.formality || "casual", mode: "chat",
+          aiRole: data.ai_role || topic.aiRole || "Conversation Partner", userRole: data.user_role || topic.userRole || "Learner",
+          aiPrompt: data.ai_prompt || "", objective: data.instruction || null, icon: topic.icon,
+          learning_lang: learningLang, known_lang: knownLang,
+        };
+      }
       sessionStorage.setItem("chatScenario", JSON.stringify(scenario));
       setPendingSlug(topic.slug);
+      setPendingSessionId(sessionId);
       setPreviewScenario(scenario);
     } catch (e) {
       setError("Could not load the prompt for this level. Please try again.");
@@ -65,7 +75,7 @@ export default function LevelSelectModal({ topic, onClose }: Props) {
   };
 
   const handleConfirmStart = () => {
-    router.push(`/ai-practice/scenarios/chats/${pendingSlug}/chat`);
+    router.push(`/ai-practice/scenarios/chats/${pendingSlug}/chat${pendingSessionId ? `?session=${encodeURIComponent(pendingSessionId)}` : ""}`);
   };
 
   if (previewScenario) {
@@ -109,7 +119,7 @@ export default function LevelSelectModal({ topic, onClose }: Props) {
 
         {/* Level grid */}
         <div className="grid grid-cols-2 gap-3 mb-5">
-          {CEFR_LEVELS.map((lvl) => (
+          {CEFR_LEVELS.filter((lvl) => !topic.availableLevels || topic.availableLevels.includes(lvl.code)).map((lvl) => (
             <button
               key={lvl.code}
               onClick={() => setSelected(lvl.code)}
