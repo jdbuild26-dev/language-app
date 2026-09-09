@@ -37,7 +37,7 @@ export default function ChatInput({
 
   return (
     <div className="sticky bottom-0 bg-white dark:bg-slate-900 border-t border-gray-200 dark:border-slate-700 px-4 py-3">
-      <div className="max-w-3xl mx-auto">
+      <div className="max-w-5xl mx-auto">
         {/* Input Row */}
         <div className="flex items-center gap-2">
           <AudioRecorder

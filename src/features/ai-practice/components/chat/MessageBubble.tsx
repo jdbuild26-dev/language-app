@@ -118,7 +118,7 @@ export default function MessageBubble({ message }: { message: MessageBubbleMessa
   return (
     <div className={`flex ${isAI ? "justify-start" : "justify-end"} mb-4`}>
       <div className="max-w-[80%]">
-        {/* Message Bubble */}
+        {/* Keep the original message stable; supporting text expands below it. */}
         <div
           className={`rounded-2xl px-4 py-3 ${
             isAI
@@ -126,18 +126,20 @@ export default function MessageBubble({ message }: { message: MessageBubbleMessa
               : "bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-gray-200 rounded-tr-sm"
           }`}
         >
-          {/* Text — swap to diff view when correction is toggled */}
-          {showCorrection && hasCorrection ? (
-            <InlineDiff original={message.text} corrected={message.correction!} />
-          ) : (
-            <p className="text-sm leading-relaxed">{message.text}</p>
-          )}
+          <p className="text-sm leading-relaxed">{message.text}</p>
         </div>
 
-        {/* Translation */}
         {showTranslation && translation && (
-          <div className="mt-2 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl">
-            <p className="text-sm text-amber-800 dark:text-amber-300">{translation}</p>
+          <div className={`mt-2 rounded-2xl border border-amber-300 bg-amber-50/70 px-4 py-3 text-amber-800 dark:border-amber-700 dark:bg-amber-950/30 dark:text-amber-200 ${
+            isAI ? "rounded-tl-sm" : "rounded-tr-sm"
+          }`}>
+            <p className="text-sm leading-relaxed">{translation}</p>
+          </div>
+        )}
+
+        {showCorrection && hasCorrection && (
+          <div className="mt-2 rounded-xl border border-emerald-100 bg-emerald-50/70 px-3 py-2.5 text-gray-700 dark:border-emerald-900/50 dark:bg-emerald-950/30 dark:text-slate-200">
+            <InlineDiff original={message.text} corrected={message.correction!} />
           </div>
         )}
 

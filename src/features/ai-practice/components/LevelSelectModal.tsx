@@ -1,18 +1,17 @@
 "use client";
 
-import { useState } from "react";
-import { X, Loader2 } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Check, X, Loader2 } from "lucide-react";
 import { fetchTopicForLevel, startChatV2Session } from "@/services/aiPracticeApi";
 import { useRouter } from "next/navigation";
 import { useLanguage } from "@/contexts/LanguageContext";
 import ConversationPreviewModal from "@/features/ai-practice/components/ConversationPreviewModal";
 
 const CEFR_LEVELS = [
-  { code: "A1", label: "A1 – Beginner", color: "bg-emerald-100 text-emerald-700 border-emerald-300 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-700" },
-  { code: "A2", label: "A2 – Elementary", color: "bg-teal-100 text-teal-700 border-teal-300 dark:bg-teal-900/30 dark:text-teal-300 dark:border-teal-700" },
-  { code: "B1", label: "B1 – Intermediate", color: "bg-amber-100 text-amber-700 border-amber-300 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-700" },
-  { code: "B2", label: "B2 – Upper Intermediate", color: "bg-orange-100 text-orange-700 border-orange-300 dark:bg-orange-900/30 dark:text-orange-300 dark:border-orange-700" },
-
+  { code: "A1", label: "Beginner" },
+  { code: "A2", label: "Elementary" },
+  { code: "B1", label: "Intermediate" },
+  { code: "B2", label: "Upper Intermediate" },
 ];
 
 interface Props {
@@ -39,6 +38,14 @@ export default function LevelSelectModal({ topic, onClose }: Props) {
   const [pendingSlug, setPendingSlug] = useState<string>("");
   const [pendingSessionId, setPendingSessionId] = useState<string>("");
 
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape" && !loading) onClose();
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [loading, onClose]);
+
   const handleStart = async () => {
     if (!selected) return;
     setLoading(true);
@@ -50,7 +57,7 @@ export default function LevelSelectModal({ topic, onClose }: Props) {
         const data = await startChatV2Session(topic.slug, selected, learningLang);
         sessionId = data.session_id;
         scenario = {
-          title: data.scenario_title, topic: data.topic, level: data.level, formality: "", mode: "chat",
+          title: data.scenario_title, titleEn: data.scenario_title_en, topic: data.topic, level: data.level, formality: "", mode: "chat",
           aiRole: data.ai_role, userRole: data.user_role, aiPrompt: "", learnerInstruction: data.scenario,
           instructionEn: data.instruction_en, icon: topic.icon, learning_lang: learningLang, known_lang: knownLang,
           sessionId: data.session_id, turnLimit: data.turn_limit, remainingTurns: data.remaining_turns,
@@ -90,56 +97,68 @@ export default function LevelSelectModal({ topic, onClose }: Props) {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/55 backdrop-blur-[3px] p-4"
       onClick={(e) => { e.stopPropagation(); onClose(e); }}
     >
       <div
-        className="relative w-full max-w-md bg-white dark:bg-slate-800 rounded-2xl shadow-2xl p-6"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="level-select-title"
+        aria-describedby="level-select-description"
+        className="relative w-full max-w-lg rounded-3xl border border-white/70 bg-white p-6 shadow-[0_24px_80px_-24px_rgba(15,23,42,0.45)] dark:border-slate-700 dark:bg-slate-800 sm:p-7"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Close */}
         <button
           onClick={(e) => { e.stopPropagation(); onClose(e); }}
-          className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 dark:hover:text-slate-200 transition-colors"
+          className="absolute right-4 top-4 flex h-10 w-10 items-center justify-center rounded-full text-slate-400 transition-colors duration-150 hover:bg-slate-100 hover:text-slate-700 active:bg-slate-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:hover:bg-slate-700 dark:hover:text-white sm:right-5 sm:top-5"
           aria-label="Close"
         >
           <X className="w-5 h-5" />
         </button>
 
         {/* Header */}
-        <div className="flex items-center gap-3 mb-5">
-          {topic.icon && <span className="text-3xl">{topic.icon}</span>}
-          <div>
-            <h2 className="text-lg font-bold text-gray-900 dark:text-white leading-tight">
-              {topic.title}
-            </h2>
-            <p className="text-sm text-gray-500 dark:text-slate-400">Select your CEFR level to begin</p>
-          </div>
+        <div className="mb-6 pr-10">
+          <h2 id="level-select-title" className="text-xl font-bold leading-tight tracking-[-0.015em] text-slate-950 dark:text-white">
+            {topic.title}
+          </h2>
+          <p id="level-select-description" className="mt-1.5 text-sm leading-5 text-slate-500 dark:text-slate-400">
+            Choose your CEFR level to begin the conversation.
+          </p>
         </div>
 
         {/* Level grid */}
-        <div className="grid grid-cols-2 gap-3 mb-5">
+        <div className="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-2">
           {CEFR_LEVELS.filter((lvl) => !topic.availableLevels || topic.availableLevels.includes(lvl.code)).map((lvl) => (
             <button
               key={lvl.code}
               onClick={() => setSelected(lvl.code)}
-              className={`px-4 py-3 rounded-xl border-2 text-sm font-semibold transition-all ${
+              aria-pressed={selected === lvl.code}
+              className={`relative flex min-h-16 items-center gap-3 rounded-2xl border px-4 py-3 text-left transition-[background-color,border-color,box-shadow,transform] duration-150 ease-out active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-800 ${
                 selected === lvl.code
-                  ? `${lvl.color} border-current scale-[1.03] shadow-md`
-                  : "bg-gray-50 dark:bg-slate-700 text-gray-600 dark:text-slate-300 border-gray-200 dark:border-slate-600 hover:border-sky-400"
+                  ? "border-sky-500 bg-sky-50 text-sky-950 shadow-[0_0_0_1px_rgba(14,165,233,0.22)] dark:border-sky-400 dark:bg-sky-950/35 dark:text-sky-100"
+                  : "border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 dark:hover:border-slate-500 dark:hover:bg-slate-700/70"
               }`}
             >
-              {lvl.label}
+              <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-sm font-bold ${selected === lvl.code ? "bg-sky-600 text-white dark:bg-sky-500" : "bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-200"}`}>
+                {lvl.code}
+              </span>
+              <span className="min-w-0 text-sm font-semibold leading-5">{lvl.label}</span>
+              {selected === lvl.code && (
+                <span className="ml-auto flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-sky-600 text-white dark:bg-sky-500" aria-hidden="true">
+                  <Check className="h-3.5 w-3.5" strokeWidth={3} />
+                </span>
+              )}
             </button>
           ))}
         </div>
 
-        {error && <p className="text-sm text-red-500 mb-3">{error}</p>}
+        {error && <p role="alert" className="mb-4 rounded-xl bg-red-50 px-3.5 py-3 text-sm text-red-700 dark:bg-red-950/40 dark:text-red-300">{error}</p>}
 
         <button
           onClick={handleStart}
           disabled={!selected || loading}
-          className="w-full py-3 rounded-xl bg-sky-500 text-white font-semibold hover:bg-sky-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
+          className="flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl bg-sky-600 px-4 py-3 font-semibold text-white shadow-sm transition-[background-color,box-shadow,transform] duration-150 ease-out hover:bg-sky-700 hover:shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400 disabled:shadow-none disabled:active:scale-100 dark:disabled:bg-slate-700 dark:disabled:text-slate-500"
         >
           {loading ? (
             <>

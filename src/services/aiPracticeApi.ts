@@ -59,7 +59,7 @@ export interface ChatUsage {
 }
 
 export interface ChatV2Topic { exercise_id: string; topic: string; ai_role: string; user_role: string; turn_limit: number; levels: string[]; }
-export interface ChatV2Session { session_id: string; exercise_id: string; topic: string; scenario_title: string; level: string; ai_role: string; user_role: string; scenario: string; instruction_en: string; turn_limit: number; remaining_turns: number; }
+export interface ChatV2Session { session_id: string; exercise_id: string; topic: string; scenario_title: string; scenario_title_en: string; level: string; ai_role: string; user_role: string; scenario: string; instruction_en: string; turn_limit: number; remaining_turns: number; }
 export interface ChatV2MessageResponse extends ChatResponse {
   remaining_turns: number;
   completed: boolean;
