@@ -1,6 +1,7 @@
 "use client";
 
 import { Sparkles, MessageCircle, Target, Briefcase, Settings } from "lucide-react";
+import { usePathname } from "next/navigation";
 import PageTabs from "@/components/ui/PageTabs";
 
 const aiPracticeTabs = [
@@ -18,6 +19,12 @@ const aiPracticeTabs = [
 ];
 
 export default function AIPracticeLayout({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
+
+  if (pathname === "/ai-practice/report") {
+    return <>{children}</>;
+  }
+
   return (
     <div className="max-w-7xl mx-auto px-4 py-6">
       <PageTabs

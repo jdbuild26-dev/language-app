@@ -10,8 +10,9 @@ export default function AppChrome({ children }: { children: React.ReactNode }) {
   const isFullScreenLesson = /^\/grammar\/lessons\/[^/]+/.test(pathname);
   const isFullScreenGrammarPractice = /^\/grammar\/practice\/[^/]+/.test(pathname);
   const isFullScreenStoryLesson = /^\/stories\/learn\/[^/]+/.test(pathname);
+  const isFullScreenAIReport = pathname === "/ai-practice/report";
 
-  if (isFullScreenLesson || isFullScreenGrammarPractice || isFullScreenStoryLesson) {
+  if (isFullScreenLesson || isFullScreenGrammarPractice || isFullScreenStoryLesson || isFullScreenAIReport) {
     return <>{children}</>;
   }
 
