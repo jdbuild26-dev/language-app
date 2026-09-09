@@ -82,22 +82,14 @@ export default function ChatHeader({ scenario, onEndSession, remainingTurns, isC
 
         {/* Title */}
         <h1 className="text-lg font-bold text-gray-900 dark:text-white mb-1">
-          {scenario.title}
+          {showEnglish && scenario.titleEn ? scenario.titleEn : scenario.title}
         </h1>
 
         {(scenario.learnerInstruction || scenario.instructionEn) && (
           <p className="text-sm text-gray-500 dark:text-slate-400 flex items-start gap-2 mt-2">
             <User className="w-4 h-4 mt-0.5 flex-shrink-0 text-sky-500" />
-            <span>{scenario.learnerInstruction || scenario.instructionEn}</span>
+            <span>{showEnglish ? scenario.instructionEn : scenario.learnerInstruction}</span>
           </p>
-        )}
-        {showEnglish && scenario.instructionEn && scenario.learnerInstruction !== scenario.instructionEn && (
-          <div className="ml-6 mt-2 rounded-lg border border-sky-100 bg-sky-50/70 px-3 py-2 text-sm text-gray-600 dark:border-sky-900/50 dark:bg-sky-950/30 dark:text-slate-300">
-            {scenario.titleEn && scenario.titleEn !== scenario.title && (
-              <p className="mb-1 font-semibold text-gray-800 dark:text-slate-100">{scenario.titleEn}</p>
-            )}
-            <p>{scenario.instructionEn}</p>
-          </div>
         )}
         <div className="mt-2 flex items-center justify-between gap-3">
           {scenario.instructionEn && scenario.learnerInstruction !== scenario.instructionEn ? (
@@ -107,7 +99,7 @@ export default function ChatHeader({ scenario, onEndSession, remainingTurns, isC
               className="inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-semibold text-sky-700 hover:bg-sky-50 active:scale-[0.97] dark:text-sky-300 dark:hover:bg-sky-950/50"
             >
               <Languages className="h-3.5 w-3.5" />
-              {showEnglish ? "Hide translation" : "Translate to English"}
+              {showEnglish ? "Show original" : "Translate to English"}
             </button>
           ) : <span />}
           {typeof remainingTurns === "number" && (
