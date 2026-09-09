@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Loader2, AlertCircle, BarChart2, FileDown, LogOut, X } from "lucide-react";
+import { Loader2, AlertCircle, BarChart2, FileDown, LogOut, CheckCircle2 } from "lucide-react";
 import ChatHeader from "@/features/ai-practice/components/chat/ChatHeader";
 import ChatInput from "@/features/ai-practice/components/chat/ChatInput";
 import MessageBubble from "@/features/ai-practice/components/chat/MessageBubble";
@@ -20,6 +20,7 @@ import {
 
 interface Scenario {
   title: string;
+  titleEn?: string;
   level: string;
   formality: string;
   mode: string;
@@ -36,7 +37,6 @@ interface Scenario {
   instructionEn?: string;
   remainingTurns?: number;
 }
-
 interface Message {
   id: string;
   sender: "ai" | "user";
@@ -69,6 +69,8 @@ export default function ChatPage() {
   const [sessionUsage, setSessionUsage] = useState<ChatUsage | null>(null);
   const [remainingTurns, setRemainingTurns] = useState<number | null>(null);
   const [feedbackRetryMessage, setFeedbackRetryMessage] = useState<string | null>(null);
+  const [isDownloadingTranscript, setIsDownloadingTranscript] = useState(false);
+  const [transcriptDownloadError, setTranscriptDownloadError] = useState<string | null>(null);
   const showUsageDiagnostics = process.env.NEXT_PUBLIC_AI_PRACTICE_SHOW_USAGE === "true";
 
   // Auto-scroll on new messages
@@ -110,17 +112,23 @@ export default function ChatPage() {
         const sessionId = scenarioData.sessionId;
         if (!sessionId) throw new Error("No AI Practice session was found.");
         const restored = await getChatV2Session(sessionId);
-        scenarioData = { ...scenarioData, title: restored.scenario_title, topic: restored.topic, level: restored.level, aiRole: restored.ai_role, userRole: restored.user_role, learnerInstruction: restored.scenario, instructionEn: restored.instruction_en, turnLimit: restored.turn_limit, remainingTurns: restored.remaining_turns };
+        scenarioData = { ...scenarioData, title: restored.scenario_title, titleEn: restored.scenario_title_en, topic: restored.topic, level: restored.level, aiRole: restored.ai_role, userRole: restored.user_role, learnerInstruction: restored.scenario, instructionEn: restored.instruction_en, turnLimit: restored.turn_limit, remainingTurns: restored.remaining_turns };
         setScenario(scenarioData);
         setSessionUsage(restored.session_usage);
         setRemainingTurns(restored.remaining_turns);
         setIsCompleted(restored.completed);
+        setShowEndModal(restored.completed);
         if (restored.messages.length) {
           setMessages(restored.messages.map(messageFromStored));
         } else {
           const greeting = await getChatV2Greeting(sessionId);
           setSessionUsage(greeting.session_usage || restored.session_usage);
           setMessages([{ id: "greeting", sender: "ai", text: greeting.ai_response, autoPlay: true, usage: greeting.usage }]);
+        }
+        if (restored.completed) {
+          void getChatV2Feedback(sessionId)
+            .then((feedback) => setAnalysisData(feedback.analysis))
+            .catch(() => setAnalysisData({ analysis_failed: true }));
         }
       } catch (err) {
         console.error("Failed to initialize chat:", err);
@@ -221,14 +229,7 @@ export default function ChatPage() {
     } catch (err) {
       console.error("Failed to analyze session:", err);
       setAnalysisData({
-        cefr_assessment: scenario.level || "A1",
-        overall_score: 0,
-        overall_rating: "Very Weak",
-        grammar_score: 0,
-        vocabulary_score: 0,
-        fluency_note: "Analysis failed. Please try again.",
-        parameters: [],
-        feedback_points: [],
+        analysis_failed: true,
       });
     }
   };
@@ -276,36 +277,97 @@ export default function ChatPage() {
     }
   };
 
-  // Download transcript as PDF via window.print()
+  // Generate a real multi-page PDF instead of relying on the browser print layout.
   const handleDownloadTranscript = async () => {
-    const printContainer = document.getElementById("transcript-print-container");
-    if (!printContainer || !scenario?.sessionId) return;
-    const transcript = await getChatV2Transcript(scenario.sessionId);
+    if (!scenario?.sessionId || isDownloadingTranscript) return;
+    setIsDownloadingTranscript(true);
+    setTranscriptDownloadError(null);
 
-    const lines = transcript.messages
-      .map((m) => {
-        const sender = m.sender === "ai" ? "AI" : "You";
-        const time = m.created_at ? ` (${new Date(m.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })})` : "";
-        let html = `<div class="msg-block">
-          <div class="msg-sender">${sender}${time}</div>
-          <div class="msg-text">${escapeHtml(m.text)}</div>`;
-        if (m.sender === "user" && m.correction) {
-          html += `<div class="msg-correction">✓ Correction: ${escapeHtml(m.correction)}</div>`;
+    try {
+      const [{ jsPDF }, transcript] = await Promise.all([
+        import("jspdf"),
+        getChatV2Transcript(scenario.sessionId),
+      ]);
+      const pdf = new jsPDF({ unit: "mm", format: "a4" });
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      const margin = 18;
+      const contentWidth = pageWidth - margin * 2;
+      const bottom = pageHeight - 18;
+      let y = margin;
+
+      const addPage = () => {
+        pdf.addPage();
+        y = margin;
+      };
+      const ensureSpace = (height: number) => {
+        if (y + height > bottom) addPage();
+      };
+      const writeWrapped = (text: string, options?: { color?: [number, number, number]; style?: "normal" | "bold" | "italic"; size?: number; lineHeight?: number }) => {
+        const size = options?.size ?? 10.5;
+        const lineHeight = options?.lineHeight ?? 5.2;
+        pdf.setFont("helvetica", options?.style ?? "normal");
+        pdf.setFontSize(size);
+        pdf.setTextColor(...(options?.color ?? [31, 41, 55]));
+        const wrapped = pdf.splitTextToSize(text, contentWidth) as string[];
+        for (const line of wrapped) {
+          ensureSpace(lineHeight);
+          pdf.text(line, margin, y);
+          y += lineHeight;
         }
-        html += `</div>`;
-        return html;
-      })
-      .join("");
+      };
 
-    printContainer.innerHTML = `
-      <div class="transcript-header">
-        <h1>Conversation Transcript</h1>
-        <p>${scenario?.title ?? "AI Practice Session"} · ${scenario?.level ?? ""} · ${new Date().toLocaleDateString()}</p>
-      </div>
-      <div class="transcript-body">${lines}</div>
-    `;
+      pdf.setFont("helvetica", "bold");
+      pdf.setFontSize(19);
+      pdf.setTextColor(15, 23, 42);
+      pdf.text("Conversation Transcript", margin, y);
+      y += 8;
+      writeWrapped(
+        `${scenario.title || "AI Practice Session"} | ${scenario.level || ""} | ${new Date().toLocaleDateString()}`,
+        { color: [100, 116, 139], size: 9.5, lineHeight: 4.8 },
+      );
+      y += 3;
+      pdf.setDrawColor(203, 213, 225);
+      pdf.line(margin, y, pageWidth - margin, y);
+      y += 8;
 
-    window.print();
+      transcript.messages.forEach((message) => {
+        const sender = message.sender === "ai" ? "AI conversation partner" : "You";
+        const time = message.created_at
+          ? ` - ${new Date(message.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`
+          : "";
+        ensureSpace(14);
+        writeWrapped(`${sender}${time}`, { color: [2, 132, 199], style: "bold", size: 9.5, lineHeight: 4.8 });
+        writeWrapped(message.text, { size: 10.5, lineHeight: 5.4 });
+        if (message.sender === "user" && message.correction) {
+          y += 1;
+          writeWrapped(`Correction: ${message.correction}`, { color: [180, 83, 9], style: "italic", size: 9.5, lineHeight: 5 });
+        }
+        y += 5;
+      });
+
+      const pageCount = pdf.getNumberOfPages();
+      for (let page = 1; page <= pageCount; page += 1) {
+        pdf.setPage(page);
+        pdf.setFont("helvetica", "normal");
+        pdf.setFontSize(8.5);
+        pdf.setTextColor(100, 116, 139);
+        pdf.text(`Page ${page} of ${pageCount}`, pageWidth - margin, pageHeight - 9, { align: "right" });
+      }
+
+      const safeTitle = (scenario.title || "conversation")
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/[^a-zA-Z0-9]+/g, "-")
+        .replace(/^-+|-+$/g, "")
+        .toLowerCase();
+      pdf.save(`${safeTitle || "conversation"}-transcript.pdf`);
+    } catch (error) {
+      console.error("Failed to download transcript:", error);
+      setTranscriptDownloadError("The transcript could not be downloaded. Please try again.");
+    } finally {
+      setIsDownloadingTranscript(false);
+    }
   };
 
   // End without feedback
@@ -388,122 +450,105 @@ export default function ChatPage() {
         </div>
       )}
 
-      {/* End Session modal — analytics + action buttons */}
-      {showEndModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-lg flex flex-col max-h-[90vh] overflow-hidden">
+      <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
+        {/* Header, transcript, and composer form one aligned conversation panel. */}
+        <section className="flex min-h-0 min-w-0 flex-1 flex-col bg-gray-50 dark:bg-slate-950" aria-label={isCompleted ? "Completed conversation" : "Conversation"}>
+          <ChatHeader scenario={scenario} remainingTurns={remainingTurns} isCompleted={isCompleted} onEndSession={() => setShowEndConfirm(true)} />
 
-            {/* Header */}
-            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-slate-800 shrink-0">
-              <div>
-                <h2 className="text-lg font-bold text-gray-900 dark:text-white">End Session</h2>
-                {scenario?.title && (
-                  <p className="text-xs text-gray-500 dark:text-slate-400 mt-0.5">{scenario.title}</p>
-                )}
+          {showUsageDiagnostics && scenario?.sessionId && sessionUsage && (
+            <div className="border-b border-violet-200 bg-violet-50 px-4 py-2 text-xs text-violet-800 dark:border-violet-900/60 dark:bg-violet-950/30 dark:text-violet-200">
+              <div className="mx-auto flex max-w-5xl flex-wrap items-center gap-x-4 gap-y-1">
+                <span className="font-semibold">Testing usage</span>
+                {remainingTurns !== null && <span>{remainingTurns} learner turn{remainingTurns === 1 ? "" : "s"} remaining</span>}
+                <span>Session: {sessionUsage.total_tokens.toLocaleString()} tokens</span>
+                <span>Estimated: ${sessionUsage.estimated_cost_usd.toFixed(5)}</span>
               </div>
-              <button
-                onClick={() => setShowEndModal(false)}
-                className="p-1.5 text-gray-400 hover:text-gray-500 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-full transition-colors"
-              >
-                <X className="w-5 h-5" />
-              </button>
+            </div>
+          )}
+
+          {isCompleted && (
+            <div className="border-b border-emerald-200 bg-emerald-50 px-4 py-2.5 text-emerald-800 dark:border-emerald-900/70 dark:bg-emerald-950/30 dark:text-emerald-200">
+              <div className="mx-auto flex max-w-5xl items-center gap-2 text-sm font-medium">
+                <CheckCircle2 className="h-4 w-4 shrink-0" />
+                Conversation complete — you can still review, translate and listen to every message.
+              </div>
+            </div>
+          )}
+
+          <div className="min-h-0 flex-1 overflow-y-auto px-4 py-6">
+            <div className="mx-auto max-w-5xl" role="log" aria-live="polite">
+              {messages.map((message) => (
+                <MessageBubble key={message.id} message={message} />
+              ))}
+
+              {isSending && (
+                <div className="mb-4 flex justify-start">
+                  <div className="rounded-2xl rounded-tl-sm bg-gray-100 px-4 py-3 dark:bg-slate-800">
+                    <div className="flex items-center gap-1">
+                      {[0, 150, 300].map((delay) => (
+                        <div key={delay} className="h-2 w-2 animate-bounce rounded-full bg-gray-400" style={{ animationDelay: `${delay}ms` }} />
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {sendError && <div className="py-2 text-center"><p className="text-sm text-red-500">{sendError}</p></div>}
+              <div ref={messagesEndRef} />
+            </div>
+          </div>
+
+          {!isCompleted && <ChatInput onSend={handleSendMessage} onHint={handleHint} disabled={isSending} />}
+        </section>
+
+        {/* Feedback sits beside the transcript on desktop and above it on smaller screens. */}
+        {showEndModal && (
+          <aside className="order-first flex max-h-[48vh] shrink-0 flex-col border-b border-slate-200 bg-white shadow-[0_12px_40px_-24px_rgba(15,23,42,0.4)] dark:border-slate-700 dark:bg-slate-900 lg:order-last lg:max-h-none lg:w-96 lg:border-b-0 lg:border-l" aria-label="Session feedback">
+            <div className="shrink-0 border-b border-slate-100 px-5 py-4 dark:border-slate-800">
+              <p className="text-xs font-semibold uppercase tracking-[0.12em] text-sky-600 dark:text-sky-400">Conversation complete</p>
+              <h2 className="mt-1 text-lg font-bold tracking-[-0.01em] text-slate-950 dark:text-white">Your feedback</h2>
+              {scenario?.title && <p className="mt-0.5 truncate text-xs text-slate-500 dark:text-slate-400">{scenario.title}</p>}
             </div>
 
-            {/* Analytics section */}
-            <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
+            <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4">
               {!analysisData ? (
-                <div className="flex flex-col items-center justify-center py-10 gap-3">
-                  <div className="w-10 h-10 border-4 border-sky-500 border-t-transparent rounded-full animate-spin" />
-                  <p className="text-sm text-gray-500 dark:text-slate-400">Analysing your session...</p>
+                <div className="flex flex-col items-center justify-center gap-3 py-10" role="status">
+                  <Loader2 className="h-8 w-8 animate-spin text-sky-500" />
+                  <p className="text-sm text-slate-500 dark:text-slate-400">Analysing your session...</p>
+                </div>
+              ) : analysisData.analysis_failed ? (
+                <div className="flex flex-col items-center justify-center gap-3 py-8 text-center">
+                  <AlertCircle className="h-8 w-8 text-amber-500" />
+                  <p className="text-sm text-slate-600 dark:text-slate-300">The analysis could not be generated.</p>
+                  <button type="button" onClick={handleQuickAnalyze} className="rounded-xl bg-sky-600 px-4 py-2.5 text-sm font-semibold text-white transition-transform duration-150 hover:bg-sky-700 active:scale-[0.97]">
+                    Retry analysis
+                  </button>
                 </div>
               ) : (
                 <AnalyticsContent analysisData={analysisData} />
               )}
             </div>
 
-            {/* Action buttons */}
-            <div className="px-5 py-4 border-t border-gray-100 dark:border-slate-800 flex flex-col gap-2 shrink-0">
-              <button
-                onClick={handleGetFeedback}
-                disabled={isLoadingReport}
-                className="flex items-center gap-3 w-full px-4 py-3 rounded-xl bg-sky-500 hover:bg-sky-600 text-white font-medium text-sm transition-colors disabled:opacity-60"
-              >
-                <BarChart2 className="w-4 h-4 shrink-0" />
-                {isLoadingReport ? "Generating report..." : feedbackRetryMessage ? "Retry feedback" : "Get my feedback report"}
+            <div className="flex shrink-0 flex-col gap-2 border-t border-slate-100 bg-slate-50/80 px-5 py-4 dark:border-slate-800 dark:bg-slate-900">
+              {feedbackRetryMessage && <p role="alert" className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-100">{feedbackRetryMessage}</p>}
+              {transcriptDownloadError && <p role="alert" className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-800 dark:border-red-900 dark:bg-red-950/30 dark:text-red-200">{transcriptDownloadError}</p>}
+              <button onClick={handleGetFeedback} disabled={isLoadingReport} className="flex w-full items-center gap-3 rounded-xl bg-sky-600 px-4 py-3 text-sm font-semibold text-white transition-[background-color,transform] duration-150 hover:bg-sky-700 active:scale-[0.98] disabled:opacity-60">
+                {isLoadingReport ? <Loader2 className="h-4 w-4 shrink-0 animate-spin" /> : <BarChart2 className="h-4 w-4 shrink-0" />}
+                {isLoadingReport ? "Generating report..." : feedbackRetryMessage ? "Retry feedback" : "View full feedback report"}
               </button>
-              <button
-                onClick={() => { setShowEndModal(false); handleDownloadTranscript(); }}
-                className="flex items-center gap-3 w-full px-4 py-3 rounded-xl bg-sky-700 hover:bg-sky-800 text-white font-medium text-sm transition-colors"
-              >
-                <FileDown className="w-4 h-4 shrink-0" />
-                Download transcript (PDF)
+              <button onClick={handleDownloadTranscript} disabled={isDownloadingTranscript} className="flex w-full items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition-[background-color,transform] duration-150 hover:bg-slate-50 active:scale-[0.98] disabled:cursor-wait disabled:opacity-60 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700">
+                {isDownloadingTranscript ? <Loader2 className="h-4 w-4 shrink-0 animate-spin" /> : <FileDown className="h-4 w-4 shrink-0" />}
+                {isDownloadingTranscript ? "Preparing transcript..." : "Download transcript (PDF)"}
               </button>
-              <button
-                onClick={() => { setShowEndModal(false); handleEndWithoutFeedback(); }}
-                className="flex items-center gap-3 w-full px-4 py-3 rounded-xl bg-slate-700 hover:bg-slate-800 text-white font-medium text-sm transition-colors"
-              >
-                <LogOut className="w-4 h-4 shrink-0" />
-                End without feedback
+              <button onClick={handleEndWithoutFeedback} className="flex w-full items-center gap-3 rounded-xl px-4 py-2.5 text-sm font-medium text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-100">
+                <LogOut className="h-4 w-4 shrink-0" />
+                Return to practice
               </button>
             </div>
-          </div>
-        </div>
-      )}
-
-      <ChatHeader scenario={scenario} onEndSession={() => setShowEndConfirm(true)} />
-
-      {showUsageDiagnostics && scenario?.sessionId && sessionUsage && (
-        <div className="border-b border-violet-200 bg-violet-50 px-4 py-2 text-xs text-violet-800 dark:border-violet-900/60 dark:bg-violet-950/30 dark:text-violet-200">
-          <div className="mx-auto flex max-w-3xl flex-wrap items-center gap-x-4 gap-y-1">
-            <span className="font-semibold">Testing usage</span>
-            {remainingTurns !== null && <span>{remainingTurns} learner turn{remainingTurns === 1 ? "" : "s"} remaining</span>}
-            <span>Session: {sessionUsage.total_tokens.toLocaleString()} tokens</span>
-            <span>Estimated: ${sessionUsage.estimated_cost_usd.toFixed(5)}</span>
-          </div>
-        </div>
-      )}
-
-      {/* Messages */}
-      <div className="flex-1 overflow-y-auto px-4 py-6">
-        <div className="max-w-3xl mx-auto">
-          {messages.map((message) => (
-            <MessageBubble key={message.id} message={message} />
-          ))}
-
-          {isSending && (
-            <div className="flex justify-start mb-4">
-              <div className="bg-gray-100 dark:bg-slate-800 rounded-2xl px-4 py-3 rounded-tl-sm">
-                <div className="flex items-center gap-1">
-                  {[0, 150, 300].map((delay) => (
-                    <div
-                      key={delay}
-                      className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
-                      style={{ animationDelay: `${delay}ms` }}
-                    />
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {sendError && (
-            <div className="text-center py-2">
-              <p className="text-sm text-red-500">{sendError}</p>
-            </div>
-          )}
-
-          <div ref={messagesEndRef} />
-        </div>
+          </aside>
+        )}
       </div>
 
-      <ChatInput
-        onSend={handleSendMessage}
-        onHint={handleHint}
-        disabled={isSending || isCompleted}
-      />
-
-      {/* Hidden transcript print container */}
-      <div id="transcript-print-container" className="hidden" aria-hidden="true" />
     </div>
   );
 }
@@ -581,7 +626,7 @@ function AnalyticsContent({ analysisData }: { analysisData: any }) {
   return (
     <div className="space-y-4">
       {/* CEFR + Overall + Rating */}
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 gap-2">
         <div className="bg-gray-50 dark:bg-slate-800 p-3 rounded-xl text-center">
           <div className="text-xs text-gray-500 dark:text-slate-400 mb-1">CEFR Level</div>
           <div className="text-2xl font-bold text-sky-500">{analysisData.cefr_assessment}</div>
@@ -608,12 +653,4 @@ function AnalyticsContent({ analysisData }: { analysisData: any }) {
       </div>
     </div>
   );
-}
-
-function escapeHtml(str: string): string {
-  return str
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
 }
