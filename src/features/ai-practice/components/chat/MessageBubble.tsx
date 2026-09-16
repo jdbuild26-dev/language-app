@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { memo, useMemo, useState } from "react";
 import { Languages, PenLine, Loader2 } from "lucide-react";
 import AudioPlayer from "@/features/ai-practice/components/chat/AudioPlayer";
 import { translateText } from "@/services/aiPracticeApi";
@@ -58,8 +58,8 @@ function buildDiff(original: string, corrected: string) {
   return tokens;
 }
 
-function InlineDiff({ original, corrected }: { original: string; corrected: string }) {
-  const tokens = buildDiff(original, corrected);
+const InlineDiff = memo(function InlineDiff({ original, corrected }: { original: string; corrected: string }) {
+  const tokens = useMemo(() => buildDiff(original, corrected), [original, corrected]);
   return (
     <p className="text-sm leading-relaxed">
       {tokens.map((tok, idx) => {
@@ -82,19 +82,52 @@ function InlineDiff({ original, corrected }: { original: string; corrected: stri
       })}
     </p>
   );
+});
+
+// Reuse translations while the learner stays in the current browser session.
+// The promise cache also prevents duplicate requests when two bubbles have the
+// same text and language pair.
+const translationCache = new Map<string, Promise<string>>();
+
+function getCachedTranslation(text: string, targetLanguage: string) {
+  const cacheKey = `${targetLanguage}:${text}`;
+  const cached = translationCache.get(cacheKey);
+  if (cached) return cached;
+
+  const request = translateText(text, targetLanguage)
+    .then((result) => result.translation)
+    .catch((error) => {
+      translationCache.delete(cacheKey);
+      throw error;
+    });
+  translationCache.set(cacheKey, request);
+  return request;
 }
 
 // ---------------------------------------------------------------------------
 // MessageBubble
 // ---------------------------------------------------------------------------
-export default function MessageBubble({ message }: { message: MessageBubbleMessage }) {
+export default function MessageBubble({
+  message,
+  learningLanguage = "fr",
+  translationLanguage = "en",
+  showCorrectedAsPrimary = false,
+}: {
+  message: MessageBubbleMessage;
+  learningLanguage?: string;
+  translationLanguage?: string;
+  showCorrectedAsPrimary?: boolean;
+}) {
   const [showTranslation, setShowTranslation] = useState(false);
   const [showCorrection, setShowCorrection] = useState(false);
+  const [showOriginal, setShowOriginal] = useState(false);
   const [translation, setTranslation] = useState(message.translation || null);
   const [isTranslating, setIsTranslating] = useState(false);
 
   const isAI = message.sender === "ai";
   const hasCorrection = !isAI && !!message.correction;
+  const correctedPrimary = showCorrectedAsPrimary && hasCorrection;
+  const primaryText = correctedPrimary ? message.correction! : message.text;
   // Usage is useful while testing prompt changes, but it is internal cost
   // information and must stay hidden in normal production learner builds.
   const showUsage = process.env.NEXT_PUBLIC_AI_PRACTICE_SHOW_USAGE === "true";
@@ -104,8 +137,8 @@ export default function MessageBubble({ message }: { message: MessageBubbleMessa
     if (translation) { setShowTranslation(true); return; }
     try {
       setIsTranslating(true);
-      const result = await translateText(message.text);
-      setTranslation(result.translation);
+      const translatedText = await getCachedTranslation(message.text, translationLanguage);
+      setTranslation(translatedText);
       setShowTranslation(true);
     } catch {
       setTranslation("Translation unavailable. Please try again.");
@@ -119,15 +152,27 @@ export default function MessageBubble({ message }: { message: MessageBubbleMessa
     <div className={`flex ${isAI ? "justify-start" : "justify-end"} mb-4`}>
       <div className="max-w-[80%]">
         {/* Keep the original message stable; supporting text expands below it. */}
-        <div
+        <button
+          type="button"
+          onClick={() => correctedPrimary && setShowOriginal((current) => !current)}
+          aria-expanded={correctedPrimary ? showOriginal : undefined}
+          aria-label={correctedPrimary ? "Show original message" : undefined}
+          disabled={!correctedPrimary}
           className={`rounded-2xl px-4 py-3 ${
             isAI
               ? "bg-sky-50 dark:bg-sky-900/20 text-sky-800 dark:text-sky-100 rounded-tl-sm"
               : "bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-gray-200 rounded-tr-sm"
-          }`}
+          } ${correctedPrimary ? "cursor-pointer text-left transition-colors hover:bg-gray-200 dark:hover:bg-slate-700" : "cursor-default"}`}
         >
-          <p className="text-sm leading-relaxed">{message.text}</p>
-        </div>
+          <p className="text-sm leading-relaxed">{primaryText}</p>
+        </button>
+
+        {correctedPrimary && showOriginal && (
+          <div className="mt-2 rounded-2xl rounded-tr-sm border border-slate-200 bg-white px-4 py-3 text-gray-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200">
+            <p className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-slate-400">Original message</p>
+            <p className="text-sm leading-relaxed">{message.text}</p>
+          </div>
+        )}
 
         {showTranslation && translation && (
           <div className={`mt-2 rounded-2xl border border-amber-300 bg-amber-50/70 px-4 py-3 text-amber-800 dark:border-amber-700 dark:bg-amber-950/30 dark:text-amber-200 ${
@@ -137,7 +182,7 @@ export default function MessageBubble({ message }: { message: MessageBubbleMessa
           </div>
         )}
 
-        {showCorrection && hasCorrection && (
+        {showCorrection && hasCorrection && !correctedPrimary && (
           <div className="mt-2 rounded-xl border border-emerald-100 bg-emerald-50/70 px-3 py-2.5 text-gray-700 dark:border-emerald-900/50 dark:bg-emerald-950/30 dark:text-slate-200">
             <InlineDiff original={message.text} corrected={message.correction!} />
           </div>
@@ -145,13 +190,14 @@ export default function MessageBubble({ message }: { message: MessageBubbleMessa
 
         {/* Action Buttons */}
         <div className={`flex items-center gap-2 mt-2 ${isAI ? "" : "justify-end"}`}>
+          <AudioPlayer
+            text={message.text}
+            language={learningLanguage}
+            autoPlay={isAI && message.autoPlay}
+            autoPlayKey={`${message.id}-${message.timestamp || "greeting"}`}
+          />
           {isAI && (
             <>
-              <AudioPlayer
-                text={message.text}
-                autoPlay={message.autoPlay}
-                autoPlayKey={`${message.id}-${message.timestamp || "greeting"}`}
-              />
               <button
                 onClick={handleTranslate}
                 className={`p-1.5 rounded-lg transition-colors ${
@@ -182,7 +228,7 @@ export default function MessageBubble({ message }: { message: MessageBubbleMessa
                 {isTranslating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Languages className="w-4 h-4" />}
               </button>
 
-              <button
+              {!correctedPrimary && <button
                 onClick={() => hasCorrection && setShowCorrection(!showCorrection)}
                 disabled={!hasCorrection}
                 className={`p-1.5 rounded-lg transition-colors ${
@@ -196,7 +242,7 @@ export default function MessageBubble({ message }: { message: MessageBubbleMessa
                 aria-label={hasCorrection ? "Show correction" : "No correction needed"}
               >
                 <PenLine className="w-4 h-4" />
-              </button>
+              </button>}
             </>
           )}
         </div>

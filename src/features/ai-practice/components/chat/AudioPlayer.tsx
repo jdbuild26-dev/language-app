@@ -5,6 +5,19 @@ import { Play, Pause, Volume2 } from "lucide-react";
 
 const SPEED_OPTIONS = ["0.5x", "0.7x", "0.8x", "1x"];
 const AUTO_PLAY_DEDUPLICATION_WINDOW_MS = 1500;
+const SPEECH_LOCALES: Record<string, string> = {
+  en: "en-US",
+  fr: "fr-FR",
+  de: "de-DE",
+  hi: "hi-IN",
+  es: "es-ES",
+  it: "it-IT",
+  pt: "pt-PT",
+  ru: "ru-RU",
+  zh: "zh-CN",
+  ja: "ja-JP",
+  ko: "ko-KR",
+};
 
 // React Strict Mode intentionally re-runs effects in development. Remember a
 // just-started automatic playback briefly so the same chat message cannot
@@ -22,8 +35,9 @@ function waitForVoices(): Promise<SpeechSynthesisVoice[]> {
   });
 }
 
-export default function AudioPlayer({ text, autoPlay = false, autoPlayKey }: {
+export default function AudioPlayer({ text, language = "fr", autoPlay = false, autoPlayKey }: {
   text: string;
+  language?: string;
   autoPlay?: boolean;
   autoPlayKey?: string;
 }) {
@@ -62,13 +76,14 @@ export default function AudioPlayer({ text, autoPlay = false, autoPlayKey }: {
     await waitForVoices();
 
     const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = "fr-FR";
+    const languageCode = language.toLowerCase();
+    utterance.lang = languageCode.includes("-") ? languageCode : (SPEECH_LOCALES[languageCode] || languageCode);
     utterance.rate = parseFloat(currentSpeedRef.current.replace("x", ""));
 
-    // Pick a French voice if available
+    // Prefer a voice matching the current learning language when available.
     const voices = window.speechSynthesis.getVoices();
-    const frVoice = voices.find((v) => v.lang.startsWith("fr"));
-    if (frVoice) utterance.voice = frVoice;
+    const matchingVoice = voices.find((v) => v.lang.toLowerCase().startsWith(languageCode));
+    if (matchingVoice) utterance.voice = matchingVoice;
 
     utterance.onend = () => setIsPlaying(false);
     utterance.onerror = (event) => {

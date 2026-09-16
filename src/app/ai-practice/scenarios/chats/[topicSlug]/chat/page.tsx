@@ -255,11 +255,16 @@ export default function ChatPage() {
           parameters: feedback.analysis.parameters ?? [],
           overall_score: feedback.analysis.overall_score ?? null,
           messages: transcript.messages.map((m) => ({
+            id: `stored-${m.sequence}`,
             sender: m.sender,
             text: m.text,
             correction: m.correction ?? null,
             timestamp: m.created_at ? new Date(m.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : undefined,
           })),
+          learningLanguage: scenario.learning_lang || "fr",
+          translationLanguage: scenario.known_lang || "en",
+          learnerInstruction: scenario.learnerInstruction || "",
+          instructionTranslation: scenario.instructionEn || "",
         })
       );
 
@@ -478,7 +483,12 @@ export default function ChatPage() {
           <div className="min-h-0 flex-1 overflow-y-auto px-4 py-6">
             <div className="mx-auto max-w-5xl" role="log" aria-live="polite">
               {messages.map((message) => (
-                <MessageBubble key={message.id} message={message} />
+                <MessageBubble
+                  key={message.id}
+                  message={message}
+                  learningLanguage={scenario?.learning_lang || "fr"}
+                  translationLanguage={scenario?.known_lang || "en"}
+                />
               ))}
 
               {isSending && (

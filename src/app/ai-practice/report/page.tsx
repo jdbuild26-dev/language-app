@@ -1,26 +1,31 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
-  ArrowLeft,
   FileDown,
   MessageCircle,
-  BookOpen,
   Info,
   CheckCircle2,
   XCircle,
+  Languages,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { Target, ChatCircleText, CheckCircle, Lightbulb, BookOpenText, TextAa, Waveform, ChatsCircle, Leaf, Compass } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { InlineDiff } from "@/lib/inlineDiff";
-import { jsPDF } from "jspdf";
+import MessageBubble from "@/features/ai-practice/components/chat/MessageBubble";
+import { translateText } from "@/services/aiPracticeApi";
+import { getLangName } from "@/utils/languages";
 
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
 interface StoredMessage {
+  id: string;
   sender: "ai" | "user";
   text: string;
   correction?: string | null;
@@ -42,6 +47,10 @@ interface ReportData {
   messages: StoredMessage[];
   parameters?: CefrParameter[];
   overall_score?: number | null;
+  learningLanguage?: string;
+  translationLanguage?: string;
+  learnerInstruction?: string;
+  instructionTranslation?: string;
 }
 
 interface ParsedTweak {
@@ -172,28 +181,62 @@ function MarkdownTable({ raw }: { raw: string }) {
   );
 }
 
+function InlineMarkdown({ value }: { value: string }) {
+  return <>{value.split(/(\*\*[^*]+\*\*|\*[^*]+\*|`[^`]+`)/g).map((part, index) => {
+    if (part.startsWith("**") && part.endsWith("**")) return <strong key={index} className="font-bold text-slate-900 dark:text-white">{part.slice(2, -2)}</strong>;
+    if (part.startsWith("*") && part.endsWith("*")) return <em key={index}>{part.slice(1, -1)}</em>;
+    if (part.startsWith("`") && part.endsWith("`")) return <code key={index} className="rounded bg-slate-100 px-1 py-0.5 text-[0.9em] dark:bg-slate-800">{part.slice(1, -1)}</code>;
+    return part;
+  })}</>;
+}
+
 function SectionContent({ content }: { content: string }) {
-  const blocks: { type: "text" | "table"; value: string }[] = [];
+  type ContentBlock = { type: "table"; value: string } | { type: "heading"; value: string } | { type: "paragraph"; value: string } | { type: "list"; value: string[] };
+  const blocks: ContentBlock[] = [];
   const lines = content.split("\n");
-  let buffer: string[] = [];
-  let inTable = false;
-  for (const line of lines) {
-    const isTableRow = line.trim().startsWith("|");
-    if (isTableRow) {
-      if (!inTable) { if (buffer.length) blocks.push({ type: "text", value: buffer.join("\n").trim() }); buffer = []; inTable = true; }
-      buffer.push(line);
-    } else {
-      if (inTable) { blocks.push({ type: "table", value: buffer.join("\n") }); buffer = []; inTable = false; }
-      buffer.push(line);
+  let paragraph: string[] = [];
+  let list: string[] = [];
+  let table: string[] = [];
+
+  const flushParagraph = () => { if (paragraph.length) blocks.push({ type: "paragraph", value: paragraph.join(" ").trim() }); paragraph = []; };
+  const flushList = () => { if (list.length) blocks.push({ type: "list", value: list }); list = []; };
+  const flushTable = () => { if (table.length) blocks.push({ type: "table", value: table.join("\n") }); table = []; };
+
+  for (const rawLine of lines) {
+    const line = rawLine.trim();
+    if (line.startsWith("|")) {
+      flushParagraph(); flushList(); table.push(rawLine); continue;
     }
+    flushTable();
+    const heading = line.match(/^#{3,6}\s+(.+)$/);
+    if (heading) {
+      flushParagraph(); flushList(); blocks.push({ type: "heading", value: heading[1] }); continue;
+    }
+    const bullet = line.match(/^(?:[-*•])\s+(.+)$/);
+    if (bullet) {
+      flushParagraph(); list.push(bullet[1]); continue;
+    }
+    if (!line) { flushParagraph(); flushList(); continue; }
+    flushList(); paragraph.push(line);
   }
-  if (buffer.length) blocks.push({ type: inTable ? "table" : "text", value: buffer.join("\n").trim() });
+  flushParagraph(); flushList(); flushTable();
+
   return (
-    <div className="space-y-3">
-      {blocks.map((block, i) =>
-        block.type === "table" ? <MarkdownTable key={i} raw={block.value} /> :
-        block.value ? <div key={i} className="text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-wrap text-sm">{block.value}</div> : null
-      )}
+    <div className="w-full min-w-0 space-y-4 break-words">
+      {blocks.map((block, i) => {
+        if (block.type === "table") return <MarkdownTable key={i} raw={block.value} />;
+        if (block.type === "heading") return (
+          <div key={i} className="mt-7 border-l-2 border-blue-500 pl-3 first:mt-0">
+            <h3 className="text-base font-black tracking-tight text-slate-900 dark:text-white"><InlineMarkdown value={block.value} /></h3>
+          </div>
+        );
+        if (block.type === "list") return (
+          <ul key={i} className="space-y-2 pl-1 text-base leading-7 text-slate-700 dark:text-slate-200">
+            {block.value.map((item, itemIndex) => <li key={itemIndex} className="flex gap-2"><span aria-hidden="true" className="mt-2.5 h-1.5 w-1.5 shrink-0 rounded-full bg-blue-500" /><span className="min-w-0 flex-1"><InlineMarkdown value={item} /></span></li>)}
+          </ul>
+        );
+        return <p key={i} className="text-base leading-7 text-slate-700 dark:text-slate-200"><InlineMarkdown value={block.value} /></p>;
+      })}
     </div>
   );
 }
@@ -202,112 +245,135 @@ function SectionContent({ content }: { content: string }) {
 // Analysis row
 // ---------------------------------------------------------------------------
 function AnalysisRow({ label, value, tooltip }: { label: string; value: number; tooltip?: string }) {
+  const parameterLabel = label.toLowerCase();
+  const ParameterIcon = /task|completion/.test(parameterLabel) ? Target
+    : /comprehens/.test(parameterLabel) ? ChatCircleText
+    : /appropriat/.test(parameterLabel) ? CheckCircle
+    : /expression|meaning|express/.test(parameterLabel) ? Lightbulb
+    : /vocab/.test(parameterLabel) ? BookOpenText
+    : /grammar/.test(parameterLabel) ? TextAa
+    : /fluen|continuity/.test(parameterLabel) ? Waveform
+    : /interaction/.test(parameterLabel) ? ChatsCircle
+    : /natural/.test(parameterLabel) ? Leaf
+    : Compass;
+  const scoreTone = value >= 75
+    ? { bar: "bg-emerald-500" }
+    : value >= 60
+      ? { bar: "bg-amber-500" }
+      : { bar: "bg-red-500" };
+  const scoreMeaning = value >= 75
+    ? "Strong"
+    : value >= 60
+      ? "Developing well"
+      : value >= 40
+        ? "Needs attention"
+        : "Needs focused practice";
   return (
-    <div className="space-y-3">
-      <div className="flex justify-between items-center px-1">
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-emerald-50 dark:bg-emerald-950/20 flex items-center justify-center text-emerald-500">
-            <BookOpen className="w-4 h-4" />
-          </div>
-          <span className="text-base font-bold text-slate-900 dark:text-white leading-none">{label}</span>
+    <div className="min-w-0 space-y-3">
+      <div className="flex min-h-12 items-center justify-between gap-3">
+        <div className="flex min-w-0 items-center gap-2.5">
+          <ParameterIcon weight="duotone" size={24} aria-hidden="true" className="shrink-0 text-blue-600/80 dark:text-blue-400" />
+          <span className="min-w-0 text-base font-semibold leading-6 text-slate-900 dark:text-white">{label}</span>
         </div>
-        {tooltip ? <div title={tooltip}><Info className="w-5 h-5 text-slate-300 cursor-help" /></div> : <Info className="w-5 h-5 text-slate-300" />}
+        <div className="flex shrink-0 items-center gap-2">
+          <span className="whitespace-nowrap text-lg font-semibold tabular-nums text-slate-900 dark:text-slate-100">{value}<span className="text-xs font-normal text-slate-500 dark:text-slate-400"> /100</span></span>
+          {tooltip && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button type="button" aria-label={`More information about ${label}`} className="flex h-8 w-8 items-center justify-center rounded-full text-slate-500 outline-none transition-colors hover:bg-slate-200/60 hover:text-slate-700 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200">
+                  <Info className="h-4 w-4" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="top">{tooltip}</TooltipContent>
+            </Tooltip>
+          )}
+        </div>
       </div>
-      <div className="relative h-2 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-        <motion.div initial={{ width: 0 }} animate={{ width: `${value}%` }} transition={{ duration: 1, ease: "easeOut" }} className="h-full bg-emerald-500 rounded-full" />
+      <div role="meter" aria-label={label} aria-valuenow={value} aria-valuemin={0} aria-valuemax={100} className="relative h-2 w-full bg-slate-200/70 dark:bg-slate-800 rounded-full overflow-hidden">
+        <div style={{ width: `${Math.max(0, Math.min(100, value))}%` }} className={`h-full rounded-full ${scoreTone.bar}`} />
       </div>
-      <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest pl-12">{value}th Percentile</div>
+      <div className="text-xs leading-5 text-slate-600 dark:text-slate-400">{scoreMeaning}</div>
     </div>
   );
 }
 
 // ---------------------------------------------------------------------------
-// Grammar Mistakes split pane
+// Grammar Mistakes transcript with each suggestion directly below its message
 // ---------------------------------------------------------------------------
 function GrammarMistakesPane({ tweaks, messages }: { tweaks: ParsedTweak[]; messages: StoredMessage[] }) {
-  const realTweaks = tweaks.filter((t) => (t.original ?? "").trim() !== (t.corrected ?? "").trim());
+  const { realTweaks, matchingTweaksByMessage, unlinkedTweaks } = useMemo(() => {
+    const validTweaks = tweaks.filter((tweak) => (tweak.original ?? "").trim() !== (tweak.corrected ?? "").trim());
+    const matches = new Map<StoredMessage, ParsedTweak[]>();
+    const linkedTweaks = new Set<ParsedTweak>();
+
+    messages.forEach((message) => {
+      if (message.sender !== "user") return;
+      const messageTweaks = validTweaks.filter((tweak) => tweak.original && message.text.includes(tweak.original));
+      matches.set(message, messageTweaks);
+      messageTweaks.forEach((tweak) => linkedTweaks.add(tweak));
+    });
+
+    return {
+      realTweaks: validTweaks,
+      matchingTweaksByMessage: matches,
+      unlinkedTweaks: validTweaks.filter((tweak) => !linkedTweaks.has(tweak)),
+    };
+  }, [messages, tweaks]);
 
   return (
-    <div className="flex h-[calc(100vh-160px)] min-h-[500px]">
-
-      {/* LEFT: Transcript with superscript refs */}
-      <div className="w-[55%] border-r border-slate-100 dark:border-slate-800 overflow-y-auto bg-slate-50 dark:bg-slate-950">
-        <div className="sticky top-0 z-10 bg-white dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800 px-4 py-3 flex items-center gap-2">
+    <div className="min-h-[500px] bg-white dark:bg-slate-950">
+      <div className="sticky top-0 z-10 flex items-center gap-2 border-b border-slate-100 bg-white/95 px-5 py-4 backdrop-blur dark:border-slate-800 dark:bg-slate-900/95">
           <MessageCircle className="w-4 h-4 text-blue-500" />
-          <span className="text-xs font-black uppercase tracking-widest text-slate-500">Conversation Transcript</span>
+          <span className="text-xs font-black uppercase tracking-widest text-slate-500">Grammar mistakes</span>
+      </div>
+      {realTweaks.length === 0 ? (
+        <div className="flex min-h-[420px] flex-col items-center justify-center p-12 text-center">
+          <CheckCircle2 className="mb-4 h-12 w-12 text-emerald-500" />
+          <p className="text-lg font-bold text-slate-600 dark:text-slate-300">No corrections needed for this session</p>
         </div>
-        <div className="p-4 space-y-3">
+      ) : (
+        <div className="mx-auto max-w-7xl space-y-6 px-4 py-6 sm:px-6 md:py-8">
           {messages.map((msg, mi) => {
             const isUser = msg.sender === "user";
-            const refs: number[] = [];
-            if (isUser) {
-              realTweaks.forEach((t, ti) => {
-                if (t.original && msg.text.includes(t.original)) refs.push(ti + 1);
-              });
-            }
+            const matchingTweaks = isUser ? (matchingTweaksByMessage.get(msg) || []) : [];
             return (
-              <div key={mi} className={`flex flex-col ${isUser ? "items-end" : "items-start"}`}>
-                <div className={`max-w-[85%] px-4 py-3 rounded-2xl text-sm leading-relaxed relative ${
+              <div key={mi} className={`flex flex-col ${isUser ? "items-end" : "items-start"} gap-2`}>
+                <div className={`w-fit max-w-[88%] rounded-2xl px-4 py-3 text-sm leading-relaxed sm:max-w-[76%] ${
                   isUser
-                    ? "bg-blue-600 text-white rounded-tr-sm"
-                    : "bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 rounded-tl-sm border border-slate-100 dark:border-slate-700"
+                    ? "rounded-tr-sm bg-blue-600 text-white shadow-sm"
+                    : "rounded-tl-sm border border-slate-100 bg-white text-slate-800 shadow-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
                 }`}>
                   {isUser && msg.correction ? (
                     <InlineDiff original={msg.text} corrected={msg.correction} />
                   ) : msg.text}
-                  {refs.length > 0 && (
-                    <span className="ml-1.5 inline-flex gap-0.5">
-                      {refs.map((n) => (
-                        <sup key={n} className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-white/30 text-white text-[9px] font-black leading-none">
-                          {n}
-                        </sup>
-                      ))}
-                    </span>
-                  )}
                 </div>
-                {msg.timestamp && (
-                  <span className="text-[10px] text-slate-400 mt-1 px-1">{msg.timestamp}</span>
-                )}
+                {matchingTweaks.map((tweak, index) => (
+                  <div key={`${mi}-${index}`} className="w-fit max-w-[88%] border-l-2 border-sky-400 py-0.5 pl-3 sm:max-w-[76%]">
+                    {tweak.explanation && <p className="text-sm italic leading-relaxed text-slate-500 dark:text-slate-400">{tweak.explanation}</p>}
+                    {tweak.native_version && tweak.native_version !== tweak.corrected && (
+                      <p className="mt-1 text-sm text-slate-600 dark:text-slate-300"><span className="font-medium text-slate-500 dark:text-slate-400">More natural: </span>{tweak.native_version}</p>
+                    )}
+                  </div>
+                ))}
+                {msg.timestamp && <span className="px-1 text-[10px] text-slate-400">{msg.timestamp}</span>}
               </div>
             );
           })}
-        </div>
-      </div>
-
-      {/* RIGHT: Corrections */}
-      <div className="w-[45%] overflow-y-auto">
-        {realTweaks.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full text-center p-12">
-            <CheckCircle2 className="w-12 h-12 text-emerald-500 mb-4" />
-            <p className="text-lg font-bold text-slate-600 dark:text-slate-300">No corrections — great session!</p>
-          </div>
-        ) : (
-          <div className="p-4 space-y-3">
-            {realTweaks.map((tweak, i) => (
-              <div key={i} className="bg-white dark:bg-slate-900 rounded-xl border border-slate-100 dark:border-slate-800 p-4 flex gap-3">
-                <span className="shrink-0 w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 text-[11px] font-black flex items-center justify-center mt-0.5">
-                  {i + 1}
-                </span>
-                <div className="flex-1 space-y-1.5">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="line-through text-red-400 text-sm">{tweak.original}</span>
-                    <span className="text-slate-300 text-xs">→</span>
-                    <span className="text-emerald-600 dark:text-emerald-400 font-semibold text-sm">{tweak.corrected}</span>
+          {unlinkedTweaks.length > 0 && (
+            <div className="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900">
+              <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">Other suggestions</p>
+              <div className="mt-3 space-y-3">
+                {unlinkedTweaks.map((tweak, index) => (
+                  <div key={index} className="border-l-2 border-sky-400 pl-3">
+                    <p className="text-sm text-slate-700 dark:text-slate-200"><span className="font-medium">Correction: </span>{tweak.corrected}</p>
+                    {tweak.explanation && <p className="mt-1 text-sm italic text-slate-500 dark:text-slate-400">{tweak.explanation}</p>}
                   </div>
-                  {tweak.explanation && (
-                    <p className="text-xs text-slate-500 italic leading-relaxed border-l-2 border-blue-300 pl-2">{tweak.explanation}</p>
-                  )}
-                  {tweak.native_version && tweak.native_version !== tweak.corrected && (
-                    <p className="text-xs text-slate-600 dark:text-slate-300 font-medium">
-                      <span className="text-slate-400">Native: </span>{tweak.native_version}
-                    </p>
-                  )}
-                </div>
+                ))}
               </div>
-            ))}
-          </div>
-        )}
-      </div>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
@@ -320,6 +386,10 @@ export default function FeedbackReportPage() {
   const [report, setReport] = useState<ReportData | null>(null);
   const [parsed, setParsed] = useState<ParsedReport | null>(null);
   const [activeTab, setActiveTab] = useState<"conversation" | "grammar" | "feedback">("conversation");
+  const [showInstructionTranslation, setShowInstructionTranslation] = useState(false);
+  const [translatedInstruction, setTranslatedInstruction] = useState<string | null>(null);
+  const [isTranslatingInstruction, setIsTranslatingInstruction] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
 
   useEffect(() => {
     const stored = sessionStorage.getItem("feedbackReport");
@@ -333,31 +403,105 @@ export default function FeedbackReportPage() {
     }
   }, []);
 
-  const handleDownloadPDF = () => {
+  const handleDownloadPDF = async () => {
     if (!parsed || !report) return;
-    const doc = new jsPDF();
+    setIsDownloading(true);
+    try {
+    const { jsPDF } = await import("jspdf");
+    const doc = new jsPDF({ unit: "mm", format: "a4" });
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const margin = 18;
+    const contentWidth = pageWidth - margin * 2;
+    const bottom = pageHeight - 18;
+    let y = margin;
+    const addPage = () => { doc.addPage(); y = margin; };
+    const ensureSpace = (height: number) => { if (y + height > bottom) addPage(); };
+    const write = (text: string, options?: { size?: number; style?: "normal" | "bold" | "italic"; color?: [number, number, number]; gap?: number }) => {
+      const size = options?.size ?? 10.5;
+      const lineHeight = size * 0.46;
+      doc.setFont("helvetica", options?.style ?? "normal");
+      doc.setFontSize(size);
+      doc.setTextColor(...(options?.color ?? [31, 41, 55]));
+      for (const line of doc.splitTextToSize(text || "—", contentWidth) as string[]) {
+        ensureSpace(lineHeight);
+        doc.text(line, margin, y);
+        y += lineHeight;
+      }
+      y += options?.gap ?? 1.5;
+    };
     doc.setFillColor(79, 70, 229);
     doc.rect(0, 0, 210, 40, "F");
     doc.setTextColor(255, 255, 255);
     doc.setFontSize(22);
     doc.setFont("helvetica", "bold");
-    doc.text("AI PRACTICE FEEDBACK REPORT", 20, 20);
+    doc.text("AI PRACTICE FEEDBACK REPORT", margin, 20);
     doc.setFontSize(10);
     doc.setFont("helvetica", "normal");
-    doc.text(`${report.title} · ${report.level} Level`, 20, 30);
-    doc.setTextColor(0, 0, 0);
-    doc.setFontSize(14);
-    doc.setFont("helvetica", "bold");
-    doc.text("Executive Summary", 20, 55);
-    doc.setFontSize(11);
-    doc.setFont("helvetica", "italic");
-    doc.setTextColor(51, 65, 85);
-    const summaryLines = doc.splitTextToSize(`"${parsed.executive_summary}"`, 170);
-    doc.text(summaryLines, 20, 65);
-    doc.setFontSize(8);
-    doc.setTextColor(148, 163, 184);
-    doc.text("Generated by Antigravity AI", 105, 285, { align: "center" });
+    doc.text(`${report.title} · ${report.level} Level`, margin, 30);
+    y = 52;
+    write("Session details", { size: 15, style: "bold", gap: 3 });
+    write(`${report.title} | ${report.level} | ${new Date(report.date).toLocaleDateString("en-GB", { year: "numeric", month: "long", day: "numeric" })}`, { size: 10, color: [71, 85, 105], gap: 3 });
+    if (report.learnerInstruction) {
+      write("Instructions", { size: 14, style: "bold", gap: 2 });
+      write(report.learnerInstruction, { gap: 4 });
+    }
+    write("Session analysis", { size: 14, style: "bold", gap: 2 });
+    write(`Overall score: ${cefrScore}%`, { style: "bold", gap: 2 });
+    (report.parameters || []).forEach((parameter) => write(`${parameter.name}: ${parameter.score}%`, { size: 10, gap: 0.75 }));
+    parsed.sections.filter((section) => !/parameter\s+ratings?/i.test(section.title)).forEach((section) => {
+      ensureSpace(12);
+      write(section.title, { size: 14, style: "bold", gap: 2 });
+      write(section.content, { gap: 4 });
+    });
+    ensureSpace(12);
+    write("Transcript", { size: 14, style: "bold", gap: 2 });
+    report.messages.forEach((message) => {
+      ensureSpace(10);
+      write(`${message.sender === "ai" ? "AI conversation partner" : "You"}${message.timestamp ? ` | ${message.timestamp}` : ""}`, { size: 10, style: "bold", color: [2, 132, 199], gap: 0.5 });
+      write(message.text, { gap: message.correction ? 1 : 3 });
+      if (message.sender === "user" && message.correction) write(`Correction: ${message.correction}`, { size: 9.5, style: "italic", color: [180, 83, 9], gap: 3 });
+    });
+    const pageCount = doc.getNumberOfPages();
+    for (let page = 1; page <= pageCount; page += 1) {
+      doc.setPage(page);
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(8.5);
+      doc.setTextColor(100, 116, 139);
+      doc.text(`Page ${page} of ${pageCount}`, pageWidth - margin, pageHeight - 9, { align: "right" });
+    }
     doc.save(`AIReport-${report.level}-${Date.now()}.pdf`);
+    } finally {
+      setIsDownloading(false);
+    }
+  };
+
+  const handleInstructionTranslation = async () => {
+    if (!report?.learnerInstruction) return;
+    if (showInstructionTranslation) {
+      setShowInstructionTranslation(false);
+      return;
+    }
+    const targetLanguage = report.translationLanguage || "en";
+    if (targetLanguage === "en" && report.instructionTranslation) {
+      setShowInstructionTranslation(true);
+      return;
+    }
+    if (translatedInstruction) {
+      setShowInstructionTranslation(true);
+      return;
+    }
+    try {
+      setIsTranslatingInstruction(true);
+      const result = await translateText(report.learnerInstruction, targetLanguage);
+      setTranslatedInstruction(result.translation);
+      setShowInstructionTranslation(true);
+    } catch {
+      setTranslatedInstruction("Translation unavailable. Please try again.");
+      setShowInstructionTranslation(true);
+    } finally {
+      setIsTranslatingInstruction(false);
+    }
   };
 
   if (!report || !parsed) {
@@ -369,12 +513,21 @@ export default function FeedbackReportPage() {
   }
 
   const tabs = [
-    { id: "conversation", label: "Original Conversation" },
+    { id: "conversation", label: "Transcript" },
     { id: "grammar",      label: "Grammar Mistakes" },
     { id: "feedback",     label: "Feedback Report" },
   ] as const;
 
   const cefrScore = report.overall_score ?? parsed.overall_score;
+  const overallMeaning = cefrScore >= 90
+    ? "Excellent"
+    : cefrScore >= 75
+      ? "Good"
+      : cefrScore >= 60
+        ? "Fair"
+        : cefrScore >= 40
+          ? "Weak"
+          : "Very weak";
 
   const scoreFromSection = (section?: { content: string }) => {
     if (!section) return 65;
@@ -388,35 +541,25 @@ export default function FeedbackReportPage() {
   const commSection    = parsed.sections.find((s) => s.title.toLowerCase().includes("communication") || s.title.match(/^3\./));
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
-      <div className="max-w-7xl mx-auto px-4 md:px-8 pt-6 pb-2 space-y-4">
-
-        <div className="flex justify-end">
-          <button
-            type="button"
-            onClick={() => router.back()}
-            className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition-[background-color,transform] duration-150 hover:bg-slate-100 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Back to conversation
-          </button>
-        </div>
+    <TooltipProvider delayDuration={200}>
+      <div className="min-h-screen bg-white dark:bg-slate-950">
+      <div className="mx-auto max-w-7xl space-y-4 px-4 pb-2 pt-6 md:px-8">
 
         {/* Tabs */}
         <div className="border-b border-slate-200 dark:border-slate-800">
-          <div className="flex gap-8">
+          <div className="flex gap-5 overflow-x-auto sm:gap-8">
             {tabs.map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
                 className={cn(
-                  "pb-4 px-1 text-sm font-black uppercase tracking-tighter transition-all relative",
+                  "relative whitespace-nowrap px-1 pb-4 text-sm font-black uppercase tracking-tighter transition-all focus-visible:outline-blue-500",
                   activeTab === tab.id ? "text-blue-600 dark:text-blue-400" : "text-slate-400 hover:text-slate-600"
                 )}
               >
                 {tab.label}
                 {activeTab === tab.id && (
-                  <motion.div layoutId="tabUnderline" className="absolute bottom-0 left-0 right-0 h-1 bg-blue-600 rounded-t-full" />
+                  <motion.div layoutId="tabUnderline" className="absolute bottom-0 left-0 right-0 h-1 rounded-t-full bg-blue-600" />
                 )}
               </button>
             ))}
@@ -429,30 +572,28 @@ export default function FeedbackReportPage() {
           {/* ── ORIGINAL CONVERSATION ── */}
           {activeTab === "conversation" && (
             <motion.div key="conv" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }}>
-              <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm overflow-hidden">
-                <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+              <div className="overflow-hidden">
+                <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4 dark:border-slate-800">
                   <div className="flex items-center gap-2">
                     <MessageCircle className="w-4 h-4 text-blue-500" />
-                    <span className="text-sm font-black uppercase tracking-widest text-slate-500">Conversation Transcript</span>
+                    <span className="text-sm font-black uppercase tracking-widest text-slate-500">Transcript</span>
                   </div>
-                  <button onClick={() => router.push("/ai-practice")} className="flex items-center gap-1 text-blue-600 text-sm font-bold hover:underline">
-                    <ArrowLeft className="w-3 h-3" /> Back
-                  </button>
                 </div>
-                <div className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
+                {report.learnerInstruction && (
+                  <div className="mx-4 my-4 rounded-2xl border border-sky-100 bg-sky-50/70 px-5 py-4 shadow-sm dark:border-sky-900/60 dark:bg-sky-950/20 sm:mx-6">
+                    <p className="text-xs font-bold uppercase tracking-widest text-sky-700 dark:text-sky-300">Instructions</p>
+                    <p className="mt-1 text-sm leading-relaxed text-slate-700 dark:text-slate-200">{showInstructionTranslation ? (translatedInstruction || report.instructionTranslation || report.learnerInstruction) : report.learnerInstruction}</p>
+                    {report.translationLanguage && report.translationLanguage !== report.learningLanguage && (
+                      <button type="button" onClick={handleInstructionTranslation} disabled={isTranslatingInstruction} className="mt-2 inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-semibold text-sky-700 transition-colors hover:bg-sky-100 active:scale-[0.97] disabled:opacity-60 dark:text-sky-300 dark:hover:bg-sky-900/50">
+                        <Languages className="h-3.5 w-3.5" />
+                        {isTranslatingInstruction ? "Translating..." : showInstructionTranslation ? "Show original" : `Translate to ${getLangName(report.translationLanguage || "en")}`}
+                      </button>
+                    )}
+                  </div>
+                )}
+                <div className="max-h-[70vh] space-y-4 overflow-y-auto p-6">
                   {report.messages && report.messages.length > 0 ? report.messages.map((msg, i) => (
-                    <div key={i} className={`flex flex-col ${msg.sender === "user" ? "items-end" : "items-start"}`}>
-                      <div className={`max-w-[75%] px-4 py-3 rounded-2xl text-sm leading-relaxed ${
-                        msg.sender === "user"
-                          ? "bg-blue-600 text-white rounded-tr-sm"
-                          : "bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 rounded-tl-sm"
-                      }`}>
-                        {msg.sender === "user" && msg.correction
-                          ? <InlineDiff original={msg.text} corrected={msg.correction} />
-                          : msg.text}
-                      </div>
-                      {msg.timestamp && <span className="text-[10px] text-slate-400 mt-1 px-1">{msg.timestamp}</span>}
-                    </div>
+                    <MessageBubble key={msg.id || i} message={msg} learningLanguage={report.learningLanguage || "fr"} translationLanguage={report.translationLanguage || "en"} showCorrectedAsPrimary />
                   )) : (
                     <p className="text-slate-400 text-center py-8">No conversation recorded.</p>
                   )}
@@ -464,7 +605,7 @@ export default function FeedbackReportPage() {
           {/* ── GRAMMAR MISTAKES ── */}
           {activeTab === "grammar" && (
             <motion.div key="grammar" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
-              <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm overflow-hidden">
+              <div className="overflow-hidden">
                 <GrammarMistakesPane
                   tweaks={parsed.detailed_tweaks}
                   messages={report.messages || []}
@@ -476,62 +617,41 @@ export default function FeedbackReportPage() {
           {/* ── FEEDBACK REPORT ── */}
           {activeTab === "feedback" && (
             <motion.div key="feedback" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}
-              className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start pb-8">
+              className="space-y-10 pb-8 pt-4">
 
-              {/* Left */}
-              <div className="lg:col-span-7 space-y-6">
-                <div className="bg-white dark:bg-slate-900 rounded-2xl p-8 border border-slate-100 dark:border-slate-800 shadow-sm">
-                  <div className="flex justify-between items-center mb-4">
-                    <h3 className="text-xl font-black text-slate-900 dark:text-white tracking-tight">Session Report</h3>
-                    <button onClick={() => router.push("/ai-practice")} className="flex items-center gap-1 text-blue-600 text-sm font-bold hover:underline">
-                      <ArrowLeft className="w-3 h-3" /> Back
-                    </button>
-                  </div>
-                  <div className="text-slate-500 text-sm mb-4">
-                    {report.title} · {new Date(report.date).toLocaleDateString("en-GB", { year: "numeric", month: "long", day: "numeric" })}
-                  </div>
-                  {parsed.sections[0] && <SectionContent content={parsed.sections[0].content} />}
-                </div>
-
-                <div className="bg-blue-50/50 dark:bg-blue-900/10 rounded-2xl p-8 border border-blue-100 dark:border-blue-900/30">
-                  <div className="flex items-center gap-3 mb-4">
-                    <MessageCircle className="w-6 h-6 text-blue-600" />
-                    <h3 className="text-lg font-black text-blue-900 dark:text-blue-100 uppercase tracking-tight">AI Executive Summary</h3>
-                  </div>
-                  <p className="text-lg font-medium text-blue-800 dark:text-blue-200 italic leading-relaxed">"{parsed.executive_summary}"</p>
-                </div>
-
-                {/* Full analysis sections */}
-                <div className="space-y-4">
-                  {parsed.sections.slice(1).map((section, idx) => (
-                    <div key={idx} className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 p-6 shadow-sm">
-                      <h2 className="text-base font-black text-slate-900 dark:text-white mb-4 uppercase tracking-tight flex items-center gap-2">
-                        <span className="flex items-center justify-center w-7 h-7 rounded-lg bg-blue-100 dark:bg-blue-900/30 shrink-0 text-blue-600 text-xs font-black">{idx + 2}</span>
-                        {section.title}
-                      </h2>
-                      <SectionContent content={section.content} />
+              {/* Scores and analysis lead the page; the detailed report follows below. */}
+              <section className="space-y-7">
+                <div className="flex flex-col gap-6 border-b border-slate-200 pb-7 dark:border-slate-800 lg:flex-row lg:items-center lg:justify-between">
+                  <div className="flex flex-wrap items-start justify-between gap-4 lg:flex-1">
+                    <div>
+                      <h1 className="text-2xl font-semibold tracking-tight text-slate-900 dark:text-white">{report.title}</h1>
+                      <p className="mt-1.5 text-sm text-slate-500 dark:text-slate-400">Session feedback · {new Date(report.date).toLocaleDateString("en-GB", { year: "numeric", month: "long", day: "numeric" })}</p>
                     </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Right */}
-              <div className="lg:col-span-5 space-y-6">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-100 dark:border-slate-800 shadow-sm relative flex flex-col items-center justify-center min-h-[140px]">
-                    <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest absolute top-6 left-6">Overall Score</p>
-                    <div className="bg-emerald-500 text-white font-black text-3xl px-6 py-2 rounded-lg shadow-lg mt-4">{cefrScore}</div>
                   </div>
-                  <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-100 dark:border-slate-800 shadow-sm relative flex flex-col items-center justify-center min-h-[140px]">
-                    <div className="absolute top-6 right-6"><Info className="w-4 h-4 text-slate-300" /></div>
-                    <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest absolute top-6 left-6">CEFR Level Detected</p>
-                    <div className="text-5xl font-black text-slate-900 dark:text-white mt-4">{parsed.cefr_level}</div>
+                  <div className="flex flex-wrap items-center gap-x-8 gap-y-5">
+                    <div>
+                      <p className="text-xs font-medium text-slate-500 dark:text-slate-400">Overall score</p>
+                      <div className="mt-1 flex items-baseline gap-2">
+                        <span className={`text-3xl font-semibold tabular-nums tracking-tight ${cefrScore >= 75 ? "text-emerald-600 dark:text-emerald-400" : cefrScore >= 60 ? "text-amber-600 dark:text-amber-400" : "text-red-600 dark:text-red-400"}`}>{cefrScore}<span className="text-lg">%</span></span>
+                        <span className="text-xs font-medium text-slate-500 dark:text-slate-400">{overallMeaning}</span>
+                      </div>
+                    </div>
+                    <div className="h-10 w-px bg-slate-200 dark:bg-slate-800" />
+                    <div>
+                      <p className="text-xs font-medium text-slate-500 dark:text-slate-400">CEFR level</p>
+                      <div className="mt-1 flex items-baseline gap-2">
+                        <span className="text-3xl font-semibold tracking-tight text-slate-900 dark:text-white">{parsed.cefr_level}</span>
+                      </div>
+                    </div>
                   </div>
                 </div>
 
-                <div className="bg-white dark:bg-slate-900 rounded-2xl p-8 border border-slate-100 dark:border-slate-800 shadow-sm">
-                  <h4 className="text-lg font-black text-slate-900 dark:text-white uppercase tracking-tight mb-8">Session Analysis</h4>
-                  <div className="space-y-10">
+                <div className="py-1">
+                  <div className="mb-8">
+                    <h2 className="text-xl font-semibold tracking-tight text-slate-900 dark:text-white">Session analysis</h2>
+                    <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Each area is scored on a 0–100 scale.</p>
+                  </div>
+                  <div className="grid w-full min-w-0 grid-cols-1 gap-x-8 gap-y-8 md:grid-cols-2 xl:grid-cols-3 xl:gap-x-10">
                     {report.parameters && report.parameters.length > 0
                       ? report.parameters.map((p) => <AnalysisRow key={p.name} label={p.name} value={p.score} tooltip={p.tooltip} />)
                       : <>
@@ -542,22 +662,44 @@ export default function FeedbackReportPage() {
                     }
                   </div>
                 </div>
+              </section>
 
-                <div className="space-y-3 pt-2">
-                  <Button onClick={() => router.push("/ai-practice")} className="w-full h-12 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-black text-base shadow-xl shadow-blue-100 dark:shadow-none">
+              <section className="border-t border-slate-200 pt-8 dark:border-slate-800" aria-labelledby="written-report-title">
+                <div className="mb-7">
+                  <p className="mb-2 text-xs font-medium tracking-wide text-blue-600 dark:text-blue-400">Your conversation, reviewed</p>
+                  <h2 id="written-report-title" className="text-2xl font-semibold tracking-tight text-slate-900 dark:text-white">Session report</h2>
+                </div>
+                <div>
+                  <Accordion type="multiple" defaultValue={["section-0"]} className="min-w-0">
+                    {parsed.sections.length === 0 && <p className="text-sm text-slate-500">Written feedback is not available for this session.</p>}
+                    {parsed.sections.filter((section) => !/parameter\s+ratings?/i.test(section.title)).map((section, index) => (
+                      <AccordionItem id={`report-section-${index}`} key={index} value={`section-${index}`} className="scroll-mt-8">
+                        <AccordionTrigger className="py-6">
+                          <span className="text-xs font-medium tabular-nums text-blue-600 dark:text-blue-400">{String(index + 1).padStart(2, "0")}</span>
+                          <span className="flex-1 text-base font-semibold sm:text-lg">{section.title.replace(/^\d+[.)]\s*/, "")}</span>
+                        </AccordionTrigger>
+                        <AccordionContent className="w-full min-w-0 pb-8"><SectionContent content={section.content} /></AccordionContent>
+                      </AccordionItem>
+                    ))}
+                  </Accordion>
+                </div>
+              </section>
+
+              <div className="flex flex-col gap-3 border-t border-slate-200 pt-6 dark:border-slate-800 sm:flex-row sm:justify-end">
+                  <Button onClick={() => router.push("/ai-practice")} className="h-12 rounded-xl bg-blue-600 text-base font-black text-white shadow-xl shadow-blue-100 hover:bg-blue-700 dark:shadow-none">
                     Continue Practicing
                   </Button>
-                  <Button onClick={handleDownloadPDF} variant="outline" className="w-full h-12 rounded-xl bg-white dark:bg-slate-900 border-2 border-slate-100 dark:border-slate-800 font-bold text-slate-700 dark:text-white flex items-center justify-center gap-2">
+                  <Button onClick={handleDownloadPDF} disabled={isDownloading} variant="outline" className="flex h-12 items-center justify-center gap-2 rounded-xl border-2 border-slate-100 bg-white font-bold text-slate-700 dark:border-slate-800 dark:bg-slate-900 dark:text-white">
                     <FileDown className="w-5 h-5" />
-                    Download Report (PDF)
+                    {isDownloading ? "Preparing PDF..." : "Download Report (PDF)"}
                   </Button>
-                </div>
               </div>
             </motion.div>
           )}
 
         </AnimatePresence>
       </div>
-    </div>
+      </div>
+    </TooltipProvider>
   );
 }
