@@ -149,7 +149,7 @@ export default function MessageBubble({
   };
 
   return (
-    <div className={`flex ${isAI ? "justify-start" : "justify-end"} mb-4`}>
+    <div className={`flex ${isAI ? "justify-start" : "justify-end"} mb-3`}>
       <div className="max-w-[80%]">
         {/* Keep the original message stable; supporting text expands below it. */}
         <button
@@ -158,7 +158,7 @@ export default function MessageBubble({
           aria-expanded={correctedPrimary ? showOriginal : undefined}
           aria-label={correctedPrimary ? "Show original message" : undefined}
           disabled={!correctedPrimary}
-          className={`rounded-2xl px-4 py-3 ${
+          className={`rounded-2xl px-4 py-3 ${!isAI ? "ml-auto block" : ""} ${
             isAI
               ? "bg-sky-50 dark:bg-sky-900/20 text-sky-800 dark:text-sky-100 rounded-tl-sm"
               : "bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-gray-200 rounded-tr-sm"
@@ -189,7 +189,7 @@ export default function MessageBubble({
         )}
 
         {/* Action Buttons */}
-        <div className={`flex items-center gap-2 mt-2 ${isAI ? "" : "justify-end"}`}>
+        <div className={`mt-1 flex items-center gap-2 ${isAI ? "" : "justify-end"}`}>
           <AudioPlayer
             text={message.text}
             language={learningLanguage}

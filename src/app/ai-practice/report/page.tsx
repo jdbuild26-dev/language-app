@@ -241,6 +241,25 @@ function SectionContent({ content }: { content: string }) {
   );
 }
 
+function isParameterSection(title: string) {
+  return /\bparameter\b/i.test(title);
+}
+
+function formatPdfContent(content: string) {
+  return content
+    .split("\n")
+    .map((line) => {
+      const trimmed = line.trim();
+      if (!trimmed || /^\|[-\s|]+\|$/.test(trimmed)) return "";
+      if (trimmed.startsWith("|")) {
+        return trimmed.split("|").slice(1, -1).map((cell) => cell.trim()).filter(Boolean).join(" - ");
+      }
+      return trimmed.replace(/^#{1,6}\s*/, "");
+    })
+    .filter(Boolean)
+    .join("\n");
+}
+
 // ---------------------------------------------------------------------------
 // Analysis row
 // ---------------------------------------------------------------------------
@@ -302,21 +321,28 @@ function AnalysisRow({ label, value, tooltip }: { label: string; value: number; 
 // ---------------------------------------------------------------------------
 function GrammarMistakesPane({ tweaks, messages }: { tweaks: ParsedTweak[]; messages: StoredMessage[] }) {
   const { realTweaks, matchingTweaksByMessage, unlinkedTweaks } = useMemo(() => {
-    const validTweaks = tweaks.filter((tweak) => (tweak.original ?? "").trim() !== (tweak.corrected ?? "").trim());
+    const seenTweaks = new Set<string>();
+    const validTweaks = tweaks.filter((tweak) => {
+      if ((tweak.original ?? "").trim() === (tweak.corrected ?? "").trim()) return false;
+      const key = [tweak.original, tweak.corrected, tweak.explanation, tweak.native_version].map((value) => (value || "").trim().toLowerCase()).join("|");
+      if (seenTweaks.has(key)) return false;
+      seenTweaks.add(key);
+      return true;
+    });
     const matches = new Map<StoredMessage, ParsedTweak[]>();
-    const linkedTweaks = new Set<ParsedTweak>();
+    const remainingTweaks = [...validTweaks];
 
     messages.forEach((message) => {
       if (message.sender !== "user") return;
-      const messageTweaks = validTweaks.filter((tweak) => tweak.original && message.text.includes(tweak.original));
+      const messageTweaks = remainingTweaks.filter((tweak) => tweak.original && message.text.includes(tweak.original));
       matches.set(message, messageTweaks);
-      messageTweaks.forEach((tweak) => linkedTweaks.add(tweak));
+      messageTweaks.forEach((tweak) => remainingTweaks.splice(remainingTweaks.indexOf(tweak), 1));
     });
 
     return {
       realTweaks: validTweaks,
       matchingTweaksByMessage: matches,
-      unlinkedTweaks: validTweaks.filter((tweak) => !linkedTweaks.has(tweak)),
+      unlinkedTweaks: remainingTweaks,
     };
   }, [messages, tweaks]);
 
@@ -423,10 +449,13 @@ export default function FeedbackReportPage() {
       doc.setFont("helvetica", options?.style ?? "normal");
       doc.setFontSize(size);
       doc.setTextColor(...(options?.color ?? [31, 41, 55]));
-      for (const line of doc.splitTextToSize(text || "—", contentWidth) as string[]) {
-        ensureSpace(lineHeight);
-        doc.text(line, margin, y);
-        y += lineHeight;
+      for (const paragraph of (text || "—").split("\n")) {
+        const wrappedLines = doc.splitTextToSize(paragraph || " ", contentWidth) as string[];
+        for (const line of wrappedLines) {
+          ensureSpace(lineHeight);
+          doc.text(line, margin, y);
+          y += lineHeight;
+        }
       }
       y += options?.gap ?? 1.5;
     };
@@ -449,10 +478,10 @@ export default function FeedbackReportPage() {
     write("Session analysis", { size: 14, style: "bold", gap: 2 });
     write(`Overall score: ${cefrScore}%`, { style: "bold", gap: 2 });
     (report.parameters || []).forEach((parameter) => write(`${parameter.name}: ${parameter.score}%`, { size: 10, gap: 0.75 }));
-    parsed.sections.filter((section) => !/parameter\s+ratings?/i.test(section.title)).forEach((section) => {
+    parsed.sections.filter((section) => !isParameterSection(section.title)).forEach((section) => {
       ensureSpace(12);
       write(section.title, { size: 14, style: "bold", gap: 2 });
-      write(section.content, { gap: 4 });
+      write(formatPdfContent(section.content), { gap: 4 });
     });
     ensureSpace(12);
     write("Transcript", { size: 14, style: "bold", gap: 2 });
@@ -572,7 +601,7 @@ export default function FeedbackReportPage() {
           {/* ── ORIGINAL CONVERSATION ── */}
           {activeTab === "conversation" && (
             <motion.div key="conv" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }}>
-              <div className="overflow-hidden">
+              <div className="overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800">
                 <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4 dark:border-slate-800">
                   <div className="flex items-center gap-2">
                     <MessageCircle className="w-4 h-4 text-blue-500" />
@@ -591,7 +620,7 @@ export default function FeedbackReportPage() {
                     )}
                   </div>
                 )}
-                <div className="max-h-[70vh] space-y-4 overflow-y-auto p-6">
+                <div className="space-y-4 p-6">
                   {report.messages && report.messages.length > 0 ? report.messages.map((msg, i) => (
                     <MessageBubble key={msg.id || i} message={msg} learningLanguage={report.learningLanguage || "fr"} translationLanguage={report.translationLanguage || "en"} showCorrectedAsPrimary />
                   )) : (
@@ -605,7 +634,7 @@ export default function FeedbackReportPage() {
           {/* ── GRAMMAR MISTAKES ── */}
           {activeTab === "grammar" && (
             <motion.div key="grammar" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
-              <div className="overflow-hidden">
+              <div className="overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800">
                 <GrammarMistakesPane
                   tweaks={parsed.detailed_tweaks}
                   messages={report.messages || []}
@@ -672,7 +701,7 @@ export default function FeedbackReportPage() {
                 <div>
                   <Accordion type="multiple" defaultValue={["section-0"]} className="min-w-0">
                     {parsed.sections.length === 0 && <p className="text-sm text-slate-500">Written feedback is not available for this session.</p>}
-                    {parsed.sections.filter((section) => !/parameter\s+ratings?/i.test(section.title)).map((section, index) => (
+                    {parsed.sections.filter((section) => !isParameterSection(section.title)).map((section, index) => (
                       <AccordionItem id={`report-section-${index}`} key={index} value={`section-${index}`} className="scroll-mt-8">
                         <AccordionTrigger className="py-6">
                           <span className="text-xs font-medium tabular-nums text-blue-600 dark:text-blue-400">{String(index + 1).padStart(2, "0")}</span>
