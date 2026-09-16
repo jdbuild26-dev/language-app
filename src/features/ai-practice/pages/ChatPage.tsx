@@ -328,7 +328,12 @@ export default function ChatPage() {
       <div className="flex-1 overflow-y-auto px-4 py-6">
         <div className="max-w-3xl mx-auto">
           {messages.map((message) => (
-            <MessageBubble key={message.id} message={message} />
+            <MessageBubble
+              key={message.id}
+              message={message}
+              learningLanguage={scenario?.learning_lang || "fr"}
+              translationLanguage={scenario?.known_lang || "en"}
+            />
           ))}
 
           {isSending && (
