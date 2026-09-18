@@ -120,7 +120,6 @@ export default function MessageBubble({
 }) {
   const [showTranslation, setShowTranslation] = useState(false);
   const [showCorrection, setShowCorrection] = useState(false);
-  const [showOriginal, setShowOriginal] = useState(false);
   const [translation, setTranslation] = useState(message.translation || null);
   const [isTranslating, setIsTranslating] = useState(false);
 
@@ -128,6 +127,7 @@ export default function MessageBubble({
   const hasCorrection = !isAI && !!message.correction;
   const correctedPrimary = showCorrectedAsPrimary && hasCorrection;
   const primaryText = correctedPrimary ? message.correction! : message.text;
+  const translationText = correctedPrimary ? message.correction! : message.text;
   // Usage is useful while testing prompt changes, but it is internal cost
   // information and must stay hidden in normal production learner builds.
   const showUsage = process.env.NEXT_PUBLIC_AI_PRACTICE_SHOW_USAGE === "true";
@@ -137,7 +137,7 @@ export default function MessageBubble({
     if (translation) { setShowTranslation(true); return; }
     try {
       setIsTranslating(true);
-      const translatedText = await getCachedTranslation(message.text, translationLanguage);
+      const translatedText = await getCachedTranslation(translationText, translationLanguage);
       setTranslation(translatedText);
       setShowTranslation(true);
     } catch {
@@ -151,33 +151,28 @@ export default function MessageBubble({
   return (
     <div className={`flex ${isAI ? "justify-start" : "justify-end"} mb-3`}>
       <div className="max-w-[80%]">
-        {/* Keep the original message stable; supporting text expands below it. */}
-        <button
-          type="button"
-          onClick={() => correctedPrimary && setShowOriginal((current) => !current)}
-          aria-expanded={correctedPrimary ? showOriginal : undefined}
-          aria-label={correctedPrimary ? "Show original message" : undefined}
-          disabled={!correctedPrimary}
-          className={`rounded-2xl px-4 py-3 ${!isAI ? "ml-auto block" : ""} ${
+        <div
+          className={`rounded-2xl px-4 py-3 ${!isAI ? "ml-auto" : ""} ${
             isAI
               ? "bg-sky-50 dark:bg-sky-900/20 text-sky-800 dark:text-sky-100 rounded-tl-sm"
               : "bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-gray-200 rounded-tr-sm"
-          } ${correctedPrimary ? "cursor-pointer text-left transition-colors hover:bg-gray-200 dark:hover:bg-slate-700" : "cursor-default"}`}
+          }`}
         >
           <p className="text-sm leading-relaxed">{primaryText}</p>
-        </button>
+        </div>
 
-        {correctedPrimary && showOriginal && (
+        {correctedPrimary && (
           <div className="mt-2 rounded-2xl rounded-tr-sm border border-slate-200 bg-white px-4 py-3 text-gray-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200">
-            <p className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-slate-400">Original message</p>
+            <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wider text-slate-400">What you wrote</p>
             <p className="text-sm leading-relaxed">{message.text}</p>
           </div>
         )}
 
         {showTranslation && translation && (
-          <div className={`mt-2 rounded-2xl border border-amber-300 bg-amber-50/70 px-4 py-3 text-amber-800 dark:border-amber-700 dark:bg-amber-950/30 dark:text-amber-200 ${
-            isAI ? "rounded-tl-sm" : "rounded-tr-sm"
+          <div className={`mt-2 border-l-2 border-amber-400 py-0.5 pl-3 text-amber-800 dark:border-amber-500 dark:text-amber-200 ${
+            isAI ? "" : "ml-auto max-w-full"
           }`}>
+            <p className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-amber-700/70 dark:text-amber-300/70">Translation</p>
             <p className="text-sm leading-relaxed">{translation}</p>
           </div>
         )}
@@ -191,7 +186,7 @@ export default function MessageBubble({
         {/* Action Buttons */}
         <div className={`mt-1 flex items-center gap-2 ${isAI ? "" : "justify-end"}`}>
           <AudioPlayer
-            text={message.text}
+            text={primaryText}
             language={learningLanguage}
             autoPlay={isAI && message.autoPlay}
             autoPlayKey={`${message.id}-${message.timestamp || "greeting"}`}
