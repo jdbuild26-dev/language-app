@@ -2,19 +2,22 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Loader2, AlertCircle, BarChart2, FileDown, LogOut, CheckCircle2 } from "lucide-react";
+import { Loader2, AlertCircle, BarChart2, FileDown, LogOut, CheckCircle2, Info } from "lucide-react";
 import ChatHeader from "@/features/ai-practice/components/chat/ChatHeader";
 import ChatInput from "@/features/ai-practice/components/chat/ChatInput";
 import MessageBubble from "@/features/ai-practice/components/chat/MessageBubble";
+import { getParameterDescription } from "@/features/ai-practice/lib/parameterMetadata";
 import {
   completeChatV2Session,
   getChatV2Feedback,
+  getChatV2Correction,
   getChatV2Greeting,
   getChatV2Hint,
   getChatV2Session,
   getChatV2Transcript,
   RetryableFeedbackError,
   sendChatV2Message,
+  type CorrectionResult,
   type ChatUsage,
 } from "@/services/aiPracticeApi";
 
@@ -43,6 +46,8 @@ interface Message {
   text: string;
   timestamp?: string;
   correction?: string | null;
+  correction_result?: CorrectionResult | null;
+  sequence?: number;
   autoPlay?: boolean;
   usage?: ChatUsage;
 }
@@ -78,11 +83,13 @@ export default function ChatPage() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  const messageFromStored = (message: { sequence: number; sender: "ai" | "user"; text: string; correction?: string | null; created_at?: string | null; usage?: ChatUsage | null }): Message => ({
+  const messageFromStored = (message: { sequence: number; sender: "ai" | "user"; text: string; correction?: string | null; correction_result?: CorrectionResult | null; created_at?: string | null; usage?: ChatUsage | null }): Message => ({
     id: `stored-${message.sequence}`,
     sender: message.sender,
     text: message.text,
     correction: message.correction,
+    correction_result: message.correction_result,
+    sequence: message.sequence,
     timestamp: message.created_at ? new Date(message.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : undefined,
     autoPlay: false,
     usage: message.usage || undefined,
@@ -112,7 +119,7 @@ export default function ChatPage() {
         const sessionId = scenarioData.sessionId;
         if (!sessionId) throw new Error("No AI Practice session was found.");
         const restored = await getChatV2Session(sessionId);
-        scenarioData = { ...scenarioData, title: restored.scenario_title, titleEn: restored.scenario_title_en, topic: restored.topic, level: restored.level, aiRole: restored.ai_role, userRole: restored.user_role, learnerInstruction: restored.scenario, instructionEn: restored.instruction_en, turnLimit: restored.turn_limit, remainingTurns: restored.remaining_turns };
+        scenarioData = { ...scenarioData, title: restored.scenario_title, titleEn: restored.scenario_title_en, topic: restored.topic, level: restored.level, aiRole: restored.ai_role, userRole: restored.user_role, learnerInstruction: restored.display_scenario || restored.scenario, instructionEn: restored.instruction_en, learning_lang: restored.learning_language, known_lang: restored.support_language, turnLimit: restored.turn_limit, remainingTurns: restored.remaining_turns };
         setScenario(scenarioData);
         setSessionUsage(restored.session_usage);
         setRemainingTurns(restored.remaining_turns);
@@ -168,7 +175,7 @@ export default function ChatPage() {
         const updated = [...prev];
         for (let i = updated.length - 1; i >= 0; i--) {
           if (updated[i].sender === "user") {
-            updated[i] = { ...updated[i], correction: response.correction };
+            updated[i] = { ...updated[i], correction: null, sequence: response.user_sequence };
             break;
           }
         }
@@ -201,6 +208,17 @@ export default function ChatPage() {
     } finally {
       setIsSending(false);
     }
+  };
+
+  const requestCorrection = async (message: Message): Promise<CorrectionResult> => {
+    if (!scenario?.sessionId || !message.sequence) {
+      throw new Error("Saved learner message is unavailable.");
+    }
+    const result = await getChatV2Correction(scenario.sessionId, message.sequence);
+    setMessages((current) => current.map((item) =>
+      item.id === message.id ? { ...item, correction_result: result } : item
+    ));
+    return result;
   };
 
   const handleEndSession = async () => {
@@ -254,11 +272,16 @@ export default function ChatPage() {
           ...report,
           parameters: feedback.analysis.parameters ?? [],
           overall_score: feedback.analysis.overall_score ?? null,
+          evaluationSummary: feedback.analysis.evaluation_summary,
+          corrections: feedback.corrections ?? [],
+          correctionStatus: feedback.correction_status,
           messages: transcript.messages.map((m) => ({
             id: `stored-${m.sequence}`,
+            sequence: m.sequence,
             sender: m.sender,
             text: m.text,
             correction: m.correction ?? null,
+            correction_result: m.correction_result ?? null,
             timestamp: m.created_at ? new Date(m.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : undefined,
           })),
           learningLanguage: scenario.learning_lang || "fr",
@@ -486,6 +509,7 @@ export default function ChatPage() {
                 <MessageBubble
                   key={message.id}
                   message={message}
+                  onRequestCorrection={message.sender === "user" && message.sequence ? () => requestCorrection(message) : undefined}
                   learningLanguage={scenario?.learning_lang || "fr"}
                   translationLanguage={scenario?.known_lang || "en"}
                 />
@@ -567,8 +591,20 @@ export default function ChatPage() {
 // AnalyticsContent — parameter bars with click-to-reveal ⓘ tooltip
 // ---------------------------------------------------------------------------
 function ParameterRow({ param }: { param: any }) {
-  const [open, setOpen] = useState(false);
-  const barColor = param.score >= 75 ? "bg-emerald-500" : param.score >= 60 ? "bg-amber-500" : "bg-red-500";
+  const tooltipId = `parameter-tooltip-${String(param.name).toLowerCase().replace(/[^a-z0-9]+/g, "-")}`;
+  const max = param.scale ?? (param.score > 10 ? 100 : 10);
+  const normalizedScore = max > 0 ? (param.score / max) * 10 : 0;
+  const barWidth = Math.max(0, Math.min(100, (param.score / max) * 100));
+  const barColor = normalizedScore >= 7.5 ? "bg-emerald-500" : normalizedScore >= 6 ? "bg-amber-500" : "bg-red-500";
+  const scoreMeaning = normalizedScore >= 9
+    ? "Strong"
+    : normalizedScore >= 7
+      ? "Good"
+      : normalizedScore >= 5
+        ? "Adequate"
+        : normalizedScore >= 3
+          ? "Limited"
+          : "Very limited";
 
   return (
     <div className="space-y-1">
@@ -576,32 +612,34 @@ function ParameterRow({ param }: { param: any }) {
         <span className="font-semibold text-sm text-gray-800 dark:text-slate-100 flex-1 leading-tight">
           {param.name}
         </span>
-        <div className="relative shrink-0">
+        <span className="shrink-0 whitespace-nowrap text-base font-semibold tabular-nums text-slate-900 dark:text-slate-100">
+          {param.score}<span className="text-xs font-normal text-slate-500 dark:text-slate-400"> /{max}</span>
+        </span>
+        <div className="group relative shrink-0">
           <button
-            onClick={() => setOpen((v) => !v)}
-            className={`rounded-full transition-colors ${open ? "text-sky-500" : "text-gray-400 hover:text-gray-600 dark:hover:text-slate-300"}`}
-            aria-label="More info"
+            type="button"
+            className="flex h-8 w-8 items-center justify-center rounded-full text-slate-500 outline-none transition-colors hover:bg-slate-200/60 hover:text-slate-700 focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200"
+            aria-label={`More information about ${param.name}`}
+            aria-describedby={tooltipId}
           >
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
-              <circle cx="12" cy="12" r="10" />
-              <path strokeLinecap="round" d="M12 16v-4M12 8h.01" />
-            </svg>
+            <Info className="h-4 w-4" aria-hidden="true" />
           </button>
-          {open && (
-            <div className="absolute right-7 top-1/2 -translate-y-1/2 z-20 w-56 bg-slate-800 dark:bg-slate-700 text-white text-xs rounded-xl px-3 py-2.5 shadow-2xl border border-slate-600">
-              {/* Arrow pointing right toward the button */}
-              <span className="absolute right-[-6px] top-1/2 -translate-y-1/2 w-0 h-0 border-t-[6px] border-t-transparent border-b-[6px] border-b-transparent border-l-[6px] border-l-slate-800 dark:border-l-slate-700" />
-              {param.tooltip}
-            </div>
-          )}
+          <div
+            id={tooltipId}
+            role="tooltip"
+            className="pointer-events-none invisible absolute right-full top-1/2 z-[80] mr-2 w-64 -translate-y-1/2 rounded-lg bg-slate-900 px-3 py-2 text-xs font-medium leading-relaxed text-white opacity-0 shadow-lg transition-opacity duration-150 group-hover:visible group-hover:opacity-100 group-focus-within:visible group-focus-within:opacity-100 dark:bg-slate-100 dark:text-slate-900"
+          >
+            {getParameterDescription(param.name, param.tooltip)}
+          </div>
         </div>
       </div>
       <div className="flex-1 h-2 bg-gray-200 dark:bg-slate-700 rounded-full overflow-hidden">
         <div
           className={`h-full rounded-full transition-all duration-700 ${barColor}`}
-          style={{ width: `${param.score}%` }}
+          style={{ width: `${barWidth}%` }}
         />
       </div>
+      <div className="text-xs leading-5 text-slate-600 dark:text-slate-400">{scoreMeaning}</div>
     </div>
   );
 }

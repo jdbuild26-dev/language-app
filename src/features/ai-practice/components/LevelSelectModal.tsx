@@ -54,12 +54,13 @@ export default function LevelSelectModal({ topic, onClose }: Props) {
       let scenario: Record<string, unknown>;
       let sessionId = "";
       if (topic.isV2) {
-        const data = await startChatV2Session(topic.slug, selected, learningLang);
+        const data = await startChatV2Session(topic.slug, selected, learningLang, knownLang);
         sessionId = data.session_id;
         scenario = {
           title: data.scenario_title, titleEn: data.scenario_title_en, topic: data.topic, level: data.level, formality: "", mode: "chat",
-          aiRole: data.ai_role, userRole: data.user_role, aiPrompt: "", learnerInstruction: data.scenario,
-          instructionEn: data.instruction_en, icon: topic.icon, learning_lang: learningLang, known_lang: knownLang,
+          aiRole: data.ai_role, userRole: data.user_role, aiPrompt: "", learnerInstruction: data.display_scenario || data.scenario,
+          instructionEn: data.instruction_en, instructionFallbackNotice: data.scenario_fallback_notice,
+          icon: topic.icon, learning_lang: data.learning_language, known_lang: data.support_language,
           sessionId: data.session_id, turnLimit: data.turn_limit, remainingTurns: data.remaining_turns,
         };
       } else {

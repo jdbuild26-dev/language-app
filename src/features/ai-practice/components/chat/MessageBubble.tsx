@@ -3,6 +3,8 @@
 import { memo, useMemo, useState } from "react";
 import { Languages, PenLine, Loader2 } from "lucide-react";
 import AudioPlayer from "@/features/ai-practice/components/chat/AudioPlayer";
+import { CorrectionText } from "./GrammarCorrection";
+import type { CorrectionResult } from "@/services/aiPracticeApi";
 import { translateText } from "@/services/aiPracticeApi";
 
 interface MessageBubbleMessage {
@@ -11,6 +13,7 @@ interface MessageBubbleMessage {
   text: string;
   timestamp?: string;
   correction?: string | null;
+  correction_result?: CorrectionResult | null;
   translation?: string | null;
   autoPlay?: boolean;
   usage?: { input_tokens: number; output_tokens: number; total_tokens: number; estimated_cost_usd: number };
@@ -104,6 +107,14 @@ function getCachedTranslation(text: string, targetLanguage: string) {
   return request;
 }
 
+function correctedInlineToPlainText(text: string) {
+  return text
+    .replace(/~~[\s\S]*?~~/g, "")
+    .replace(/\*\*([\s\S]*?)\*\*/g, "$1")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 // ---------------------------------------------------------------------------
 // MessageBubble
 // ---------------------------------------------------------------------------
@@ -111,23 +122,53 @@ export default function MessageBubble({
   message,
   learningLanguage = "fr",
   translationLanguage = "en",
-  showCorrectedAsPrimary = false,
+  correctionDisplay = "inline",
+  audioText,
+  onRequestCorrection,
 }: {
   message: MessageBubbleMessage;
   learningLanguage?: string;
   translationLanguage?: string;
-  showCorrectedAsPrimary?: boolean;
+  correctionDisplay?: "inline" | "below";
+  audioText?: string;
+  onRequestCorrection?: () => Promise<CorrectionResult>;
 }) {
   const [showTranslation, setShowTranslation] = useState(false);
   const [showCorrection, setShowCorrection] = useState(false);
-  const [showOriginal, setShowOriginal] = useState(false);
   const [translation, setTranslation] = useState(message.translation || null);
   const [isTranslating, setIsTranslating] = useState(false);
+  const [correctionResult, setCorrectionResult] = useState(message.correction_result);
+  const [isCorrecting, setIsCorrecting] = useState(false);
+  const [correctionError, setCorrectionError] = useState<string | null>(null);
+
+  const currentCorrection = correctionResult?.corrections[0];
+  const canRequestCorrection = !!onRequestCorrection || !!correctionResult;
+
+  const handleCorrection = async () => {
+    if (isCorrecting) return;
+    if (showCorrection) {
+      setShowCorrection(false);
+      return;
+    }
+    if (correctionResult || !onRequestCorrection) {
+      setShowCorrection(true);
+      return;
+    }
+    setIsCorrecting(true);
+    setCorrectionError(null);
+    try {
+      setCorrectionResult(await onRequestCorrection());
+      setShowCorrection(true);
+    } catch {
+      setCorrectionError("Correction unavailable. Please try again.");
+    } finally {
+      setIsCorrecting(false);
+    }
+  };
 
   const isAI = message.sender === "ai";
   const hasCorrection = !isAI && !!message.correction;
-  const correctedPrimary = showCorrectedAsPrimary && hasCorrection;
-  const primaryText = correctedPrimary ? message.correction! : message.text;
+  const primaryText = message.text;
   // Usage is useful while testing prompt changes, but it is internal cost
   // information and must stay hidden in normal production learner builds.
   const showUsage = process.env.NEXT_PUBLIC_AI_PRACTICE_SHOW_USAGE === "true";
@@ -137,7 +178,7 @@ export default function MessageBubble({
     if (translation) { setShowTranslation(true); return; }
     try {
       setIsTranslating(true);
-      const translatedText = await getCachedTranslation(message.text, translationLanguage);
+      const translatedText = await getCachedTranslation(primaryText, translationLanguage);
       setTranslation(translatedText);
       setShowTranslation(true);
     } catch {
@@ -151,38 +192,39 @@ export default function MessageBubble({
   return (
     <div className={`flex ${isAI ? "justify-start" : "justify-end"} mb-3`}>
       <div className="max-w-[80%]">
-        {/* Keep the original message stable; supporting text expands below it. */}
-        <button
-          type="button"
-          onClick={() => correctedPrimary && setShowOriginal((current) => !current)}
-          aria-expanded={correctedPrimary ? showOriginal : undefined}
-          aria-label={correctedPrimary ? "Show original message" : undefined}
-          disabled={!correctedPrimary}
-          className={`rounded-2xl px-4 py-3 ${!isAI ? "ml-auto block" : ""} ${
+        <div
+          className={`rounded-2xl px-4 py-3 ${!isAI ? "ml-auto" : ""} ${
             isAI
               ? "bg-sky-50 dark:bg-sky-900/20 text-sky-800 dark:text-sky-100 rounded-tl-sm"
               : "bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-gray-200 rounded-tr-sm"
-          } ${correctedPrimary ? "cursor-pointer text-left transition-colors hover:bg-gray-200 dark:hover:bg-slate-700" : "cursor-default"}`}
+          }`}
         >
-          <p className="text-sm leading-relaxed">{primaryText}</p>
-        </button>
+          <p className="whitespace-pre-wrap break-words text-sm leading-relaxed">
+            {showCorrection && currentCorrection && correctionDisplay === "inline"
+              ? <CorrectionText text={currentCorrection.corrected_inline} />
+              : primaryText}
+          </p>
+        </div>
 
-        {correctedPrimary && showOriginal && (
-          <div className="mt-2 rounded-2xl rounded-tr-sm border border-slate-200 bg-white px-4 py-3 text-gray-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200">
-            <p className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-slate-400">Original message</p>
-            <p className="text-sm leading-relaxed">{message.text}</p>
+        {showCorrection && correctionDisplay === "below" && correctionResult && (
+          <div className="mt-2 rounded-2xl rounded-tr-sm border border-slate-200 bg-white px-4 py-3 text-sm leading-relaxed text-slate-800 shadow-sm dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100" role="status">
+            {currentCorrection
+              ? <CorrectionText text={currentCorrection.corrected_inline} />
+              : "No correction needed."}
           </div>
         )}
 
+        {correctionError && <p role="alert" className="mt-2 text-sm text-red-700 dark:text-red-300">{correctionError}</p>}
+
         {showTranslation && translation && (
           <div className={`mt-2 rounded-2xl border border-amber-300 bg-amber-50/70 px-4 py-3 text-amber-800 dark:border-amber-700 dark:bg-amber-950/30 dark:text-amber-200 ${
-            isAI ? "rounded-tl-sm" : "rounded-tr-sm"
+            isAI ? "rounded-tl-sm" : "ml-auto max-w-full rounded-tr-sm"
           }`}>
             <p className="text-sm leading-relaxed">{translation}</p>
           </div>
         )}
 
-        {showCorrection && hasCorrection && !correctedPrimary && (
+        {showCorrection && !correctionResult && hasCorrection && (
           <div className="mt-2 rounded-xl border border-emerald-100 bg-emerald-50/70 px-3 py-2.5 text-gray-700 dark:border-emerald-900/50 dark:bg-emerald-950/30 dark:text-slate-200">
             <InlineDiff original={message.text} corrected={message.correction!} />
           </div>
@@ -191,57 +233,41 @@ export default function MessageBubble({
         {/* Action Buttons */}
         <div className={`mt-1 flex items-center gap-2 ${isAI ? "" : "justify-end"}`}>
           <AudioPlayer
-            text={message.text}
+            text={audioText || (currentCorrection ? correctedInlineToPlainText(currentCorrection.corrected_inline) : primaryText)}
             language={learningLanguage}
             autoPlay={isAI && message.autoPlay}
             autoPlayKey={`${message.id}-${message.timestamp || "greeting"}`}
           />
-          {isAI && (
-            <>
-              <button
-                onClick={handleTranslate}
-                className={`p-1.5 rounded-lg transition-colors ${
-                  showTranslation
-                    ? "bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400"
-                    : "hover:bg-gray-100 dark:hover:bg-slate-700 text-gray-500 dark:text-slate-400"
-                }`}
-                title="Translate"
-                disabled={isTranslating}
-              >
-                {isTranslating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Languages className="w-4 h-4" />}
-              </button>
-            </>
-          )}
+          <button
+            onClick={handleTranslate}
+            className={`p-1.5 rounded-lg transition-colors ${
+              showTranslation
+                ? "bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400"
+                : "hover:bg-gray-100 dark:hover:bg-slate-700 text-gray-500 dark:text-slate-400"
+            }`}
+            title="Translate"
+            aria-label="Translate message"
+            disabled={isTranslating}
+          >
+            {isTranslating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Languages className="w-4 h-4" />}
+          </button>
 
           {!isAI && (
             <>
-              <button
-                onClick={handleTranslate}
-                className={`p-1.5 rounded-lg transition-colors ${
-                  showTranslation
-                    ? "bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400"
-                    : "hover:bg-gray-100 dark:hover:bg-slate-700 text-gray-500 dark:text-slate-400"
-                }`}
-                title="Translate"
-                disabled={isTranslating}
-              >
-                {isTranslating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Languages className="w-4 h-4" />}
-              </button>
-
-              {!correctedPrimary && <button
-                onClick={() => hasCorrection && setShowCorrection(!showCorrection)}
-                disabled={!hasCorrection}
+              {(hasCorrection || canRequestCorrection) && <button
+                onClick={handleCorrection}
+                disabled={isCorrecting || (!hasCorrection && !canRequestCorrection)}
                 className={`p-1.5 rounded-lg transition-colors ${
                   showCorrection
                     ? "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400"
-                    : hasCorrection
+                    : (hasCorrection || canRequestCorrection)
                       ? "hover:bg-gray-100 dark:hover:bg-slate-700 text-gray-500 dark:text-slate-400"
                       : "cursor-not-allowed text-gray-300 dark:text-slate-600"
                 }`}
-                title={hasCorrection ? "Show correction" : "No correction needed"}
-                aria-label={hasCorrection ? "Show correction" : "No correction needed"}
+                title={canRequestCorrection ? "Check correction" : hasCorrection ? "Show correction" : "No correction needed"}
+                aria-label={canRequestCorrection ? "Check correction" : hasCorrection ? "Show correction" : "No correction needed"}
               >
-                <PenLine className="w-4 h-4" />
+                {isCorrecting ? <Loader2 className="w-4 h-4 animate-spin" /> : <PenLine className="w-4 h-4" />}
               </button>}
             </>
           )}

@@ -71,12 +71,6 @@ export const ProfileProvider = ({ children }) => {
     const switchProfile = (profile: any) => {
         setActiveProfile(profile);
         localStorage.setItem("active_profile_id", profile.id);
-
-        // Also update legacy language context if needed
-        const lang = profile.language || profile.primaryLanguage;
-        if (lang) {
-            localStorage.setItem("learning_lang", lang.toLowerCase().substring(0, 2));
-        }
     };
 
     const value = {

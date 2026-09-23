@@ -59,8 +59,11 @@ export interface ChatUsage {
 }
 
 export interface ChatV2Topic { exercise_id: string; topic: string; ai_role: string; user_role: string; turn_limit: number; levels: string[]; }
-export interface ChatV2Session { session_id: string; exercise_id: string; topic: string; scenario_title: string; scenario_title_en: string; level: string; ai_role: string; user_role: string; scenario: string; instruction_en: string; turn_limit: number; remaining_turns: number; }
+export interface GrammarCorrection { turn: number; original: string; corrected_inline: string; explanation: string; }
+export interface CorrectionResult { schema_version: number; status: "complete"; corrections: GrammarCorrection[]; }
+export interface ChatV2Session { session_id: string; exercise_id: string; topic: string; scenario_title: string; scenario_title_en: string; level: string; ai_role: string; user_role: string; scenario: string; display_scenario?: string; instruction_en: string; learning_language: string; support_language: string; selected_task_index: number | null; scenario_fallback_notice?: string | null; turn_limit: number; remaining_turns: number; }
 export interface ChatV2MessageResponse extends ChatResponse {
+  user_sequence: number;
   remaining_turns: number;
   completed: boolean;
   usage: ChatUsage;
@@ -71,6 +74,7 @@ export interface ChatV2StoredMessage {
   sender: "ai" | "user";
   text: string;
   correction?: string | null;
+  correction_result?: CorrectionResult | null;
   sequence: number;
   created_at?: string | null;
   usage?: ChatUsage | null;
@@ -79,6 +83,8 @@ export interface ChatV2StoredMessage {
 export interface ChatV2Feedback {
   analysis: FeedbackAnalysis;
   report: FeedbackReport;
+  corrections?: GrammarCorrection[];
+  correction_status?: "complete";
 }
 
 export class RetryableFeedbackError extends Error {
@@ -99,6 +105,7 @@ export interface GreetingResponse {
 }
 
 export interface FeedbackAnalysis {
+  schema_version?: number;
   cefr_assessment: string;
   overall_score: number;
   overall_rating: string;
@@ -109,6 +116,12 @@ export interface FeedbackAnalysis {
   mission_feedback: string | null;
   parameters: any[];
   feedback_points: any[];
+  evaluation_summary?: {
+    overall_performance: string;
+    what_went_well: string;
+    what_could_improve: string;
+    how_to_improve: string;
+  };
 }
 
 export interface FeedbackReport {
@@ -333,8 +346,8 @@ export async function fetchChatV2Topics(language: string): Promise<{ count: numb
   return response.json();
 }
 
-export async function startChatV2Session(exerciseId: string, level: string, learningLanguage: string): Promise<ChatV2Session> {
-  const response = await fetch(`${API_URL}/api/ai-practice/v2/sessions`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ exercise_id: exerciseId, level, learning_language: learningLanguage }) });
+export async function startChatV2Session(exerciseId: string, level: string, learningLanguage: string, supportLanguage: string): Promise<ChatV2Session> {
+  const response = await fetch(`${API_URL}/api/ai-practice/v2/sessions`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ exercise_id: exerciseId, level, learning_language: learningLanguage, support_language: supportLanguage }) });
   if (!response.ok) throw new Error(`Failed to start Chat v2: ${response.statusText}`);
   return response.json();
 }
@@ -366,6 +379,12 @@ export async function completeChatV2Session(sessionId: string): Promise<{ comple
 export async function getChatV2Hint(sessionId: string): Promise<{ hint: string }> {
   const response = await fetch(`${API_URL}/api/ai-practice/v2/sessions/${sessionId}/hint`, { method: "POST" });
   if (!response.ok) throw new Error(`Failed to generate Chat hint: ${response.statusText}`);
+  return response.json();
+}
+
+export async function getChatV2Correction(sessionId: string, sequence: number): Promise<CorrectionResult> {
+  const response = await fetch(`${API_URL}/api/ai-practice/v2/sessions/${sessionId}/messages/${sequence}/correction`, { method: "POST" });
+  if (!response.ok) throw new Error("Correction unavailable. Please try again.");
   return response.json();
 }
 
