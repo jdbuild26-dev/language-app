@@ -175,6 +175,24 @@ function MarkdownTable({ raw }: { raw: string }) {
   if (rows.length === 0) return null;
   const parseRow = (row: string) => row.split("|").slice(1, -1).map((c) => c.trim());
   const [header, ...body] = rows;
+  const headerCells = parseRow(header).map((cell) => cell.toLowerCase());
+
+  if (headerCells.length === 2 && headerCells[0] === "parameter" && headerCells[1] === "feedback") {
+    return (
+      <div className="space-y-6">
+        {body.map((row, index) => {
+          const [parameter, feedback] = parseRow(row);
+          return (
+            <div key={index} className="space-y-2">
+              <h3 className="text-base font-semibold text-slate-900 dark:text-white"><InlineMarkdown value={parameter} /></h3>
+              <p className="text-base leading-7 text-slate-700 dark:text-slate-200"><InlineMarkdown value={feedback} /></p>
+            </div>
+          );
+        })}
+      </div>
+    );
+  }
+
   return (
     <div className="overflow-x-auto rounded-xl border border-slate-100 dark:border-slate-800 mt-3">
       <table className="w-full text-sm">
