@@ -62,6 +62,7 @@ export default function LevelSelectModal({ topic, onClose }: Props) {
           instructionEn: data.instruction_en, instructionFallbackNotice: data.scenario_fallback_notice,
           icon: topic.icon, learning_lang: data.learning_language, known_lang: data.support_language,
           sessionId: data.session_id, turnLimit: data.turn_limit, remainingTurns: data.remaining_turns,
+          isNewSession: true,
         };
       } else {
         const data = await fetchTopicForLevel(topic.slug, selected);

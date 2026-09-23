@@ -38,6 +38,7 @@ interface Scenario {
   topic?: string;
   learnerInstruction?: string;
   instructionEn?: string;
+  isNewSession?: boolean;
   remainingTurns?: number;
 }
 interface Message {
@@ -118,6 +119,18 @@ export default function ChatPage() {
         }
         const sessionId = scenarioData.sessionId;
         if (!sessionId) throw new Error("No AI Practice session was found.");
+        if (scenarioData.isNewSession) {
+          // Session creation already returned the complete display context. Skip
+          // an immediate remote reload and go straight to the greeting request.
+          scenarioData = { ...scenarioData, isNewSession: false };
+          sessionStorage.setItem("chatScenario", JSON.stringify(scenarioData));
+          setScenario(scenarioData);
+          setRemainingTurns(scenarioData.remainingTurns ?? scenarioData.turnLimit ?? null);
+          const greeting = await getChatV2Greeting(sessionId);
+          setSessionUsage(greeting.session_usage);
+          setMessages([{ id: "greeting", sender: "ai", text: greeting.ai_response, autoPlay: true, usage: greeting.usage }]);
+          return;
+        }
         const restored = await getChatV2Session(sessionId);
         scenarioData = { ...scenarioData, title: restored.scenario_title, titleEn: restored.scenario_title_en, topic: restored.topic, level: restored.level, aiRole: restored.ai_role, userRole: restored.user_role, learnerInstruction: restored.display_scenario || restored.scenario, instructionEn: restored.instruction_en, learning_lang: restored.learning_language, known_lang: restored.support_language, turnLimit: restored.turn_limit, remainingTurns: restored.remaining_turns };
         setScenario(scenarioData);
