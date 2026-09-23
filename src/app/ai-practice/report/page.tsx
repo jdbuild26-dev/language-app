@@ -52,6 +52,7 @@ interface ReportData {
   parameters?: CefrParameter[];
   overall_score?: number | null;
   evaluationSummary?: {
+    task_objective_achievement: string;
     overall_performance: string;
     what_went_well: string;
     what_could_improve: string;
@@ -278,8 +279,35 @@ function splitSummarySentences(text: string) {
   return sentences.length ? sentences : [text];
 }
 
+function splitNumberedSummaryPoints(text: string) {
+  const normalized = text
+    .replace(/\r/g, "")
+    .replace(/\s+(?=\d+[.)]\s+)/g, "\n");
+  const lines = normalized.split("\n").map((line) => line.trim()).filter(Boolean);
+  const hasNumberedItems = lines.some((line) => /^\d+[.)](?:\s+|$)/.test(line));
+
+  if (!hasNumberedItems) return splitSummarySentences(text);
+
+  const points: string[] = [];
+  let currentPoint = "";
+
+  for (const line of lines) {
+    const numberedItem = line.match(/^\d+[.)]\s*(.*)$/);
+    if (numberedItem) {
+      if (currentPoint) points.push(currentPoint);
+      currentPoint = numberedItem[1].trim();
+      continue;
+    }
+
+    currentPoint = currentPoint ? `${currentPoint} ${line}` : line;
+  }
+
+  if (currentPoint) points.push(currentPoint);
+  return points.length ? points : splitSummarySentences(text);
+}
+
 function ReadableSummary({ text, numbered = false }: { text: string; numbered?: boolean }) {
-  const points = splitSummarySentences(text);
+  const points = numbered ? splitNumberedSummaryPoints(text) : splitSummarySentences(text);
 
   const ListTag = numbered ? "ol" : "ul";
   return (
@@ -612,6 +640,8 @@ export default function FeedbackReportPage() {
     write("Session analysis", { size: 14, style: "bold", gap: 2 });
     write(`Overall score: ${cefrScore}%`, { style: "bold", gap: 2 });
     if (report.evaluationSummary) {
+      write("Task and objective achievement", { size: 13, style: "bold", gap: 1 });
+      write(report.evaluationSummary.task_objective_achievement, { gap: 3 });
       write("Overall performance", { size: 13, style: "bold", gap: 1 });
       write(report.evaluationSummary.overall_performance, { gap: 3 });
       write("What went well", { size: 13, style: "bold", gap: 1 });
@@ -823,6 +853,12 @@ export default function FeedbackReportPage() {
                 </div>
 
                 <div className="space-y-3">
+                  {report.evaluationSummary?.task_objective_achievement && (
+                    <>
+                      <h2 className="text-lg font-semibold tracking-tight text-slate-900 dark:text-white sm:text-xl">Task and objective achievement</h2>
+                      <p className="w-full whitespace-pre-line text-base leading-7 text-slate-600 dark:text-slate-300">{report.evaluationSummary.task_objective_achievement}</p>
+                    </>
+                  )}
                   <h2 className="text-lg font-semibold tracking-tight text-slate-900 dark:text-white sm:text-xl">Overall performance</h2>
                   <p className="w-full whitespace-pre-line text-base leading-7 text-slate-600 dark:text-slate-300">{report.evaluationSummary?.overall_performance || parsed.executive_summary}</p>
                 </div>

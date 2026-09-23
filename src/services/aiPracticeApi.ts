@@ -117,6 +117,7 @@ export interface FeedbackAnalysis {
   parameters: any[];
   feedback_points: any[];
   evaluation_summary?: {
+    task_objective_achievement: string;
     overall_performance: string;
     what_went_well: string;
     what_could_improve: string;
