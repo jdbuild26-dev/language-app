@@ -15,20 +15,23 @@ import { Target, ChatCircleText, CheckCircle, Lightbulb, BookOpenText, TextAa, W
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { InlineDiff } from "@/lib/inlineDiff";
 import MessageBubble from "@/features/ai-practice/components/chat/MessageBubble";
-import { translateText } from "@/services/aiPracticeApi";
+import { CorrectionText } from "@/features/ai-practice/components/chat/GrammarCorrection";
+import { translateText, type CorrectionResult, type GrammarCorrection } from "@/services/aiPracticeApi";
 import { getLangName } from "@/utils/languages";
+import { getParameterDescription } from "@/features/ai-practice/lib/parameterMetadata";
 
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
 interface StoredMessage {
   id: string;
+  sequence?: number;
   sender: "ai" | "user";
   text: string;
   correction?: string | null;
+  correction_result?: CorrectionResult | null;
   timestamp?: string;
 }
 
@@ -37,6 +40,7 @@ interface CefrParameter {
   tooltip: string;
   weight: number;
   score: number;
+  scale?: number;
 }
 
 interface ReportData {
@@ -47,10 +51,18 @@ interface ReportData {
   messages: StoredMessage[];
   parameters?: CefrParameter[];
   overall_score?: number | null;
+  evaluationSummary?: {
+    overall_performance: string;
+    what_went_well: string;
+    what_could_improve: string;
+    how_to_improve: string;
+  };
   learningLanguage?: string;
   translationLanguage?: string;
   learnerInstruction?: string;
   instructionTranslation?: string;
+  corrections?: GrammarCorrection[];
+  correctionStatus?: "complete";
 }
 
 interface ParsedTweak {
@@ -142,6 +154,16 @@ function parseReportMarkdown(markdown: string, level: string): ParsedReport {
 
   const grammar_rows: GrammarRow[] = [];
   return { overall_score, cefr_level, executive_summary, improved_version, detailed_tweaks, grammar_rows, sections };
+}
+
+function isSentenceCorrectionsSection(title: string): boolean {
+  const normalized = title.replace(/^\d+[.)]\s*/, "").trim().toLowerCase();
+  return normalized.includes("sentence correction") || normalized === "mistakes table";
+}
+
+function isOverallSummarySection(title: string): boolean {
+  const normalized = title.replace(/^\d+[.)]\s*/, "").trim().toLowerCase();
+  return normalized.startsWith("overall summary");
 }
 
 // ---------------------------------------------------------------------------
@@ -242,7 +264,36 @@ function SectionContent({ content }: { content: string }) {
 }
 
 function isParameterSection(title: string) {
-  return /\bparameter\b/i.test(title);
+  const normalized = title.replace(/^\d+[.)]\s*/, "").trim().toLowerCase();
+  return normalized === "parameter ratings" || normalized === "parameter rating";
+}
+
+function splitSummarySentences(text: string) {
+  const parts = text.split(/([.!?]+(?:["”']+)?)(?:\s+|$)/);
+  const sentences: string[] = [];
+  for (let index = 0; index < parts.length; index += 2) {
+    const sentence = `${parts[index] || ""}${parts[index + 1] || ""}`.trim();
+    if (sentence) sentences.push(sentence);
+  }
+  return sentences.length ? sentences : [text];
+}
+
+function ReadableSummary({ text, numbered = false }: { text: string; numbered?: boolean }) {
+  const points = splitSummarySentences(text);
+
+  const ListTag = numbered ? "ol" : "ul";
+  return (
+    <ListTag className="space-y-3 text-base leading-7 text-slate-600 dark:text-slate-300">
+      {points.map((point, index) => (
+        <li key={`${point}-${index}`} className="flex items-start gap-3">
+          <span className="mt-0.5 w-5 shrink-0 text-sm font-semibold tabular-nums text-slate-400 dark:text-slate-500" aria-hidden="true">
+            {numbered ? `${index + 1}.` : "•"}
+          </span>
+          <span className="min-w-0 flex-1"><InlineMarkdown value={point} /></span>
+        </li>
+      ))}
+    </ListTag>
+  );
 }
 
 function formatPdfContent(content: string) {
@@ -263,7 +314,9 @@ function formatPdfContent(content: string) {
 // ---------------------------------------------------------------------------
 // Analysis row
 // ---------------------------------------------------------------------------
-function AnalysisRow({ label, value, tooltip }: { label: string; value: number; tooltip?: string }) {
+function AnalysisRow({ label, value, tooltip, max = 10 }: { label: string; value: number; tooltip?: string; max?: number }) {
+  const tooltipId = React.useId();
+  const normalizedValue = max > 0 ? (value / max) * 10 : 0;
   const parameterLabel = label.toLowerCase();
   const ParameterIcon = /task|completion/.test(parameterLabel) ? Target
     : /comprehens/.test(parameterLabel) ? ChatCircleText
@@ -275,18 +328,20 @@ function AnalysisRow({ label, value, tooltip }: { label: string; value: number; 
     : /interaction/.test(parameterLabel) ? ChatsCircle
     : /natural/.test(parameterLabel) ? Leaf
     : Compass;
-  const scoreTone = value >= 75
+  const scoreTone = normalizedValue >= 7.5
     ? { bar: "bg-emerald-500" }
-    : value >= 60
+    : normalizedValue >= 6
       ? { bar: "bg-amber-500" }
       : { bar: "bg-red-500" };
-  const scoreMeaning = value >= 75
+  const scoreMeaning = normalizedValue >= 9
     ? "Strong"
-    : value >= 60
-      ? "Developing well"
-      : value >= 40
-        ? "Needs attention"
-        : "Needs focused practice";
+    : normalizedValue >= 7
+      ? "Good"
+      : normalizedValue >= 5
+        ? "Adequate"
+        : normalizedValue >= 3
+          ? "Limited"
+          : "Very limited";
   return (
     <div className="min-w-0 space-y-3">
       <div className="flex min-h-12 items-center justify-between gap-3">
@@ -295,21 +350,30 @@ function AnalysisRow({ label, value, tooltip }: { label: string; value: number; 
           <span className="min-w-0 text-base font-semibold leading-6 text-slate-900 dark:text-white">{label}</span>
         </div>
         <div className="flex shrink-0 items-center gap-2">
-          <span className="whitespace-nowrap text-lg font-semibold tabular-nums text-slate-900 dark:text-slate-100">{value}<span className="text-xs font-normal text-slate-500 dark:text-slate-400"> /100</span></span>
+          <span className="whitespace-nowrap text-lg font-semibold tabular-nums text-slate-900 dark:text-slate-100">{value}<span className="text-xs font-normal text-slate-500 dark:text-slate-400"> /{max}</span></span>
           {tooltip && (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button type="button" aria-label={`More information about ${label}`} className="flex h-8 w-8 items-center justify-center rounded-full text-slate-500 outline-none transition-colors hover:bg-slate-200/60 hover:text-slate-700 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200">
-                  <Info className="h-4 w-4" />
-                </button>
-              </TooltipTrigger>
-              <TooltipContent side="top">{tooltip}</TooltipContent>
-            </Tooltip>
+            <div className="group relative">
+              <button
+                type="button"
+                aria-label={`More information about ${label}`}
+                aria-describedby={tooltipId}
+                className="flex h-8 w-8 items-center justify-center rounded-full text-slate-500 outline-none transition-colors hover:bg-slate-200/60 hover:text-slate-700 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200"
+              >
+                <Info className="h-4 w-4" aria-hidden="true" />
+              </button>
+              <div
+                id={tooltipId}
+                role="tooltip"
+                className="pointer-events-none invisible absolute right-full top-1/2 z-[80] mr-2 w-64 -translate-y-1/2 rounded-lg bg-slate-900 px-3 py-2 text-xs font-medium leading-relaxed text-white opacity-0 shadow-lg transition-opacity duration-150 group-hover:visible group-hover:opacity-100 group-focus-within:visible group-focus-within:opacity-100 dark:bg-slate-100 dark:text-slate-900"
+              >
+                {tooltip}
+              </div>
+            </div>
           )}
         </div>
       </div>
-      <div role="meter" aria-label={label} aria-valuenow={value} aria-valuemin={0} aria-valuemax={100} className="relative h-2 w-full bg-slate-200/70 dark:bg-slate-800 rounded-full overflow-hidden">
-        <div style={{ width: `${Math.max(0, Math.min(100, value))}%` }} className={`h-full rounded-full ${scoreTone.bar}`} />
+      <div role="meter" aria-label={label} aria-valuenow={value} aria-valuemin={0} aria-valuemax={max} className="relative h-2 w-full bg-slate-200/70 dark:bg-slate-800 rounded-full overflow-hidden">
+        <div style={{ width: `${Math.max(0, Math.min(100, (value / max) * 100))}%` }} className={`h-full rounded-full ${scoreTone.bar}`} />
       </div>
       <div className="text-xs leading-5 text-slate-600 dark:text-slate-400">{scoreMeaning}</div>
     </div>
@@ -319,6 +383,74 @@ function AnalysisRow({ label, value, tooltip }: { label: string; value: number; 
 // ---------------------------------------------------------------------------
 // Grammar Mistakes transcript with each suggestion directly below its message
 // ---------------------------------------------------------------------------
+function DedicatedGrammarMistakesPane({ corrections, messages }: { corrections: GrammarCorrection[]; messages: StoredMessage[] }) {
+  const correctionsByTurn = useMemo(
+    () => new Map(corrections.map((correction) => [correction.turn, correction])),
+    [corrections],
+  );
+
+  return (
+    <div className="min-h-[500px] bg-white dark:bg-slate-950">
+      <div className="sticky top-0 z-10 flex items-center gap-2 border-b border-slate-100 bg-white/95 px-5 py-4 backdrop-blur dark:border-slate-800 dark:bg-slate-900/95">
+        <MessageCircle className="h-4 w-4 text-blue-500" />
+        <span className="text-xs font-black uppercase tracking-widest text-slate-500">Grammar mistakes</span>
+      </div>
+      {corrections.length === 0 ? (
+        <div className="flex min-h-[420px] flex-col items-center justify-center p-12 text-center">
+          <CheckCircle2 className="mb-4 h-12 w-12 text-emerald-500" />
+          <p className="text-lg font-bold text-slate-600 dark:text-slate-300">No corrections needed for this session</p>
+        </div>
+      ) : (
+        <div className="mx-auto max-w-7xl space-y-6 px-4 py-6 sm:px-6 md:py-8">
+          {messages.map((message) => {
+            const correction = message.sequence ? correctionsByTurn.get(message.sequence) : undefined;
+            return (
+              <div key={message.id} className={`flex flex-col ${message.sender === "user" ? "items-end" : "items-start"} gap-2`}>
+                <div className={`w-fit max-w-[88%] rounded-2xl px-4 py-3 text-sm leading-relaxed sm:max-w-[76%] ${
+                  message.sender === "user"
+                    ? correction
+                      ? "rounded-tr-sm border border-slate-200 bg-slate-100 text-slate-800 shadow-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+                      : "rounded-tr-sm bg-blue-600 text-white shadow-sm"
+                    : "rounded-tl-sm border border-slate-100 bg-white text-slate-800 shadow-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
+                }`}>
+                  {correction ? <CorrectionText text={correction.corrected_inline} /> : message.text}
+                </div>
+                {correction && (
+                  <div className="w-fit max-w-[88%] border-l-2 border-sky-400 py-0.5 pl-3 sm:max-w-[76%]">
+                    <p className="text-sm italic leading-relaxed text-slate-500 dark:text-slate-400">{correction.explanation}</p>
+                  </div>
+                )}
+                {message.timestamp && <span className="px-1 text-[10px] text-slate-400">{message.timestamp}</span>}
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function formatCorrectedInlineForPdf(content: string) {
+  const corrected = content
+    .replace(/~~.*?~~/g, "")
+    .replace(/\*\*(.*?)\*\*/g, "$1")
+    .replace(/[`*_]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+  return corrected || "Deleted";
+}
+
+function correctedInlineToPlainText(content?: string | null) {
+  if (!content) return "";
+  return content
+    .replace(/~~.*?~~/g, "")
+    .replace(/\*\*(.*?)\*\*/g, "$1")
+    .replace(/[`*_]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+
 function GrammarMistakesPane({ tweaks, messages }: { tweaks: ParsedTweak[]; messages: StoredMessage[] }) {
   const { realTweaks, matchingTweaksByMessage, unlinkedTweaks } = useMemo(() => {
     const seenTweaks = new Set<string>();
@@ -366,7 +498,9 @@ function GrammarMistakesPane({ tweaks, messages }: { tweaks: ParsedTweak[]; mess
               <div key={mi} className={`flex flex-col ${isUser ? "items-end" : "items-start"} gap-2`}>
                 <div className={`w-fit max-w-[88%] rounded-2xl px-4 py-3 text-sm leading-relaxed sm:max-w-[76%] ${
                   isUser
-                    ? "rounded-tr-sm bg-blue-600 text-white shadow-sm"
+                    ? matchingTweaks.length > 0
+                      ? "rounded-tr-sm border border-slate-200 bg-slate-100 text-slate-800 shadow-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+                      : "rounded-tr-sm bg-blue-600 text-white shadow-sm"
                     : "rounded-tl-sm border border-slate-100 bg-white text-slate-800 shadow-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
                 }`}>
                   {isUser && msg.correction ? (
@@ -411,7 +545,7 @@ export default function FeedbackReportPage() {
   const router = useRouter();
   const [report, setReport] = useState<ReportData | null>(null);
   const [parsed, setParsed] = useState<ParsedReport | null>(null);
-  const [activeTab, setActiveTab] = useState<"conversation" | "grammar" | "feedback">("conversation");
+  const [activeTab, setActiveTab] = useState<"summary" | "conversation" | "grammar" | "feedback">("summary");
   const [showInstructionTranslation, setShowInstructionTranslation] = useState(false);
   const [translatedInstruction, setTranslatedInstruction] = useState<string | null>(null);
   const [isTranslatingInstruction, setIsTranslatingInstruction] = useState(false);
@@ -464,7 +598,7 @@ export default function FeedbackReportPage() {
     doc.setTextColor(255, 255, 255);
     doc.setFontSize(22);
     doc.setFont("helvetica", "bold");
-    doc.text("AI PRACTICE FEEDBACK REPORT", margin, 20);
+    doc.text("FEEDBACK AND SESSION SUMMARY", margin, 20);
     doc.setFontSize(10);
     doc.setFont("helvetica", "normal");
     doc.text(`${report.title} · ${report.level} Level`, margin, 30);
@@ -477,8 +611,18 @@ export default function FeedbackReportPage() {
     }
     write("Session analysis", { size: 14, style: "bold", gap: 2 });
     write(`Overall score: ${cefrScore}%`, { style: "bold", gap: 2 });
-    (report.parameters || []).forEach((parameter) => write(`${parameter.name}: ${parameter.score}%`, { size: 10, gap: 0.75 }));
-    parsed.sections.filter((section) => !isParameterSection(section.title)).forEach((section) => {
+    if (report.evaluationSummary) {
+      write("Overall performance", { size: 13, style: "bold", gap: 1 });
+      write(report.evaluationSummary.overall_performance, { gap: 3 });
+      write("What went well", { size: 13, style: "bold", gap: 1 });
+      write(report.evaluationSummary.what_went_well, { gap: 3 });
+      write("What could improve", { size: 13, style: "bold", gap: 1 });
+      write(report.evaluationSummary.what_could_improve, { gap: 3 });
+      write("How to improve", { size: 13, style: "bold", gap: 1 });
+      write(report.evaluationSummary.how_to_improve, { gap: 4 });
+    }
+    (report.parameters || []).forEach((parameter) => write(`${parameter.name}: ${parameter.score}/${parameter.scale ?? (report.evaluationSummary ? 10 : 100)}`, { size: 10, gap: 0.75 }));
+    parsed.sections.filter((section) => !isParameterSection(section.title) && !isSentenceCorrectionsSection(section.title) && !isOverallSummarySection(section.title)).forEach((section) => {
       ensureSpace(12);
       write(section.title, { size: 14, style: "bold", gap: 2 });
       write(formatPdfContent(section.content), { gap: 4 });
@@ -488,9 +632,33 @@ export default function FeedbackReportPage() {
     report.messages.forEach((message) => {
       ensureSpace(10);
       write(`${message.sender === "ai" ? "AI conversation partner" : "You"}${message.timestamp ? ` | ${message.timestamp}` : ""}`, { size: 10, style: "bold", color: [2, 132, 199], gap: 0.5 });
-      write(message.text, { gap: message.correction ? 1 : 3 });
-      if (message.sender === "user" && message.correction) write(`Correction: ${message.correction}`, { size: 9.5, style: "italic", color: [180, 83, 9], gap: 3 });
+      write(message.text, { gap: 3 });
     });
+    ensureSpace(12);
+    write("Grammar Mistakes", { size: 14, style: "bold", gap: 2 });
+    if (report.correctionStatus === "complete") {
+      if ((report.corrections || []).length === 0) {
+        write("No corrections needed for this session.", { gap: 4 });
+      } else {
+        (report.corrections || []).forEach((correction) => {
+          ensureSpace(18);
+          write(`Learner turn ${correction.turn}`, { size: 10, style: "bold", color: [2, 132, 199], gap: 0.5 });
+          write(`Original: ${correction.original}`, { gap: 1 });
+          write(`Correction: ${formatCorrectedInlineForPdf(correction.corrected_inline)}`, { style: "italic", color: [180, 83, 9], gap: 1 });
+          write(`Explanation: ${correction.explanation}`, { gap: 3 });
+        });
+      }
+    } else if (parsed.detailed_tweaks.length > 0) {
+      parsed.detailed_tweaks.forEach((correction, index) => {
+        ensureSpace(18);
+        write(`Correction ${index + 1}`, { size: 10, style: "bold", color: [2, 132, 199], gap: 0.5 });
+        write(`Original: ${correction.original}`, { gap: 1 });
+        write(`Correction: ${correction.corrected}`, { style: "italic", color: [180, 83, 9], gap: 1 });
+        write(`Explanation: ${correction.explanation}`, { gap: 3 });
+      });
+    } else {
+      write("Grammar corrections are unavailable for this historical report.", { gap: 4 });
+    }
     const pageCount = doc.getNumberOfPages();
     for (let page = 1; page <= pageCount; page += 1) {
       doc.setPage(page);
@@ -542,10 +710,23 @@ export default function FeedbackReportPage() {
   }
 
   const tabs = [
+    { id: "summary",      label: "Session Summary" },
     { id: "conversation", label: "Transcript" },
     { id: "grammar",      label: "Grammar Mistakes" },
     { id: "feedback",     label: "Feedback Report" },
   ] as const;
+
+  const handleTabKeyDown = (event: React.KeyboardEvent<HTMLButtonElement>, index: number) => {
+    if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
+    event.preventDefault();
+    const nextIndex = event.key === "Home"
+      ? 0
+      : event.key === "End"
+        ? tabs.length - 1
+        : (index + (event.key === "ArrowRight" ? 1 : -1) + tabs.length) % tabs.length;
+    setActiveTab(tabs[nextIndex].id);
+    document.getElementById(`feedback-tab-${tabs[nextIndex].id}`)?.focus();
+  };
 
   const cefrScore = report.overall_score ?? parsed.overall_score;
   const overallMeaning = cefrScore >= 90
@@ -568,21 +749,35 @@ export default function FeedbackReportPage() {
   const grammarSection = parsed.sections.find((s) => s.title.toLowerCase().includes("grammar") || s.title.match(/^8\./));
   const vocabSection   = parsed.sections.find((s) => s.title.toLowerCase().includes("vocab")   || s.title.match(/^7\./));
   const commSection    = parsed.sections.find((s) => s.title.toLowerCase().includes("communication") || s.title.match(/^3\./));
+  const feedbackReportSections = parsed.sections.filter(
+    (section) => !isParameterSection(section.title)
+      && !isSentenceCorrectionsSection(section.title)
+      && !isOverallSummarySection(section.title)
+  );
 
   return (
-    <TooltipProvider delayDuration={200}>
-      <div className="min-h-screen bg-white dark:bg-slate-950">
-      <div className="mx-auto max-w-7xl space-y-4 px-4 pb-2 pt-6 md:px-8">
+       <div className="min-h-screen bg-white dark:bg-slate-950">
+       <div className="mx-auto max-w-7xl space-y-4 px-4 pb-2 pt-6 md:px-8">
+
+        <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white sm:text-4xl">
+          Feedback and Session Summary
+        </h1>
 
         {/* Tabs */}
         <div className="border-b border-slate-200 dark:border-slate-800">
-          <div className="flex gap-5 overflow-x-auto sm:gap-8">
-            {tabs.map((tab) => (
+          <div className="flex gap-5 overflow-x-auto sm:gap-8" role="tablist" aria-label="Feedback sections">
+            {tabs.map((tab, index) => (
               <button
+                id={`feedback-tab-${tab.id}`}
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
+                onKeyDown={(event) => handleTabKeyDown(event, index)}
+                role="tab"
+                aria-selected={activeTab === tab.id}
+                aria-controls={`feedback-panel-${tab.id}`}
+                tabIndex={activeTab === tab.id ? 0 : -1}
                 className={cn(
-                  "relative whitespace-nowrap px-1 pb-4 text-sm font-black uppercase tracking-tighter transition-all focus-visible:outline-blue-500",
+                  "relative whitespace-nowrap px-1 pb-4 text-xs font-bold uppercase tracking-wide transition-all focus-visible:outline-blue-500 sm:text-sm",
                   activeTab === tab.id ? "text-blue-600 dark:text-blue-400" : "text-slate-400 hover:text-slate-600"
                 )}
               >
@@ -598,9 +793,82 @@ export default function FeedbackReportPage() {
         {/* Tab content */}
         <AnimatePresence mode="wait">
 
+          {/* ── SESSION SUMMARY ── */}
+          {activeTab === "summary" && (
+            <motion.div key="summary" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}
+              id="feedback-panel-summary" role="tabpanel" aria-labelledby="feedback-tab-summary"
+              className="space-y-8 pb-8 pt-4">
+              <section className="space-y-7">
+                <div className="flex flex-col gap-6 border-b border-slate-200 pb-7 dark:border-slate-800 lg:flex-row lg:items-center lg:justify-between">
+                  <div className="flex flex-wrap items-start justify-between gap-4 lg:flex-1">
+                    <div>
+                      <h2 className="text-xl font-semibold tracking-tight text-slate-900 dark:text-white sm:text-2xl">{report.title}</h2>
+                      <p className="mt-1.5 text-sm text-slate-500 dark:text-slate-400">Session summary · {new Date(report.date).toLocaleDateString("en-GB", { year: "numeric", month: "long", day: "numeric" })}</p>
+                    </div>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-x-8 gap-y-5">
+                    <div>
+                      <p className="text-xs font-medium text-slate-500 dark:text-slate-400">Overall score</p>
+                      <div className="mt-1 flex items-baseline gap-2">
+                        <span className={`text-3xl font-semibold tabular-nums tracking-tight ${cefrScore >= 75 ? "text-emerald-600 dark:text-emerald-400" : cefrScore >= 60 ? "text-amber-600 dark:text-amber-400" : "text-red-600 dark:text-red-400"}`}>{cefrScore}<span className="text-lg">%</span></span>
+                        <span className="text-xs font-medium text-slate-500 dark:text-slate-400">{overallMeaning}</span>
+                      </div>
+                    </div>
+                    <div className="h-10 w-px bg-slate-200 dark:bg-slate-800" />
+                    <div>
+                      <p className="text-xs font-medium text-slate-500 dark:text-slate-400">CEFR level</p>
+                      <span className="mt-1 block text-3xl font-semibold tracking-tight text-slate-900 dark:text-white">{parsed.cefr_level}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <h2 className="text-lg font-semibold tracking-tight text-slate-900 dark:text-white sm:text-xl">Overall performance</h2>
+                  <p className="w-full whitespace-pre-line text-base leading-7 text-slate-600 dark:text-slate-300">{report.evaluationSummary?.overall_performance || parsed.executive_summary}</p>
+                </div>
+
+                {report.evaluationSummary && (
+                  <div className="grid gap-x-10 gap-y-8 border-y border-slate-200 py-8 dark:border-slate-800 md:grid-cols-2">
+                    <div className="space-y-3">
+                      <h2 className="flex items-center gap-2 text-lg font-semibold tracking-tight text-slate-900 dark:text-white sm:text-xl"><span aria-hidden="true">🌟</span> What went well</h2>
+                      <ReadableSummary text={report.evaluationSummary.what_went_well} />
+                    </div>
+                    <div className="space-y-3">
+                      <h2 className="flex items-center gap-2 text-lg font-semibold tracking-tight text-slate-900 dark:text-white sm:text-xl"><span aria-hidden="true">🔍</span> What could improve</h2>
+                      <ReadableSummary text={report.evaluationSummary.what_could_improve} />
+                    </div>
+                    <div className="space-y-3 md:col-span-2">
+                      <h2 className="flex items-center gap-2 text-lg font-semibold tracking-tight text-slate-900 dark:text-white sm:text-xl"><span aria-hidden="true">💡</span> How to improve</h2>
+                      <div className="max-w-5xl">
+                        <ReadableSummary text={report.evaluationSummary.how_to_improve} numbered />
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                <div className="py-1">
+                  <div className="mb-8">
+                    <h2 className="text-lg font-semibold tracking-tight text-slate-900 dark:text-white sm:text-xl">Session analysis</h2>
+                    <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Each area is scored from 0 to 10. The overall score applies the CEFR-specific weights.</p>
+                  </div>
+                  <div className="grid w-full min-w-0 grid-cols-1 gap-x-8 gap-y-8 md:grid-cols-2 xl:grid-cols-3 xl:gap-x-10">
+                    {report.parameters && report.parameters.length > 0
+                      ? report.parameters.map((p) => <AnalysisRow key={p.name} label={p.name} value={p.score} max={p.scale ?? (report.evaluationSummary ? 10 : 100)} tooltip={getParameterDescription(p.name, p.tooltip)} />)
+                      : <>
+                          <AnalysisRow label="Vocabulary Range" value={scoreFromSection(vocabSection)} max={100} />
+                          <AnalysisRow label="Grammar Accuracy" value={scoreFromSection(grammarSection)} max={100} />
+                          <AnalysisRow label="Communication Success" value={scoreFromSection(commSection)} max={100} />
+                        </>
+                    }
+                  </div>
+                </div>
+              </section>
+            </motion.div>
+          )}
+
           {/* ── ORIGINAL CONVERSATION ── */}
           {activeTab === "conversation" && (
-            <motion.div key="conv" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }}>
+            <motion.div key="conv" id="feedback-panel-conversation" role="tabpanel" aria-labelledby="feedback-tab-conversation" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }}>
               <div className="overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800">
                 <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4 dark:border-slate-800">
                   <div className="flex items-center gap-2">
@@ -622,7 +890,14 @@ export default function FeedbackReportPage() {
                 )}
                 <div className="space-y-4 p-6">
                   {report.messages && report.messages.length > 0 ? report.messages.map((msg, i) => (
-                    <MessageBubble key={msg.id || i} message={msg} learningLanguage={report.learningLanguage || "fr"} translationLanguage={report.translationLanguage || "en"} showCorrectedAsPrimary />
+                    <MessageBubble
+                      key={msg.id || i}
+                      message={msg}
+                      learningLanguage={report.learningLanguage || "fr"}
+                      translationLanguage={report.translationLanguage || "en"}
+                      correctionDisplay="below"
+                      audioText={correctedInlineToPlainText(msg.correction_result?.corrections[0]?.corrected_inline) || msg.correction || msg.text}
+                    />
                   )) : (
                     <p className="text-slate-400 text-center py-8">No conversation recorded.</p>
                   )}
@@ -633,12 +908,13 @@ export default function FeedbackReportPage() {
 
           {/* ── GRAMMAR MISTAKES ── */}
           {activeTab === "grammar" && (
-            <motion.div key="grammar" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
+            <motion.div key="grammar" id="feedback-panel-grammar" role="tabpanel" aria-labelledby="feedback-tab-grammar" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
               <div className="overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800">
-                <GrammarMistakesPane
-                  tweaks={parsed.detailed_tweaks}
-                  messages={report.messages || []}
-                />
+                {report.correctionStatus === "complete" ? (
+                  <DedicatedGrammarMistakesPane corrections={report.corrections || []} messages={report.messages || []} />
+                ) : (
+                  <GrammarMistakesPane tweaks={parsed.detailed_tweaks} messages={report.messages || []} />
+                )}
               </div>
             </motion.div>
           )}
@@ -646,62 +922,18 @@ export default function FeedbackReportPage() {
           {/* ── FEEDBACK REPORT ── */}
           {activeTab === "feedback" && (
             <motion.div key="feedback" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}
+              id="feedback-panel-feedback" role="tabpanel" aria-labelledby="feedback-tab-feedback"
               className="space-y-10 pb-8 pt-4">
 
-              {/* Scores and analysis lead the page; the detailed report follows below. */}
-              <section className="space-y-7">
-                <div className="flex flex-col gap-6 border-b border-slate-200 pb-7 dark:border-slate-800 lg:flex-row lg:items-center lg:justify-between">
-                  <div className="flex flex-wrap items-start justify-between gap-4 lg:flex-1">
-                    <div>
-                      <h1 className="text-2xl font-semibold tracking-tight text-slate-900 dark:text-white">{report.title}</h1>
-                      <p className="mt-1.5 text-sm text-slate-500 dark:text-slate-400">Session feedback · {new Date(report.date).toLocaleDateString("en-GB", { year: "numeric", month: "long", day: "numeric" })}</p>
-                    </div>
-                  </div>
-                  <div className="flex flex-wrap items-center gap-x-8 gap-y-5">
-                    <div>
-                      <p className="text-xs font-medium text-slate-500 dark:text-slate-400">Overall score</p>
-                      <div className="mt-1 flex items-baseline gap-2">
-                        <span className={`text-3xl font-semibold tabular-nums tracking-tight ${cefrScore >= 75 ? "text-emerald-600 dark:text-emerald-400" : cefrScore >= 60 ? "text-amber-600 dark:text-amber-400" : "text-red-600 dark:text-red-400"}`}>{cefrScore}<span className="text-lg">%</span></span>
-                        <span className="text-xs font-medium text-slate-500 dark:text-slate-400">{overallMeaning}</span>
-                      </div>
-                    </div>
-                    <div className="h-10 w-px bg-slate-200 dark:bg-slate-800" />
-                    <div>
-                      <p className="text-xs font-medium text-slate-500 dark:text-slate-400">CEFR level</p>
-                      <div className="mt-1 flex items-baseline gap-2">
-                        <span className="text-3xl font-semibold tracking-tight text-slate-900 dark:text-white">{parsed.cefr_level}</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="py-1">
-                  <div className="mb-8">
-                    <h2 className="text-xl font-semibold tracking-tight text-slate-900 dark:text-white">Session analysis</h2>
-                    <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Each area is scored on a 0–100 scale.</p>
-                  </div>
-                  <div className="grid w-full min-w-0 grid-cols-1 gap-x-8 gap-y-8 md:grid-cols-2 xl:grid-cols-3 xl:gap-x-10">
-                    {report.parameters && report.parameters.length > 0
-                      ? report.parameters.map((p) => <AnalysisRow key={p.name} label={p.name} value={p.score} tooltip={p.tooltip} />)
-                      : <>
-                          <AnalysisRow label="Vocabulary Range" value={scoreFromSection(vocabSection)} />
-                          <AnalysisRow label="Grammar Accuracy" value={scoreFromSection(grammarSection)} />
-                          <AnalysisRow label="Communication Success" value={scoreFromSection(commSection)} />
-                        </>
-                    }
-                  </div>
-                </div>
-              </section>
-
-              <section className="border-t border-slate-200 pt-8 dark:border-slate-800" aria-labelledby="written-report-title">
+              <section aria-labelledby="written-report-title">
                 <div className="mb-7">
                   <p className="mb-2 text-xs font-medium tracking-wide text-blue-600 dark:text-blue-400">Your conversation, reviewed</p>
                   <h2 id="written-report-title" className="text-2xl font-semibold tracking-tight text-slate-900 dark:text-white">Session report</h2>
                 </div>
                 <div>
                   <Accordion type="multiple" defaultValue={["section-0"]} className="min-w-0">
-                    {parsed.sections.length === 0 && <p className="text-sm text-slate-500">Written feedback is not available for this session.</p>}
-                    {parsed.sections.filter((section) => !isParameterSection(section.title)).map((section, index) => (
+                    {feedbackReportSections.length === 0 && <p className="text-sm text-slate-500">Written feedback is not available for this session.</p>}
+                    {feedbackReportSections.map((section, index) => (
                       <AccordionItem id={`report-section-${index}`} key={index} value={`section-${index}`} className="scroll-mt-8">
                         <AccordionTrigger className="py-6">
                           <span className="text-xs font-medium tabular-nums text-blue-600 dark:text-blue-400">{String(index + 1).padStart(2, "0")}</span>
@@ -729,6 +961,5 @@ export default function FeedbackReportPage() {
         </AnimatePresence>
       </div>
       </div>
-    </TooltipProvider>
   );
 }

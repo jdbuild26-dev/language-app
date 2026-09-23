@@ -12,6 +12,27 @@ interface LanguageContextType {
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
 
+const LANGUAGE_CODES: Record<string, string> = {
+    en: "en",
+    english: "en",
+    fr: "fr",
+    french: "fr",
+    français: "fr",
+    francais: "fr",
+    es: "es",
+    spanish: "es",
+    español: "es",
+    espanol: "es",
+    de: "de",
+    german: "de",
+    deutsch: "de",
+};
+
+function languageCode(value: unknown, fallback: string): string {
+    if (typeof value !== "string") return fallback;
+    return LANGUAGE_CODES[value.trim().toLowerCase()] || fallback;
+}
+
 export const LanguageProvider = ({ children }: { children: React.ReactNode }) => {
     const { activeProfile } = useProfile();
 
@@ -27,13 +48,23 @@ export const LanguageProvider = ({ children }: { children: React.ReactNode }) =>
         if (storedKnown) setKnownLang(storedKnown);
     }, []);
 
-    // Sync with active profile if available
+    // The active profile is authoritative. Older profiles may not have a
+    // support-language field, so English remains the compatibility default.
     useEffect(() => {
-        if (activeProfile && activeProfile.language) {
-            // Map common names to ISO codes if necessary, or use as is
-            const code = activeProfile.language.toLowerCase().substring(0, 2);
-            setLearningLang(code);
-        }
+        if (!activeProfile) return;
+
+        const profile = activeProfile as Record<string, any>;
+        const questionnaire = profile.questionnaireResponses || {};
+        const savedLearningLanguage =
+            profile.language || profile.primaryLanguage || profile.targetLanguage;
+        const savedSupportLanguage =
+            profile.instructionLanguage ||
+            profile.translationLanguage ||
+            questionnaire.instructionLanguage ||
+            questionnaire.translationLanguage;
+
+        setLearningLang(languageCode(savedLearningLanguage, "fr"));
+        setKnownLang(languageCode(savedSupportLanguage, "en"));
     }, [activeProfile]);
 
     // Persistent storage

@@ -11,6 +11,7 @@ interface Props {
     level: string;
     learnerInstruction?: string;
     instructionEn?: string;
+    instructionFallbackNotice?: string | null;
     learning_lang?: string;
   };
   onStart: () => void;
@@ -86,6 +87,12 @@ export default function ConversationPreviewModal({ scenario, onStart, onClose }:
             <div className="mt-4 min-h-[7rem]">
               <p className="text-lg leading-8 text-slate-700 dark:text-slate-200">{scenario.learnerInstruction}</p>
             </div>
+          )}
+
+          {scenario.instructionFallbackNotice && (
+            <p className="mt-3 rounded-lg bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
+              {scenario.instructionFallbackNotice}
+            </p>
           )}
 
           {showEnglish && scenario.instructionEn && (
