@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useLanguage } from "@/contexts/LanguageContext";
 
 // Minimal type definition for the Web Speech API (not always present in TS DOM lib)
@@ -9,8 +9,8 @@ type SpeechRecognitionInstance = {
   interimResults: boolean;
   lang: string;
   onstart: (() => void) | null;
-  onresult: ((event: any) => void) | null;
-  onerror: ((event: any) => void) | null;
+  onresult: ((event: { results: ArrayLike<ArrayLike<{ transcript: string }> & { isFinal: boolean }> }) => void) | null;
+  onerror: ((event: { error: string }) => void) | null;
   onend: (() => void) | null;
   start: () => void;
   stop: () => void;
@@ -18,7 +18,7 @@ type SpeechRecognitionInstance = {
 
 function getSpeechRecognitionAPI(): (new () => SpeechRecognitionInstance) | null {
   if (typeof window === "undefined") return null;
-  const w = window as any;
+  const w = window as unknown as { SpeechRecognition?: new () => SpeechRecognitionInstance; webkitSpeechRecognition?: new () => SpeechRecognitionInstance };
   return w.SpeechRecognition || w.webkitSpeechRecognition || null;
 }
 
@@ -29,12 +29,26 @@ export default function useSpeechRecognition() {
   const { learningLang } = useLanguage();
 
   const recognitionRef = useRef<SpeechRecognitionInstance | null>(null);
+  const latestTranscript = useRef("");
+  const listening = useRef(false);
+  const stopping = useRef(false);
+  const hasInterim = useRef(false);
+  const captureError = useRef<string | null>(null);
+  const pendingStop = useRef<{ resolve: (value: string) => void; reject: (error: Error) => void; timer: ReturnType<typeof setTimeout>; promise: Promise<string> } | null>(null);
+  const finishStop = useCallback((failure?: string) => {
+    if (pendingStop.current) {
+      clearTimeout(pendingStop.current.timer);
+      if (failure) pendingStop.current.reject(new Error(failure));
+      else pendingStop.current.resolve(latestTranscript.current);
+      pendingStop.current = null;
+    }
+  }, []);
 
   useEffect(() => {
     const SpeechRecognitionAPI = getSpeechRecognitionAPI();
 
     if (!SpeechRecognitionAPI) {
-      setError("Speech recognition is not supported in this browser.");
+      queueMicrotask(() => setError("Speech recognition is not supported in this browser."));
       return;
     }
 
@@ -59,40 +73,71 @@ export default function useSpeechRecognition() {
     recognition.lang = localeMap[learningLang] || `${learningLang}-${learningLang.toUpperCase()}`;
 
     recognition.onstart = () => {
+      listening.current = true;
+      stopping.current = false;
       setIsListening(true);
       setError(null);
     };
 
-    recognition.onresult = (event: any) => {
+    recognition.onresult = (event) => {
       let fullTranscript = "";
+      hasInterim.current = false;
       for (let i = 0; i < event.results.length; i++) {
-        fullTranscript += event.results[i][0].transcript;
+        const chunk = event.results[i][0].transcript;
+        if (fullTranscript && chunk && !/\s$/.test(fullTranscript) && !/^\s|^[.,!?;:]/.test(chunk)) fullTranscript += " ";
+        fullTranscript += chunk;
+        if (!event.results[i].isFinal) hasInterim.current = true;
       }
+      latestTranscript.current = fullTranscript;
       setTranscript(fullTranscript);
     };
 
-    recognition.onerror = (event: any) => {
+    recognition.onerror = (event) => {
       console.error("Speech recognition error", event.error);
       setError(`Error: ${event.error}`);
+      captureError.current = "Speech capture failed. Please record your answer again.";
+      listening.current = false;
+      stopping.current = false;
       setIsListening(false);
+      finishStop(captureError.current);
     };
 
     recognition.onend = () => {
+      listening.current = false;
+      stopping.current = false;
       setIsListening(false);
+      if (hasInterim.current && !captureError.current) {
+        captureError.current = "Speech capture did not finish. Please record your answer again.";
+        setError(captureError.current);
+      }
+      finishStop(captureError.current ?? undefined);
     };
 
     return () => {
-      recognition.stop();
+      recognition.onstart = null;
+      recognition.onresult = null;
+      recognition.onerror = null;
+      recognition.onend = null;
+      try { recognition.stop(); } catch { /* Recognition may already be stopped. */ }
+      listening.current = false;
+      finishStop("Speech capture was cancelled.");
     };
-  }, [learningLang]);
+  }, [learningLang, finishStop]);
 
-  const resetTranscript = () => {
+  const resetTranscript = useCallback(() => {
+    finishStop("Speech capture was cancelled.");
+    latestTranscript.current = "";
+    hasInterim.current = false;
+    captureError.current = null;
     setTranscript("");
-  };
+  }, [finishStop]);
 
-  const startListening = () => {
+  const startListening = useCallback(() => {
     const recognition = recognitionRef.current;
-    if (recognition && !isListening) {
+    if (recognition && !listening.current) {
+      latestTranscript.current = "";
+      captureError.current = null;
+      hasInterim.current = false;
       setTranscript("");
       try {
         recognition.start();
@@ -100,14 +145,40 @@ export default function useSpeechRecognition() {
         console.error("Failed to start recognition:", err);
       }
     }
-  };
+  }, []);
 
-  const stopListening = () => {
+  const stopListening = useCallback(() => {
     const recognition = recognitionRef.current;
-    if (recognition && isListening) {
-      recognition.stop();
+    if (recognition && listening.current && !stopping.current) {
+      stopping.current = true;
+      try { recognition.stop(); } catch {
+        captureError.current = "Speech capture failed. Please record your answer again.";
+        setError(captureError.current);
+        finishStop(captureError.current);
+      }
     }
-  };
+  }, [finishStop]);
+
+  const stopAndReadTranscript = useCallback(async (): Promise<string> => {
+    const recognition = recognitionRef.current;
+    if (pendingStop.current) return pendingStop.current.promise;
+    if (captureError.current) throw new Error(captureError.current);
+    if (!recognition || !listening.current) return latestTranscript.current;
+    let resolve!: (value: string) => void;
+    let reject!: (error: Error) => void;
+    const promise = new Promise<string>((done, fail) => { resolve = done; reject = fail; });
+    pendingStop.current = { resolve, reject, promise, timer: setTimeout(() => {
+      captureError.current = "Speech capture timed out. Please record your answer again.";
+      setError(captureError.current);
+      finishStop(captureError.current);
+    }, 10000) };
+    try { if (!stopping.current) { stopping.current = true; recognition.stop(); } } catch {
+      captureError.current = "Speech capture failed. Please record your answer again.";
+      setError(captureError.current);
+      finishStop(captureError.current);
+    }
+    return promise;
+  }, [finishStop]);
 
   return {
     isListening,
@@ -116,5 +187,6 @@ export default function useSpeechRecognition() {
     startListening,
     stopListening,
     resetTranscript,
+    stopAndReadTranscript,
   };
 }

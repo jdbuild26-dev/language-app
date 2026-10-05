@@ -7,8 +7,10 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { usePracticeComplete } from "@/hooks/usePracticeComplete";
 import { cn } from "@/lib/utils";
 import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
-import { useWritingEvaluation } from "@/hooks/useWritingEvaluation";
-import WritingFeedbackResult from "@/components/WritingFeedbackResult";
+import { normalizeTopicExercises, topicAvailability, type TopicQuestion } from "@/features/practice/lib/topicExercise";
+import { insertImageAccent } from "@/features/practice/lib/writeImageInput";
+import { useTopicEvaluation } from "@/features/practice/hooks/useTopicEvaluation";
+import TopicFeedbackResult from "@/features/practice/components/TopicFeedbackResult";
 import { fetchPracticeData } from "@/utils/practiceFetcher";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -17,23 +19,7 @@ import { useSearchParams } from "next/navigation";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-type WriteTopicQuestion = {
-  title_fr: string;
-  title_en: string;
-  heading_fr: string;
-  heading_en: string;
-  main_instruction_fr: string;
-  main_instruction_en: string;
-  topic_bullets_fr: string[];
-  topic_bullets_en: string[];
-  instruction_box_fr: string;
-  instruction_box_en: string;
-  sample_answers_fr: string[];
-  sample_answers_en: string[];
-  timeLimitSeconds: number;
-  charLimit: number;
-  level: string;
-};
+
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
@@ -45,24 +31,29 @@ export default function WriteTopicPage() {
   const levelParam = searchParams?.get("level") ?? undefined;
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  const [questions, setQuestions] = useState<WriteTopicQuestion[]>([]);
+  const [questions, setQuestions] = useState<TopicQuestion[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [userAnswer, setUserAnswer] = useState("");
   const [isCompleted, setIsCompleted] = useState(false);
   const [showFeedback, setShowFeedback] = useState(false);
-  const [isCorrect, setIsCorrect] = useState(false);
-  const [score, setScore] = useState(0);
+    const [score, setScore] = useState(0);
+  const [submittedText, setSubmittedText] = useState("");
 
-  const { evaluation, isSubmitting, evaluate, resetEvaluation } = useWritingEvaluation();
+  const { evaluation, isSubmitting, error, evaluate, resetEvaluation } = useTopicEvaluation();
 
+  const busy = isSubmitting;
   const currentQ = questions[currentIndex];
+
+  const contextKey = JSON.stringify([learningLang, knownLang, levelParam, tag, currentIndex, currentQ?.id]);
+  const activeContext = useRef(contextKey);
+  activeContext.current = contextKey;
 
   const { timerString, resetTimer } = useExerciseTimer({
     duration: currentQ?.timeLimitSeconds || 360,
     mode: "timer",
     onExpire: () => { if (!isCompleted && !showFeedback) handleSubmit(); },
-    isPaused: isLoading || isCompleted || showFeedback,
+    isPaused: isLoading || isCompleted || showFeedback || busy,
   });
 
   usePracticeComplete({
@@ -75,79 +66,28 @@ export default function WriteTopicPage() {
 
   // ── Load ───────────────────────────────────────────────────────────────────
   useEffect(() => {
+    let obsolete = false;
+    resetEvaluation();
+    setQuestions([]);
+    setCurrentIndex(0);
+    setScore(0);
+    setIsCompleted(false);
+    setShowFeedback(false);
+    setIsLoading(true);
     (async () => {
       try {
         const data = await fetchPracticeData("write_topic", {
-          level: levelParam,
-          learningLang: learningLang || "fr",
-          knownLang: knownLang || "en",
-          tag,
+          level: levelParam, learningLang: learningLang || "fr", knownLang: knownLang || "en", tag,
         });
-        const raw = Array.isArray(data) ? data : [];
-
-        // Separate new-format (from uploaded CSV) and old-format items
-        const newFormat = raw.filter((item: any) =>
-          (item.main_instruction_fr || item.main_instruction_en ||
-           (Array.isArray(item.topic_bullets_fr) && item.topic_bullets_fr.length > 0)) &&
-          item.ExerciseID && item.ExerciseID !== '' && item.ExerciseID !== null &&
-          (item.Category === "main" || !item.Category)
-        );
-        const oldFormat = raw.filter((item: any) =>
-          (item.prompt || item.topic) &&
-          (!item.ExerciseID || item.ExerciseID === '' || item.ExerciseID === null) &&
-          (item.Category === "main" || !item.Category)
-        );
-
-        // Prefer new-format if available, fall back to old
-        const source = newFormat.length > 0 ? newFormat : oldFormat;
-
-        const normalized: WriteTopicQuestion[] = source
-          .filter((item: any) =>
-            // Accept new format OR old format (has topic/prompt fields)
-            (item.main_instruction_fr || item.main_instruction_en ||
-             (Array.isArray(item.topic_bullets_fr) && item.topic_bullets_fr.length > 0) ||
-             item.prompt || item.topic) &&
-            (item.Category === "main" || !item.Category)
-          )
-          .map((item: any) => {
-            // Handle old format: { topic, englishTopic, prompt, hints, sampleAnswer }
-            const isOldFormat = !item.main_instruction_fr && !item.topic_bullets_fr && item.topic;
-            const hintsArray = isOldFormat
-              ? (typeof item.hints === 'string'
-                  ? item.hints.split(/[,+]/).map((h: string) => h.trim()).filter(Boolean)
-                  : Array.isArray(item.hints) ? item.hints : [])
-              : [];
-            return {
-              title_fr: item.title_fr || item.passage_title_fr || item.topic || "",
-              title_en: item.title_en || item.passage_title_en || item.englishTopic || "",
-              heading_fr: item.heading_fr || "",
-              heading_en: item.heading_en || "",
-              main_instruction_fr: item.main_instruction_fr || item.prompt || "",
-              main_instruction_en: item.main_instruction_en || item.prompt || "",
-              topic_bullets_fr: Array.isArray(item.topic_bullets_fr) && item.topic_bullets_fr.length > 0
-                ? item.topic_bullets_fr
-                : hintsArray,
-              topic_bullets_en: Array.isArray(item.topic_bullets_en) && item.topic_bullets_en.length > 0
-                ? item.topic_bullets_en
-                : hintsArray,
-              instruction_box_fr: item.instruction_box_fr || "Écrivez sur le sujet",
-              instruction_box_en: item.instruction_box_en || "Write about the topic",
-              sample_answers_fr: Array.isArray(item.sample_answers_fr) ? item.sample_answers_fr
-                : item.sampleAnswer ? [item.sampleAnswer] : [],
-              sample_answers_en: Array.isArray(item.sample_answers_en) ? item.sample_answers_en : [],
-              timeLimitSeconds: item.timeLimitSeconds || item.TimeLimitSeconds || 360,
-              charLimit: item.maxHighlightChars || item.charLimit || 1000,
-              level: item.level || item.Level || "",
-            };
-          });
-        setQuestions(normalized);
-      } catch (e) {
-        console.error("WriteTopicPage load error:", e);
+        if (!obsolete) setQuestions(normalizeTopicExercises(data, "write"));
+      } catch (cause) {
+        if (!obsolete) console.error("Topic load failed:", cause);
       } finally {
-        setIsLoading(false);
+        if (!obsolete) setIsLoading(false);
       }
     })();
-  }, [levelParam, learningLang, knownLang, tag]);
+    return () => { obsolete = true; resetEvaluation(); };
+  }, [levelParam, learningLang, knownLang, tag, resetEvaluation]);
 
   useEffect(() => {
     if (currentQ && !isCompleted) {
@@ -160,20 +100,13 @@ export default function WriteTopicPage() {
 
   // ── Submit ─────────────────────────────────────────────────────────────────
   const handleSubmit = async () => {
-    if (showFeedback || isSubmitting || !currentQ) return;
-    const result = await evaluate({
-      task_type: "topic",
-      user_text: userAnswer,
-      topic: currentQ.title_en || currentQ.title_fr,
-      reference: currentQ.sample_answers_fr[0] || currentQ.sample_answers_en[0] || "",
-      context: currentQ.main_instruction_en || currentQ.main_instruction_fr,
-      level: currentQ.level || levelParam || "A1",
-    });
-    if (result) {
-      const finalScore = (result as any).overall_score ?? (result as any).score ?? 0;
-      setIsCorrect(finalScore >= 70);
+    if (showFeedback || busy || !currentQ || !userAnswer.trim() || topicAvailability(currentQ)) return;
+    const context = activeContext.current;
+    setSubmittedText(userAnswer);
+    const result = await evaluate({ mode: "write", exercise_id: currentQ.id, learner_response: userAnswer });
+    if (result && activeContext.current === context) {
       setShowFeedback(true);
-      if (finalScore >= 70) setScore(s => s + 1);
+      if (result.overall_score >= 70) setScore(value => value + 1);
     }
   };
 
@@ -198,11 +131,12 @@ export default function WriteTopicPage() {
     </div>
   );
 
+  const missingContent = topicAvailability(currentQ);
   const progress = ((currentIndex + 1) / questions.length) * 100;
   const charCount = userAnswer.length;
   const charLimit = currentQ?.charLimit || 1000;
 
-  // Resolve display language (always show FR for learning content)
+  // Legacy *_fr fields hold the selected learning-language content.
   const mainInstruction = currentQ.main_instruction_fr || currentQ.main_instruction_en || "";
   const bullets = currentQ.topic_bullets_fr.length > 0
     ? currentQ.topic_bullets_fr
@@ -225,7 +159,7 @@ export default function WriteTopicPage() {
         onRestart={() => window.location.reload()}
         isSubmitEnabled={userAnswer.trim().length > 10 && !showFeedback && !isSubmitting}
         showSubmitButton={!showFeedback && !evaluation}
-        submitLabel={isSubmitting ? "Evaluating…" : "Submit Answer"}
+        submitLabel={busy ? "Evaluating…" : "Submit Answer"}
         timerValue={timerString}
         currentQuestionIndex={currentIndex}
       >
@@ -267,7 +201,7 @@ export default function WriteTopicPage() {
               value={userAnswer}
               onChange={e => setUserAnswer(e.target.value)}
               placeholder="Écrivez ici…"
-              disabled={showFeedback || !!evaluation}
+              disabled={showFeedback || !!evaluation || busy}
               maxLength={charLimit}
               rows={8}
               autoFocus
@@ -294,13 +228,14 @@ export default function WriteTopicPage() {
             {/* Accent keyboard */}
             {!showFeedback && !evaluation && (
               <AccentKeyboard
-                disabled={false}
+                disabled={busy}
                 onAccentClick={(char) => {
                   const el = textareaRef.current;
                   if (!el) return;
                   const start = el.selectionStart;
                   const end = el.selectionEnd;
-                  const newVal = userAnswer.slice(0, start) + char + userAnswer.slice(end);
+                  const newVal = insertImageAccent(userAnswer, start, end, char, charLimit);
+                  if (newVal === userAnswer) return;
                   setUserAnswer(newVal);
                   requestAnimationFrame(() => {
                     el.focus();
@@ -311,13 +246,15 @@ export default function WriteTopicPage() {
             )}
           </div>
 
+          {missingContent && <p role="alert" className="text-sm text-amber-700 dark:text-amber-300">{missingContent}</p>}
+          {error && <p role="alert" className="text-sm text-red-700 dark:text-red-300">{error}</p>}
+
           {/* ── AI Evaluation result ── */}
           {evaluation && (
             <div className="animate-in slide-in-from-bottom-4 duration-500">
-              <WritingFeedbackResult
-                evaluation={evaluation as any}
-                mode="writing"
-                userText={userAnswer}
+              <TopicFeedbackResult
+                evaluation={evaluation}
+                userText={submittedText}
                 onContinue={handleContinue}
               />
             </div>

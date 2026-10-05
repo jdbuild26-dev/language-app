@@ -7,17 +7,19 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { usePracticeComplete } from "@/hooks/usePracticeComplete";
 import { cn } from "@/lib/utils";
 import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
-import { useWritingEvaluation } from "@/hooks/useWritingEvaluation";
-import WritingFeedbackResult from "@/components/WritingFeedbackResult";
+import { useWriteImageEvaluation } from "@/features/practice/hooks/useWriteImageEvaluation";
+import WriteImageFeedbackResult from "@/features/practice/components/WriteImageFeedbackResult";
 import { fetchPracticeData } from "@/utils/practiceFetcher";
 import { Loader2, ImageIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import AccentKeyboard from "@/components/ui/AccentKeyboard";
 import { useSearchParams } from "next/navigation";
+import { imageSamples, imageCharacterLimit, insertImageAccent } from "../../lib/writeImageInput";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 type WriteImageQuestion = {
+  id: string;
   heading_fr: string;
   heading_en: string;
   content_fr: string;   // AI context only — not rendered
@@ -32,6 +34,14 @@ type WriteImageQuestion = {
   level: string;
 };
 
+type RawWriteImageQuestion = Partial<WriteImageQuestion> & {
+  Category?: string;
+  imageUrl?: string;
+  TimeLimitSeconds?: number;
+  maxHighlightChars?: number;
+  Level?: string;
+};
+
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function WriteImagePage() {
@@ -41,16 +51,22 @@ export default function WriteImagePage() {
   const tag = searchParams?.get("tag") ?? undefined;
   const levelParam = searchParams?.get("level") ?? undefined;
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const generation = useRef(0);
+  const contextKey = `${learningLang}|${knownLang}|${tag}|${levelParam}`;
+  const latestContext = useRef(contextKey);
+  latestContext.current = contextKey;
 
   const [questions, setQuestions] = useState<WriteImageQuestion[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [userAnswer, setUserAnswer] = useState("");
+  const [submittedAnswer, setSubmittedAnswer] = useState("");
   const [isCompleted, setIsCompleted] = useState(false);
   const [showFeedback, setShowFeedback] = useState(false);
   const [score, setScore] = useState(0);
 
-  const { evaluation, isSubmitting, evaluate, resetEvaluation } = useWritingEvaluation();
+  const { evaluation, isSubmitting, error, evaluate, resetEvaluation } = useWriteImageEvaluation();
+  const [contentError, setContentError] = useState<string | null>(null);
 
   const currentQ = questions[currentIndex];
 
@@ -58,7 +74,7 @@ export default function WriteImagePage() {
     duration: currentQ?.timeLimitSeconds || 360,
     mode: "timer",
     onExpire: () => { if (!isCompleted && !showFeedback) handleSubmit(); },
-    isPaused: isLoading || isCompleted || showFeedback,
+    isPaused: isLoading || isCompleted || showFeedback || isSubmitting,
   });
 
   usePracticeComplete({
@@ -71,6 +87,14 @@ export default function WriteImagePage() {
 
   // ── Load ───────────────────────────────────────────────────────────────────
   useEffect(() => {
+    let cancelled = false;
+    generation.current += 1;
+    resetEvaluation();
+    setIsLoading(true);
+    setQuestions([]);
+    setCurrentIndex(0);
+    setScore(0);
+    setIsCompleted(false);
     (async () => {
       try {
         const data = await fetchPracticeData("write_image", {
@@ -79,39 +103,44 @@ export default function WriteImagePage() {
           knownLang: knownLang || "en",
           tag,
         });
-        const raw = Array.isArray(data) ? data : [];
+        const raw: RawWriteImageQuestion[] = Array.isArray(data) ? data : [];
         const normalized: WriteImageQuestion[] = raw
-          .filter((item: any) =>
+          .filter((item) =>
             (item.instruction_box_fr || item.instruction_box_en || item.heading_fr) &&
             (item.Category === "main" || !item.Category)
           )
-          .map((item: any) => ({
+          .map((item) => ({
+            id: item.id || "",
             heading_fr: item.heading_fr || "",
             heading_en: item.heading_en || "",
             content_fr: item.content_fr || "",
             content_en: item.content_en || "",
             instruction_box_fr: item.instruction_box_fr || "Décrivez ce que vous voyez",
             instruction_box_en: item.instruction_box_en || "Write what you see",
-            sample_answers_fr: Array.isArray(item.sample_answers_fr) ? item.sample_answers_fr : [],
-            sample_answers_en: Array.isArray(item.sample_answers_en) ? item.sample_answers_en : [],
+            sample_answers_fr: imageSamples(item.sample_answers_fr),
+            sample_answers_en: imageSamples(item.sample_answers_en),
             image_url: item.image_url || item.imageUrl || "",
             timeLimitSeconds: item.timeLimitSeconds || item.TimeLimitSeconds || 360,
-            charLimit: item.maxHighlightChars || 1000,
+            charLimit: imageCharacterLimit(item.maxHighlightChars),
             level: item.level || item.Level || "",
           }));
-        setQuestions(normalized);
+        if (!cancelled) setQuestions(normalized);
       } catch (e) {
-        console.error("WriteImagePage load error:", e);
+        if (!cancelled) console.error("WriteImagePage load error:", e);
       } finally {
-        setIsLoading(false);
+        if (!cancelled) setIsLoading(false);
       }
     })();
-  }, [levelParam, learningLang, knownLang, tag]);
+    return () => { cancelled = true; };
+  }, [levelParam, learningLang, knownLang, tag, resetEvaluation]);
 
   useEffect(() => {
     if (currentQ && !isCompleted) {
+      generation.current += 1;
       setUserAnswer("");
+      setSubmittedAnswer("");
       setShowFeedback(false);
+      setContentError(null);
       resetTimer();
       resetEvaluation();
     }
@@ -119,24 +148,47 @@ export default function WriteImagePage() {
 
   // ── Submit ─────────────────────────────────────────────────────────────────
   const handleSubmit = async () => {
-    if (showFeedback || isSubmitting || !currentQ) return;
+    if (showFeedback || isSubmitting || !currentQ || !userAnswer.trim()) return;
+    if (!currentQ.image_url.trim()) {
+      setContentError("This exercise needs an image before it can be evaluated.");
+      return;
+    }
+    const sampleDescriptions = imageSamples(currentQ.sample_answers_fr);
+    if (sampleDescriptions.length !== 2) {
+      setContentError("This exercise needs two sample descriptions before feedback can be generated.");
+      return;
+    }
+    const cefrLevel = (currentQ.level || levelParam || "").toUpperCase();
+    if (!/^(A1|A2|B1|B2|C1|C2)$/.test(cefrLevel)) {
+      setContentError("This exercise needs a CEFR level before feedback can be generated.");
+      return;
+    }
+    if (!currentQ.id) {
+      setContentError("This exercise must be saved before feedback can be generated.");
+      return;
+    }
+    setContentError(null);
+    if (userAnswer.length > currentQ.charLimit) {
+      setContentError(`Your response must be at most ${currentQ.charLimit} characters.`);
+      return;
+    }
+    const submittedGeneration = generation.current;
+    const submittedContext = contextKey;
+    const answerToEvaluate = userAnswer;
+    setSubmittedAnswer(answerToEvaluate);
     const result = await evaluate({
-      task_type: "image",
-      user_text: userAnswer,
-      topic: currentQ.content_en || currentQ.content_fr || currentQ.heading_en,
-      reference: currentQ.sample_answers_en[0] || currentQ.sample_answers_fr[0] || "",
-      context: currentQ.content_en || currentQ.content_fr,
-      level: currentQ.level || levelParam || "A1",
+      exercise_id: currentQ.id,
+      learner_response: answerToEvaluate,
     });
-    if (result) {
-      const finalScore = (result as any).overall_score ?? (result as any).score ?? 0;
+    if (result && submittedGeneration === generation.current && submittedContext === latestContext.current) {
       setShowFeedback(true);
-      if (finalScore >= 70) setScore(s => s + 1);
+      if (result.overall_score >= 70) setScore(s => s + 1);
     }
   };
 
   const handleContinue = () => {
     setShowFeedback(false);
+    setSubmittedAnswer("");
     resetEvaluation();
     if (currentIndex < questions.length - 1) setCurrentIndex(i => i + 1);
     else setIsCompleted(true);
@@ -160,6 +212,16 @@ export default function WriteImagePage() {
   const charCount = userAnswer.length;
   const charLimit = currentQ?.charLimit || 1000;
   const instructionLabel = currentQ.instruction_box_en || currentQ.instruction_box_fr;
+  const sampleAnswers = imageSamples(currentQ.sample_answers_fr);
+  const missingContent = !currentQ.image_url.trim()
+    ? "This exercise needs an image before it can be evaluated."
+    : sampleAnswers.length !== 2
+      ? "This exercise needs two sample descriptions before feedback can be generated."
+      : !/^(A1|A2|B1|B2|C1|C2)$/i.test(currentQ.level || levelParam || "")
+        ? "This exercise needs a CEFR level before feedback can be generated."
+        : !currentQ.id
+          ? "This exercise must be saved before feedback can be generated."
+        : null;
 
   return (
     <>
@@ -175,7 +237,7 @@ export default function WriteImagePage() {
         onExit={handleExit}
         onNext={handleSubmit}
         onRestart={() => window.location.reload()}
-        isSubmitEnabled={userAnswer.trim().length > 5 && !showFeedback && !isSubmitting && !evaluation}
+        isSubmitEnabled={Boolean(userAnswer.trim()) && !missingContent && !showFeedback && !isSubmitting && !evaluation}
         showSubmitButton={!showFeedback && !evaluation}
         submitLabel={isSubmitting ? "Evaluating…" : "Submit Answer"}
         timerValue={timerString}
@@ -216,7 +278,7 @@ export default function WriteImagePage() {
                   value={userAnswer}
                   onChange={e => setUserAnswer(e.target.value)}
                   placeholder="Écrivez ici…"
-                  disabled={showFeedback}
+                  disabled={showFeedback || isSubmitting}
                   maxLength={charLimit}
                   autoFocus
                   className={cn(
@@ -237,19 +299,26 @@ export default function WriteImagePage() {
                   </span>
                 </div>
 
+                {(missingContent || contentError || error) && (
+                  <p role="alert" className="text-sm text-red-600 dark:text-red-400">
+                    {missingContent || contentError || error}
+                  </p>
+                )}
+
                 {/* Accent keyboard */}
                 <AccentKeyboard
-                  disabled={showFeedback}
+                  disabled={showFeedback || isSubmitting}
                   onAccentClick={(char) => {
                     const el = textareaRef.current;
                     if (!el) return;
                     const start = el.selectionStart;
                     const end = el.selectionEnd;
-                    const newVal = userAnswer.slice(0, start) + char + userAnswer.slice(end);
+                    const newVal = insertImageAccent(userAnswer, start, end, char, charLimit);
+                    if (newVal === userAnswer) return;
                     setUserAnswer(newVal);
                     requestAnimationFrame(() => {
                       el.focus();
-                      el.setSelectionRange(start + 1, start + 1);
+                      el.setSelectionRange(start + char.length, start + char.length);
                     });
                   }}
                 />
@@ -257,10 +326,9 @@ export default function WriteImagePage() {
             ) : (
               /* AI evaluation result */
               <div className="flex-1 overflow-y-auto animate-in slide-in-from-bottom-4 duration-500">
-                <WritingFeedbackResult
-                  evaluation={evaluation as any}
-                  mode="writing"
-                  userText={userAnswer}
+                <WriteImageFeedbackResult
+                  evaluation={evaluation}
+                  userText={submittedAnswer}
                   onContinue={handleContinue}
                 />
               </div>
