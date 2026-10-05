@@ -148,7 +148,7 @@ export const loadMockCSV = async (
     }
     const csvString = await response.text();
 
-    return new Promise((resolve, reject) => {
+    return new Promise<any[]>((resolve, reject) => {
       Papa.parse(csvString, {
         header: true,
         dynamicTyping: true,
