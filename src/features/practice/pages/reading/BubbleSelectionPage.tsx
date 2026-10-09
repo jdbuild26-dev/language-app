@@ -1,24 +1,23 @@
 "use client";
 
-import React, { Suspense, useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import React, { Suspense, useState, useEffect, useLayoutEffect, useRef } from "react";
+import { motion } from "framer-motion";
 import { usePracticeExit } from "@/hooks/usePracticeExit";
 import { useExerciseTimer } from "@/hooks/useExerciseTimer";
 import { useTextToSpeech } from "@/hooks/useTextToSpeech";
 import { Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
-import FeedbackBanner from "@/components/ui/FeedbackBanner";
-import { getFeedbackMessage } from "@/utils/feedbackMessages";
+import { usePracticeFeedbackLabels } from "@/utils/practiceFeedbackLabels";
 import { fetchPracticeData } from "@/utils/practiceFetcher";
 import { loadMockCSV } from "@/utils/csvLoader";
 import { useSearchParams } from "next/navigation";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { usePracticeComplete } from "@/hooks/usePracticeComplete";
 const PRACTICE_READING_SECTION_TEXT_CLASS =
-  "font-sans text-2xl md:text-3xl font-medium leading-relaxed";
+  "practice-type-content-large font-sans font-medium";
 const PRACTICE_READING_OPTION_TEXT_CLASS =
-  "font-sans text-lg md:text-xl font-semibold leading-relaxed";
+  "practice-type-content font-sans font-semibold";
 type BubbleQuestion = {
   bubble_tokens?: unknown;
   wordBubbles?: unknown;
@@ -38,6 +37,7 @@ type BubbleQuestion = {
   CorrectAnswer?: string;
   level?: string;
   timeLimitSeconds?: number;
+  explanation?: string;
 };
 
 // Fisher-Yates shuffle algorithm
@@ -94,6 +94,16 @@ function getBubbleTokens(question?: BubbleQuestion): string[] {
   return [];
 }
 
+function textValue(...values: unknown[]): string {
+  return values.find((value): value is string => typeof value === "string" && value.trim().length > 0) || "";
+}
+
+function objectValue(value: unknown): Record<string, unknown> | null {
+  return value !== null && typeof value === "object" && !Array.isArray(value)
+    ? value as Record<string, unknown>
+    : null;
+}
+
 function BubbleSelectionPageContent() {
   const handleExit = usePracticeExit();
   const { speak } = useTextToSpeech();
@@ -101,6 +111,7 @@ function BubbleSelectionPageContent() {
     learningLang?: string;
     knownLang?: string;
   };
+  const labels = usePracticeFeedbackLabels(knownLang);
   const searchParams = useSearchParams();
   const tag = searchParams?.get("tag");
 
@@ -115,6 +126,8 @@ function BubbleSelectionPageContent() {
   const [isCorrect, setIsCorrect] = useState(false);
   const [feedbackMessage, setFeedbackMessage] = useState("");
   const [score, setScore] = useState(0);
+  const initializedQuestionKey = useRef<string | null>(null);
+  const questionContentRef = useRef<HTMLDivElement>(null);
 
   const currentQuestion = questions[currentIndex];
   const sourceSentence =
@@ -138,7 +151,7 @@ function BubbleSelectionPageContent() {
     onExpire: () => {
       if (!isCompleted && !showFeedback) {
         setIsCorrect(false);
-        setFeedbackMessage("Time's up!");
+        setFeedbackMessage(labels.time_up);
         setShowFeedback(true);
       }
     },
@@ -155,23 +168,24 @@ function BubbleSelectionPageContent() {
           const fetched = await fetchPracticeData("translate_bubbles", {
             learningLang,
             knownLang,
-            tag,
+            tag: tag ?? undefined,
           });
           // Map backend nested structure to flat BubbleQuestion shape
           const raw = Array.isArray(fetched) ? fetched : [];
-          data = raw.map((item: any) => {
-            const c = item.content || item;
-            const e = item.evaluation || item;
-            const cfg = item.config || item;
+          data = raw.map((item: Record<string, unknown>) => {
+            const c = objectValue(item.content) || item;
+            const e = objectValue(item.evaluation) || item;
+            const cfg = objectValue(item.config) || item;
             return {
-              level:              item.Level || item.level || '',
-              instructionEn:      item.instructionEn || item.Instruction_EN || 'Translate the sentence',
-              instructionFr:      item.instructionFr || item.Instruction_FR || 'Traduire la phrase',
+              level:              textValue(item.Level, item.level),
+              instructionEn:      textValue(item.instructionEn, item.Instruction_EN) || 'Translate the sentence',
+              instructionFr:      textValue(item.instructionFr, item.Instruction_FR) || 'Traduire la phrase',
               // Source (EN) — what learner reads
-              source_sentence:    c.source_sentence || item.source_sentence || item.SourceSentence || item.sourceText || '',
+              source_sentence:    textValue(c.source_sentence, item.source_sentence, item.SourceSentence, item.sourceText),
               // Target (FR) — correct answer
-              target_sentence:    c.target_sentence || item.target_sentence || item.TargetSentence || '',
-              correctAnswer:      e.correctAnswer || item.correctAnswer || item.CorrectAnswer || c.target_sentence || '',
+              target_sentence:    textValue(c.target_sentence, item.target_sentence, item.TargetSentence),
+              correctAnswer:      textValue(e.correctAnswer, item.correctAnswer, item.CorrectAnswer, c.target_sentence),
+              explanation:        textValue(e.explanation, item.explanation, item.Explanation),
               // Bubble tokens — already shuffled by backend
               bubble_tokens:      c.bubble_tokens || item.bubble_tokens || item.BubbleTokens || item.wordBubbles || [],
               timeLimitSeconds:   Number(cfg.timeLimitSeconds || item.timeLimitSeconds || item.TimeLimitSeconds || 360),
@@ -188,13 +202,14 @@ function BubbleSelectionPageContent() {
           );
           // Map flat CSV format
           const raw = Array.isArray(fallback) ? fallback : [];
-          data = raw.map((item: any) => ({
-            level:           item.Level || item.level || '',
-            instructionEn:   item.Instruction_EN || 'Translate the sentence',
-            instructionFr:   item.Instruction_FR || 'Traduire la phrase',
-            source_sentence: item.SourceSentence || item.source_sentence || item.SourceText || '',
-            target_sentence: item.TargetSentence || item.target_sentence || item.CorrectAnswer || '',
-            correctAnswer:   item.CorrectAnswer || item.correctAnswer || item.TargetSentence || '',
+          data = raw.map((item: Record<string, unknown>) => ({
+            level:           textValue(item.Level, item.level),
+            instructionEn:   textValue(item.Instruction_EN) || 'Translate the sentence',
+            instructionFr:   textValue(item.Instruction_FR) || 'Traduire la phrase',
+            source_sentence: textValue(item.SourceSentence, item.source_sentence, item.SourceText),
+            target_sentence: textValue(item.TargetSentence, item.target_sentence, item.CorrectAnswer),
+            correctAnswer:   textValue(item.CorrectAnswer, item.correctAnswer, item.TargetSentence),
+            explanation:     textValue(item.Explanation, item.explanation),
             bubble_tokens:   item.BubbleTokens || item.bubble_tokens || item.wordBubbles || [],
             timeLimitSeconds: Number(item.timeLimitSeconds || item.TimeLimitSeconds || 360),
           } as BubbleQuestion));
@@ -214,16 +229,29 @@ function BubbleSelectionPageContent() {
     fetchQuestions();
   }, [learningLang, knownLang, tag]);
 
-  // Initialize available words when question changes (shuffled)
-  useEffect(() => {
-    if (currentQuestion) {
-      // Shuffle the word bubbles for randomized display
-      const bubbles = getBubbleTokens(currentQuestion);
-      setWordBankSlots(shuffleArray(bubbles));
-      setSelectedWords([]);
-      resetTimer();
-    }
-  }, [currentIndex, currentQuestion, resetTimer]);
+  // A data refresh can replace the question object without changing the question.
+  // Preserve the learner's in-progress answer and feedback in that case.
+  useLayoutEffect(() => {
+    if (!currentQuestion) return;
+
+    const bubbles = getBubbleTokens(currentQuestion);
+    const questionKey = JSON.stringify([
+      currentIndex,
+      sourceSentence,
+      correctSentence,
+      timerDuration,
+      [...bubbles].sort(),
+    ]);
+    if (initializedQuestionKey.current === questionKey) return;
+    initializedQuestionKey.current = questionKey;
+
+    setWordBankSlots(shuffleArray(bubbles));
+    setSelectedWords([]);
+    setShowFeedback(false);
+    setIsCorrect(false);
+    setFeedbackMessage("");
+    resetTimer();
+  }, [currentIndex, currentQuestion, sourceSentence, correctSentence, timerDuration, resetTimer]);
 
   const handleWordSelect = (word: string, slotIndex: number) => {
     if (showFeedback) return;
@@ -275,7 +303,7 @@ function BubbleSelectionPageContent() {
     const correct = userAnswer === correctAnswer;
 
     setIsCorrect(correct);
-    setFeedbackMessage(getFeedbackMessage(correct));
+    setFeedbackMessage(correct ? labels.correct : labels.incorrect);
     setShowFeedback(true);
 
     if (correct) {
@@ -284,6 +312,9 @@ function BubbleSelectionPageContent() {
   };
 
   const handleContinue = () => {
+    questionContentRef.current?.closest("main")?.scrollTo({ top: 0, behavior: "instant" });
+    setSelectedWords([]);
+    setWordBankSlots([]);
     setShowFeedback(false);
 
     if (currentIndex < questions.length - 1) {
@@ -340,19 +371,32 @@ function BubbleSelectionPageContent() {
         currentQuestionIndex={currentIndex}
         totalQuestions={questions.length}
         onExit={handleExit}
-        onNext={handleSubmit}
+        onNext={showFeedback ? handleContinue : handleSubmit}
         onRestart={() => window.location.reload()}
         isSubmitEnabled={selectedWords.length > 0 && !showFeedback}
-        showSubmitButton={!showFeedback}
-        submitLabel="Submit Answer"
+        showSubmitButton
+        submitLabel={showFeedback ? labels.continue : labels.submit_answer}
+        showFeedback={showFeedback}
+        isCorrect={isCorrect}
+        feedbackMessage={feedbackMessage}
+        correctAnswer={!isCorrect ? correctSentence : null}
+        correctAnswerLabel={labels.correct_answer}
+        feedbackChildren={currentQuestion?.explanation || null}
+        compactFeedback
+        feedbackInFlow
         feedbackTone={
           showFeedback ? (isCorrect ? "success" : "error") : "neutral"
         }
         timerValue={timerString}
       >
-        <div className="practice-reading-page-shell flex flex-col items-center justify-center max-w-7xl mx-auto px-4 sm:px-6 py-8 md:py-10 flex-1 min-h-0">
+        <div
+          ref={questionContentRef}
+          className={cn(
+            "practice-reading-page-shell flex flex-col items-center justify-start max-w-7xl mx-auto px-4 sm:px-6 pt-8 pb-6 md:pt-10 md:pb-8 xl:pt-24 xl:pb-10 flex-1 min-h-full shrink-0",
+          )}
+        >
           {/* Source Sentence */}
-          <div className="w-full mb-10 md:mb-12 flex justify-center items-center">
+          <div className="w-full mb-6 md:mb-8 xl:mb-12 flex justify-center items-center">
             <p
               className={`${PRACTICE_READING_SECTION_TEXT_CLASS} text-center text-slate-800 dark:text-slate-100`}
             >
@@ -360,31 +404,30 @@ function BubbleSelectionPageContent() {
             </p>
           </div>
 
-          {/* Correct Answer Pop-down */}
-          <AnimatePresence>
-            {showFeedback && (
+          {/* Correct translation stays in the same word-bubble format as the learner's answer. */}
+          {showFeedback && !isCorrect && correctSentence && (
               <motion.div
-                initial={{ opacity: 0, y: -20, height: 0 }}
-                animate={{ opacity: 1, y: 0, height: "auto" }}
-                exit={{ opacity: 0, y: -20, height: 0 }}
+                initial={{ opacity: 0, y: -12 }}
+                animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.3, ease: "easeOut" }}
-                className="w-full max-w-4xl bg-white dark:bg-slate-800 rounded-2xl p-7 md:p-8 mb-8 border-2 border-emerald-500 shadow-lg overflow-hidden"
+                className="w-full max-w-7xl border-t border-slate-200 dark:border-slate-700 pt-6 pb-8"
               >
-                <p className="text-base md:text-lg text-slate-500 dark:text-slate-400 mb-2 font-medium">
-                  Correct Answer:
-                </p>
-                <p
-                  className={`${PRACTICE_READING_SECTION_TEXT_CLASS} text-slate-800 dark:text-white`}
-                >
-                  {correctSentence}
-                </p>
+                <div className="flex flex-wrap justify-center gap-3" role="group" aria-label={`${labels.correct_answer} ${correctSentence}`}>
+                  {correctSentence.trim().split(/\s+/).map((word, index) => (
+                    <span
+                      key={`correct-${index}`}
+                      className="practice-type-content px-4 py-2.5 xl:px-6 xl:py-3.5 rounded-2xl border border-emerald-400 bg-emerald-50 text-emerald-900 dark:border-emerald-600 dark:bg-emerald-950/50 dark:text-emerald-100 font-sans font-semibold"
+                    >
+                      {word}
+                    </span>
+                  ))}
+                </div>
               </motion.div>
-            )}
-          </AnimatePresence>
+          )}
 
-          <div className="w-full max-w-4xl border-t border-slate-200 dark:border-slate-700 py-8 flex flex-col gap-6">
+          <div className="w-full max-w-7xl border-t border-slate-200 dark:border-slate-700 py-5 xl:py-8 flex flex-col gap-4 xl:gap-6">
             {/* Answer Area - Selected Words */}
-            <div className="w-full min-h-[92px] flex flex-wrap gap-3 justify-center items-center px-1">
+            <div className="w-full min-h-16 xl:min-h-[92px] flex flex-wrap gap-2 xl:gap-3 justify-center items-center px-1" aria-label="Your answer">
               {selectedWords.length === 0 ? (
                 <span className="w-[2px] h-10 bg-slate-500 dark:bg-slate-300 rounded-full animate-caret-blink" />
               ) : (
@@ -395,7 +438,7 @@ function BubbleSelectionPageContent() {
                       onClick={() => handleWordRemove(word, index)}
                       disabled={showFeedback}
                       className={cn(
-                        `px-6 py-3.5 rounded-2xl transition-all duration-200 border ${PRACTICE_READING_OPTION_TEXT_CLASS}`,
+                        `px-4 py-2.5 xl:px-6 xl:py-3.5 rounded-2xl transition-all duration-200 border ${PRACTICE_READING_OPTION_TEXT_CLASS}`,
                         showFeedback && isCorrect
                           ? "bg-emerald-100 text-emerald-700 border-emerald-400 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-700"
                           : showFeedback && !isCorrect
@@ -414,12 +457,12 @@ function BubbleSelectionPageContent() {
             </div>
 
             {/* Word Bank */}
-            <div className="w-full flex flex-wrap gap-3 border-t border-slate-200 dark:border-slate-700 pt-6 justify-center px-1">
+            <div className="w-full flex flex-wrap gap-2 xl:gap-3 border-t border-slate-200 dark:border-slate-700 pt-4 xl:pt-6 justify-center px-1">
               {wordBankSlots.map((word, index) =>
                 word === null ? (
                   <div
                     key={`ghost-${index}`}
-                    className="px-6 py-3.5 rounded-2xl text-lg md:text-xl font-semibold border border-dashed border-slate-300 dark:border-slate-600 bg-slate-100 dark:bg-slate-800/40 text-transparent select-none"
+                    className="practice-type-content px-4 py-2.5 xl:px-6 xl:py-3.5 rounded-2xl font-semibold border border-dashed border-slate-300 dark:border-slate-600 bg-slate-100 dark:bg-slate-800/40 text-transparent select-none"
                     aria-hidden="true"
                   >
                     &nbsp;&nbsp;&nbsp;&nbsp;
@@ -430,12 +473,12 @@ function BubbleSelectionPageContent() {
                     onClick={() => handleWordSelect(word, index)}
                     disabled={showFeedback}
                     className={cn(
-                      `px-6 py-3.5 rounded-2xl transition-all duration-200 border ${PRACTICE_READING_OPTION_TEXT_CLASS}`,
+                      `px-4 py-2.5 xl:px-6 xl:py-3.5 rounded-2xl transition-all duration-200 border ${PRACTICE_READING_OPTION_TEXT_CLASS}`,
                       "bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-200",
                       "border-slate-300 dark:border-slate-600",
                       "hover:border-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700",
                       "active:scale-95",
-                      showFeedback && "opacity-50 cursor-not-allowed",
+                      showFeedback && "text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800/70 cursor-not-allowed",
                     )}
                   >
                     {word}
@@ -447,19 +490,6 @@ function BubbleSelectionPageContent() {
         </div>
       </PracticeGameLayout>
 
-      {/* Feedback Banner */}
-      {showFeedback && (
-        <FeedbackBanner
-          isCorrect={isCorrect}
-          feedbackTone={isCorrect ? "success" : "error"}
-          correctAnswer={!isCorrect ? correctSentence : null}
-          onContinue={handleContinue}
-          message={feedbackMessage}
-          continueLabel={
-            currentIndex + 1 === questions.length ? "FINISH" : "CONTINUE"
-          }
-        />
-      )}
     </>
   );
 }

@@ -28,6 +28,7 @@ export default function CustomSelect({
   value = "",
   onChange,
   placeholder = "Select…",
+  ariaLabel,
   disabled = false,
   isCorrect = false,
   isWrong = false,
@@ -50,20 +51,15 @@ export default function CustomSelect({
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
-  // Determine if it should open upwards to avoid clipping
-  useEffect(() => {
-    if (open && ref.current) {
+  const toggleOpen = () => {
+    if (disabled) return;
+    if (!open && ref.current) {
       const rect = ref.current.getBoundingClientRect();
       const spaceBelow = window.innerHeight - rect.bottom;
-      const spaceAbove = rect.top;
-      // If less than 220px below but there is more space above, open upwards
-      if (spaceBelow < 220 && spaceAbove > spaceBelow) {
-        setOpenUpwards(true);
-      } else {
-        setOpenUpwards(false);
-      }
+      setOpenUpwards(spaceBelow < 220 && rect.top > spaceBelow);
     }
-  }, [open]);
+    setOpen((wasOpen) => !wasOpen);
+  };
 
   // Scroll hovered item into view automatically when using keyboard (if added later) or initially
   useEffect(() => {
@@ -93,15 +89,16 @@ export default function CustomSelect({
       : value
         ? undefined
         : "#94a3b8";
+  const showDashPlaceholder = !value && /^-+$/.test(placeholder);
 
   return (
     <div ref={ref} className={cn("relative w-full", className)}>
       {/* Trigger */}
       <motion.button
         type="button"
-        onClick={() => !disabled && setOpen((v) => !v)}
+        onClick={toggleOpen}
         className={cn(
-          "w-full min-h-[2.5rem] py-2 flex items-center justify-between px-3 pr-8 rounded-lg border font-sans text-sm md:text-base leading-snug font-medium transition-colors outline-none focus-visible:ring-2 focus-visible:ring-blue-500/30",
+          "w-full min-h-11 py-2 flex items-center justify-between px-3 pr-8 rounded-lg border font-sans text-sm md:text-base leading-snug font-medium transition-colors outline-none focus-visible:ring-2 focus-visible:ring-blue-500/30",
           "bg-white dark:bg-slate-900",
           "border-slate-200 dark:border-slate-700 shadow-sm",
           isCorrect &&
@@ -113,15 +110,20 @@ export default function CustomSelect({
         style={triggerTextColor ? { color: triggerTextColor } : undefined}
         aria-haspopup="listbox"
         aria-expanded={open}
+        aria-label={ariaLabel || (showDashPlaceholder ? "Select an option" : placeholder) || "Select an option"}
       >
-        <span className={cn("text-left break-words", !value && "text-slate-400")}>
-          {value || placeholder}
+        <span aria-hidden={showDashPlaceholder} className={cn(
+          "text-left",
+          showDashPlaceholder ? "min-w-0 flex-1 overflow-hidden whitespace-nowrap text-slate-400" : "break-words",
+          !value && !showDashPlaceholder && "text-slate-400",
+        )}>
+          {showDashPlaceholder ? "-".repeat(256) : value || placeholder}
         </span>
 
         {/* Arrow */}
         <motion.span
           animate={{ rotate: open ? 180 : 0 }}
-          transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+          transition={{ duration: 0.1, ease: "easeOut" }}
           className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none"
           style={{ color: open ? "#3b82f6" : "#94a3b8" }}
         >
@@ -143,10 +145,10 @@ export default function CustomSelect({
           <motion.ul
             ref={listRef}
             role="listbox"
-            initial={{ opacity: 0, y: openUpwards ? 6 : -6, scaleY: 0.95 }}
-            animate={{ opacity: 1, y: 0, scaleY: 1 }}
-            exit={{ opacity: 0, y: openUpwards ? 4 : -4, scaleY: 0.97 }}
-            transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.08 }}
             className={cn(
               "absolute left-0 right-0 rounded-xl overflow-y-auto custom-scrollbar z-[100] py-1.5 shadow-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 max-h-60",
               openUpwards ? "bottom-full mb-2 origin-bottom" : "top-full mt-2 origin-top"
@@ -175,17 +177,10 @@ export default function CustomSelect({
                       : "#475569";
 
               return (
-                <motion.li
+                <li
                   key={opt}
                   role="option"
                   aria-selected={isSelected}
-                  initial={{ opacity: 0, x: -6 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{
-                    delay: Math.min(i * 0.02, 0.2), // cap animation delay so long lists don't take forever
-                    duration: 0.15,
-                    ease: "easeOut",
-                  }}
                   onMouseEnter={() => setHoveredIndex(i)}
                   onMouseLeave={() => setHoveredIndex(null)}
                   onClick={() => {
@@ -268,7 +263,7 @@ export default function CustomSelect({
                       </svg>
                     </motion.span>
                   )}
-                </motion.li>
+                </li>
               );
             })}
           </motion.ul>

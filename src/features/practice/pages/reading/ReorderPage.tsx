@@ -3,11 +3,10 @@
 import React, { useState, useEffect, Suspense } from "react";
 import { usePracticeExit } from "@/hooks/usePracticeExit";
 import { useExerciseTimer } from "@/hooks/useExerciseTimer";
-import { GripVertical, Languages, Loader2 } from "lucide-react";
+import { GripVertical, Loader2 } from "lucide-react";
 import { Reorder } from "framer-motion";
 import { cn } from "@/lib/utils";
 import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
-import FeedbackBanner from "@/components/ui/FeedbackBanner";
 import { getFeedbackMessage } from "@/utils/feedbackMessages";
 import { loadMockCSV } from "@/utils/csvLoader";
 import { Button } from "@/components/ui/button";
@@ -15,6 +14,7 @@ import { useQuestionLanguage } from "@/hooks/useQuestionLanguage";
 import { usePracticeComplete } from "@/hooks/usePracticeComplete";
 import { useSearchParams } from "next/navigation";
 import { useTranslateText } from "@/hooks/useTranslateText";
+import { TranslateButton } from "@/components/ui/TranslateButton";
 
 type ReorderQuestion = {
   id: string | number;
@@ -68,6 +68,7 @@ function ReorderContent() {
   const [showFeedback, setShowFeedback] = useState(false);
   const [isCorrect, setIsCorrect] = useState(false);
   const [feedbackMessage, setFeedbackMessage] = useState("");
+  const [showSentenceTranslations, setShowSentenceTranslations] = useState(false);
   const [score, setScore] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -110,9 +111,9 @@ function ReorderContent() {
           return {
             id:               item.external_id || item.ExerciseID || `reorder-${idx}`,
             level:            item.Level || item.level || '',
-            title_fr:         c.title_fr || item.title_fr || '',
-            title_en:         c.title_en || item.title_en || item.title || '',
-            title:            c.title_en || item.title_en || item.title || '',
+            title_fr:         c.title_fr || item.title_fr || c.passage_title_fr || item.passage_title_fr || c.ContextTitle || item.ContextTitle || '',
+            title_en:         c.title_en || item.title_en || c.passage_title_en || item.passage_title_en || c.title || item.title || c.ContextTitle || item.ContextTitle || '',
+            title:            c.title_en || item.title_en || c.passage_title_en || item.passage_title_en || c.title || item.title || c.ContextTitle || item.ContextTitle || '',
             correctOrder_fr:  fr.length > 0 ? fr : correctOrder,
             correctOrder_en:  en,
             correctOrder,
@@ -143,7 +144,7 @@ function ReorderContent() {
   const { pick, learningLang } = useQuestionLanguage(currentQuestion?.level);
   usePracticeComplete({ isGameOver: isCompleted, score, totalQuestions: questions.length, exerciseType: "reorder_sentences", level: currentQuestion?.level });
   const headingText = pick(currentQuestion?.title_fr, currentQuestion?.title_en)
-    || currentQuestion?.title || "Reorder the Sentences";
+    || currentQuestion?.title || "";
 
   const { displayText: headingDisplayText, isTranslating: isTranslatingH, toggle: toggleTranslate, reset: resetTranslate } = useTranslateText(headingText, learningLang);
   // Reset translation when question changes
@@ -191,6 +192,7 @@ function ReorderContent() {
 
   const handleContinue = () => {
     setShowFeedback(false);
+    setShowSentenceTranslations(false);
     if (currentIndex < questions.length - 1) {
       setCurrentIndex(prev => prev + 1);
     } else {
@@ -218,7 +220,6 @@ function ReorderContent() {
   const progress = questions.length > 0 ? ((currentIndex + 1) / questions.length) * 100 : 0;
 
   return (
-    <>
       <PracticeGameLayout
         questionType="Reorder Sentences"
         questionTypeFr="Réorganisez les phrases"
@@ -234,32 +235,42 @@ function ReorderContent() {
         questionCounterValue={currentIndex + 1}
         feedbackTone={showFeedback ? (isCorrect ? "success" : "error") : "neutral"}
         onExit={handleExit}
-        onNext={handleSubmit}
+        onNext={showFeedback ? handleContinue : handleSubmit}
         onRestart={() => window.location.reload()}
         isSubmitEnabled={!showFeedback}
-        showSubmitButton={!showFeedback}
-        submitLabel="Submit Answer"
+        submitLabel={showFeedback ? (currentIndex + 1 === questions.length ? "FINISH" : "CONTINUE") : "Submit Answer"}
+        disableContentScroll
+        showFeedback={showFeedback}
+        isCorrect={isCorrect}
+        feedbackMessage={feedbackMessage}
+        compactFeedback
+        feedbackInFlow
+        onFeedbackTranslate={showFeedback && learningLang === "fr" && Boolean(currentQuestion.correctOrder_en?.length) ? () => setShowSentenceTranslations(value => !value) : undefined}
+        feedbackTranslationVisible={showSentenceTranslations}
         timerValue={timerString}
       >
-        <div className="practice-reading-page-shell flex flex-col items-center justify-center w-full max-w-7xl mx-auto px-3 sm:px-4 flex-1 min-h-0">
-          <h1 className="w-full max-w-4xl mx-auto mb-8 text-center text-2xl md:text-3xl font-bold text-slate-900 dark:text-slate-100 flex items-center justify-center gap-2">
-            <button
-              type="button"
-              onClick={toggleTranslate}
-              disabled={isTranslatingH}
-              className="inline-flex items-center justify-center shrink-0 text-blue-500 hover:text-blue-600 disabled:opacity-60 transition-colors"
-            >
-              {isTranslatingH ? <Loader2 className="w-5 h-5 animate-spin" /> : <Languages className="w-5 h-5 text-blue-500 shrink-0" />}
-            </button>
-            <span>{headingDisplayText}</span>
-          </h1>
+        <div className="flex w-full min-h-0 flex-1 flex-col py-4 sm:py-6">
+          {headingText && (
+            <div className="mx-auto flex w-full max-w-4xl shrink-0 items-start gap-2 border-b border-slate-200 px-3 pb-3 dark:border-slate-700 sm:px-4 sm:pb-4">
+              <h2 className="practice-type-content-heading min-w-0 flex-1 text-center text-slate-900 dark:text-slate-100">
+                {headingDisplayText}
+              </h2>
+              <TranslateButton
+                onClick={toggleTranslate}
+                isLoading={isTranslatingH}
+                aria-label="Translate passage title"
+                iconSize="md"
+              />
+            </div>
+          )}
 
-          <div className="w-full max-w-4xl mx-auto">
+          <div className={cn("w-full min-h-0 flex-1", headingText && "mt-4 sm:mt-6")}>
             <Reorder.Group
               axis="y"
               values={currentOrder}
               onReorder={setCurrentOrder}
-              className="w-full space-y-3"
+              layoutScroll
+              className="practice-game-scroll h-full w-full space-y-3 overflow-x-hidden overflow-y-auto px-3 pb-2 sm:px-4"
             >
               {currentOrder.map((item, index) => {
                 const sentence = item.text;
@@ -290,18 +301,6 @@ function ReorderContent() {
           </div>
         </div>
       </PracticeGameLayout>
-
-      {showFeedback && (
-        <FeedbackBanner
-          isCorrect={isCorrect}
-          feedbackTone={isCorrect ? "success" : "error"}
-          correctAnswer={undefined}
-          onContinue={handleContinue}
-          message={feedbackMessage}
-          continueLabel={currentIndex + 1 === questions.length ? "FINISH" : "CONTINUE"}
-        />
-      )}
-    </>
   );
 }
 
@@ -319,11 +318,14 @@ const SortableItem = ({
   showFeedback: boolean;
   learningLang: string;
 }) => {
+  const [showSentenceTranslation, setShowSentenceTranslation] = React.useState(false);
+
   return (
     <Reorder.Item
       value={itemValue}
+      dragListener={!showFeedback}
       className={cn(
-        "flex items-start gap-3 p-4 rounded-2xl border-2 transition-colors duration-200 select-none bg-white dark:bg-slate-800",
+        "mx-auto flex w-full max-w-4xl items-start gap-2 rounded-2xl border-2 bg-white p-3 transition-colors duration-200 select-none dark:bg-slate-800 sm:gap-3 sm:p-4",
         !showFeedback && "cursor-grab active:cursor-grabbing hover:border-slate-300 dark:hover:border-slate-600",
         isCorrectPosition ? "bg-emerald-50 dark:bg-emerald-900/20 border-emerald-500"
           : isWrongPosition ? "bg-red-50 dark:bg-red-900/20 border-red-500"
@@ -332,45 +334,39 @@ const SortableItem = ({
       whileDrag={{ scale: 1.02, boxShadow: "0 10px 30px -10px rgba(0,0,0,0.15)", zIndex: 50 }}
       transition={{ type: "spring", stiffness: 400, damping: 25 }}
     >
-      <GripVertical className="w-5 h-5 text-slate-400 dark:text-slate-500 shrink-0 mt-1" />
+      <GripVertical className="mt-1 h-4 w-4 shrink-0 text-slate-400 dark:text-slate-500 sm:h-5 sm:w-5" />
 
-      <div className="w-8 h-8 flex items-center justify-center shrink-0 mt-0.5">
+      <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center sm:h-8 sm:w-8">
         {showFeedback ? (
           <span className={cn(
-            "w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold",
+            "flex h-7 w-7 items-center justify-center rounded-full text-sm font-bold sm:h-8 sm:w-8",
             isCorrectPosition ? "bg-emerald-500 text-white" : "bg-teal-500 text-white",
           )}>
             {correctIndex + 1}
           </span>
         ) : (
-          <span className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-sm font-bold text-slate-500 dark:text-slate-400">
+          <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-slate-100 text-sm font-bold text-slate-500 dark:bg-slate-700 dark:text-slate-400 sm:h-8 sm:w-8">
             {positionIndex + 1}
           </span>
         )}
       </div>
 
-      <div className="flex flex-col flex-1 min-w-0">
-        <span className="text-slate-700 dark:text-slate-200 font-medium select-none break-words leading-snug">
-          {sentence}
-        </span>
-        {/* EN translation shown after submit when learning FR */}
-        {showFeedback && enSentence && learningLang === "fr" && (
-          <span className="text-xs text-slate-400 dark:text-slate-500 mt-1 flex items-center gap-1">
-            <Languages className="w-3 h-3 shrink-0" />
-            {enSentence}
+      <div className="flex min-w-0 flex-1 items-start gap-2">
+        <div className="flex min-w-0 flex-1 flex-col">
+          <span className="practice-type-content text-slate-700 dark:text-slate-200 font-medium select-none break-words">
+            {showSentenceTranslation && enSentence && learningLang === "fr" ? enSentence : sentence}
           </span>
+        </div>
+        {showFeedback && enSentence && learningLang === "fr" && (
+          <TranslateButton
+            iconVariant="option"
+            onClick={() => setShowSentenceTranslation(value => !value)}
+            aria-label={showSentenceTranslation ? "Show original sentence" : "Translate sentence"}
+            title={showSentenceTranslation ? "Show original sentence" : "Translate sentence"}
+            aria-pressed={showSentenceTranslation}
+          />
         )}
       </div>
     </Reorder.Item>
   );
-};
-
-type ReorderQuestion = {
-  id: string | number;
-  title?: string;
-  title_fr?: string;
-  title_en?: string;
-  level?: string;
-  correctOrder: string[];
-  timeLimitSeconds?: number;
 };

@@ -1,23 +1,29 @@
 "use client";
 
-import React, { useState, useEffect, useMemo, Suspense } from "react";
+import React, { useState, useEffect, useLayoutEffect, useMemo, useRef, Suspense } from "react";
 import { usePracticeExit } from "@/hooks/usePracticeExit";
 import { useExerciseTimer } from "@/hooks/useExerciseTimer";
 import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
+import PracticeTwoPanel from "@/features/practice/components/PracticeTwoPanel";
 import CustomSelect from "@/components/ui/CustomSelect";
-import { Languages, Loader2, ImageOff } from "lucide-react";
+import { Check, Loader2, ImageOff, X } from "lucide-react";
+import { TranslateButton } from "@/components/ui/TranslateButton";
 import { cn } from "@/lib/utils";
+import { Dialog, DialogContent, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { loadMockCSV } from "@/utils/csvLoader";
 import { Button } from "@/components/ui/button";
 import { useQuestionLanguage } from "@/hooks/useQuestionLanguage";
 import { usePracticeComplete } from "@/hooks/usePracticeComplete";
 import { useSearchParams } from "next/navigation";
+import Image from "next/image";
 // ── Types ────────────────────────────────────────────────────────────────────
 
 type DiagramQuestion = {
   id: number | string;
   correct_fr: string;
   correct_en: string;
+  explanation_fr?: string;
+  explanation_en?: string;
   // legacy single-lang
   correct?: string;
 };
@@ -69,6 +75,12 @@ function parseQuestions(v: unknown): DiagramQuestion[] {
   return [];
 }
 
+function asRecord(value: unknown): Record<string, unknown> {
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? value as Record<string, unknown>
+    : {};
+}
+
 /** Build per-question option list: 1 correct + (optionsPerDropdown-1) random wrong ones */
 function buildDropdownOptions(
   correctWord: string,
@@ -101,6 +113,9 @@ function DiagramLabellingContent() {
   const handleExit = usePracticeExit();
   const searchParams = useSearchParams();
   const tag = searchParams?.get("tag") ?? undefined;
+  const previewImage = searchParams?.get("previewImage") === "1";
+  const passageRef = useRef<HTMLElement>(null);
+  const diagramRef = useRef<HTMLElement>(null);
 
   const [exercises, setExercises] = useState<DiagramExercise[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -110,12 +125,12 @@ function DiagramLabellingContent() {
   const [dropdownOptions, setDropdownOptions] = useState<Record<string | number, string[]>>({});
   const [answers, setAnswers] = useState<Record<string | number, string>>({});
   const [showFeedback, setShowFeedback] = useState(false);
-  const [score, setScore] = useState(0);
   const [totalScore, setTotalScore] = useState(0);
   const [isCompleted, setIsCompleted] = useState(false);
   const [feedbackMessage, setFeedbackMessage] = useState("");
   const [isCorrect, setIsCorrect] = useState(false);
-  const [correctAnswerText, setCorrectAnswerText] = useState("");
+  const [revealedTranslations, setRevealedTranslations] = useState<Record<string | number, boolean>>({});
+  const [showPassageTranslation, setShowPassageTranslation] = useState(false);
 
   // Translate question state
   const [translatedQuestion, setTranslatedQuestion] = useState("");
@@ -127,9 +142,10 @@ function DiagramLabellingContent() {
     const fetchData = async () => {
       try {
         const data = await loadMockCSV("practice/reading/diagram_labelling.csv", { tag });
-        const mapped = (Array.isArray(data) ? data : []).map((item: any) => {
-          const c = item.content || item;
-          const cfg = item.config || item;
+        const mapped = (Array.isArray(data) ? data : []).map((value: unknown) => {
+          const item = asRecord(value);
+          const c = item.content ? asRecord(item.content) : item;
+          const cfg = item.config ? asRecord(item.config) : item;
           return {
             external_id:    item.external_id || item.ExerciseID,
             level:          item.Level || item.level || '',
@@ -145,7 +161,7 @@ function DiagramLabellingContent() {
             distractors_fr: parseArr(c.distractors_fr || item.distractors_fr),
             distractors_en: parseArr(c.distractors_en || item.distractors_en),
             options:        parseArr(c.options || item.options),
-            questions:      parseQuestions(c.questions || item.questions),
+            questions:      parseQuestions(c.questions || item.questions || item.questions_json),
             imageUrl:       c.imageUrl || item.imageUrl || item.imagePath || '',
             timeLimitSeconds: Number(cfg.timeLimitSeconds || item.timeLimitSeconds || 120),
           } as DiagramExercise;
@@ -166,17 +182,20 @@ function DiagramLabellingContent() {
   }, [tag]);
 
   const ex = exercises[currentIndex];
+  const totalLabels = exercises.reduce((count, exercise) => count + (exercise.questions?.length || 0), 0);
 
-  const { pick, showQuestionInKnown, learningLang } = useQuestionLanguage(ex?.level);
-  usePracticeComplete({ isGameOver: isCompleted, score: totalScore, totalQuestions: exercises.length, exerciseType: "diagram_mapping", level: ex?.level });
+  const { pick, pickTranslation, showQuestionInKnown, learningLang, knownLang } = useQuestionLanguage(ex?.level);
+  usePracticeComplete({ isGameOver: isCompleted, score: totalScore, totalQuestions: totalLabels, exerciseType: "diagram_mapping", level: ex?.level });
 
   // ── Derive display values ──────────────────────────────────────────────────
   const passageTitle = pick(ex?.title_fr, ex?.title_en) || ex?.title || "";
   const passageText  = learningLang === "fr"
     ? ex?.passage_fr || ex?.passage_en || (ex?.paragraphs || []).join("\n\n")
     : ex?.passage_en || ex?.passage_fr || (ex?.paragraphs || []).join("\n\n");
+  const translatedPassageText = learningLang === "fr" ? ex?.passage_en || "" : ex?.passage_fr || "";
   const questionText = pick(ex?.question_fr, ex?.question_en) || "Match each number with the correct answer.";
-  const imageUrl     = ex?.imageUrl || "";
+  const translatedQuestionFromData = pickTranslation(ex?.question_fr, ex?.question_en);
+  const imageUrl     = previewImage && currentIndex === 0 ? "/images/diagram-layout-preview.png" : ex?.imageUrl || "";
 
   // Questions array — normalise legacy {id, correct} format
   const questions: DiagramQuestion[] = useMemo(() => {
@@ -190,7 +209,7 @@ function DiagramLabellingContent() {
   }, [ex]);
 
   // Build the "wrong" pool for dropdowns (all answers except the correct one + distractors)
-  // Always use learning language (FR) for options
+  // Use the current learning language for options.
   const allAnswersFr = ex?.answers_fr || questions.map(q => q.correct_fr);
   const distractorsFr = ex?.distractors_fr || [];
   const wrongPoolFr = [...allAnswersFr, ...distractorsFr];
@@ -205,7 +224,7 @@ function DiagramLabellingContent() {
   const OPTIONS_PER_DROPDOWN = 5;
 
   // ── Build shuffled dropdown options once per exercise ─────────────────────
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!ex || questions.length === 0) return;
     const opts: Record<string | number, string[]> = {};
     questions.forEach(q => {
@@ -224,7 +243,8 @@ function DiagramLabellingContent() {
     setShowFeedback(false);
     setIsCorrect(false);
     setFeedbackMessage("");
-    setCorrectAnswerText("");
+    setRevealedTranslations({});
+    setShowPassageTranslation(false);
     setTranslatedQuestion("");
     setShowTranslation(false);
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -244,7 +264,7 @@ function DiagramLabellingContent() {
     isPaused: isCompleted || showFeedback || isLoading,
   });
 
-  useEffect(() => { resetTimer(); }, [currentIndex, resetTimer]);
+  useLayoutEffect(() => { resetTimer(); }, [currentIndex, resetTimer]);
 
   // ── Handlers ───────────────────────────────────────────────────────────────
   const handleSelect = (id: string | number, value: string) => {
@@ -261,25 +281,9 @@ function DiagramLabellingContent() {
 
     const total = questions.length;
     const isPerfect = correctCount === total;
-    setScore(correctCount);
     setTotalScore(prev => prev + correctCount);
     setIsCorrect(isPerfect);
-
-    if (isPerfect) {
-      setFeedbackMessage("Perfect! All answers correct!");
-      setCorrectAnswerText("");
-    } else {
-      setFeedbackMessage(`${correctCount} out of ${total} correct.`);
-      const wrongOnes = questions.filter(q => {
-        const correctWord = learningLang === "fr" ? q.correct_fr : q.correct_en;
-        return answers[q.id] !== correctWord;
-      });
-      // Show correct answer in both languages after submit
-      const answerList = wrongOnes
-        .map(q => `${q.id}: ${q.correct_fr} / ${q.correct_en}`)
-        .join("  •  ");
-      setCorrectAnswerText(answerList);
-    }
+    setFeedbackMessage(`${correctCount} out of ${total} correct.`);
     setShowFeedback(true);
   };
 
@@ -287,6 +291,13 @@ function DiagramLabellingContent() {
     if (!showFeedback) { handleCheck(); return; }
 
     if (currentIndex < exercises.length - 1) {
+      passageRef.current?.closest("main")?.scrollTo({ top: 0, behavior: "instant" });
+      passageRef.current?.scrollTo({ top: 0, behavior: "instant" });
+      diagramRef.current?.scrollTo({ top: 0, behavior: "instant" });
+      setAnswers({});
+      setShowFeedback(false);
+      setIsCorrect(false);
+      setFeedbackMessage("");
       setCurrentIndex(prev => prev + 1);
     } else {
       setIsCompleted(true);
@@ -298,23 +309,27 @@ function DiagramLabellingContent() {
     setAnswers({});
     setShowFeedback(false);
     setIsCompleted(false);
-    setScore(0);
     setTotalScore(0);
     setIsCorrect(false);
     setFeedbackMessage("");
-    setCorrectAnswerText("");
+    setRevealedTranslations({});
+    setShowPassageTranslation(false);
   };
 
   const handleTranslateQuestion = async () => {
-    // Source is always the question in learning language; translate to the other
-    const sourceText = pick(ex?.question_fr, ex?.question_en) || questionText;
-    const targetLang = learningLang === "fr" ? "en" : "fr";
+    const sourceText = questionText;
+    const targetLang = showQuestionInKnown ? learningLang : knownLang;
 
     if (showTranslation) {
       setShowTranslation(false);
       return;
     }
     if (translatedQuestion) {
+      setShowTranslation(true);
+      return;
+    }
+    if (translatedQuestionFromData && translatedQuestionFromData !== sourceText) {
+      setTranslatedQuestion(translatedQuestionFromData);
       setShowTranslation(true);
       return;
     }
@@ -374,7 +389,8 @@ function DiagramLabellingContent() {
       progress={progress}
       isGameOver={isCompleted}
       score={totalScore}
-      totalQuestions={exercises.length * (questions.length || 1)}
+      totalQuestions={totalLabels}
+      headerTotalQuestions={exercises.length}
       onExit={handleExit}
       onNext={handleNext}
       onRestart={handleRestart}
@@ -383,6 +399,9 @@ function DiagramLabellingContent() {
       feedbackTone={showFeedback ? (isCorrect ? "success" : "error") : "neutral"}
       isSubmitEnabled={showFeedback || allAnswered}
       showSubmitButton={true}
+      disableContentScrollOnDesktop
+      preserveFooterHeightOnFeedback
+      animateFeedbackEntrance={false}
       submitLabel={
         showFeedback
           ? currentIndex + 1 === exercises.length ? "Finish" : "Continue"
@@ -392,117 +411,126 @@ function DiagramLabellingContent() {
       showFeedback={showFeedback}
       isCorrect={isCorrect}
       feedbackMessage={feedbackMessage}
-      correctAnswer={correctAnswerText}
     >
-      <div className="practice-reading-page-shell flex min-h-0 w-full flex-col md:flex-row gap-3 md:gap-4 p-3 md:p-4 mx-auto overflow-y-auto md:overflow-hidden flex-1">
+      <PracticeTwoPanel ratio="seven-three" className="md:gap-4 md:p-4">
+        {/* Passage and answers scroll independently on desktop. */}
+        <section ref={passageRef} className="practice-dark-panel min-h-[18rem] rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-800 md:min-h-0 md:overflow-y-auto md:p-6 custom-scrollbar" aria-label="Passage">
+          <div className="mb-4 flex items-start justify-between gap-3 border-b border-slate-200 pb-3 dark:border-slate-700">
+            <h2 className="practice-type-content-heading text-slate-900 dark:text-slate-100">
+              {passageTitle}
+            </h2>
+            {showFeedback && translatedPassageText && translatedPassageText !== passageText && (
+              <TranslateButton onClick={() => setShowPassageTranslation(value => !value)} aria-label={showPassageTranslation ? "Hide passage translation" : "Translate passage"} title={showPassageTranslation ? "Hide passage translation" : "Translate passage"} aria-expanded={showPassageTranslation} />
+            )}
+          </div>
+          <p className="practice-type-content whitespace-pre-line font-sans text-slate-700 dark:text-slate-200">
+            {passageText}
+          </p>
+          {showFeedback && showPassageTranslation && translatedPassageText && (
+            <p className="practice-type-content mt-6 whitespace-pre-line border-t border-slate-200 pt-5 font-sans text-slate-700 dark:border-slate-700 dark:text-slate-200">
+              {translatedPassageText}
+            </p>
+          )}
+        </section>
 
-        {/* ── Left: Image + Passage ── */}
-        <div className="md:basis-[52%] md:max-w-[52%] min-h-0 flex flex-col gap-3">
-
-          {/* Image — shown when URL available, illustrated splash when not */}
+        <section ref={diagramRef} className="practice-dark-panel min-h-0 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900 md:overflow-y-auto md:p-5 custom-scrollbar" aria-label="Diagram and questions">
           {imageUrl ? (
-            <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 flex justify-center items-center p-3 shadow-sm min-h-[180px] md:min-h-[220px]">
-              <img
-                src={imageUrl}
-                alt={passageTitle || "Diagram"}
-                className="max-h-[30vh] md:max-h-[240px] w-auto max-w-full object-contain rounded-xl"
-              />
-            </div>
+            <Dialog>
+              <DialogTrigger asChild>
+                <button type="button" className="relative mx-auto mb-5 block aspect-square w-full max-w-[27rem] overflow-hidden rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2" aria-label="Enlarge diagram">
+                  <Image src={imageUrl} alt={passageTitle || "Diagram"} fill sizes="(min-width: 768px) 432px, 100vw" unoptimized={/^https?:\/\//.test(imageUrl)} className="object-cover" />
+                </button>
+              </DialogTrigger>
+              <DialogContent className="w-fit max-h-[95dvh] max-w-[95vw] gap-0 border-0 bg-transparent p-0 shadow-none sm:rounded-none [&>button]:right-2 [&>button]:top-2 [&>button]:rounded-full [&>button]:bg-slate-900/75 [&>button]:p-2 [&>button]:text-white">
+                <DialogTitle className="sr-only">{passageTitle || "Diagram"}</DialogTitle>
+                <img src={imageUrl} alt={passageTitle || "Diagram"} className="block max-h-[85dvh] max-w-[95vw] object-contain" />
+              </DialogContent>
+            </Dialog>
           ) : (
-            <div className="bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 flex flex-col justify-center items-center gap-3 p-6 min-h-[140px] shadow-sm">
-              <div className="w-14 h-14 rounded-2xl bg-white dark:bg-slate-700 shadow-inner flex items-center justify-center">
-                <ImageOff className="w-7 h-7 text-slate-400 dark:text-slate-500" />
-              </div>
-              <div className="text-center">
-                <p className="text-sm font-semibold text-slate-500 dark:text-slate-400">No diagram image</p>
-                <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">Use the passage text to answer</p>
-              </div>
+            <div className="mx-auto mb-5 flex min-h-40 w-full flex-col items-center justify-center gap-2 rounded-xl border border-slate-200 bg-slate-50 p-6 text-center dark:border-slate-700 dark:bg-slate-800">
+              <ImageOff className="h-8 w-8 text-slate-500 dark:text-slate-400" />
+              <p className="font-semibold text-slate-600 dark:text-slate-300">No diagram image</p>
+              <p className="text-sm text-slate-500 dark:text-slate-400">Use the passage text to answer</p>
             </div>
           )}
 
-          {/* Passage */}
-          <div className="flex-1 min-h-0 bg-white dark:bg-slate-800 p-4 md:p-5 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 flex flex-col overflow-y-auto custom-scrollbar">
-            <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-700 pb-3 mb-3">
-              <h2 className="text-sm font-bold text-slate-500 dark:text-slate-300 uppercase tracking-wider">
-                {passageTitle}
-              </h2>
-            </div>
-            <p className="practice-reading-passage-text text-slate-700 dark:text-slate-300 leading-relaxed">
-              {passageText}
-            </p>
+          <div className="mb-4">
+            <h3 className="practice-type-content-heading flex items-start gap-2 text-slate-900 dark:text-slate-100">
+              <TranslateButton
+                onClick={handleTranslateQuestion}
+                isLoading={isTranslating}
+                aria-label={showTranslation ? "Show original question" : "Translate question"}
+                title={showTranslation ? "Show original question" : "Translate question"}
+                aria-pressed={showTranslation}
+                iconSize="md"
+              />
+              {showTranslation && translatedQuestion ? translatedQuestion : questionText}
+            </h3>
           </div>
-        </div>
-
-        {/* ── Right: Dropdowns ── */}
-        <div className="md:basis-[48%] md:max-w-[48%] min-h-0 flex flex-col dark:bg-slate-900 rounded-2xl border border-slate-200 bg-white dark:border-slate-700 p-4 md:p-5 overflow-y-auto custom-scrollbar">
-
-          <h3 className="practice-reading-heading flex items-center gap-2 mb-4">
-            <button
-              type="button"
-              onClick={handleTranslateQuestion}
-              disabled={isTranslating}
-              aria-label={showTranslation ? "Show original" : "Translate question"}
-              title={showTranslation ? "Show original" : "Translate question"}
-              className="inline-flex items-center justify-center shrink-0 text-blue-500 hover:text-blue-600 disabled:opacity-60 transition-colors"
-            >
-              {isTranslating
-                ? <Loader2 className="w-5 h-5 animate-spin" />
-                : <Languages className="w-5 h-5" />
-              }
-            </button>
-            {showTranslation && translatedQuestion ? translatedQuestion : questionText}
-          </h3>
 
           <div className="grid grid-cols-1 gap-3">
             {questions.map(q => {
               const correctWord = learningLang === "fr" ? q.correct_fr : q.correct_en;
               const correctWordOther = learningLang === "fr" ? q.correct_en : q.correct_fr;
-              const isWrong = showFeedback && answers[q.id] !== correctWord;
-              const isRight = showFeedback && answers[q.id] === correctWord;
               const hasSelection = Boolean(answers[q.id]);
+              const isWrong = showFeedback && hasSelection && answers[q.id] !== correctWord;
+              const isRight = showFeedback && hasSelection && answers[q.id] === correctWord;
               const opts = dropdownOptions[q.id] || [];
+              const hasTranslation = Boolean(correctWordOther && correctWordOther !== correctWord);
+              const displayedCorrectWord = revealedTranslations[q.id] && hasTranslation ? correctWordOther : correctWord;
 
               return (
-                <div key={q.id} className="flex items-center gap-2 md:gap-3">
+                <div key={q.id} className="flex min-w-0 items-start gap-2">
                   {/* Number badge */}
                   <div className={cn(
-                    "w-10 h-10 rounded-lg flex items-center justify-center font-bold text-base shadow-sm border shrink-0 transition-colors",
-                    isRight  ? "bg-green-100 text-green-700 border-green-300 dark:bg-green-950/40 dark:text-green-300 dark:border-green-700"
-                    : isWrong ? "bg-red-100 text-red-700 border-red-300 dark:bg-red-950/40 dark:text-red-300 dark:border-red-700"
+                    "flex w-9 shrink-0 items-center justify-center rounded-lg border text-sm font-bold transition-colors",
+                    showFeedback ? "min-h-11 self-stretch" : "h-11",
+                    isRight  ? "practice-answer-badge-correct bg-green-100 text-green-700 border-green-300 dark:bg-green-950/40 dark:text-green-300 dark:border-green-700"
+                    : isWrong ? "practice-answer-badge-wrong bg-red-100 text-red-700 border-red-300 dark:bg-red-950/40 dark:text-red-300 dark:border-red-700"
                     : hasSelection ? "bg-blue-100 text-blue-700 border-blue-300 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-700"
                     : "bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700",
                   )}>
                     {q.id}
                   </div>
 
-                  {/* Dropdown */}
-                  <div className="flex-1 flex flex-col gap-0.5">
-                    <CustomSelect
-                      options={opts}
-                      value={answers[q.id] || ""}
-                      onChange={(val: string) => handleSelect(q.id, val)}
-                      placeholder="Select a word"
-                      disabled={showFeedback}
-                      isCorrect={isRight}
-                      isWrong={isWrong}
-                      feedbackMode={showFeedback}
-                      correctValue={correctWord}
-                      className="flex-1 min-w-0 practice-reading-select"
-                    />
-                    {/* Show translation after submit */}
-                    {showFeedback && correctWordOther && (
-                      <span className="text-xs text-slate-400 dark:text-slate-500 flex items-center gap-1 pl-1">
-                        <Languages className="w-3 h-3 shrink-0" />
-                        {correctWordOther}
-                      </span>
+                  <div className="min-w-0 flex-1">
+                    {showFeedback ? (
+                      <div className="flex min-w-0 items-center gap-2">
+                        <div className="flex w-full min-w-0 flex-1 flex-wrap items-stretch gap-2" role="status" aria-label={`Answer ${q.id}: ${isRight ? "correct" : isWrong ? "incorrect" : "unanswered"}`}>
+                          {isWrong && (
+                            <div className="practice-answer-wrong diagram-feedback-answer flex min-h-11 min-w-max basis-0 grow items-center gap-1 rounded-xl border border-red-200 bg-red-50 px-2 py-2 font-normal text-red-800 dark:border-red-700 dark:bg-red-950/40 dark:text-red-300">
+                              <X className="h-4 w-4 shrink-0" strokeWidth={2.5} aria-hidden="true" />
+                              <span className="whitespace-nowrap">{answers[q.id]}</span>
+                            </div>
+                          )}
+                          <div className="practice-answer-correct diagram-feedback-answer flex min-h-11 min-w-max basis-0 grow items-center gap-1 rounded-xl border border-green-200 bg-green-50 px-2 py-2 font-normal text-green-800 dark:border-green-700 dark:bg-green-950/40 dark:text-green-300">
+                            <Check className="h-4 w-4 shrink-0 text-green-700 dark:text-inherit" strokeWidth={2.5} aria-hidden="true" />
+                            <span className="whitespace-nowrap">{displayedCorrectWord}</span>
+                          </div>
+                        </div>
+                        <div className="h-8 w-8 shrink-0">
+                          {hasTranslation && (
+                            <TranslateButton onClick={() => setRevealedTranslations(prev => ({ ...prev, [q.id]: !prev[q.id] }))} aria-label={`${revealedTranslations[q.id] ? "Show original" : "Translate"} answer ${q.id}`} title={revealedTranslations[q.id] ? "Show original answer" : "Translate answer"} aria-pressed={Boolean(revealedTranslations[q.id])} />
+                          )}
+                        </div>
+                      </div>
+                    ) : (
+                      <CustomSelect
+                        options={opts}
+                        value={answers[q.id] || ""}
+                        onChange={(val: string) => handleSelect(q.id, val)}
+                        placeholder="---------------------------"
+                        ariaLabel={`Select answer for number ${q.id}`}
+                        className="practice-select-text min-w-0 [&>button]:font-normal"
+                      />
                     )}
                   </div>
                 </div>
               );
             })}
           </div>
-        </div>
-      </div>
+        </section>
+      </PracticeTwoPanel>
     </PracticeGameLayout>
   );
 }

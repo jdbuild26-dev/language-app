@@ -4,7 +4,8 @@ import React, { useState, useEffect, useRef } from "react";
 import { usePracticeExit } from "@/hooks/usePracticeExit";
 import { useExerciseTimer } from "@/hooks/useExerciseTimer";
 import { useTextToSpeech } from "@/hooks/useTextToSpeech";
-import { Loader2, Volume2, Languages, MousePointer2 } from "lucide-react";
+import { Loader2, Volume2, MousePointer2 } from "lucide-react";
+import { TranslateButton } from "@/components/ui/TranslateButton";
 import { cn } from "@/lib/utils";
 import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
 import { useTranslateText } from "@/hooks/useTranslateText";
@@ -191,15 +192,14 @@ export default function HighlightPage() {
         <div className="flex flex-col items-center w-full max-w-3xl mx-auto px-4 py-6 pb-[100px] flex-1 min-h-0">
           {/* Question Header */}
           <div className="w-full bg-gradient-to-r from-blue-500 to-indigo-600 rounded-2xl p-6 mb-6 shadow-lg">
-            <p className="text-lg md:text-xl text-white font-semibold text-center flex items-center justify-center gap-3">
-              <button
-                type="button"
+            <p className="practice-type-content text-white font-semibold text-center flex items-center justify-center gap-3">
+              <TranslateButton
                 onClick={toggleTranslate}
-                disabled={isTranslatingQ}
-                className="inline-flex items-center justify-center shrink-0 text-blue-100 hover:text-white disabled:opacity-60 transition-colors"
-              >
-                {isTranslatingQ ? <Loader2 className="w-5 h-5 animate-spin" /> : <Languages className="w-5 h-5" />}
-              </button>
+                isLoading={isTranslatingQ}
+                aria-label="Translate question"
+                iconSize="md"
+                className="text-blue-100 hover:bg-transparent hover:text-white"
+              />
               <span>{questionDisplayText}</span>
             </p>
           </div>
@@ -210,7 +210,7 @@ export default function HighlightPage() {
                 <MousePointer2 className="w-5 h-5 opacity-50" />
              </div>
              
-             <h3 className="text-xl font-bold mb-4 text-slate-900 dark:text-white border-b pb-2">
+             <h3 className="practice-type-content-heading mb-4 text-slate-900 dark:text-white border-b pb-2">
                 {currentQuestion?.content?.[`title_${lLang}`] || "Passage"}
              </h3>
 
@@ -218,7 +218,7 @@ export default function HighlightPage() {
                 ref={passageRef}
                 onMouseUp={handleMouseUp}
                 onTouchEnd={handleMouseUp}
-                className="text-xl leading-relaxed text-slate-800 dark:text-slate-200 selection:bg-blue-200 selection:text-blue-900 cursor-text whitespace-pre-wrap select-text"
+                className="practice-type-content text-slate-800 dark:text-slate-200 selection:bg-blue-200 selection:text-blue-900 cursor-text whitespace-pre-wrap select-text"
              >
                 {passage}
              </div>
