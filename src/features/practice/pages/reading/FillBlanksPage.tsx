@@ -3,10 +3,12 @@
 import React, { useEffect, useState, Suspense } from "react";
 import { usePracticeExit } from "@/hooks/usePracticeExit";
 import { useExerciseTimer } from "@/hooks/useExerciseTimer";
-import { XCircle, Loader2, Languages } from "lucide-react";
+import { Check, X, XCircle, Loader2 } from "lucide-react";
+import { TranslateButton } from "@/components/ui/TranslateButton";
 import { loadMockCSV } from "@/utils/csvLoader";
 import { cn } from "@/lib/utils";
 import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
+import PracticeTwoPanel from "@/features/practice/components/PracticeTwoPanel";
 import CustomSelect from "@/components/ui/CustomSelect";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useQuestionLanguage } from "@/hooks/useQuestionLanguage";
@@ -105,17 +107,16 @@ function FillBlanksContent() {
 
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [showFeedback, setShowFeedback] = useState(false);
+  const [revealedTranslations, setRevealedTranslations] = useState<Record<string, boolean>>({});
   const [isCorrect, setIsCorrect] = useState(false);
-  const [feedbackTone, setFeedbackTone] = useState<"success" | "error" | "partial">("error");
+  const [feedbackTone, setFeedbackTone] = useState<"success" | "error">("error");
   const [feedbackMessage, setFeedbackMessage] = useState("");
   const [score, setScore] = useState(0);
   const [totalScore, setTotalScore] = useState(0);
   const [isCompleted, setIsCompleted] = useState(false);
 
-  // Translate heading state
-  const [translatedHeading, setTranslatedHeading] = useState("");
+  // Both heading languages are already available locally.
   const [showTranslation, setShowTranslation] = useState(false);
-  const [isTranslating, setIsTranslating] = useState(false);
 
   // ── Load data ──────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -206,11 +207,11 @@ function FillBlanksContent() {
   useEffect(() => {
     setAnswers({});
     setShowFeedback(false);
+    setRevealedTranslations({});
     setIsCorrect(false);
     setFeedbackTone("error");
     setFeedbackMessage("");
     setScore(0);
-    setTranslatedHeading("");
     setShowTranslation(false);
     resetTimer();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -241,17 +242,14 @@ function FillBlanksContent() {
     });
 
     const allCorrect = correctCount === keys.length;
-    const partial = correctCount > 0 && !allCorrect;
     setScore(correctCount);
     setTotalScore(prev => prev + correctCount);
     setIsCorrect(allCorrect);
-    setFeedbackTone(allCorrect ? "success" : partial ? "partial" : "error");
+    setFeedbackTone(allCorrect ? "success" : "error");
     setFeedbackMessage(
       allCorrect
         ? "Excellent! All answers correct."
-        : partial
-          ? `${correctCount} out of ${keys.length} correct.`
-          : timeExpired ? "Time's up!" : `${correctCount} out of ${keys.length} correct.`
+        : timeExpired ? "Time's up!" : `${correctCount} out of ${keys.length} correct.`
     );
     setShowFeedback(true);
     if (allCorrect && currentIndex >= exercises.length - 1) setIsCompleted(true);
@@ -259,28 +257,7 @@ function FillBlanksContent() {
 
   const handleSubmit = () => { if (!showFeedback) checkAnswers(); };
 
-  const handleTranslateHeading = async () => {
-    const targetLang = learningLang === "fr" ? "en" : "fr";
-    if (showTranslation) { setShowTranslation(false); return; }
-    if (translatedHeading) { setShowTranslation(true); return; }
-    try {
-      setIsTranslating(true);
-      const res = await fetch("/api/translate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: selectHeading, target_lang: targetLang }),
-      });
-      if (!res.ok) throw new Error("failed");
-      const data = (await res.json()) as { translation?: string };
-      setTranslatedHeading(data.translation || "");
-      setShowTranslation(true);
-    } catch {
-      setTranslatedHeading("");
-      setShowTranslation(false);
-    } finally {
-      setIsTranslating(false);
-    }
-  };
+  const handleTranslateHeading = () => setShowTranslation(value => !value);
 
   const handleContinue = () => {
     if (currentIndex < exercises.length - 1) {
@@ -346,6 +323,7 @@ function FillBlanksContent() {
       onRestart={() => window.location.reload()}
       isSubmitEnabled={showFeedback || allAnswered}
       showSubmitButton={true}
+      preserveFooterHeightOnFeedback
       submitLabel={showFeedback ? (currentIndex + 1 === exercises.length ? "FINISH" : "CONTINUE") : "Submit Answer"}
       timerValue={timerString}
       showFeedback={showFeedback}
@@ -353,24 +331,12 @@ function FillBlanksContent() {
       feedbackMessage={feedbackMessage}
       correctAnswer={undefined}
     >
-      <div className="practice-reading-page-shell grid grid-cols-1 md:grid-cols-10 md:items-stretch gap-3 p-3 mx-auto overflow-hidden flex-1 min-h-0">
+      <PracticeTwoPanel ratio="seven-three">
 
         {/* ── Passage (7 cols) ── */}
-        <div className="md:col-span-7 min-h-0 h-full self-stretch flex flex-col bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden">
-          <div className="px-5 md:px-7 py-4 border-b border-slate-200 dark:border-slate-700 bg-slate-50/70 dark:bg-slate-900/30 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Languages className="w-4 h-4 text-blue-500 shrink-0" />
-              <h3 className="text-xs font-bold text-slate-500 dark:text-slate-300 uppercase tracking-[0.18em]">
-                Passage
-              </h3>
-            </div>
-            <span className="text-xs font-semibold text-slate-500 dark:text-slate-300 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-full px-2.5 py-1">
-              {Object.keys(answers).length}/{totalBlanks} filled
-            </span>
-          </div>
-
-          <div className="px-5 md:px-7 py-6 md:py-7 flex-1 min-h-0 overflow-y-auto custom-scrollbar">
-            <div className="practice-reading-passage-text">
+        <div className="practice-dark-panel min-h-0 self-stretch flex flex-col bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden md:h-full">
+          <div className="px-4 py-4 md:px-7 md:py-7 md:flex-1 md:min-h-0 md:overflow-y-auto custom-scrollbar">
+            <div className="practice-reading-passage-text !leading-[2]">
               {ex.passageSegments.map((segment, index) => {
                 if (segment.type === "text") {
                   return <span key={index}>{segment.text}</span>;
@@ -383,35 +349,29 @@ function FillBlanksContent() {
                 const userAnswer = answers[id];
                 const isCorrectAnswer = showFeedback && userAnswer === blankEntry.correct;
                 const isWrongAnswer   = showFeedback && userAnswer && userAnswer !== blankEntry.correct;
-                // Show EN translation below wrong answer after submit
-                const enTranslation = showFeedback && blankEntry.correct_en ? blankEntry.correct_en : null;
-
+                const widthSamples = Array.from(new Set([blankEntry.correct, ...blankEntry.options].filter(Boolean)));
                 return (
-                  <span key={index} className="mx-1 inline-flex flex-col items-start align-baseline">
-                    <span className="inline-flex items-end gap-1.5">
-                      <span className={cn(
-                        "inline-flex items-center justify-center w-7 h-7 rounded-md border text-xs font-bold",
-                        "border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 text-slate-500",
-                        showFeedback && isCorrectAnswer && "bg-green-100 border-green-400 text-green-700",
-                        showFeedback && isWrongAnswer  && "bg-red-100 border-red-400 text-red-700",
-                      )}>
-                        {segment.id}
-                      </span>
-                      <span className={cn(
-                        "px-1 border-b-2 pb-0.5 text-lg md:text-xl font-semibold leading-none whitespace-nowrap",
-                        userAnswer ? "inline-flex min-w-9 md:min-w-[80px]" : "inline-block w-14 md:w-[110px]",
-                        !userAnswer && "text-slate-300 border-slate-300",
-                        !showFeedback && userAnswer && "text-blue-600 border-blue-300",
-                        showFeedback && isCorrectAnswer && "text-green-600 border-green-500",
-                        showFeedback && isWrongAnswer  && "text-red-600 border-red-500",
-                      )}>
-                        {userAnswer || "\u00A0"}
-                      </span>
+                  <span key={index} className="mx-0.5 inline-flex items-center gap-1.5 align-middle whitespace-nowrap">
+                    <span className={cn(
+                      "inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md border text-xs font-bold",
+                      !showFeedback && "border-slate-300 bg-slate-50 text-slate-500 dark:border-[#424a54] dark:bg-[#30363e] dark:text-slate-300",
+                      showFeedback && isCorrectAnswer && "practice-answer-badge-correct border-green-400 bg-green-100 text-green-700 dark:border-green-700 dark:bg-green-950/40 dark:text-green-300",
+                      showFeedback && isWrongAnswer && "practice-answer-badge-wrong border-red-400 bg-red-100 text-red-700 dark:border-red-700 dark:bg-red-950/40 dark:text-red-300",
+                    )}>
+                      {segment.id}
                     </span>
-                    {/* EN translation shown after submit */}
-                    {showFeedback && enTranslation && learningLang === "fr" && (
-                      <span className="text-[10px] text-slate-400 mt-0.5 pl-8">{enTranslation}</span>
-                    )}
+                    <span className={cn(
+                      "practice-type-content inline-grid min-w-24 max-w-[min(16rem,calc(100vw-6rem))] grid-cols-[minmax(0,1fr)] border-b-2 px-1 font-semibold",
+                      !userAnswer && "border-slate-300 text-slate-300",
+                      !showFeedback && userAnswer && "border-blue-300 text-blue-600",
+                      showFeedback && isCorrectAnswer && "border-green-500 text-green-600",
+                      showFeedback && isWrongAnswer && "border-red-500 text-red-600",
+                    )}>
+                      {(widthSamples.length ? widthSamples : ["\u00A0"]).map(option => (
+                        <span key={option} aria-hidden="true" className="invisible col-start-1 row-start-1 whitespace-nowrap">{option}</span>
+                      ))}
+                      <span className="col-start-1 row-start-1 min-w-0 break-words text-center whitespace-normal">{userAnswer || "\u00A0"}</span>
+                    </span>
                   </span>
                 );
               })}
@@ -420,24 +380,24 @@ function FillBlanksContent() {
         </div>
 
         {/* ── Dropdowns (3 cols) ── */}
-        <div className="md:col-span-3 min-h-0 h-full self-stretch flex flex-col justify-start overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900">
-          <div className="p-6 flex-1 min-h-0 overflow-y-auto custom-scrollbar">
-            <h2 className="mb-6 flex items-center gap-2 text-xl font-semibold text-slate-900 dark:text-slate-100">
-              <button
-                type="button"
+        <div className="practice-dark-panel min-h-0 self-stretch flex flex-col justify-start overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 md:h-full">
+          <div className="p-4 md:p-6 md:flex-1 md:min-h-0 md:overflow-y-auto custom-scrollbar">
+            <div className="mb-6 flex items-start gap-2">
+              <TranslateButton
                 onClick={handleTranslateHeading}
-                disabled={isTranslating}
                 aria-label={showTranslation ? "Show original" : "Translate heading"}
                 title={showTranslation ? "Show original" : "Translate heading"}
-                className="inline-flex items-center justify-center shrink-0 text-blue-500 hover:text-blue-600 disabled:opacity-60 transition-colors"
-              >
-                {isTranslating
-                  ? <Loader2 className="w-5 h-5 animate-spin" />
-                  : <Languages className="w-5 h-5" />
-                }
-              </button>
-              {showTranslation && translatedHeading ? translatedHeading : selectHeading}
-            </h2>
+                iconSize="md"
+                className="h-10 w-10"
+              />
+              <h2 className="practice-reading-heading min-w-0 flex-1 !font-bold">
+                {showTranslation
+                  ? showQuestionInKnown
+                    ? "Choisissez le meilleur mot pour chaque espace"
+                    : "Select the best option for each missing word"
+                  : selectHeading}
+              </h2>
+            </div>
 
             <div className="space-y-3">
               {Object.keys(ex.blanksData).map(key => {
@@ -446,37 +406,51 @@ function FillBlanksContent() {
                 const id = parseInt(key, 10);
                 const userAnswer = answers[key];
                 const isCorrectAnswer = showFeedback && userAnswer === blank.correct;
-                const isWrongAnswer   = showFeedback && !!userAnswer && userAnswer !== blank.correct;
+                const isWrongAnswer = showFeedback && userAnswer !== blank.correct;
+                const hasTranslation = learningLang === "fr" && Boolean(blank.correct_en && blank.correct_en !== blank.correct);
+                const displayedCorrectWord = revealedTranslations[key] && hasTranslation ? blank.correct_en : blank.correct;
 
                 return (
-                  <div key={key} className="flex items-center gap-3">
+                  <div key={key} className="flex min-w-0 items-start gap-2">
                     <div className={cn(
-                      "flex-shrink-0 w-8 h-8 rounded-md flex items-center justify-center font-bold border text-sm transition-colors",
-                      userAnswer && !showFeedback ? "bg-blue-500 border-blue-500 text-white" : "bg-slate-100 dark:bg-slate-700 text-slate-500 border-slate-200 dark:border-slate-600",
-                      showFeedback && isCorrectAnswer && "bg-green-500 border-green-500 text-white",
-                      showFeedback && isWrongAnswer  && "bg-red-500 border-red-500 text-white",
+                      "flex w-9 shrink-0 items-center justify-center rounded-lg border text-sm font-bold transition-colors",
+                      showFeedback ? "min-h-11 self-stretch" : "h-11",
+                      userAnswer && !showFeedback ? "bg-blue-500 border-blue-500 text-white dark:border-[#56616c] dark:bg-[#39424b] dark:text-slate-100" : !showFeedback && "bg-slate-100 text-slate-500 border-slate-200 dark:border-[#424a54] dark:bg-[#30363e] dark:text-slate-300",
+                      isCorrectAnswer && "practice-answer-badge-correct bg-green-100 border-green-300 text-green-700 dark:border-green-700 dark:bg-green-950/40 dark:text-green-300",
+                      isWrongAnswer && "practice-answer-badge-wrong bg-red-100 border-red-300 text-red-700 dark:border-red-700 dark:bg-red-950/40 dark:text-red-300",
                     )}>
                       {id}
                     </div>
-                    <div className="flex-grow">
-                      <CustomSelect
-                        options={blank.options}
-                        value={userAnswer || ""}
-                        onChange={(val: string) => handleOptionSelect(key, val)}
-                        placeholder="Select a word"
-                        disabled={showFeedback}
-                        isCorrect={showFeedback && isCorrectAnswer}
-                        isWrong={showFeedback && isWrongAnswer}
-                        feedbackMode={showFeedback}
-                        correctValue={blank.correct}
-                        className="practice-reading-select practice-reading-option-text"
-                      />
-                      {/* EN translation after submit */}
-                      {showFeedback && blank.correct_en && learningLang === "fr" && (
-                        <span className="text-xs text-slate-400 flex items-center gap-1 mt-1 pl-1">
-                          <Languages className="w-3 h-3 shrink-0" />
-                          {blank.correct_en}
-                        </span>
+                    <div className="min-w-0 flex-1">
+                      {showFeedback ? (
+                        <div className="flex min-w-0 items-center gap-2">
+                          <div className="flex min-w-0 flex-1 flex-wrap items-stretch gap-2" role="status" aria-label={`Answer ${id}: ${isCorrectAnswer ? "correct" : userAnswer ? "incorrect" : "unanswered"}`}>
+                            {isWrongAnswer && (
+                              <div className="practice-answer-wrong fill-feedback-answer flex min-h-11 min-w-0 basis-32 grow shrink items-center gap-1 rounded-xl border border-red-200 bg-red-50 px-2 py-2 font-normal text-red-800 dark:border-red-700 dark:bg-red-950/40 dark:text-red-300">
+                                <X className="h-4 w-4 shrink-0" strokeWidth={2.5} aria-hidden="true" />
+                                <span className="min-w-0 break-words">{userAnswer || "No answer"}</span>
+                              </div>
+                            )}
+                            <div className="practice-answer-correct fill-feedback-answer flex min-h-11 min-w-0 basis-32 grow shrink items-center gap-1 rounded-xl border border-green-200 bg-green-50 px-2 py-2 font-normal text-green-800 dark:border-green-700 dark:bg-green-950/40 dark:text-green-300">
+                              <Check className="h-4 w-4 shrink-0 text-green-700 dark:text-inherit" strokeWidth={2.5} aria-hidden="true" />
+                              <span className="min-w-0 break-words">{displayedCorrectWord}</span>
+                            </div>
+                          </div>
+                          <div className="h-8 w-8 shrink-0">
+                            {hasTranslation && (
+                              <TranslateButton iconVariant="option" onClick={() => setRevealedTranslations(previous => ({ ...previous, [key]: !previous[key] }))} aria-label={`${revealedTranslations[key] ? "Show original" : "Translate"} answer ${id}`} title={revealedTranslations[key] ? "Show original answer" : "Translate answer"} aria-pressed={Boolean(revealedTranslations[key])} />
+                            )}
+                          </div>
+                        </div>
+                      ) : (
+                        <CustomSelect
+                          options={blank.options}
+                          value={userAnswer || ""}
+                          onChange={(val: string) => handleOptionSelect(key, val)}
+                          placeholder="---------------------------"
+                          ariaLabel={`Select answer for number ${id}`}
+                          className="practice-select-text min-w-0"
+                        />
                       )}
                     </div>
                   </div>
@@ -485,7 +459,7 @@ function FillBlanksContent() {
             </div>
           </div>
         </div>
-      </div>
+      </PracticeTwoPanel>
     </PracticeGameLayout>
   );
 }

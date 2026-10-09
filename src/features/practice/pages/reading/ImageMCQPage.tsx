@@ -1,17 +1,18 @@
 "use client";
 
-import React, { useState, useEffect, Suspense } from "react";
+import React, { useState, useEffect, useRef, Suspense } from "react";
 import { usePracticeExit } from "@/hooks/usePracticeExit";
 import { useExerciseTimer } from "@/hooks/useExerciseTimer";
 import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
-import PracticeOptions from "@/components/ui/PracticeOptions";
-import { getFeedbackMessage } from "@/utils/feedbackMessages";
+import PracticeTwoPanel from "@/features/practice/components/PracticeTwoPanel";
 import { loadMockCSV } from "@/utils/csvLoader";
-import { Loader2, Volume2, Languages } from "lucide-react";
+import { CheckCircle2, ImageOff, Loader2, XCircle } from "lucide-react";
+import { TranslateButton } from "@/components/ui/TranslateButton";
+import { Dialog, DialogContent, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { cn } from "@/lib/utils";
 import { useQuestionLanguage } from "@/hooks/useQuestionLanguage";
 import { usePracticeComplete } from "@/hooks/usePracticeComplete";
 import { useSearchParams } from "next/navigation";
-import kitchenImg from "@/assets/kitchen.jpg";
 
 type ImageMCQQuestion = {
   timeLimitSeconds?: number;
@@ -30,6 +31,24 @@ type ImageMCQQuestion = {
   correctIndex: number;
 };
 
+function asRecord(value: unknown): Record<string, unknown> {
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? value as Record<string, unknown>
+    : {};
+}
+
+function parseArray(value: unknown): string[] {
+  if (Array.isArray(value)) return value.map(String);
+  if (typeof value !== "string" || !value) return [];
+  try {
+    const parsed: unknown = JSON.parse(value);
+    if (Array.isArray(parsed)) return parsed.map(String);
+  } catch {
+    // Older CSV rows use pipe-separated option lists.
+  }
+  return value.split("|").map(option => option.trim()).filter(Boolean);
+}
+
 export default function ImageMCQPage() {
   return (
     <Suspense fallback={<div className="flex items-center justify-center min-h-screen bg-slate-50 dark:bg-slate-900"><Loader2 className="w-8 h-8 animate-spin text-blue-500" /></div>}>
@@ -43,19 +62,6 @@ function ImageMCQContent() {
   const searchParams = useSearchParams();
   const tag = searchParams?.get("tag") ?? undefined;
 
-  const OptionsComponent = PracticeOptions as unknown as React.ComponentType<{
-    options: string[];
-    selectedOption: number | null;
-    correctIndex?: number;
-    showFeedback: boolean;
-    onSelect: (index: number) => void;
-    showCheckIcon?: boolean;
-    className?: string;
-    itemClassName?: string;
-    renderLabel?: (option: string, index: number) => React.ReactNode;
-    renderSuffix?: (option: string) => React.ReactNode;
-  }>;
-
   const [questions, setQuestions] = useState<ImageMCQQuestion[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -63,30 +69,22 @@ function ImageMCQContent() {
     const fetchQuestions = async () => {
       try {
         const data = await loadMockCSV("practice/reading/image_mcq.csv", { tag });
-        const mapped = (Array.isArray(data) ? data : []).map((item: any) => {
-          const c = item.content || item;
-          const e = item.evaluation || item;
-          const cfg = item.config || item;
-
-          // Parse JSON strings if they came through as strings
-          const parseArr = (v: any): string[] => {
-            if (Array.isArray(v)) return v;
-            if (typeof v === 'string') {
-              try { return JSON.parse(v); } catch { return v.split('|').map((s: string) => s.trim()).filter(Boolean); }
-            }
-            return [];
-          };
+        const mapped = (Array.isArray(data) ? data : []).map((value: unknown) => {
+          const item = asRecord(value);
+          const c = item.content ? asRecord(item.content) : item;
+          const e = item.evaluation ? asRecord(item.evaluation) : item;
+          const cfg = item.config ? asRecord(item.config) : item;
 
           return {
             level:            item.Level || item.level || '',
             question_fr:      c.question_fr || item.question_fr || '',
             question_en:      c.question_en || item.question_en || item.question || '',
             question:         c.question_en || item.question_en || item.question || '',
-            options_fr:       parseArr(c.options_fr || item.options_fr),
-            options_en:       parseArr(c.options_en || item.options_en),
+            options_fr:       parseArray(c.options_fr || item.options_fr),
+            options_en:       parseArray(c.options_en || item.options_en),
             // legacy fallback
-            options:          parseArr(c.options || item.options),
-            englishOptions:   parseArr(c.englishOptions || item.englishOptions),
+            options:          parseArray(c.options || item.options),
+            englishOptions:   parseArray(c.englishOptions || item.englishOptions),
             imageUrl:         c.imageUrl || item.imageUrl || c.imageEmoji || item.imageEmoji || '',
             imageAlt:         c.imageAlt || item.imageAlt || '',
             correctIndex:     Number(e.correctIndex ?? item.correctIndex ?? item.eval_correctIndex ?? 0),
@@ -110,44 +108,36 @@ function ImageMCQContent() {
   const [isCorrect, setIsCorrect] = useState(false);
   const [feedbackMessage, setFeedbackMessage] = useState("");
   const [score, setScore] = useState(0);
-  const [translatedQuestion, setTranslatedQuestion] = useState("");
   const [showTranslation, setShowTranslation] = useState(false);
-  const [isTranslating, setIsTranslating] = useState(false);
+  const [revealedOptionTranslations, setRevealedOptionTranslations] = useState<Record<number, boolean>>({});
+  const questionHeadingRef = useRef<HTMLDivElement>(null);
+  const [questionHeadingHeight, setQuestionHeadingHeight] = useState(0);
+
+  useEffect(() => {
+    if (loading || !questionHeadingRef.current) return;
+    const heading = questionHeadingRef.current;
+    const updateHeight = () => setQuestionHeadingHeight(heading.getBoundingClientRect().height);
+    updateHeight();
+    const observer = new ResizeObserver(updateHeight);
+    observer.observe(heading);
+    return () => observer.disconnect();
+  }, [loading]);
 
   const currentQuestion = questions[currentIndex];
-  const { pick, pickTranslation, learningLang, showQuestionInKnown } = useQuestionLanguage(currentQuestion?.level);
+  const { pick, pickTranslation, showQuestionInKnown } = useQuestionLanguage(currentQuestion?.level);
   usePracticeComplete({ isGameOver: isCompleted, score, totalQuestions: questions.length, exerciseType: "image_mcq", level: currentQuestion?.level });
 
   // Question text: level-based language
   const questionText = pick(currentQuestion?.question_fr, currentQuestion?.question_en) || currentQuestion?.question || "";
-  const questionTranslationSource = pickTranslation(currentQuestion?.question_fr, currentQuestion?.question_en) || "";
+  const questionTranslation = pickTranslation(currentQuestion?.question_fr, currentQuestion?.question_en) || "";
 
-  // Options: always in learning language (FR), with EN shown after submit
+  // Options stay in the learning language until a translation is requested.
   const displayOptions = currentQuestion?.options_fr?.length
     ? currentQuestion.options_fr
     : currentQuestion?.options ?? [];
   const translationOptions = currentQuestion?.options_en?.length
     ? currentQuestion.options_en
     : currentQuestion?.englishOptions ?? [];
-
-  const handleTranslateQuestion = async () => {
-    if (!questionTranslationSource) return;
-    if (showTranslation) { setShowTranslation(false); return; }
-    if (translatedQuestion) { setShowTranslation(true); return; }
-    try {
-      setIsTranslating(true);
-      const res = await fetch("/api/translate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: questionTranslationSource, target_lang: learningLang }),
-      });
-      if (!res.ok) throw new Error();
-      const data = (await res.json()) as { translation?: string };
-      setTranslatedQuestion(data.translation || "");
-      setShowTranslation(true);
-    } catch { setTranslatedQuestion(""); setShowTranslation(false); }
-    finally { setIsTranslating(false); }
-  };
 
   const timerDuration = currentQuestion?.timeLimitSeconds || 120;
 
@@ -167,23 +157,11 @@ function ImageMCQContent() {
   useEffect(() => {
     if (currentQuestion && !isCompleted) {
       setSelectedOption(null);
-      setTranslatedQuestion("");
       setShowTranslation(false);
+      setRevealedOptionTranslations({});
       resetTimer();
     }
   }, [currentIndex, currentQuestion, isCompleted, resetTimer]);
-
-  const utteranceRef = React.useRef<SpeechSynthesisUtterance | null>(null);
-  useEffect(() => { return () => { window.speechSynthesis.cancel(); }; }, []);
-
-  const handlePlayAudio = (e: React.MouseEvent<HTMLElement>, text: string) => {
-    e.stopPropagation();
-    window.speechSynthesis.cancel();
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = "fr-FR";
-    utteranceRef.current = utterance;
-    window.speechSynthesis.speak(utterance);
-  };
 
   const handleOptionSelect = (index: number) => {
     if (showFeedback) return;
@@ -194,7 +172,7 @@ function ImageMCQContent() {
     if (showFeedback || selectedOption === null) return;
     const correct = selectedOption === currentQuestion.correctIndex;
     setIsCorrect(correct);
-    setFeedbackMessage(getFeedbackMessage(correct));
+    setFeedbackMessage(correct ? "Correct" : "Incorrect");
     setShowFeedback(true);
     if (correct) setScore((prev) => prev + 1);
   };
@@ -237,6 +215,8 @@ function ImageMCQContent() {
       onRestart={() => window.location.reload()}
       isSubmitEnabled={selectedOption !== null || showFeedback}
       showSubmitButton={true}
+      preserveFooterHeightOnFeedback
+      animateFeedbackEntrance={false}
       submitLabel={
         showFeedback
           ? currentIndex + 1 === questions.length ? "FINISH" : "CONTINUE"
@@ -246,91 +226,95 @@ function ImageMCQContent() {
       showFeedback={showFeedback}
       isCorrect={isCorrect}
       feedbackTone={isCorrect ? "success" : "error"}
-      correctAnswer={!isCorrect ? displayOptions[currentQuestion?.correctIndex ?? -1] : undefined}
       feedbackMessage={feedbackMessage}
     >
-      <div className="practice-reading-page-shell flex flex-col gap-3 p-3 sm:gap-4 sm:p-4 mx-auto overflow-y-auto md:flex-row md:overflow-hidden flex-1 min-h-0">
-        {/* ── Left Panel: Image ── */}
-        <div className="w-full md:flex-none md:w-[65%] min-h-0 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 flex flex-col p-4 md:p-6 shrink-0">
-          <div className="flex-1 flex justify-center min-h-0">
-            <div className="relative w-full aspect-[4/3] sm:aspect-[16/11] md:aspect-auto md:min-h-0 md:flex-1 flex items-center justify-center dark:bg-slate-800/40 rounded-xl overflow-hidden">
-              <img
-                src={currentQuestion?.imageUrl || kitchenImg.src}
-                alt={currentQuestion?.imageAlt || "Question visual"}
-                className="max-w-full max-h-full object-contain rounded-2xl"
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* ── Right Panel: Question + Options ── */}
-        <div className="w-full md:flex-none md:w-[35%] min-h-0 flex flex-col p-4 md:p-6 gap-4 overflow-visible md:overflow-y-auto rounded-2xl border border-slate-200 bg-white dark:bg-slate-900 dark:border-slate-700">
-          {/* Question — level-based language with translate button */}
-          <div className="px-2">
-            <h1 className="text-lg md:text-xl font-semibold leading-relaxed flex items-start gap-2 text-slate-900 dark:text-slate-200">
-              <button
-                type="button"
-                onClick={handleTranslateQuestion}
-                disabled={isTranslating}
-                aria-label={showTranslation ? "Show original" : "Translate question"}
-                className="inline-flex items-center justify-center shrink-0 mt-0.5 text-blue-500 hover:text-blue-600 disabled:opacity-60"
-              >
-                {isTranslating
-                  ? <span className="w-5 h-5 animate-spin rounded-full border-2 border-blue-400 border-t-transparent" />
-                  : <Languages className="w-5 h-5" />}
-              </button>
-              {showTranslation && translatedQuestion ? translatedQuestion : questionText}
-            </h1>
-          </div>
-
-          {/* Options — always in learning language (FR), EN shown after submit */}
-          <OptionsComponent
-            options={displayOptions}
-            selectedOption={selectedOption}
-            correctIndex={currentQuestion?.correctIndex}
-            showFeedback={showFeedback}
-            onSelect={handleOptionSelect}
-            showCheckIcon
-            className="mt-2 sm:mt-4 pb-2 sm:pb-4"
-            itemClassName="font-semibold leading-relaxed break-words min-h-[56px]"
-            renderLabel={(option, index) => (
-              <>
-                <span>{option}</span>
-                {showFeedback && translationOptions[index] && (
-                  <span className="text-xs opacity-70 flex items-center gap-1 mt-0.5">
-                    <Languages className="w-3 h-3 shrink-0" />
-                    {translationOptions[index]}
-                  </span>
-                )}
-              </>
-            )}
-            renderSuffix={(option) => (
-              <div
-                onClick={(e) => handlePlayAudio(e, option)}
-                className="p-1.5 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors cursor-pointer z-10 shrink-0"
-                title="Listen"
-              >
-                <Volume2 className="w-4 h-4 text-slate-400 dark:text-slate-500 hover:text-orange-500 dark:hover:text-orange-400" />
+      <div className="practice-two-panel-shell flex min-h-0 flex-1 flex-col p-3 sm:p-4 md:overflow-hidden">
+        <PracticeTwoPanel ratio="three-two" className="!p-0 md:flex-1 md:gap-4">
+          <section className="flex min-h-[16rem] min-w-0 flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900 md:min-h-0 md:p-6 [@media(max-height:950px)]:gap-2 [@media(max-height:950px)]:p-4" aria-label="Question image">
+            {currentQuestion?.imageUrl ? (
+              <Dialog>
+                <DialogTrigger asChild>
+                  <button type="button" className="flex min-h-0 w-full items-center justify-center overflow-hidden rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500 md:flex-1" aria-label="Enlarge question image">
+                    <img src={currentQuestion.imageUrl} alt={currentQuestion.imageAlt || "Image for this question"} className="block h-auto max-h-[60vh] w-full object-cover md:h-full md:max-h-full" />
+                  </button>
+                </DialogTrigger>
+                <DialogContent className="max-h-[95dvh] max-w-[min(95vw,80rem)] overflow-auto p-3 sm:p-5">
+                  <DialogTitle className="sr-only">Question image</DialogTitle>
+                  <img src={currentQuestion.imageUrl} alt={currentQuestion.imageAlt || "Image for this question"} className="mx-auto max-h-[85dvh] max-w-full rounded-xl object-contain" />
+                </DialogContent>
+              </Dialog>
+            ) : (
+              <div className="flex flex-1 flex-col items-center justify-center gap-2 text-center text-slate-500 dark:text-slate-400">
+                <ImageOff className="h-8 w-8" aria-hidden="true" />
+                <p>Image unavailable</p>
               </div>
             )}
-          />
-        </div>
+          </section>
+
+          <section className="practice-comprehension-scroll flex min-h-0 min-w-0 flex-col overflow-y-auto rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900 md:p-5" aria-label="Answer options">
+            <div ref={questionHeadingRef} className="w-full shrink-0 pb-4">
+              <div className="flex w-full items-start gap-2 border-b border-slate-200 pb-3 dark:border-slate-700">
+                {questionTranslation && questionTranslation !== questionText && (
+                  <TranslateButton onClick={() => setShowTranslation(value => !value)} aria-label={showTranslation ? "Show original question" : "Translate question"} title={showTranslation ? "Show original question" : "Translate question"} aria-pressed={showTranslation} iconSize="md" className="h-10 w-10 shrink-0" />
+                )}
+                <h2 className="practice-type-question-heading min-w-0 text-slate-900 dark:text-slate-100">
+                  {showTranslation && questionTranslation ? questionTranslation : questionText}
+                </h2>
+              </div>
+            </div>
+            <div className="my-auto flex flex-col gap-3" role="group" aria-label="Answer options">
+              {displayOptions.map((option, index) => {
+                const isSelected = selectedOption === index;
+                const isCorrectOption = showFeedback && index === currentQuestion?.correctIndex;
+                const isWrongOption = showFeedback && isSelected && !isCorrectOption;
+                const translation = translationOptions[index];
+                const hasTranslation = Boolean(translation && translation !== option);
+                const showOptionTranslation = Boolean(revealedOptionTranslations[index] && hasTranslation);
+                const optionText = (
+                  <span className="block break-words">{showOptionTranslation ? translation : option}</span>
+                );
+                const optionClasses = cn(
+                  "flex min-h-20 w-full min-w-0 items-center gap-3 rounded-xl border-2 px-4 py-2 text-left text-lg font-normal leading-normal transition-colors",
+                  isCorrectOption
+                    ? "border-emerald-500 bg-emerald-50 text-emerald-800 dark:border-emerald-400 dark:bg-emerald-950/30 dark:text-emerald-200"
+                    : isWrongOption
+                      ? "border-red-400 bg-red-50 text-red-800 dark:border-red-400 dark:bg-red-950/30 dark:text-red-200"
+                      : isSelected
+                        ? "border-blue-500 bg-blue-50 text-blue-900 dark:border-blue-400 dark:bg-blue-950/30 dark:text-blue-200"
+                        : "border-slate-200 bg-white text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200",
+                );
+
+                if (!showFeedback) {
+                  return (
+                    <button key={index} type="button" aria-pressed={isSelected} onClick={() => handleOptionSelect(index)} className={cn(optionClasses, "cursor-pointer hover:border-blue-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500")}>
+                      <span className={cn("h-5 w-5 shrink-0 rounded-full border-2", isSelected ? "border-blue-600 bg-blue-600 shadow-[inset_0_0_0_4px_white]" : "border-slate-300 dark:border-slate-500")} aria-hidden="true" />
+                      <span className="min-w-0 flex-1">{optionText}</span>
+                      <span className="h-10 w-10 shrink-0" aria-hidden="true" />
+                    </button>
+                  );
+                }
+
+                return (
+                  <div key={index} className={optionClasses}>
+                    {isCorrectOption ? <CheckCircle2 className="h-5 w-5 shrink-0" aria-hidden="true" /> : isWrongOption ? <XCircle className="h-5 w-5 shrink-0" aria-hidden="true" /> : <span className="h-5 w-5 shrink-0 rounded-full border-2 border-slate-300 dark:border-slate-500" aria-hidden="true" />}
+                    <div className="min-w-0 flex-1">
+                      {isCorrectOption && <span className="sr-only">Correct answer: </span>}
+                      {isWrongOption && <span className="sr-only">Your incorrect answer: </span>}
+                      {optionText}
+                    </div>
+                    <div className="h-10 w-10 shrink-0">
+                      {hasTranslation && (
+                        <TranslateButton iconVariant="option" onClick={() => setRevealedOptionTranslations(previous => ({ ...previous, [index]: !previous[index] }))} aria-label={`${revealedOptionTranslations[index] ? "Hide" : "Show"} translation for option ${index + 1}`} title={revealedOptionTranslations[index] ? "Hide translation" : "Translate option"} aria-expanded={Boolean(revealedOptionTranslations[index])} iconSize="md" className="h-10 w-10" />
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            <div aria-hidden="true" className="shrink-0" style={{ height: questionHeadingHeight }} />
+          </section>
+        </PracticeTwoPanel>
       </div>
     </PracticeGameLayout>
   );
 }
-
-type ImageMCQQuestion = {
-  timeLimitSeconds?: number;
-  options: string[];
-  imageAlt?: string;
-  question?: string;
-  question_fr?: string;
-  question_en?: string;
-  heading?: string;
-  heading_fr?: string;
-  heading_en?: string;
-  level?: string;
-  englishOptions?: string[];
-  correctIndex: number;
-};

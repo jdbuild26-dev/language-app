@@ -1,8 +1,10 @@
 "use client";
 
 import React, { useEffect, useMemo, useState, Suspense } from "react";
-import { XCircle, Loader2, Languages } from "lucide-react";
+import { XCircle, Loader2 } from "lucide-react";
+import { TranslateButton } from "@/components/ui/TranslateButton";
 import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
+import PracticeTwoPanel from "@/features/practice/components/PracticeTwoPanel";
 import { cn } from "@/lib/utils";
 import { usePracticeExit } from "@/hooks/usePracticeExit";
 import { useExerciseTimer } from "@/hooks/useExerciseTimer";
@@ -34,9 +36,13 @@ type CompletePassageQuestion = {
   timeLimitSeconds?: number;
 };
 
-const DEFAULT_PLACEHOLDER = "[Select the best sentence to complete the passage]";
-const PASSAGE_TEXT_CLASS = "practice-reading-passage-text";
-const OPTION_TEXT_CLASS = "practice-reading-option-text";
+const BODY_TEXT_CLASS = "practice-type-content font-normal text-slate-700 dark:text-slate-200";
+
+function asRecord(value: unknown): Record<string, unknown> {
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? value as Record<string, unknown>
+    : {};
+}
 
 function parseArr(v: unknown): string[] {
   if (Array.isArray(v)) return v.filter(Boolean).map(String);
@@ -81,10 +87,9 @@ function CompletePassageContent() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Translate heading state
-  const [translatedHeading, setTranslatedHeading] = useState("");
-  const [showTranslation, setShowTranslation] = useState(false);
-  const [isTranslating, setIsTranslating] = useState(false);
+  const [showPassageTranslation, setShowPassageTranslation] = useState(false);
+  const [showHeadingTranslation, setShowHeadingTranslation] = useState(false);
+  const [revealedOptionTranslations, setRevealedOptionTranslations] = useState<Record<number, boolean>>({});
 
   useEffect(() => {
     const fetchData = async () => {
@@ -94,10 +99,11 @@ function CompletePassageContent() {
         const data = await loadMockCSV("practice/reading/complete_passage.csv", {
           learningLang, knownLang, tag,
         });
-        const mapped = (Array.isArray(data) ? data : []).map((item: any) => {
-          const c = item.content || item;
-          const e = item.evaluation || item;
-          const cfg = item.config || item;
+        const mapped = (Array.isArray(data) ? data : []).map((value: unknown) => {
+          const item = asRecord(value);
+          const c = item.content ? asRecord(item.content) : item;
+          const e = item.evaluation ? asRecord(item.evaluation) : item;
+          const cfg = item.config ? asRecord(item.config) : item;
           return {
             level:             item.Level || item.level || '',
             passage_title_fr:  c.passage_title_fr || item.passage_title_fr || '',
@@ -130,7 +136,7 @@ function CompletePassageContent() {
   }, [learningLang, knownLang, tag]);
 
   const currentQuestion = questions[currentIndex];
-  const { pick, showQuestionInKnown } = useQuestionLanguage(currentQuestion?.level);
+  const { showQuestionInKnown } = useQuestionLanguage(currentQuestion?.level);
   usePracticeComplete({ isGameOver: isCompleted, score, totalQuestions: questions.length, exerciseType: "sentence_completion", level: currentQuestion?.level });
 
   // Passage always in learning language
@@ -140,19 +146,27 @@ function CompletePassageContent() {
   const passageAfter = learningLang === "fr"
     ? currentQuestion?.passage_after_fr || currentQuestion?.passage_after_en || currentQuestion?.passageAfter || ""
     : currentQuestion?.passage_after_en || currentQuestion?.passage_after_fr || currentQuestion?.passageAfter || "";
+  const translatedPassageBefore = learningLang === "fr" ? currentQuestion?.passage_before_en : currentQuestion?.passage_before_fr;
+  const translatedPassageAfter = learningLang === "fr" ? currentQuestion?.passage_after_en : currentQuestion?.passage_after_fr;
+  const canTranslatePassage = Boolean(
+    translatedPassageBefore && translatedPassageAfter
+    && (translatedPassageBefore !== passageBefore || translatedPassageAfter !== passageAfter)
+  );
 
-  // Options always in learning language (FR), EN shown after submit
-  const displayOptions = currentQuestion?.options_fr?.length
-    ? currentQuestion.options_fr
-    : currentQuestion?.options ?? [];
-  const translationOptions = currentQuestion?.options_en?.length
-    ? currentQuestion.options_en
-    : [];
+  const displayOptions = learningLang === "fr"
+    ? currentQuestion?.options_fr?.length ? currentQuestion.options_fr : currentQuestion?.options ?? []
+    : currentQuestion?.options_en?.length ? currentQuestion.options_en : currentQuestion?.options ?? [];
+  const translationOptions = learningLang === "fr"
+    ? currentQuestion?.options_en ?? []
+    : currentQuestion?.options_fr ?? [];
 
   // Heading: level-based language
   const selectHeading = showQuestionInKnown
     ? "Select the best sentence to complete the passage"
     : "Choisissez la meilleure phrase pour compléter le passage";
+  const translatedHeading = showQuestionInKnown
+    ? "Choisissez la meilleure phrase pour compléter le passage"
+    : "Select the best sentence to complete the passage";
 
   const timerDuration = useMemo(() => currentQuestion?.timeLimitSeconds || 360, [currentQuestion]);
 
@@ -176,8 +190,9 @@ function CompletePassageContent() {
     setIsCorrect(false);
     setFeedbackTone("error");
     setFeedbackMessage("");
-    setTranslatedHeading("");
-    setShowTranslation(false);
+    setShowPassageTranslation(false);
+    setShowHeadingTranslation(false);
+    setRevealedOptionTranslations({});
     resetTimer();
   }, [currentIndex, currentQuestion, isCompleted, resetTimer]);
 
@@ -205,29 +220,6 @@ function CompletePassageContent() {
     setIsCompleted(true);
   };
 
-  const handleTranslateHeading = async () => {
-    const targetLang = learningLang === "fr" ? "en" : "fr";
-    if (showTranslation) { setShowTranslation(false); return; }
-    if (translatedHeading) { setShowTranslation(true); return; }
-    try {
-      setIsTranslating(true);
-      const res = await fetch("/api/translate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: selectHeading, target_lang: targetLang }),
-      });
-      if (!res.ok) throw new Error("Translation failed");
-      const data = (await res.json()) as { translation?: string };
-      setTranslatedHeading(data.translation || "");
-      setShowTranslation(true);
-    } catch {
-      setTranslatedHeading("");
-      setShowTranslation(false);
-    } finally {
-      setIsTranslating(false);
-    }
-  };
-
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-slate-50 dark:bg-slate-900">
@@ -253,6 +245,10 @@ function CompletePassageContent() {
 
   const progress = questions.length > 0 ? ((currentIndex + 1) / questions.length) * 100 : 0;
   const selectedSentence = selectedOption !== null ? displayOptions[selectedOption] : "";
+  const translatedSelectedSentence = selectedOption !== null ? translationOptions[selectedOption] || selectedSentence : "";
+  const passagePlaceholder = learningLang === "fr"
+    ? "[Sélectionnez la meilleure phrase pour compléter le passage]"
+    : "[Select the best sentence to complete the passage]";
 
   return (
     <PracticeGameLayout
@@ -273,6 +269,7 @@ function CompletePassageContent() {
       onRestart={() => window.location.reload()}
       isSubmitEnabled={selectedOption !== null || showFeedback}
       showSubmitButton={true}
+      preserveFooterHeightOnFeedback
       submitLabel={showFeedback ? (currentIndex + 1 === questions.length ? "FINISH" : "CONTINUE") : "CHECK"}
       timerValue={timerString}
       showFeedback={showFeedback}
@@ -280,14 +277,17 @@ function CompletePassageContent() {
       feedbackTone={feedbackTone}
       feedbackMessage={feedbackMessage}
       correctAnswer={!isCorrect && showFeedback ? displayOptions[currentQuestion.correctIndex] : undefined}
+      compactFeedback={!isCorrect}
     >
-      <div className="practice-reading-page-shell flex flex-col md:flex-row gap-3 p-3 mx-auto overflow-hidden flex-1 min-h-0">
+      <PracticeTwoPanel>
         {/* Left — Passage (always in learning language) */}
-        <div className="flex-1 min-h-0 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 p-6 md:p-8 overflow-y-auto">
-          <p className="text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-[0.14em] mb-5">
-            PASSAGE
-          </p>
-          <div className={PASSAGE_TEXT_CLASS}>
+        <section className="practice-comprehension-scroll flex-1 min-h-0 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 p-4 md:p-6 overflow-y-auto" aria-label="Passage">
+          {showFeedback && canTranslatePassage && (
+            <div className="mb-2 flex justify-end">
+              <TranslateButton onClick={() => setShowPassageTranslation(value => !value)} aria-label={showPassageTranslation ? "Hide passage translation" : "Translate passage"} title={showPassageTranslation ? "Hide passage translation" : "Translate passage"} aria-expanded={showPassageTranslation} />
+            </div>
+          )}
+          <div className={BODY_TEXT_CLASS}>
             <p>{passageBefore}</p>
             <div className={cn(
               "my-4 rounded-lg bg-slate-100 dark:bg-slate-800/70 px-4 py-3 border-l-4",
@@ -296,97 +296,88 @@ function CompletePassageContent() {
               showFeedback && !isCorrect && "border-red-500 bg-red-50 dark:bg-red-900/20",
             )}>
               <span className={cn("italic", selectedSentence ? "not-italic text-slate-900 dark:text-slate-50" : "text-slate-400 dark:text-slate-500")}>
-                {selectedSentence || DEFAULT_PLACEHOLDER}
+                {selectedSentence || passagePlaceholder}
               </span>
             </div>
             <p>{passageAfter}</p>
           </div>
-        </div>
+          {showFeedback && showPassageTranslation && canTranslatePassage && (
+            <div className={cn(BODY_TEXT_CLASS, "mt-6 border-t border-slate-200 pt-5 dark:border-slate-700")}>
+              <p>{translatedPassageBefore}</p>
+              {translatedSelectedSentence && <p className="my-4">{translatedSelectedSentence}</p>}
+              <p>{translatedPassageAfter}</p>
+            </div>
+          )}
+        </section>
 
         {/* Right — Options */}
-        <div className="flex-1 min-h-0 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 p-6 md:p-8 overflow-y-auto">
-          <h3 className="practice-reading-heading mb-6 flex items-center gap-2">
-            <button
-              type="button"
-              onClick={handleTranslateHeading}
-              disabled={isTranslating}
-              aria-label={showTranslation ? "Show original" : "Translate heading"}
-              title={showTranslation ? "Show original" : "Translate heading"}
-              className="inline-flex items-center justify-center shrink-0 text-blue-500 hover:text-blue-600 disabled:opacity-60 transition-colors"
-            >
-              {isTranslating
-                ? <Loader2 className="w-5 h-5 animate-spin" />
-                : <Languages className="w-5 h-5" />
-              }
-            </button>
-            {showTranslation && translatedHeading ? translatedHeading : selectHeading}
-          </h3>
+        <section className="practice-comprehension-scroll flex flex-1 min-h-0 flex-col bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 p-4 md:p-5 overflow-y-auto" aria-label="Answer options">
+          <div className="flex shrink-0 items-start gap-2 border-b border-slate-200 pb-3 dark:border-slate-700">
+            <TranslateButton onClick={() => setShowHeadingTranslation(value => !value)} aria-label={showHeadingTranslation ? "Show original heading" : "Translate heading"} title={showHeadingTranslation ? "Show original heading" : "Translate heading"} aria-pressed={showHeadingTranslation} className="h-10 w-10" />
+            <h3 className="practice-reading-heading min-w-0 flex-1 !font-bold">{showHeadingTranslation ? translatedHeading : selectHeading}</h3>
+          </div>
 
-          <div className="space-y-3">
+          <div className="my-auto grid shrink-0 auto-rows-fr gap-3 py-4">
             {displayOptions.map((option, index) => {
               const isSelected = selectedOption === index;
               const isOptionCorrect = showFeedback && index === currentQuestion.correctIndex;
               const isOptionWrong = showFeedback && isSelected && !isOptionCorrect;
-              const enTranslation = translationOptions[index];
-
-              return (
-                <button
-                  key={`${index}-${option}`}
-                  onClick={() => handleOptionSelect(index)}
-                  disabled={showFeedback}
-                  className={cn(
-                    "w-full rounded-2xl border px-5 py-4 text-left flex items-start gap-4 transition-colors",
-                    "border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900",
-                    !showFeedback && "hover:border-slate-300",
-                    isSelected && !showFeedback && "border-blue-400 bg-blue-50 dark:bg-blue-900/20",
-                    isOptionCorrect && "border-emerald-400 bg-emerald-50 dark:bg-emerald-900/20",
-                    isOptionWrong && "border-red-400 bg-red-50 dark:bg-red-900/20",
-                  )}
-                >
+              const isOptionMuted = showFeedback && !isSelected && !isOptionCorrect;
+              const translatedOption = translationOptions[index];
+              const canTranslateOption = Boolean(translatedOption && translatedOption !== option);
+              const optionClasses = cn(
+                "flex min-h-24 w-full min-w-0 items-center gap-4 rounded-2xl border px-4 py-3 text-left transition-colors",
+                "border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900",
+                !showFeedback && "cursor-pointer hover:border-slate-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500",
+                isSelected && !showFeedback && "border-blue-500 bg-sky-50 shadow-[0_0_0_3px_rgba(59,130,246,0.12)] dark:border-blue-400 dark:bg-blue-950/30",
+                isOptionCorrect && "border-emerald-500 bg-emerald-50 shadow-[0_0_0_3px_rgba(52,211,153,0.15)] dark:border-emerald-400 dark:bg-emerald-950/30",
+                isOptionWrong && "border-red-400 bg-red-50 shadow-[0_0_0_3px_rgba(248,113,113,0.15)] dark:bg-red-950/30",
+                isOptionMuted && "opacity-40",
+              );
+              const optionContent = (
+                <>
                   <span className={cn(
-                    "mt-1 w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0",
+                    "flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2",
                     "border-slate-300 dark:border-slate-600",
-                    isSelected && !showFeedback && "border-blue-500",
-                    isOptionCorrect && "border-emerald-500",
-                    isOptionWrong && "border-red-500",
-                  )}>
+                    isSelected && !showFeedback && "border-blue-500 bg-blue-500",
+                    isOptionCorrect && "border-emerald-500 bg-emerald-500",
+                    isOptionWrong && "border-red-400 bg-red-400",
+                  )} aria-hidden="true">
                     {(isSelected || isOptionCorrect || isOptionWrong) && (
                       <span className={cn(
-                        "w-2.5 h-2.5 rounded-full",
-                        isOptionCorrect && "bg-emerald-500",
-                        isOptionWrong && "bg-red-500",
-                        isSelected && !showFeedback && "bg-blue-500",
+                        "h-2.5 w-2.5 rounded-full",
+                        "bg-white",
                       )} />
                     )}
                   </span>
-                  <div className="flex flex-col gap-1">
-                    <span className={OPTION_TEXT_CLASS}>{option}</span>
-                    {/* EN translation shown after submit */}
-                    {showFeedback && enTranslation && learningLang === "fr" && (
-                      <span className="text-xs opacity-60 flex items-center gap-1">
-                        <Languages className="w-3 h-3 shrink-0" />
-                        {enTranslation}
-                      </span>
-                    )}
-                  </div>
+                  <span className={cn(
+                    BODY_TEXT_CLASS,
+                    "min-w-0 flex-1 break-words",
+                    isOptionCorrect ? "text-emerald-700 dark:text-emerald-300" :
+                      isOptionWrong ? "text-red-600 dark:text-red-300" :
+                        "text-slate-700 dark:text-slate-200",
+                  )}>
+                    {showFeedback && revealedOptionTranslations[index] && canTranslateOption ? translatedOption : option}
+                  </span>
+                  {showFeedback && canTranslateOption && (
+                    <TranslateButton iconVariant="option" onClick={() => setRevealedOptionTranslations(previous => ({ ...previous, [index]: !previous[index] }))} aria-label={`${revealedOptionTranslations[index] ? "Show original" : "Translate"} option ${index + 1}`} title={revealedOptionTranslations[index] ? "Show original option" : "Translate option"} aria-pressed={Boolean(revealedOptionTranslations[index])} />
+                  )}
+                </>
+              );
+
+              return showFeedback ? (
+                <div key={`${index}-${option}`} className={optionClasses} role="status">
+                  {optionContent}
+                </div>
+              ) : (
+                <button key={`${index}-${option}`} type="button" onClick={() => handleOptionSelect(index)} aria-pressed={isSelected} className={optionClasses}>
+                  {optionContent}
                 </button>
               );
             })}
           </div>
-        </div>
-      </div>
+        </section>
+      </PracticeTwoPanel>
     </PracticeGameLayout>
   );
 }
-
-type CompletePassageQuestion = {
-  passageBefore: string;
-  passageAfter: string;
-  options: string[];
-  correctIndex: number;
-  level?: string;
-  instructionFr?: string;
-  instructionEn?: string;
-  localizedInstruction?: string;
-  timeLimitSeconds?: number;
-};

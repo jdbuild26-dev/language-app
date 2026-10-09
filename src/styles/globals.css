@@ -4,7 +4,124 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Practice typography uses named roles so zoom never reverses the hierarchy. */
+:root {
+  --practice-font-family: "Noto Sans", Arial, sans-serif;
+  --practice-font-content-family: "Noto Sans", Arial, sans-serif;
+  --practice-font-exercise-heading: 1.625rem;
+  --practice-font-passage-heading: 1.375rem;
+  --practice-font-question-heading: 1.375rem;
+  --practice-font-content: 1.25rem;
+  --practice-font-content-large: 1.5rem;
+  --practice-font-action: 0.875rem;
+  --practice-font-meta: 0.75rem;
+  --practice-font-feedback: 1rem;
+}
+
+@media (min-width: 64rem) {
+  :root {
+    --practice-font-exercise-heading: 1.75rem;
+    --practice-font-passage-heading: 1.5rem;
+    --practice-font-question-heading: 1.5rem;
+    --practice-font-content: 1.3125rem;
+    --practice-font-content-large: 1.875rem;
+    --practice-font-action: 1rem;
+    --practice-font-meta: 0.875rem;
+    --practice-font-feedback: 1.125rem;
+  }
+}
+
 @layer components {
+  .practice-game-typography {
+    font-family: var(--practice-font-content-family);
+  }
+
+  .practice-type-exercise-heading,
+  .practice-game-typography .practice-type-exercise-heading {
+    font-size: var(--practice-font-exercise-heading);
+    font-family: var(--practice-font-family);
+    line-height: 1.2;
+    font-weight: 700;
+    text-wrap: balance;
+    overflow-wrap: anywhere;
+  }
+
+  .practice-type-content-heading,
+  .practice-game-typography .practice-type-content-heading,
+  .practice-type-passage-heading,
+  .practice-game-typography .practice-type-passage-heading {
+    font-size: var(--practice-font-passage-heading);
+    font-family: var(--practice-font-family);
+    line-height: 1.3;
+    font-weight: 700;
+    overflow-wrap: anywhere;
+  }
+
+  .practice-type-question-heading,
+  .practice-game-typography .practice-type-question-heading,
+  .practice-reading-heading,
+  .practice-game-typography .practice-reading-heading {
+    font-size: var(--practice-font-question-heading);
+    font-family: var(--practice-font-family);
+    line-height: 1.3;
+    font-weight: 400;
+    overflow-wrap: anywhere;
+  }
+
+  .practice-type-content,
+  .practice-game-typography .practice-type-content,
+  .practice-reading-passage-text,
+  .practice-game-typography .practice-reading-passage-text {
+    font-size: var(--practice-font-content);
+    font-family: var(--practice-font-content-family);
+    line-height: 1.6;
+  }
+
+  .practice-type-content-large,
+  .practice-game-typography .practice-type-content-large {
+    font-size: var(--practice-font-content-large);
+    font-family: var(--practice-font-content-family);
+    line-height: 1.4;
+  }
+
+  .practice-type-action,
+  .practice-game-typography .practice-type-action {
+    font-size: var(--practice-font-action);
+    line-height: 1.25;
+    font-weight: 700;
+  }
+
+  .practice-type-meta,
+  .practice-game-typography .practice-type-meta {
+    font-size: var(--practice-font-meta);
+    line-height: 1.4;
+  }
+
+  .practice-type-feedback,
+  .practice-game-typography .practice-type-feedback {
+    font-size: var(--practice-font-feedback);
+    line-height: 1.4;
+  }
+
+  .practice-game-typography .practice-select-text [aria-haspopup="listbox"],
+  .practice-game-typography .practice-select-text [role="option"] {
+    font-size: var(--practice-font-content);
+    font-family: var(--practice-font-content-family);
+    line-height: 1.4;
+  }
+
+  .practice-game-typography .diagram-feedback-answer,
+  .practice-game-typography .image-feedback-answer,
+  .practice-game-typography .fill-feedback-answer {
+    font-size: 1rem;
+    font-family: var(--practice-font-content-family);
+    line-height: 1.4;
+  }
+
+  .practice-game-typography .practice-fill-passage {
+    line-height: 3rem;
+  }
+
   /* Story Content Styles */
   .story-content {
     @apply font-sans;
@@ -27,20 +144,124 @@
     @apply w-full max-w-[106rem] mx-auto;
   }
 
+  .practice-two-panel-shell {
+    @apply w-full max-w-none;
+  }
+
+  .practice-two-panel-shell > * {
+    min-width: 0;
+  }
+
+  .practice-game-scroll,
+  .practice-comprehension-scroll,
+  .custom-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: #cbd5e1 transparent;
+  }
+
+  .practice-comprehension-scroll {
+    scrollbar-gutter: stable;
+  }
+
+  @media (min-width: 48rem) {
+    .practice-two-panel-shell > * {
+      scrollbar-gutter: stable;
+    }
+  }
+
+  /* Chrome and Safari use the explicit width; Firefox uses scrollbar-width. */
+  @supports selector(::-webkit-scrollbar) {
+    .practice-game-scroll,
+    .practice-comprehension-scroll,
+    .custom-scrollbar {
+      scrollbar-width: auto;
+    }
+  }
+
+  .practice-game-scroll::-webkit-scrollbar,
+  .practice-comprehension-scroll::-webkit-scrollbar,
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 5px;
+  }
+
+  .practice-game-scroll::-webkit-scrollbar-track,
+  .practice-comprehension-scroll::-webkit-scrollbar-track,
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .practice-game-scroll::-webkit-scrollbar-thumb,
+  .practice-comprehension-scroll::-webkit-scrollbar-thumb,
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    border-radius: 9999px;
+    background: #cbd5e1;
+  }
+
+  .dark .practice-game-scroll,
+  .dark .practice-comprehension-scroll,
+  .dark .custom-scrollbar {
+    scrollbar-color: #475569 transparent;
+  }
+
+  .dark .practice-game-scroll::-webkit-scrollbar-thumb,
+  .dark .practice-comprehension-scroll::-webkit-scrollbar-thumb,
+  .dark .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: #475569;
+  }
+
+  /* Give every practice scroll area a slim visible thumb, including panels
+     that use overflow utilities without a dedicated scrollbar class. */
+  .practice-game-typography {
+    --practice-scrollbar-thumb: #94a3b8;
+  }
+
+  .dark .practice-game-typography {
+    --practice-scrollbar-thumb: #64748b;
+  }
+
+  .practice-game-typography,
+  .practice-game-typography * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--practice-scrollbar-thumb) transparent;
+  }
+
+  @supports selector(::-webkit-scrollbar) {
+    .practice-game-typography,
+    .practice-game-typography * {
+      scrollbar-width: auto;
+    }
+  }
+
+  .practice-game-typography::-webkit-scrollbar,
+  .practice-game-typography *::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  .practice-game-typography::-webkit-scrollbar-button,
+  .practice-game-typography *::-webkit-scrollbar-button {
+    display: none;
+  }
+
+  .practice-game-typography::-webkit-scrollbar-track,
+  .practice-game-typography *::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .practice-game-typography::-webkit-scrollbar-thumb,
+  .practice-game-typography *::-webkit-scrollbar-thumb {
+    border: 1px solid transparent;
+    border-radius: 9999px;
+    background: var(--practice-scrollbar-thumb);
+    background-clip: padding-box;
+  }
+
   .practice-reading-heading {
-    @apply text-xl sm:text-xl md:text-2xl font-semibold text-slate-900 dark:text-slate-100 leading-snug;
+    @apply text-slate-900 dark:text-slate-100;
   }
 
   .practice-reading-passage-text {
-    @apply text-lg sm:text-xl md:text-xl font-medium leading-8 md:leading-9 text-slate-700 dark:text-slate-200;
-  }
-
-  .practice-reading-option-text {
-    @apply text-lg sm:text-xl md:text-xl leading-8 text-slate-700 dark:text-slate-200;
-  }
-
-  .practice-reading-select > button {
-    min-height: 3.75rem;
+    @apply font-normal text-slate-700 dark:text-slate-200;
   }
 
   .story-primary-action {

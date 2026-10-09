@@ -4,10 +4,12 @@
 import React, { useState, useEffect, Suspense } from "react";
 import { usePracticeExit } from "@/hooks/usePracticeExit";
 import { useExerciseTimer } from "@/hooks/useExerciseTimer";
-import { RefreshCw, Loader2, Languages } from "lucide-react";
+import { RefreshCw, Loader2 } from "lucide-react";
+import { TranslateButton } from "@/components/ui/TranslateButton";
 import { loadMockCSV } from "@/utils/csvLoader";
 import { cn } from "@/lib/utils";
 import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
+import PracticeTwoPanel from "@/features/practice/components/PracticeTwoPanel";
 import { Button } from "@/components/ui/button";
 import { useQuestionLanguage } from "@/hooks/useQuestionLanguage";
 import { usePracticeComplete } from "@/hooks/usePracticeComplete";
@@ -342,7 +344,7 @@ function HighlightTextContent() {
           : undefined}
         feedbackMessage={feedbackMessage}
       >
-        <div className="practice-reading-page-shell flex flex-col flex-1 min-h-0 gap-4 p-3 sm:gap-5 sm:p-4 md:grid md:grid-cols-2 md:gap-5 md:overflow-hidden md:p-5 md:h-full">
+        <PracticeTwoPanel className="gap-4 sm:gap-5 sm:p-4 md:gap-5 md:p-5 md:h-full">
           {/* Left Column: Passage*/}
           <div className="w-full md:min-h-0 bg-white dark:bg-slate-800 rounded-xl p-4 sm:p-4 md:p-4 shadow-sm border border-slate-200 dark:border-slate-700 flex flex-col overflow-hidden min-h-[200px]">
             <div className="flex flex-col gap-1.5 border-b border-slate-200 pb-2 mb-3 dark:border-slate-700 sm:flex-row sm:items-center sm:justify-between">
@@ -365,25 +367,20 @@ function HighlightTextContent() {
           {/* Right Column: Interaction */}
           <div className="w-full md:min-h-0 bg-white dark:bg-slate-800 rounded-xl p-3 sm:p-4 md:p-4 shadow-sm border border-slate-200 dark:border-slate-700 flex flex-col overflow-y-auto custom-scrollbar min-h-[160px]">
               <div className="mb-3 sm:mb-4 flex items-start gap-2 sm:gap-3">
-                <button
+                <TranslateButton
                   type="button"
                   onClick={handleTranslateQuestion}
-                  disabled={isTranslating}
+                  isLoading={isTranslating}
                   aria-label={
                     showTranslation ? "Show original text" : "Translate text"
                   }
                   title={
                     showTranslation ? "Show original text" : "Translate text"
                   }
-                  className="inline-flex items-center justify-center shrink-0 mt-1 text-blue-500 hover:text-blue-600 disabled:opacity-60"
-                >
-                  {isTranslating ? (
-                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                  ) : (
-                    <Languages className="w-5 h-5" />
-                  )}
-                </button>
-                <h2 className="practice-reading-heading leading-tight text-xl md:text-2xl">
+                  className="mt-1"
+                  iconSize="md"
+                />
+                <h2 className="practice-reading-heading">
                   {showTranslation && translatedQuestion
                     ? translatedQuestion
                     : questionText}
@@ -393,7 +390,7 @@ function HighlightTextContent() {
               {/* Selection Box */}
               <div
                 className={cn(
-                  "border-2 rounded-xl p-3 mt-4 sm:p-4 min-h-[80px] sm:min-h-[96px] flex items-center justify-center text-center text-base sm:text-lg transition-all bg-slate-50 dark:bg-slate-900/50 break-words",
+                  "practice-type-content border-2 rounded-xl p-3 mt-4 sm:p-4 min-h-[80px] sm:min-h-[96px] flex items-center justify-center text-center transition-all bg-slate-50 dark:bg-slate-900/50 break-words",
                   selectedText
                     ? "border-blue-500 bg-blue-50 dark:bg-blue-900/10 text-slate-800 dark:text-slate-200"
                     : "border-dashed border-slate-300 dark:border-slate-600 text-slate-400",
@@ -415,7 +412,7 @@ function HighlightTextContent() {
                 </div>
               )}
           </div>
-        </div>
+        </PracticeTwoPanel>
       </PracticeGameLayout>
     </>
   );

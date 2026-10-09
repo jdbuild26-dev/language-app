@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils";
  */
 
 const PRACTICE_OPTION_TEXT_CLASS =
-  "practice-reading-option-text font-medium";
+  "practice-type-content font-medium text-slate-700 dark:text-slate-200";
 
 /**
  * PracticeOptions — reusable animated MCQ options list.
@@ -66,9 +66,7 @@ export default function PracticeOptions({
           ? "text-emerald-700 dark:text-emerald-300"
           : isWrong
             ? "text-red-600 dark:text-red-300"
-            : isSelected
-              ? "text-blue-600 dark:text-blue-300"
-              : "text-slate-700 dark:text-slate-200";
+            : "text-slate-700 dark:text-slate-200";
 
         return (
           <motion.button

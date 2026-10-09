@@ -3,8 +3,10 @@
 import React, { useState, useEffect, Suspense } from "react";
 import { usePracticeExit } from "@/hooks/usePracticeExit";
 import { useExerciseTimer } from "@/hooks/useExerciseTimer";
-import { User, Volume2, XCircle, Languages, Loader2 } from "lucide-react";
+import { User, Volume2, XCircle, Loader2 } from "lucide-react";
+import { TranslateIcon } from "@/components/ui/TranslateButton";
 import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
+import PracticeTwoPanel from "@/features/practice/components/PracticeTwoPanel";
 import FeedbackBanner from "@/components/ui/FeedbackBanner";
 import PracticeOptions from "@/components/ui/PracticeOptions";
 import { getFeedbackMessage } from "@/utils/feedbackMessages";
@@ -283,7 +285,7 @@ function ConversationContent() {
 
   const customEndGameContent =
     mistakes.length > 0 ? (
-      <div className="w-full max-w-2xl text-left bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm border border-slate-100 dark:border-slate-700 mt-4 max-h-[60vh] md:max-h-[400px] overflow-y-auto mx-auto mb-8 relative z-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      <div className="practice-comprehension-scroll w-full max-w-2xl text-left bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm border border-slate-100 dark:border-slate-700 mt-4 max-h-[60vh] md:max-h-[400px] overflow-y-auto mx-auto mb-8 relative z-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
         <h3 className="text-lg font-bold text-red-600 dark:text-red-400 mb-6 flex items-center gap-2 pb-3 border-b border-slate-100 dark:border-slate-700">
           <XCircle className="w-6 h-6" /> Let's review your mistakes
         </h3>
@@ -355,7 +357,7 @@ function ConversationContent() {
               <span className="text-xs font-bold uppercase tracking-widest text-slate-600 dark:text-slate-300">Conversation</span>
               <span className="text-xs text-slate-400">{currentTurnIndex + 1} / {totalExchanges}</span>
             </div>
-            <div className="flex-1 min-h-0 overflow-y-auto p-4 space-y-3">
+            <div className="practice-comprehension-scroll flex-1 min-h-0 overflow-y-auto p-4 space-y-3">
               {/* Show all exchanges up to and including currentTurnIndex */}
               {(() => {
                 const visible = conversation?.exchanges?.slice(0, currentTurnIndex + 1) || [];
@@ -369,12 +371,12 @@ function ConversationContent() {
                         <User className="w-4 h-4 text-slate-500 dark:text-slate-300" />
                       </div>
                       <div className={`flex flex-col gap-0.5 max-w-[75%] ${isRight ? "items-end" : "items-start"}`}>
-                        <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide px-1">
+                        <span className="practice-type-meta font-semibold text-slate-400 uppercase tracking-wide px-1">
                           {ex.speaker || `Speaker ${idx + 1}`}
                         </span>
                         <div className={`px-4 py-2.5 rounded-2xl shadow-sm border ${isRight ? "bg-indigo-600 text-white border-indigo-500 rounded-br-sm" : "bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-bl-sm"}`}>
                           <div className="flex items-center gap-2">
-                            <p className={`text-sm ${isRight ? "text-white" : "text-slate-700 dark:text-slate-200"}`}>{ex.speakerText}</p>
+                            <p className={`practice-type-content ${isRight ? "text-white" : "text-slate-700 dark:text-slate-200"}`}>{ex.speakerText}</p>
                             <button onClick={() => speak(ex.speakerText, "fr-FR")} disabled={isSpeaking}
                               className={`opacity-40 hover:opacity-80 transition-opacity shrink-0`}>
                               <Volume2 className="w-3.5 h-3.5" />
@@ -411,7 +413,7 @@ function ConversationContent() {
         </div>
       ) : (
       /* ── INTERACTIVE MODE: original two-column layout ── */
-      <div className="practice-reading-page-shell flex flex-col md:flex-row gap-3 p-3 mx-auto overflow-hidden flex-1 min-h-0">
+      <PracticeTwoPanel>
         {/* LEFT: Conversation bubbles */}
         <div className="flex-1 min-h-0 flex flex-col bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden">
           <div className="px-5 py-3 border-b-[2px] border-slate-100 dark:border-slate-700">
@@ -419,7 +421,7 @@ function ConversationContent() {
               Conversation
             </span>
           </div>
-          <div className="flex-1 min-h-0 overflow-y-auto p-4 space-y-4">
+          <div className="practice-comprehension-scroll flex-1 min-h-0 overflow-y-auto p-4 space-y-4">
             {/* Past turns */}
             {conversationHistory.map((turn, index) => (
               <div key={index} className="space-y-3">
@@ -430,7 +432,7 @@ function ConversationContent() {
                   </div>
                   <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-4 py-2.5 rounded-2xl rounded-tl-sm shadow-sm max-w-[92%] md:max-w-[85%]">
                     <div className="flex items-center gap-2">
-                      <p className="text-sm text-slate-700 dark:text-slate-200">
+                      <p className="practice-type-content text-slate-700 dark:text-slate-200">
                         {turn.speakerText}
                       </p>
                       <button
@@ -446,7 +448,7 @@ function ConversationContent() {
                 {/* User bubble */}
                 <div className="flex justify-end">
                   <div className="bg-teal-700 text-white px-4 py-2.5 rounded-2xl rounded-br-sm shadow-sm max-w-[92%] md:max-w-[85%]">
-                    <p className="text-sm">{turn.userText}</p>
+                    <p className="practice-type-content">{turn.userText}</p>
                   </div>
                 </div>
               </div>
@@ -460,7 +462,7 @@ function ConversationContent() {
                 </div> */}
                 <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-4 py-2.5 rounded-2xl rounded-tl-sm shadow-sm max-w-[92%] md:max-w-[85%]">
                   <div className="flex items-center gap-2">
-                    <p className="text-sm text-slate-700 dark:text-slate-200">
+                    <p className="practice-type-content text-slate-700 dark:text-slate-200">
                       {currentExchange.speakerText}
                     </p>
                     <button
@@ -487,13 +489,13 @@ function ConversationContent() {
         </div>
 
         {/* RIGHT: Objective + question + options */}
-        <div className="flex-1 min-h-0 flex flex-col bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 overflow-y-auto">
+        <div className="practice-comprehension-scroll flex-1 min-h-0 flex flex-col bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 overflow-y-auto">
           {/* Objective / context card */}
           <div className="m-4 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 shadow-sm p-5">
             <p className="text-xs font-bold border-b-2 border-gray-200 dark:border-slate-600 pb-1 uppercase tracking-widest text-slate-600 dark:text-slate-300 mb-2">
               Objective
             </p>
-            <p className="text-sm leading-relaxed text-slate-700 dark:text-slate-300">
+            <p className="practice-type-content text-slate-700 dark:text-slate-300">
               {(conversation as any)?.objectives || conversation?.scenario || conversation?.title}
             </p>
           </div>
@@ -502,7 +504,7 @@ function ConversationContent() {
           {currentExchange && isInteractive && (
             <div className="px-4 py-5">
               <h3 className="practice-reading-heading flex items-center gap-2">
-                <Languages className="w-4 h-4 text-orange-500 shrink-0" />
+                <TranslateIcon className="w-4 h-4 text-orange-500 shrink-0" />
                 {questionText}
               </h3>
             </div>
@@ -541,12 +543,12 @@ function ConversationContent() {
                 }
                 renderLabel={(option) => option}
                 renderSuffix={() => null}
-                itemClassName="w-full bg-white dark:bg-slate-800 py-3 px-4 rounded-xl text-left flex items-start gap-3 border-slate-200 dark:border-slate-700 text-base font-medium leading-relaxed"
+                itemClassName="w-full bg-white dark:bg-slate-800 py-3 px-4 rounded-xl text-left flex items-start gap-3 border-slate-200 dark:border-slate-700 font-medium"
               />
             </div>
           )}
         </div>
-      </div>
+      </PracticeTwoPanel>
       )} {/* end isDialogueOnly ternary */}
 
       {/* Feedback Banner */}

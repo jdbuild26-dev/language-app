@@ -3,7 +3,6 @@
 import React, { Suspense, useState, useEffect, useRef } from "react";
 import {
   RotateCcw,
-  Languages,
   CheckCircle,
   X,
   Loader2,
@@ -16,6 +15,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useSearchParams } from "next/navigation";
 import { ProgressBar } from "@/components/ui/ProgressBar";
 import FeedbackBanner from "@/components/ui/FeedbackBanner";
+import { TranslateButton } from "@/components/ui/TranslateButton";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@clerk/nextjs";
 import { completeAssignment } from "@/services/assignmentsApi";
@@ -33,13 +33,21 @@ type PracticeGameLayoutProps = {
   isGameOver?: boolean;
   score?: number;
   totalQuestions?: number;
+  headerTotalQuestions?: number;
   onExit?: () => void;
   onNext?: () => void;
   onRestart?: () => void;
   isSubmitEnabled?: boolean;
   showSubmitButton?: boolean;
+  preserveFooterHeightOnFeedback?: boolean;
+  animateFeedbackEntrance?: boolean;
+  compactFeedback?: boolean;
+  feedbackInFlow?: boolean;
+  onFeedbackTranslate?: () => void;
+  feedbackTranslationVisible?: boolean;
   submitLabel?: string;
   disableContentScroll?: boolean;
+  disableContentScrollOnDesktop?: boolean;
   timerValue?: string;
   currentQuestionIndex?: number;
   questionCounterValue?: number;
@@ -48,6 +56,8 @@ type PracticeGameLayoutProps = {
   feedbackTone?: FeedbackTone;
   feedbackMessage?: string;
   correctAnswer?: React.ReactNode;
+  correctAnswerLabel?: string;
+  feedbackChildren?: React.ReactNode;
   customEndGameContent?: React.ReactNode;
   children?: React.ReactNode;
 };
@@ -78,13 +88,21 @@ export default function PracticeGameLayout({
   isGameOver = false,
   score = 0,
   totalQuestions = 0,
+  headerTotalQuestions,
   onExit,
   onNext,
   onRestart,
   isSubmitEnabled = true,
   showSubmitButton = true,
+  preserveFooterHeightOnFeedback = false,
+  animateFeedbackEntrance = true,
+  compactFeedback = false,
+  feedbackInFlow = false,
+  onFeedbackTranslate,
+  feedbackTranslationVisible = false,
   submitLabel = "Submit Answer",
   disableContentScroll = false,
+  disableContentScrollOnDesktop = false,
   timerValue = "",
   currentQuestionIndex,
   questionCounterValue,
@@ -93,8 +111,8 @@ export default function PracticeGameLayout({
   feedbackTone,
   feedbackMessage = "",
   correctAnswer = "",
-  userAnswer = "",
-  questionContext = "",
+  correctAnswerLabel,
+  feedbackChildren = null,
   customEndGameContent = null,
   children,
 }: PracticeGameLayoutProps) {
@@ -139,7 +157,7 @@ export default function PracticeGameLayout({
     const isGood = percentage >= 70;
 
     return (
-      <div className="flex flex-col items-center w-full justify-center min-h-screen p-6 bg-gradient-to-br from-slate-50 via-blue-50/40 to-indigo-50 dark:from-slate-950 dark:via-blue-950/20 dark:to-indigo-950/30">
+      <div className="practice-game-typography flex flex-col items-center w-full justify-center min-h-screen p-6 bg-gradient-to-br from-slate-50 via-blue-50/40 to-indigo-50 dark:from-slate-950 dark:via-blue-950/20 dark:to-indigo-950/30">
         <Suspense fallback={null}>
           <AssignmentIdSync onChange={setAssignmentId} />
         </Suspense>
@@ -162,7 +180,7 @@ export default function PracticeGameLayout({
             )}
           </div>
 
-          <h2 className="text-3xl font-extrabold text-gray-900 dark:text-white mb-1 tracking-tight">
+          <h2 className="practice-type-exercise-heading text-gray-900 dark:text-white mb-1 tracking-tight">
             {isSubmittingResult
               ? "Saving…"
               : isPerfect
@@ -171,7 +189,7 @@ export default function PracticeGameLayout({
                   ? "Great Job!"
                   : "Quiz Done!"}
           </h2>
-          <p className="text-gray-500 dark:text-gray-400 text-base mb-8">
+          <p className="practice-type-feedback text-gray-500 dark:text-gray-400 mb-8">
             {isSubmittingResult
               ? "Recording your result…"
               : "Here's how you did"}
@@ -226,14 +244,14 @@ export default function PracticeGameLayout({
             <button
               onClick={onExit}
               disabled={isSubmittingResult}
-              className="flex-1 h-12 font-semibold rounded-xl border border-input bg-background hover:bg-accent hover:text-accent-foreground"
+              className="practice-type-action flex-1 h-12 rounded-xl border border-input bg-background hover:bg-accent hover:text-accent-foreground"
             >
               Exit
             </button>
             <button
               onClick={onRestart}
               disabled={isSubmittingResult}
-              className="flex-1 h-12 font-semibold rounded-xl gap-2 bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-500/30"
+              className="practice-type-action flex-1 h-12 rounded-xl gap-2 bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-500/30"
             >
               <RotateCcw className="w-4 h-4" />
               Try Again
@@ -247,38 +265,43 @@ export default function PracticeGameLayout({
   }
 
   /* ─── MAIN GAME LAYOUT ─────────────────────────────────────────────────── */
+  const originalInstruction = localizedInstruction || instructionFr || instructionEn;
+  const translatedInstruction = originalInstruction === instructionEn
+    ? instructionFr
+    : instructionEn || instructionFr;
   const instruction = showTranslation
-    ? instructionEn || instructionFr || localizedInstruction
-    : localizedInstruction || instructionFr || instructionEn;
+    ? translatedInstruction || originalInstruction
+    : originalInstruction;
 
-  const hasTranslation =
-    (instructionFr && instructionEn) || (localizedInstruction && instructionEn);
+  const hasTranslation = Boolean(translatedInstruction && translatedInstruction !== originalInstruction);
+  const headingText = instruction ?? "";
+  const headingParts = headingText.match(/^([\s\S]*\s)(\S+)$/u);
 
   const displayQuestionNumber =
     questionCounterValue !== undefined
       ? questionCounterValue
       : currentQuestionIndex !== undefined
         ? currentQuestionIndex + 1
-        : totalQuestions > 0
+        : (headerTotalQuestions ?? totalQuestions) > 0
           ? Math.min(
-              totalQuestions,
-              Math.max(1, Math.round((progress / 100) * totalQuestions)),
+              headerTotalQuestions ?? totalQuestions,
+              Math.max(1, Math.round((progress / 100) * (headerTotalQuestions ?? totalQuestions))),
             )
           : 0;
   const progressCurrent = Math.min(
-    totalQuestions,
+    headerTotalQuestions ?? totalQuestions,
     Math.max(0, displayQuestionNumber),
   );
 
   return (
-    <div className="flex flex-col h-dvh max-h-dvh dark:bg-slate-950 overflow-hidden font-sans">
+    <div className="practice-game-typography practice-dark-shell flex flex-col h-dvh max-h-dvh dark:bg-slate-950 overflow-hidden">
       <Suspense fallback={null}>
         <AssignmentIdSync onChange={setAssignmentId} />
       </Suspense>
       {/* ── HEADER ──────────────────────────────────────────────────────────── */}
-      <header className="shrink-0 flex flex-col min-h-[96px] sm:min-h-[84px] lg:min-h-[6rem] bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 z-10">
+      <header className="practice-dark-chrome shrink-0 flex flex-col min-h-[96px] sm:min-h-[84px] lg:min-h-[6rem] bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 z-10">
         {/* Row 1: Speaker | Title + Lang icon | Settings */}
-        <div className="relative flex-1 flex items-center px-3 py-2 sm:px-4 sm:py-2.5 lg:px-6">
+        <div className="grid flex-1 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 px-3 py-2 sm:grid-cols-[minmax(0,1fr)_minmax(0,2fr)_minmax(0,1fr)] sm:px-4 sm:py-2.5 lg:px-6 2xl:grid-cols-[20rem_minmax(0,1fr)_20rem]">
           {/* Speaker icon — left */}
           <div className="flex items-center shrink-0 w-7 sm:w-8 lg:w-12 z-10">
             <img
@@ -288,42 +311,46 @@ export default function PracticeGameLayout({
             />
           </div>
 
-          {/* Title + Language toggle — perfectly centered */}
-          <div className="absolute inset-0 flex items-center justify-center pointer-events-none px-10 sm:px-24 lg:px-40">
-            <div className="flex items-center gap-1.5 sm:gap-2 pointer-events-auto">
-              <AnimatePresence mode="wait">
-                <motion.h1
-                  key={instruction}
-                  initial={{ opacity: 0, y: -6 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: 6 }}
-                  transition={{ duration: 0.18, ease: "easeInOut" }}
-                  className="text-sm sm:text-base lg:text-[2rem] font-semibold lg:font-bold text-slate-800 dark:text-white tracking-[-0.01em] text-center leading-snug whitespace-normal break-words max-w-[68vw] sm:max-w-[58vw] lg:max-w-[46vw]"
-                >
-                  {instruction}
-                </motion.h1>
-              </AnimatePresence>
-              {hasTranslation && (
-                <button
-                  onClick={() => setShowTranslation((v) => !v)}
-                  className="shrink-0 text-slate-400 hover:text-blue-500 transition-colors"
-                  title="Toggle translation"
-                >
-                  <Languages className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                </button>
-              )}
-            </div>
+          {/* Keep the translation control attached to the final heading word as text wraps. */}
+          <div className="flex min-w-0 justify-center">
+            <AnimatePresence mode="wait">
+              <motion.h1
+                key={instruction}
+                initial={{ opacity: 0, y: -6 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 6 }}
+                transition={{ duration: 0.18, ease: "easeInOut" }}
+                className="practice-type-exercise-heading min-w-0 max-w-4xl 2xl:max-w-none text-center tracking-[-0.01em] text-slate-800 dark:text-white"
+              >
+                {hasTranslation ? (
+                  <>
+                    {headingParts?.[1]}
+                    <span className="whitespace-nowrap">
+                      {headingParts?.[2] ?? headingText}
+                      <TranslateButton
+                        onClick={() => setShowTranslation((v) => !v)}
+                        className="ml-1 h-7 w-7 align-middle text-slate-400 hover:text-blue-500 hover:bg-transparent"
+                        aria-label="Toggle translation"
+                        title="Toggle translation"
+                      />
+                    </span>
+                  </>
+                ) : (
+                  instruction
+                )}
+              </motion.h1>
+            </AnimatePresence>
           </div>
 
           {/* Top meta + controls — right */}
-          <div className="ml-auto flex items-center gap-1.5 sm:gap-2 shrink-0 z-10">
-            <div className="hidden lg:flex h-9 px-3 rounded-full border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 text-slate-700 dark:text-slate-200 text-sm font-semibold tabular-nums items-center gap-1.5">
+          <div className="flex min-w-0 flex-wrap items-center justify-self-end justify-end gap-1.5 sm:gap-2 lg:gap-1 xl:gap-2">
+            <div className="practice-type-meta hidden lg:flex h-9 px-2 xl:px-3 rounded-full border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 text-slate-700 dark:text-slate-200 font-semibold tabular-nums items-center gap-1.5">
               <ListChecks className="w-4 h-4 text-blue-600 dark:text-blue-300" />
-              {displayQuestionNumber}/{totalQuestions}
+              {displayQuestionNumber}/{headerTotalQuestions ?? totalQuestions}
             </div>
 
             {timerValue && (
-              <div className="hidden lg:flex h-9 px-3 rounded-full border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 text-blue-700 dark:text-blue-300 text-sm font-semibold tabular-nums items-center gap-1.5">
+              <div className="practice-type-meta hidden lg:flex h-9 px-2 xl:px-3 rounded-full border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 text-blue-700 dark:text-blue-300 font-semibold tabular-nums items-center gap-1.5">
                 <Timer className="w-4 h-4" />
                 {timerValue}
               </div>
@@ -340,7 +367,7 @@ export default function PracticeGameLayout({
             <button
               type="button"
               onClick={onExit}
-              className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/70 flex items-center justify-center text-slate-500 hover:text-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 dark:text-slate-300 transition-colors"
+              className="w-8 h-8 sm:w-9 sm:h-9 lg:w-8 lg:h-8 xl:w-9 xl:h-9 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/70 flex items-center justify-center text-slate-500 hover:text-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 dark:text-slate-300 transition-colors"
               title="Exit"
             >
               <X className="w-4 h-4" />
@@ -351,7 +378,7 @@ export default function PracticeGameLayout({
         {/* Row 2: Progress bar — pinned to bottom of header */}
         <ProgressBar
           current={progressCurrent}
-          total={totalQuestions}
+          total={headerTotalQuestions ?? totalQuestions}
           slim
           className="h-[3px] max-w-none"
         />
@@ -360,8 +387,8 @@ export default function PracticeGameLayout({
       {/* ── CONTENT ─────────────────────────────────────────────────────────── */}
       <main
         className={cn(
-          "flex-1 min-h-0 overflow-x-hidden flex bg-neutral-50 dark:bg-slate-950 flex-col",
-          disableContentScroll ? "overflow-hidden" : "overflow-y-auto",
+          "practice-game-scroll practice-type-content practice-dark-canvas flex-1 min-h-0 overflow-x-hidden flex bg-neutral-50 dark:bg-slate-950 flex-col",
+          disableContentScroll ? "overflow-hidden" : disableContentScrollOnDesktop ? "overflow-y-auto md:overflow-y-hidden" : "overflow-y-auto",
         )}
       >
         <div className="w-full mx-auto flex-1 min-h-0 flex flex-col">
@@ -370,15 +397,21 @@ export default function PracticeGameLayout({
       </main>
 
       {/* ── FOOTER BAR (in-flow, hidden when feedback is showing) ───── */}
-      {showSubmitButton && !showFeedback && (
-        <div className="shrink-0 h-14 sm:h-16 lg:h-[4.5rem] bg-white/95 dark:bg-slate-900/95 backdrop-blur border-t border-slate-200 dark:border-slate-800">
+      {showSubmitButton && (!showFeedback || preserveFooterHeightOnFeedback) && (
+        <div
+          aria-hidden={showFeedback}
+          className={cn(
+            "practice-dark-chrome shrink-0 h-14 sm:h-16 lg:h-[4.5rem] bg-white/95 dark:bg-slate-900/95 backdrop-blur border-t border-slate-200 dark:border-slate-800",
+            showFeedback && "invisible pointer-events-none",
+          )}
+        >
           <div className="mx-auto px-3 sm:px-4 md:px-5 h-full flex items-center justify-stretch sm:justify-end pb-[max(env(safe-area-inset-bottom,0px),0px)]">
             <div className="w-full sm:w-auto justify-self-end">
               <button
                 onClick={onNext}
                 disabled={!isSubmitEnabled}
                 className={cn(
-                  "w-full sm:w-auto min-w-[120px] sm:min-w-[128px] lg:min-w-[132px] h-9 sm:h-9.5 lg:h-10 px-4 rounded-lg font-bold text-[11px] sm:text-xs uppercase tracking-wide transition-all duration-200",
+                  "practice-type-action w-full sm:w-auto min-w-[120px] sm:min-w-[128px] lg:min-w-[132px] min-h-10 px-4 rounded-lg uppercase tracking-wide transition-all duration-200",
                   isSubmitEnabled
                     ? "bg-blue-600 hover:bg-blue-700 text-white"
                     : "bg-slate-200 dark:bg-slate-700 text-slate-400 dark:text-slate-500 cursor-not-allowed",
@@ -397,10 +430,16 @@ export default function PracticeGameLayout({
           isCorrect={isCorrect}
           feedbackTone={feedbackTone}
           correctAnswer={correctAnswer}
+          correctAnswerLabel={correctAnswerLabel}
           message={feedbackMessage}
           onContinue={onNext}
           continueLabel={submitLabel}
-          children={null}
+          animateEntrance={animateFeedbackEntrance}
+          compact={compactFeedback}
+          inFlow={feedbackInFlow}
+          onTranslate={onFeedbackTranslate}
+          translationVisible={feedbackTranslationVisible}
+          children={feedbackChildren}
         />
       )}
     </div>

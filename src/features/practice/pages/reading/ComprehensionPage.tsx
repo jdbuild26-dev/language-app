@@ -4,11 +4,12 @@ import React, { useState, useEffect, useCallback, Suspense } from "react";
 import { usePracticeExit } from "@/hooks/usePracticeExit";
 import { useExerciseTimer } from "@/hooks/useExerciseTimer";
 import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
-import FeedbackBanner from "@/components/ui/FeedbackBanner";
+import PracticeTwoPanel from "@/features/practice/components/PracticeTwoPanel";
 import { getFeedbackMessage } from "@/utils/feedbackMessages";
 import { loadMockCSV } from "@/utils/csvLoader";
 import PracticeOptions from "@/components/ui/PracticeOptions";
-import { Languages, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
+import { TranslateButton } from "@/components/ui/TranslateButton";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useQuestionLanguage } from "@/hooks/useQuestionLanguage";
 import { usePracticeComplete } from "@/hooks/usePracticeComplete";
@@ -53,6 +54,12 @@ function parseArr(v: unknown): string[] {
     try { return JSON.parse(v); } catch { return v.split("|").map(s => s.trim()).filter(Boolean); }
   }
   return [];
+}
+
+function asRecord(value: unknown): Record<string, unknown> {
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? value as Record<string, unknown>
+    : {};
 }
 
 /** Group a flat list of questions into passage groups by matching passage text */
@@ -122,6 +129,8 @@ function ComprehensionContent() {
   const [showFeedback, setShowFeedback] = useState(false);
   const [isCorrect, setIsCorrect] = useState(false);
   const [feedbackMessage, setFeedbackMessage] = useState("");
+  const [translatedQuestions, setTranslatedQuestions] = useState<Record<number, boolean>>({});
+  const [showPassageTranslation, setShowPassageTranslation] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -130,10 +139,11 @@ function ComprehensionContent() {
         const data = await loadMockCSV("practice/reading/comprehension.csv", {
           learningLang, knownLang, tag,
         });
-        const mapped = (Array.isArray(data) ? data : []).map((item: any) => {
-          const c = item.content || item;
-          const e = item.evaluation || item;
-          const cfg = item.config || item;
+        const mapped = (Array.isArray(data) ? data : []).map((raw: unknown) => {
+          const item = asRecord(raw);
+          const c = item.content ? asRecord(item.content) : item;
+          const e = item.evaluation ? asRecord(item.evaluation) : item;
+          const cfg = item.config ? asRecord(item.config) : item;
           return {
             level:            item.Level || item.level || "",
             passage_fr:       c.passage_fr || item.passage_fr || item.passage || "",
@@ -172,13 +182,12 @@ function ComprehensionContent() {
       setSelectedOptions(new Array(currentPassage.questions.length).fill(null));
       setSubmitted(false);
       setShowFeedback(false);
+      setTranslatedQuestions({});
+      setShowPassageTranslation(false);
     }
   }, [passageIndex, currentPassage]);
 
-  const { pick, showQuestionInKnown } = useQuestionLanguage(currentPassage?.level);
-
-  // Total question count across all passages (for progress/score)
-  const totalQuestions = allQuestions.length;
+  const { pick, pickTranslation, showQuestionInKnown } = useQuestionLanguage(currentPassage?.level);
 
   // Progress: based on passages
   const progress = passages.length > 0 ? ((passageIndex + 1) / passages.length) * 100 : 0;
@@ -201,7 +210,7 @@ function ComprehensionContent() {
     mode: "timer",
     onExpire: () => {
       if (!isCompleted && !submitted) {
-        handleSubmit();
+        handleSubmit(true);
       }
     },
     isPaused: isCompleted || submitted,
@@ -222,12 +231,12 @@ function ComprehensionContent() {
     });
   };
 
-  const handleSubmit = useCallback(() => {
+  const handleSubmit = useCallback((allowIncomplete = false) => {
     if (submitted || !currentPassage) return;
-    // Require all questions to be answered
-    if (selectedOptions.some(o => o === null)) return;
+    if (!allowIncomplete && selectedOptions.some(o => o === null)) return;
 
     setSubmitted(true);
+    setTranslatedQuestions({});
 
     // Score this passage
     let passageCorrect = 0;
@@ -285,6 +294,8 @@ function ComprehensionContent() {
     correctIndex?: number;
     showFeedback: boolean;
     onSelect: (index: number) => void;
+    className?: string;
+    itemClassName?: string;
     renderLabel?: (option: string, index: number) => React.ReactNode;
   }>;
 
@@ -295,6 +306,9 @@ function ComprehensionContent() {
   const passageTitle = learningLang === "fr"
     ? currentPassage?.passage_title_fr || currentPassage?.passage_title_en || ""
     : currentPassage?.passage_title_en || currentPassage?.passage_title_fr || "";
+  const translatedPassageText = learningLang === "fr"
+    ? currentPassage?.passage_en || ""
+    : currentPassage?.passage_fr || "";
 
   const allAnswered = selectedOptions.length > 0 && selectedOptions.every(o => o !== null);
 
@@ -330,63 +344,85 @@ function ComprehensionContent() {
             : "Submit Answers"
         }
         timerValue={timerString}
+        showFeedback={showFeedback}
+        isCorrect={isCorrect}
+        feedbackMessage={feedbackMessage}
+        preserveFooterHeightOnFeedback
+        animateFeedbackEntrance={false}
         feedbackTone={showFeedback ? (isCorrect ? "success" : "error") : "neutral"}
       >
-        <div className="practice-reading-page-shell flex flex-col md:flex-row gap-3 p-3 mx-auto overflow-hidden flex-1 min-h-0">
+        <PracticeTwoPanel ratio="three-two" className="md:gap-4 md:p-4">
           {/* Left Column — Passage */}
-          <div className="flex-1 min-h-0 bg-white dark:bg-slate-800 p-5 md:p-8 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 flex flex-col overflow-hidden">
-            {passageTitle && (
-              <p className="text-sm font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-3">
-                {passageTitle}
+          <section className="practice-comprehension-scroll min-h-[18rem] min-w-0 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-800 md:min-h-0 md:overflow-y-auto md:p-6" aria-label="Passage">
+            <div className="mb-4 flex items-start justify-between gap-3 border-b border-slate-200 pb-3 dark:border-slate-700">
+              <h2 className="practice-type-content-heading text-slate-900 dark:text-slate-100">
+                {passageTitle || "Passage"}
+              </h2>
+              {submitted && translatedPassageText && translatedPassageText !== passageText && (
+                <TranslateButton onClick={() => setShowPassageTranslation(value => !value)} aria-label={showPassageTranslation ? "Hide passage translation" : "Translate passage"} title={showPassageTranslation ? "Hide passage translation" : "Translate passage"} aria-expanded={showPassageTranslation} />
+              )}
+            </div>
+            <p className="practice-type-content whitespace-pre-line font-sans text-slate-700 dark:text-slate-200">
+                {passageText}
+            </p>
+            {submitted && showPassageTranslation && translatedPassageText && (
+              <p className="practice-type-content mt-6 whitespace-pre-line border-t border-slate-200 pt-5 font-sans text-slate-700 dark:border-slate-700 dark:text-slate-200">
+                {translatedPassageText}
               </p>
             )}
-            <p className="text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-4">
-              PASSAGE
-            </p>
-            <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar pr-1">
-              <p className="practice-reading-option-text font-medium text-slate-700 dark:text-slate-200">
-                {passageText}
-              </p>
-            </div>
-          </div>
+          </section>
 
           {/* Right Column — All questions for this passage */}
-          <div className="flex-1 min-h-0 flex flex-col dark:bg-slate-900 rounded-2xl border border-slate-200 bg-white dark:border-slate-700 p-5 md:p-8 gap-6 overflow-y-auto">
+          <section className="practice-comprehension-scroll flex min-h-0 min-w-0 flex-col gap-6 overflow-y-auto rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900 md:p-5" aria-label="Questions">
             {currentPassage?.questions.map((q, qIdx) => {
               const questionText = pick(q.question_fr, q.question_en) || q.question || "";
-              const displayOptions = q.options_fr?.length ? q.options_fr : q.options ?? [];
-              const translationOptions = q.options_en?.length ? q.options_en : [];
+              const translatedQuestionText = pickTranslation(q.question_fr, q.question_en);
+              const displayOptions = learningLang === "fr"
+                ? q.options_fr?.length ? q.options_fr : q.options ?? []
+                : q.options_en?.length ? q.options_en : q.options ?? [];
+              const translationOptions = learningLang === "fr" ? q.options_en ?? [] : q.options_fr ?? [];
+              const canTranslateQuestion = Boolean(translatedQuestionText && translatedQuestionText !== questionText);
+              const canTranslateOptions = translationOptions.length === displayOptions.length
+                && translationOptions.some((option, index) => Boolean(option && option !== displayOptions[index]));
+              const canTranslate = submitted ? canTranslateQuestion || canTranslateOptions : canTranslateQuestion;
+              const isTranslated = Boolean(translatedQuestions[qIdx] && canTranslate);
+              const shownQuestion = isTranslated && canTranslateQuestion ? translatedQuestionText : questionText;
+              const shownOptions = submitted && isTranslated && canTranslateOptions
+                ? displayOptions.map((option, index) => translationOptions[index] || option)
+                : displayOptions;
+              const translateButton = canTranslate && (
+                <TranslateButton
+                  iconVariant="option"
+                  onClick={() => setTranslatedQuestions(previous => ({ ...previous, [qIdx]: !previous[qIdx] }))}
+                  aria-label={isTranslated ? submitted ? "Show original question and options" : "Show original question" : submitted ? "Translate question and options" : "Translate question"}
+                  title={isTranslated ? "Show original" : submitted ? "Translate question and options" : "Translate question"}
+                  aria-pressed={isTranslated}
+                  iconSize="md"
+                />
+              );
 
               return (
                 <div key={qIdx} className="flex flex-col gap-3">
                   {/* Question number + text */}
-                  <h3 className="flex items-start gap-2">
-                    <span className="shrink-0 mt-0.5 text-xs font-bold text-blue-500 bg-blue-50 dark:bg-blue-900/30 rounded-full w-5 h-5 flex items-center justify-center">
+                  <h3 className="practice-type-question-heading flex min-w-0 items-start gap-3 border-b border-slate-200 pb-3 text-slate-900 dark:border-slate-700 dark:text-slate-100">
+                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-blue-200 bg-blue-50 text-sm font-bold text-blue-700 dark:border-blue-800 dark:bg-blue-900/30 dark:text-blue-300">
                       {qIdx + 1}
                     </span>
-                    <span className="practice-reading-option-text font-medium">
-                      {questionText}
+                    <span className="min-w-0 flex-1">
+                      {shownQuestion}
                     </span>
+                    {translateButton}
                   </h3>
 
                   {/* Options */}
                   <OptionsComponent
-                    options={displayOptions}
+                    className="!grid !auto-rows-fr"
+                    options={shownOptions}
                     selectedOption={selectedOptions[qIdx] ?? null}
                     correctIndex={submitted ? q.correctIndex : undefined}
                     showFeedback={submitted}
                     onSelect={(optIdx) => handleOptionSelect(qIdx, optIdx)}
-                    renderLabel={(option: string, index: number) => (
-                      <>
-                        <span>{option}</span>
-                        {submitted && translationOptions[index] && (
-                          <span className="text-xs opacity-70 flex items-center gap-1 mt-0.5">
-                            <Languages className="w-3 h-3 shrink-0" />
-                            {translationOptions[index]}
-                          </span>
-                        )}
-                      </>
-                    )}
+                    itemClassName="!min-h-16 !items-center !rounded-xl !border !px-3 !py-2.5 !font-normal"
                   />
 
                   {/* Divider between questions */}
@@ -396,20 +432,9 @@ function ComprehensionContent() {
                 </div>
               );
             })}
-          </div>
-        </div>
+          </section>
+        </PracticeTwoPanel>
       </PracticeGameLayout>
-
-      {showFeedback && (
-        <FeedbackBanner
-          isCorrect={isCorrect}
-          feedbackTone={isCorrect ? "success" : "error"}
-          correctAnswer={null}
-          onContinue={handleContinue}
-          message={feedbackMessage}
-          continueLabel={isLastPassage ? "FINISH" : "CONTINUE"}
-        />
-      )}
     </>
   );
 }
