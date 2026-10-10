@@ -1,33 +1,126 @@
 "use client";
 
-import React, { useState, useEffect, Suspense } from "react";
+import React, { Suspense, useEffect, useState } from "react";
+import { Reorder } from "framer-motion";
+import { GripVertical, Loader2, Turtle, Volume2 } from "lucide-react";
+import { useSearchParams } from "next/navigation";
 import { usePracticeExit } from "@/hooks/usePracticeExit";
 import { useExerciseTimer } from "@/hooks/useExerciseTimer";
-import { Volume2, GripVertical, Turtle } from "lucide-react";
-import { Reorder } from "framer-motion";
-import { cn } from "@/lib/utils";
-import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
-import FeedbackBanner from "@/components/ui/FeedbackBanner";
-import { getFeedbackMessage } from "@/utils/feedbackMessages";
+import { usePracticeComplete } from "@/hooks/usePracticeComplete";
 import { useTextToSpeech } from "@/hooks/useTextToSpeech";
-import { fetchPracticeData } from "@/utils/practiceFetcher";
-import { useSearchParams } from "next/navigation";
-import { Loader2 } from "lucide-react";
+import { useQuestionLanguage } from "@/hooks/useQuestionLanguage";
+import { useTranslateText } from "@/hooks/useTranslateText";
+import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
+import { TranslateButton } from "@/components/ui/TranslateButton";
+import AudioWaveform from "@/components/ui/AudioWaveform";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+import { getFeedbackMessage } from "@/utils/feedbackMessages";
+import { fetchPracticeData } from "@/utils/practiceFetcher";
 
-// Shuffle helper
-const shuffleArray = (array) => {
-  const shuffled = [...array];
-  for (let i = shuffled.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-  }
-  return shuffled;
+type ListenOrderQuestion = {
+  id: string | number;
+  correctOrder: string[];
+  correctOrder_en: string[];
+  title_fr: string;
+  title_en: string;
+  timeLimitSeconds: number;
+  level: string;
 };
+
+type OrderItem = {
+  itemId: string;
+  text: string;
+  correctIndex: number;
+};
+
+function parseArray(value: unknown): unknown[] {
+  if (Array.isArray(value)) return value;
+  if (typeof value !== "string" || !value.trim()) return [];
+  try {
+    const parsed: unknown = JSON.parse(value);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return value.split("+").map((part) => part.trim()).filter(Boolean);
+  }
+}
+
+function asRecord(value: unknown): Record<string, unknown> {
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? value as Record<string, unknown>
+    : {};
+}
+
+function textValue(...values: unknown[]): string {
+  return values.find((value): value is string => typeof value === "string" && value.trim().length > 0) || "";
+}
+
+function getContent(item: Record<string, unknown>) {
+  return asRecord(item.content);
+}
+
+function mapListenOrderQuestion(raw: unknown, index: number): ListenOrderQuestion | null {
+  const item = asRecord(raw);
+  const content = getContent(item);
+  const evaluation = asRecord(item.evaluation);
+  const config = asRecord(item.config);
+
+  const frenchNodes = parseArray(content.sentences_fr ?? item.sentences_fr);
+  const englishNodes = parseArray(content.sentences_en ?? item.sentences_en);
+  const rawFrenchOrder = parseArray(
+    content.correctOrder_fr ?? item.correctOrder_fr ??
+    content.correctOrder ?? evaluation.correctOrder ?? item.correctOrder ?? item["CorrectOrder"],
+  );
+  const rawEnglishOrder = parseArray(content.correctOrder_en ?? item.correctOrder_en);
+
+  let correctOrder: string[] = [];
+  let correctOrder_en: string[] = [];
+
+  if (rawFrenchOrder.length > 0 && typeof rawFrenchOrder[0] === "number") {
+    const orderIndexes = rawFrenchOrder.map(Number);
+    correctOrder = orderIndexes
+      .map((nodeIndex) => String(frenchNodes[nodeIndex] ?? ""))
+      .filter(Boolean);
+
+    const englishSource = rawEnglishOrder.length > 0 ? rawEnglishOrder : englishNodes;
+    correctOrder_en = orderIndexes
+      .map((nodeIndex, orderIndex) => {
+        const candidate = englishSource.length === frenchNodes.length
+          ? englishSource[nodeIndex]
+          : englishSource[orderIndex];
+        return typeof candidate === "string" ? candidate : "";
+      });
+  } else {
+    correctOrder = rawFrenchOrder.map(String).filter(Boolean);
+    correctOrder_en = rawEnglishOrder.map(String);
+
+    if (correctOrder.length === 0 && frenchNodes.length > 0) {
+      correctOrder = frenchNodes.map(String).filter(Boolean);
+      correctOrder_en = englishNodes.map(String);
+    } else if (correctOrder_en.length === 0 && frenchNodes.length === englishNodes.length) {
+      correctOrder_en = correctOrder.map((sentence) => {
+        const nodeIndex = frenchNodes.findIndex((node) => String(node) === sentence);
+        return nodeIndex >= 0 && typeof englishNodes[nodeIndex] === "string" ? String(englishNodes[nodeIndex]) : "";
+      });
+    }
+  }
+
+  if (correctOrder.length < 2) return null;
+
+  return {
+    id: textValue(item.external_id, item.ExerciseID, item.id) || `listen-order-${index}`,
+    correctOrder,
+    correctOrder_en,
+    title_fr: textValue(content.title_fr, item.title_fr, content["Passage Title_FR"]),
+    title_en: textValue(content.title_en, item.title_en, content["Passage Title_EN"]),
+    timeLimitSeconds: Number(config.timeLimitSeconds || content.timeLimitSeconds || item.timeLimitSeconds || item.Time || 90),
+    level: textValue(item.Level, item.level) || "A1",
+  };
+}
 
 export default function ListenOrderPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-orange-500" /></div>}>
+    <Suspense fallback={<div className="flex min-h-screen items-center justify-center bg-slate-50 dark:bg-slate-900"><Loader2 className="h-8 w-8 animate-spin text-orange-500" /></div>}>
       <ListenOrderContent />
     </Suspense>
   );
@@ -39,21 +132,30 @@ function ListenOrderContent() {
   const searchParams = useSearchParams();
   const tag = searchParams?.get("tag") ?? undefined;
 
-  const [questions, setQuestions] = useState([]);
+  const [questions, setQuestions] = useState<ListenOrderQuestion[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [currentIndex, setCurrentIndex] = useState(0);
-
-  const [currentOrder, setCurrentOrder] = useState([]);
+  const [currentOrder, setCurrentOrder] = useState<OrderItem[]>([]);
   const [isCompleted, setIsCompleted] = useState(false);
   const [showFeedback, setShowFeedback] = useState(false);
   const [isCorrect, setIsCorrect] = useState(false);
   const [feedbackMessage, setFeedbackMessage] = useState("");
   const [score, setScore] = useState(0);
   const [playedAudio, setPlayedAudio] = useState(false);
+  const [playingItemId, setPlayingItemId] = useState<string | null>(null);
 
   const currentQuestion = questions[currentIndex];
-  // Default timer to 90s if not specified
+  const { learningLang, pick } = useQuestionLanguage(currentQuestion?.level);
+  const headingText = pick(currentQuestion?.title_fr, currentQuestion?.title_en);
   const timerDuration = currentQuestion?.timeLimitSeconds || 90;
+
+  usePracticeComplete({
+    isGameOver: isCompleted,
+    score,
+    totalQuestions: questions.length,
+    exerciseType: "listen_order",
+    level: currentQuestion?.level,
+  });
 
   const { timerString, resetTimer } = useExerciseTimer({
     duration: timerDuration,
@@ -69,417 +171,252 @@ function ListenOrderContent() {
   });
 
   useEffect(() => {
+    if (currentQuestion) resetTimer();
+  }, [currentQuestion, resetTimer]);
+
+  useEffect(() => {
+    let isCurrent = true;
     const fetchQuestions = async () => {
       try {
+        setIsLoading(true);
         const data = await fetchPracticeData("listen_order", { tag, limit: 5 });
-        const mapped = (Array.isArray(data) ? data : []).map((item: any) => {
-          const c = item.content || item;
-          // sentences_fr: array of FR sentences in correct order
-          let sentences: string[] = [];
-          if (Array.isArray(c.sentences_fr) && c.sentences_fr.length > 0) {
-            sentences = c.sentences_fr;
-          } else if (typeof c.sentences_fr === "string") {
-            sentences = c.sentences_fr.split("+").map((s: string) => s.trim()).filter(Boolean);
-          }
-          // correctOrder: 0-based indices
-          let correctOrder: any[] = [];
-          if (Array.isArray(c.correctOrder) && c.correctOrder.length > 0) {
-            // If indices, map to sentences; if already strings, use directly
-            if (typeof c.correctOrder[0] === "number") {
-              correctOrder = c.correctOrder.map((i: number) => sentences[i] ?? "").filter(Boolean);
-            } else {
-              correctOrder = c.correctOrder;
-            }
-          } else if (sentences.length > 0) {
-            correctOrder = sentences;
-          } else if (Array.isArray(item.correctOrder)) {
-            correctOrder = item.correctOrder;
-          }
-          return {
-            correctOrder,
-            title_fr: c.title_fr || item.title_fr || "",
-            title_en: c.title_en || item.title_en || "",
-            timeLimitSeconds: Number(c.timeLimitSeconds || item.timeLimitSeconds || item.Time || 90),
-            level: item.Level || item.level || "A1",
-          };
-        }).filter((q: any) => q.correctOrder.length >= 2);
-
-        if (mapped.length > 5) {
-          setQuestions(shuffleArray(mapped).slice(0, 5));
-        } else {
-          setQuestions(mapped);
-        }
+        const mapped = (Array.isArray(data) ? data : [])
+          .map(mapListenOrderQuestion)
+          .filter((question): question is ListenOrderQuestion => question !== null);
+        if (!isCurrent) return;
+        const selectedQuestions = mapped.length > 5 ? shuffleArray(mapped).slice(0, 5) : mapped;
+        setQuestions(selectedQuestions);
+        setCurrentIndex(0);
+        setCurrentOrder(selectedQuestions.length > 0 ? createOrderItems(selectedQuestions[0]) : []);
+        setShowFeedback(false);
+        setScore(0);
+        setPlayedAudio(false);
       } catch (error) {
         console.error("Error loading listen order data:", error);
+        if (isCurrent) setQuestions([]);
       } finally {
-        setIsLoading(false);
+        if (isCurrent) setIsLoading(false);
       }
     };
     fetchQuestions();
+    return () => { isCurrent = false; };
   }, [tag]);
 
-  useEffect(() => {
-    if (currentQuestion && !isCompleted) {
-      setCurrentOrder(shuffleArray(currentQuestion.correctOrder));
-      setPlayedAudio(false);
-      resetTimer();
-    }
-  }, [currentIndex, currentQuestion, isCompleted, resetTimer]);
-
-  const handlePlayItem = (text, e) => {
-    e.stopPropagation(); // Prevent drag when clicking play button
-    speak(text, "fr-FR", 0.9);
+  const playSentence = (text: string, itemId: string, rate: number) => {
+    speak(text, "fr-FR", rate);
+    setPlayingItemId(itemId);
     setPlayedAudio(true);
   };
 
-  const handlePlaySlowItem = (text, e) => {
-    e.stopPropagation();
-    window.speechSynthesis.cancel(); // Force stop existing audio
-    speak(text, "fr-FR", 0.55); // Slower speed
-    setPlayedAudio(true);
-  };
-
-  const handleReorder = (newOrder) => {
+  const handleReorder = (newOrder: OrderItem[]) => {
     setCurrentOrder(newOrder);
     setPlayedAudio(true);
   };
 
   const handleSubmit = () => {
-    if (showFeedback) return;
-
-    const correct =
-      JSON.stringify(currentOrder) ===
-      JSON.stringify(currentQuestion.correctOrder);
+    if (showFeedback || !currentQuestion) return;
+    const correct = currentOrder.every((item, index) => item.correctIndex === index);
     setIsCorrect(correct);
     setFeedbackMessage(getFeedbackMessage(correct));
     setShowFeedback(true);
-
-    if (correct) {
-      setScore((prev) => prev + 1);
-    }
+    if (correct) setScore((previous) => previous + 1);
   };
 
   const handleContinue = () => {
     setShowFeedback(false);
-
+    setPlayedAudio(false);
     if (currentIndex < questions.length - 1) {
-      setCurrentIndex((prev) => prev + 1);
+      setCurrentOrder(createOrderItems(questions[currentIndex + 1]));
+      setPlayingItemId(null);
+      setCurrentIndex((previous) => previous + 1);
     } else {
       setIsCompleted(true);
     }
   };
 
   if (isLoading) {
+    return <div className="flex min-h-screen items-center justify-center bg-slate-50 dark:bg-slate-900"><Loader2 className="h-8 w-8 animate-spin text-orange-500" /></div>;
+  }
+
+  if (questions.length === 0 || !currentQuestion) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-900">
-        <Loader2 className="animate-spin text-orange-500 w-8 h-8" />
+      <div className="flex min-h-screen flex-col items-center justify-center bg-slate-50 dark:bg-slate-900">
+        <p className="text-xl text-slate-600 dark:text-slate-400">No content available.</p>
+        <Button onClick={() => handleExit()} variant="outline" className="mt-4">Back</Button>
       </div>
     );
   }
 
-  if (questions.length === 0) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-slate-50 dark:bg-slate-900">
-        <p className="text-xl text-slate-600 dark:text-slate-400">
-          No content available.
-        </p>
-        <Button onClick={() => handleExit()} variant="outline" className="mt-4">
-          Back
-        </Button>
-      </div>
-    );
-  }
-
-  const progress =
-    questions.length > 0 ? ((currentIndex + 1) / questions.length) * 100 : 0;
+  const progress = ((currentIndex + 1) / questions.length) * 100;
 
   return (
-    <>
-      <PracticeGameLayout
-        questionType="Listen and Order"
-        instructionFr="Écoutez et mettez dans l'ordre"
-        instructionEn="Listen and put in order"
-        progress={progress}
-        isGameOver={isCompleted}
-        score={score}
-        totalQuestions={questions.length}
-        onExit={handleExit}
-        onNext={handleSubmit}
-        onRestart={() => window.location.reload()}
-        isSubmitEnabled={playedAudio && !showFeedback}
-        showSubmitButton={!showFeedback}
-        submitLabel="Check"
-        timerValue={timerString}
-      >
-        <div className="flex flex-col items-center w-full max-w-2xl mx-auto px-4 py-6">
-          <div className="w-full flex gap-4">
-            {/* Left Column: Static Numbers */}
-            <div className="flex flex-col gap-3 pt-3">
-              {currentOrder.map((_, i) => (
-                <div
-                  key={i}
-                  className="w-8 h-8 flex items-center justify-center font-bold text-slate-400 dark:text-slate-500"
-                  style={{ height: "60px" }} // Height matching the card
-                >
-                  {i + 1}
-                </div>
-              ))}
-            </div>
+    <PracticeGameLayout
+      questionType="Reorder Sentences"
+      questionTypeFr="Réorganisez les phrases"
+      questionTypeEn="Reorder Sentences"
+      instructionFr="Écoutez les phrases et mettez-les dans le bon ordre"
+      instructionEn="Listen to the sentences and put them in the correct order"
+      localizedInstruction={learningLang === "fr" ? "Écoutez les phrases et mettez-les dans le bon ordre" : "Listen to the sentences and put them in the correct order"}
+      progress={progress}
+      isGameOver={isCompleted}
+      score={score}
+      totalQuestions={questions.length}
+      currentQuestionIndex={currentIndex}
+      questionCounterValue={currentIndex + 1}
+      feedbackTone={showFeedback ? (isCorrect ? "success" : "error") : "neutral"}
+      onExit={handleExit}
+      onNext={showFeedback ? handleContinue : handleSubmit}
+      onRestart={() => window.location.reload()}
+      isSubmitEnabled={playedAudio && !showFeedback}
+      showSubmitButton
+      submitLabel={showFeedback ? (currentIndex + 1 === questions.length ? "FINISH" : "CONTINUE") : "Submit Answer"}
+      disableContentScroll
+      showFeedback={showFeedback}
+      isCorrect={isCorrect}
+      feedbackMessage={feedbackMessage}
+      compactFeedback
+      feedbackInFlow
+      timerValue={timerString}
+    >
+      <div className="flex min-h-0 w-full flex-1 flex-col py-4 sm:py-6">
+        {headingText && <div className="mx-auto flex w-full max-w-4xl shrink-0 items-center justify-center border-b border-slate-200 px-3 pb-3 dark:border-slate-700 sm:px-4 sm:pb-4">
+          <h2 className="practice-type-content-heading text-center text-slate-900 dark:text-slate-100">{headingText}</h2>
+        </div>}
 
-            {/* Right Column: Draggable List */}
-            <div className="flex-1 w-full space-y-3">
-              <Reorder.Group
-                axis="y"
-                values={currentOrder}
-                onReorder={showFeedback ? () => {} : handleReorder}
-                className="w-full space-y-3"
-              >
-                {currentOrder.map((sentence, index) => {
-                  const isCorrectPosition =
-                    showFeedback &&
-                    sentence === currentQuestion.correctOrder[index];
-                  const isWrongPosition = showFeedback && !isCorrectPosition;
+        <div className={cn("min-h-0 w-full flex-1", headingText && "mt-4 sm:mt-6")}>
+          <Reorder.Group
+            axis="y"
+            values={currentOrder}
+            onReorder={showFeedback ? () => undefined : handleReorder}
+            layoutScroll
+            className="practice-game-scroll h-full w-full space-y-3 overflow-x-hidden overflow-y-auto px-3 pb-2 sm:px-4"
+          >
+            {currentOrder.map((item, index) => {
+              const correctIndex = item.correctIndex;
+              const isCorrectPosition = showFeedback && correctIndex === index;
+              const isWrongPosition = showFeedback && !isCorrectPosition;
+              const englishTranslation = currentQuestion.correctOrder_en[correctIndex] || "";
 
-                  // Find the true original index of this sentence
-                  const correctIndex =
-                    currentQuestion.correctOrder.indexOf(sentence);
-
-                  return (
-                    <SortableItem
-                      key={sentence}
-                      sentence={sentence}
-                      isCorrectPosition={isCorrectPosition}
-                      isWrongPosition={isWrongPosition}
-                      showFeedback={showFeedback}
-                      onPlayItem={handlePlayItem}
-                      onPlaySlowItem={handlePlaySlowItem}
-                      correctIndex={correctIndex}
-                    />
-                  );
-                })}
-              </Reorder.Group>
-            </div>
-          </div>
-
-          {/* Full Sentence Display - Shown after submit */}
-          {showFeedback && (
-            <div className="mt-8 w-full animate-in fade-in slide-in-from-bottom-4 duration-500">
-              <div className="p-6 bg-indigo-50 dark:bg-indigo-950/30 rounded-xl border-2 border-indigo-100 dark:border-indigo-900/50">
-                <h3 className="text-xs uppercase tracking-wider text-indigo-500 font-bold mb-4 flex items-center justify-center gap-2">
-                  <span className="w-1.5 h-1.5 rounded-full bg-indigo-500"></span>
-                  Correct Order
-                  <span className="w-1.5 h-1.5 rounded-full bg-indigo-500"></span>
-                </h3>
-                <div className="flex flex-col gap-3 text-left max-w-lg mx-auto">
-                  {currentQuestion.correctOrder.map((sentence, index) => (
-                    <div
-                      key={index}
-                      className="flex gap-3 text-lg md:text-xl font-medium text-slate-700 dark:text-slate-200"
-                    >
-                      <span className="font-bold text-indigo-500 shrink-0 select-none">
-                        {index + 1}.
-                      </span>
-                      {/* Play button for correct answer line */}
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          speak(sentence, "fr-FR");
-                        }}
-                        className="text-slate-400 hover:text-indigo-500 transition-colors mt-1"
-                      >
-                        <Volume2 className="w-5 h-5" />
-                      </button>
-                      <span>{sentence}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
+              return (
+                <ListenOrderRow
+                  key={item.itemId}
+                  item={item}
+                  positionIndex={index}
+                  correctIndex={correctIndex}
+                  englishTranslation={englishTranslation}
+                  learningLang={learningLang}
+                  showFeedback={showFeedback}
+                  isCorrectPosition={isCorrectPosition}
+                  isWrongPosition={isWrongPosition}
+                  isPlaying={isSpeaking && playingItemId === item.itemId}
+                  onPlay={(rate) => playSentence(item.text, item.itemId, rate)}
+                />
+              );
+            })}
+          </Reorder.Group>
         </div>
-      </PracticeGameLayout>
-
-      {/* Feedback Banner */}
-      {showFeedback && (
-        <FeedbackBanner
-          isCorrect={isCorrect}
-          onContinue={handleContinue}
-          message={feedbackMessage}
-          continueLabel={
-            currentIndex + 1 === questions.length ? "FINISH" : "CONTINUE"
-          }
-        />
-      )}
-    </>
+      </div>
+    </PracticeGameLayout>
   );
 }
 
-const SortableItem = ({
-  sentence,
+function shuffleArray<T>(array: T[]): T[] {
+  const shuffled = [...array];
+  for (let index = shuffled.length - 1; index > 0; index--) {
+    const other = Math.floor(Math.random() * (index + 1));
+    [shuffled[index], shuffled[other]] = [shuffled[other], shuffled[index]];
+  }
+  return shuffled;
+}
+
+function createOrderItems(question: ListenOrderQuestion): OrderItem[] {
+  return shuffleArray(question.correctOrder.map((text, correctIndex) => ({ text, correctIndex })))
+    .map(({ text, correctIndex }) => ({
+      itemId: `${question.id}-${correctIndex}-${text.slice(0, 20)}`,
+      text,
+      correctIndex,
+    }));
+}
+
+function ListenOrderRow({
+  item,
+  positionIndex,
+  correctIndex,
+  englishTranslation,
+  learningLang,
+  showFeedback,
   isCorrectPosition,
   isWrongPosition,
-  showFeedback,
-  onPlayItem,
-  onPlaySlowItem,
-  correctIndex,
-}) => {
+  isPlaying,
+  onPlay,
+}: {
+  item: OrderItem;
+  positionIndex: number;
+  correctIndex: number;
+  englishTranslation: string;
+  learningLang: string;
+  showFeedback: boolean;
+  isCorrectPosition: boolean;
+  isWrongPosition: boolean;
+  isPlaying: boolean;
+  onPlay: (rate: number) => void;
+}) {
+  const { displayText, isTranslating, showTranslation, toggle } = useTranslateText(item.text, learningLang);
+  const [showProvidedTranslation, setShowProvidedTranslation] = useState(false);
+
+  const isTranslationVisible = englishTranslation ? showProvidedTranslation : showTranslation;
+  const sentenceText = isTranslationVisible && englishTranslation ? englishTranslation : displayText;
+
   return (
     <Reorder.Item
-      value={sentence}
+      value={item}
+      dragListener={!showFeedback}
       className={cn(
-        "flex items-center gap-3 p-4 rounded-xl border-2 transition-colors duration-200 select-none bg-white dark:bg-slate-800",
-        !showFeedback &&
-          "cursor-grab active:cursor-grabbing hover:border-slate-300 dark:hover:border-slate-600",
-        isCorrectPosition
-          ? "bg-emerald-50 dark:bg-emerald-900/20 border-emerald-500"
-          : isWrongPosition
-            ? "bg-red-50 dark:bg-red-900/20 border-red-500"
-            : "border-slate-200 dark:border-slate-700",
+        "mx-auto flex w-full max-w-4xl items-start gap-2 rounded-2xl border-2 bg-white p-3 transition-colors duration-200 select-none dark:bg-slate-800 sm:gap-3 sm:p-4",
+        !showFeedback && "cursor-grab active:cursor-grabbing hover:border-slate-300 dark:hover:border-slate-600",
+        isCorrectPosition ? "border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20" :
+          isWrongPosition ? "border-red-500 bg-red-50 dark:bg-red-900/20" : "border-slate-200 dark:border-slate-700",
       )}
-      style={{ height: "60px" }} // Enforce height
-      whileDrag={{
-        scale: 1.02,
-        boxShadow: "0 10px 30px -10px rgba(0,0,0,0.15)",
-        zIndex: 50,
-      }}
+      whileDrag={!showFeedback ? { scale: 1.02, boxShadow: "0 10px 30px -10px rgba(0,0,0,0.15)", zIndex: 50 } : undefined}
       transition={{ type: "spring", stiffness: 400, damping: 25 }}
     >
-      {/* Play buttons - Now inside the card */}
-      <div className="flex gap-2 shrink-0">
-        <button
-          onClick={(e) => onPlayItem(sentence, e)}
-          className="text-slate-400 hover:text-orange-500 p-1 rounded-full hover:bg-orange-50 dark:hover:bg-orange-900/20 transition-colors"
-          title="Play normal speed"
-        >
-          <Volume2 className="w-5 h-5" />
-        </button>
-        <button
-          onClick={(e) => onPlaySlowItem(sentence, e)}
-          className="text-slate-400 hover:text-emerald-500 p-1 rounded-full hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors"
-          title="Play slow speed"
-        >
-          <Turtle className="w-5 h-5" />
-        </button>
-      </div>
-
-      {/* Position indicator (Feedback only) or Grip */}
-      <div className="w-6 flex justify-center shrink-0">
-        {showFeedback ? (
-          <span
-            className={cn(
-              "w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold",
-              isCorrectPosition
-                ? "bg-emerald-500 text-white"
-                : "bg-teal-500 text-white", // Show correct index
-            )}
-          >
+      {!showFeedback ? (
+        <>
+          <GripVertical className="mt-1 h-4 w-4 shrink-0 text-slate-400 dark:text-slate-500 sm:h-5 sm:w-5" aria-hidden="true" />
+          <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-sm font-bold text-slate-500 dark:bg-slate-700 dark:text-slate-400 sm:h-8 sm:w-8" aria-label={`Position ${positionIndex + 1}`}>
+            {positionIndex + 1}
+          </span>
+          <div className="flex min-w-0 flex-1 items-center gap-2 sm:gap-3">
+            <div className="flex shrink-0 items-center gap-1 sm:gap-2">
+              <button type="button" onPointerDown={(event) => event.stopPropagation()} onClick={(event) => { event.stopPropagation(); onPlay(0.9); }} aria-label="Play sentence" title="Normal speed" className="flex h-10 w-10 items-center justify-center rounded-full text-slate-500 transition-colors hover:bg-sky-50 hover:text-sky-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 dark:text-slate-300 dark:hover:bg-sky-900/30">
+                <Volume2 className="h-5 w-5" aria-hidden="true" />
+              </button>
+              <button type="button" onPointerDown={(event) => event.stopPropagation()} onClick={(event) => { event.stopPropagation(); onPlay(0.55); }} aria-label="Play sentence slowly" title="Slow speed" className="flex h-10 w-10 items-center justify-center rounded-full text-slate-500 transition-colors hover:bg-sky-50 hover:text-sky-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 dark:text-slate-300 dark:hover:bg-sky-900/30">
+                <Turtle className="h-5 w-5" aria-hidden="true" />
+              </button>
+            </div>
+            <AudioWaveform isPlaying={isPlaying} decorative className="flex-1" />
+          </div>
+        </>
+      ) : (
+        <>
+          {learningLang === "fr" && (englishTranslation || item.text) && (
+            <TranslateButton
+              iconVariant="option"
+              onClick={() => englishTranslation ? setShowProvidedTranslation((visible) => !visible) : toggle()}
+              onPointerDown={(event) => event.stopPropagation()}
+              isLoading={!englishTranslation && isTranslating}
+              aria-label={isTranslationVisible ? "Show original sentence" : "Translate sentence"}
+              title={isTranslationVisible ? "Show original sentence" : "Translate sentence"}
+              aria-pressed={isTranslationVisible}
+            />
+          )}
+          <span className={cn("flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-bold", isCorrectPosition ? "bg-emerald-500 text-white" : "bg-teal-500 text-white")} aria-label={`Correct position ${correctIndex + 1}`}>
             {correctIndex + 1}
           </span>
-        ) : (
-          <div className="text-slate-300 dark:text-slate-600">
-            <GripVertical className="w-4 h-4" />
-          </div>
-        )}
-      </div>
-
-      {/* Waveform or Sentence text */}
-      <div className="flex-1 flex justify-center overflow-hidden">
-        {!showFeedback ? (
-          /* Waveform SVG (Visible before submit) */
-          <svg
-            width="120"
-            height="30"
-            viewBox="0 0 120 40"
-            className="text-orange-400 dark:text-orange-500"
-          >
-            <rect
-              x="10"
-              y="15"
-              width="3"
-              height="10"
-              fill="currentColor"
-              rx="1.5"
-            />
-            <rect
-              x="16"
-              y="10"
-              width="3"
-              height="20"
-              fill="currentColor"
-              rx="1.5"
-            />
-            <rect
-              x="22"
-              y="5"
-              width="3"
-              height="30"
-              fill="currentColor"
-              rx="1.5"
-            />
-            <rect
-              x="28"
-              y="12"
-              width="3"
-              height="16"
-              fill="currentColor"
-              rx="1.5"
-            />
-            <rect
-              x="34"
-              y="18"
-              width="3"
-              height="4"
-              fill="currentColor"
-              rx="1.5"
-            />
-            <rect
-              x="40"
-              y="8"
-              width="3"
-              height="24"
-              fill="currentColor"
-              rx="1.5"
-            />
-            <rect
-              x="46"
-              y="14"
-              width="3"
-              height="12"
-              fill="currentColor"
-              rx="1.5"
-            />
-            <rect
-              x="52"
-              y="11"
-              width="3"
-              height="18"
-              fill="currentColor"
-              rx="1.5"
-            />
-            <rect
-              x="58"
-              y="16"
-              width="3"
-              height="8"
-              fill="currentColor"
-              rx="1.5"
-            />
-            <rect
-              x="64"
-              y="13"
-              width="3"
-              height="14"
-              fill="currentColor"
-              rx="1.5"
-            />
-          </svg>
-        ) : (
-          /* Text Reveal (Visible after submit) */
-          <span className="text-slate-700 dark:text-slate-200 font-medium select-none text-left w-full pl-2 truncate">
-            {sentence}
-          </span>
-        )}
-      </div>
+          <span className="practice-type-content min-w-0 flex-1 break-words font-medium text-slate-700 dark:text-slate-200">{sentenceText}</span>
+        </>
+      )}
     </Reorder.Item>
   );
-};
+}

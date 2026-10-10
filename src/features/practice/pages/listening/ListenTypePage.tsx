@@ -3,18 +3,30 @@
 import React, { useState, useEffect, useRef } from "react";
 import { usePracticeExit } from "@/hooks/usePracticeExit";
 import { useExerciseTimer } from "@/hooks/useExerciseTimer";
-import { Volume2, RotateCcw, Turtle } from "lucide-react";
+import { Volume2, Turtle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
-import FeedbackBanner from "@/components/ui/FeedbackBanner";
 import { getFeedbackMessage } from "@/utils/feedbackMessages";
 import { useTextToSpeech } from "@/hooks/useTextToSpeech";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import AccentKeyboard from "@/components/ui/AccentKeyboard";
+import { TranslateButton } from "@/components/ui/TranslateButton";
+import AudioWaveform from "@/components/ui/AudioWaveform";
+import speakerStyles from "@/components/ui/AudioSpeaker.module.css";
 import { fetchPracticeData } from "@/utils/practiceFetcher";
 import { useSearchParams } from "next/navigation";
 import { Suspense } from "react";
+import styles from "./ListenTypePage.module.css";
+
+const ACCENT_KEYS = ["e", "è", "ê", "à", "ç", "â", "î", "ô", "û", "ë", "ï", "ü"];
+
+type ListenTypeQuestion = {
+  audioText: string;
+  englishText: string;
+  hint: string;
+  timeLimitSeconds: number;
+  level: string;
+};
 
 export default function ListenTypePage() {
   return (
@@ -27,22 +39,23 @@ export default function ListenTypePage() {
 function ListenTypeContent() {
   const handleExit = usePracticeExit();
   const { speak, isSpeaking } = useTextToSpeech();
-  const textareaRef = useRef(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const searchParams = useSearchParams();
   const tag = searchParams?.get("tag") ?? undefined;
 
-  const [questions, setQuestions] = useState([]);
+  const [questions, setQuestions] = useState<ListenTypeQuestion[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [currentIndex, setCurrentIndex] = useState(0);
-  // playbackSpeed state removed - using direct handlers
 
   const [userInput, setUserInput] = useState("");
   const [isCompleted, setIsCompleted] = useState(false);
   const [showFeedback, setShowFeedback] = useState(false);
+  const [showTranslation, setShowTranslation] = useState(false);
   const [isCorrect, setIsCorrect] = useState(false);
   const [feedbackMessage, setFeedbackMessage] = useState("");
   const [score, setScore] = useState(0);
   const [hasPlayed, setHasPlayed] = useState(false);
+  const [playbackMode, setPlaybackMode] = useState<"normal" | "slow" | null>(null);
 
   const currentQuestion = questions[currentIndex];
   const timerDuration = currentQuestion?.timeLimitSeconds || 45;
@@ -89,6 +102,8 @@ function ListenTypeContent() {
     if (currentQuestion && !isCompleted) {
       setUserInput("");
       setHasPlayed(false);
+      setShowTranslation(false);
+      setPlaybackMode(null);
       const timer = setTimeout(() => {
         handlePlayNormal();
       }, 500);
@@ -99,6 +114,7 @@ function ListenTypeContent() {
   const handlePlayNormal = () => {
     if (currentQuestion) {
       speak(currentQuestion.audioText, "fr-FR", 0.9);
+      setPlaybackMode("normal");
       setHasPlayed(true);
       resetTimer();
     }
@@ -107,13 +123,14 @@ function ListenTypeContent() {
   const handlePlaySlow = () => {
     if (currentQuestion) {
       speak(currentQuestion.audioText, "fr-FR", 0.75);
+      setPlaybackMode("slow");
       setHasPlayed(true);
       resetTimer();
     }
   };
 
   // Normalize for comparison
-  const normalize = (str) =>
+  const normalize = (str: string) =>
     str
       .toLowerCase()
       .replace(/[.,!?;:'"]/g, "")
@@ -129,6 +146,7 @@ function ListenTypeContent() {
 
     setIsCorrect(correct);
     setFeedbackMessage(getFeedbackMessage(correct));
+    setShowTranslation(false);
     setShowFeedback(true);
 
     if (correct) {
@@ -138,6 +156,8 @@ function ListenTypeContent() {
 
   const handleContinue = () => {
     setShowFeedback(false);
+    setShowTranslation(false);
+    setUserInput("");
 
     if (currentIndex < questions.length - 1) {
       setCurrentIndex((prev) => prev + 1);
@@ -169,6 +189,25 @@ function ListenTypeContent() {
 
   const progress =
     questions.length > 0 ? ((currentIndex + 1) / questions.length) * 100 : 0;
+  const characterLimit = Math.max(100, currentQuestion.audioText.length);
+  const canTranslate = Boolean(currentQuestion.englishText.trim());
+  const handleTranslate = () => {
+    if (showFeedback && canTranslate) setShowTranslation(visible => !visible);
+  };
+
+  const insertCharacter = (char: string) => {
+    const el = textareaRef.current;
+    if (!el || showFeedback) return;
+    const start = el.selectionStart;
+    const end = el.selectionEnd;
+    const nextValue = userInput.slice(0, start) + char + userInput.slice(end);
+    if (nextValue.length > characterLimit) return;
+    setUserInput(nextValue);
+    requestAnimationFrame(() => {
+      el.focus();
+      el.setSelectionRange(start + char.length, start + char.length);
+    });
+  };
 
   return (
     <>
@@ -179,77 +218,95 @@ function ListenTypeContent() {
         progress={progress}
         isGameOver={isCompleted}
         score={score}
+        currentQuestionIndex={currentIndex}
         totalQuestions={questions.length}
         onExit={handleExit}
-        onNext={handleSubmit}
+        onNext={showFeedback ? handleContinue : handleSubmit}
         onRestart={() => window.location.reload()}
         isSubmitEnabled={userInput.trim().length > 0 && !showFeedback}
-        showSubmitButton={!showFeedback}
-        submitLabel="Check"
+        showSubmitButton
+        showFeedback={showFeedback}
+        isCorrect={isCorrect}
+        feedbackMessage={feedbackMessage}
+        feedbackInFlow
+        compactFeedback
+        onFeedbackTranslate={canTranslate ? handleTranslate : undefined}
+        feedbackTranslationVisible={showTranslation}
+        submitLabel={showFeedback ? (currentIndex + 1 === questions.length ? "Finish" : "Continue") : "Check"}
         timerValue={hasPlayed ? timerString : "--:--"}
       >
-        <div className="flex flex-col items-center w-full max-w-2xl mx-auto px-4 py-6">
-          {/* Audio Player Section */}
-          <div className="w-full bg-gradient-to-r from-emerald-500 to-teal-600 rounded-2xl p-8 mb-8 shadow-lg">
-            <div className="flex flex-col items-center gap-4">
-              {/* Play Button */}
-              <div className="flex items-center gap-8">
-                {/* Slow Speed Button */}
-                <button
-                  onClick={handlePlaySlow}
-                  className={cn(
-                    "w-12 h-12 rounded-full flex items-center justify-center transition-all duration-200",
-                    "bg-white/20 text-white hover:bg-white/30 active:scale-95",
-                  )}
-                  title="Play Slower (0.75x)"
-                >
-                  <Turtle className="w-6 h-6" />
-                </button>
-
-                {/* Main Play Button */}
-                <button
-                  onClick={handlePlayNormal}
-                  disabled={isSpeaking}
-                  className={cn(
-                    "w-24 h-24 rounded-full flex items-center justify-center transition-all duration-300 shadow-xl",
-                    isSpeaking
-                      ? "bg-white/30 animate-pulse"
-                      : "bg-white text-emerald-600 hover:scale-105 active:scale-95",
-                  )}
-                >
-                  <Volume2
-                    className={cn(
-                      "w-12 h-12",
-                      isSpeaking ? "text-white" : "text-emerald-600",
-                    )}
-                  />
-                </button>
-
-                {/* Phantom element to balance layout if needed, or just leave as is since we are centering flex-col */}
-                <div className="w-12" />
-              </div>
-
-              {/* Replay hint */}
-              <div className="flex items-center gap-2 text-white/70 text-sm">
-                <RotateCcw className="w-4 h-4" />
-                <span>Click to {hasPlayed ? "replay" : "play"} audio</span>
-              </div>
-            </div>
+        <div className="mx-auto flex w-full max-w-[888px] flex-col px-4 pb-8 pt-8 sm:px-6 sm:pt-12">
+          <div className={cn(styles.enter, "flex min-h-[76px] w-full max-w-[600px] items-center gap-3 self-center rounded-[22px] border border-slate-200 bg-white px-3 py-2.5 shadow-[0_2px_10px_rgba(15,23,42,0.04)] sm:min-h-[84px] sm:gap-4 sm:px-4 dark:border-slate-700 dark:bg-slate-900")}>
+            <button
+              type="button"
+              onClick={handlePlaySlow}
+              aria-label="Play audio slowly"
+              aria-pressed={isSpeaking && playbackMode === "slow"}
+              title="Play audio slowly"
+              className={cn(
+                "flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-sky-500 text-white transition-[background-color,box-shadow,transform] duration-200 hover:bg-sky-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 motion-safe:hover:-translate-y-0.5 motion-safe:active:translate-y-0 motion-safe:active:scale-[0.96] motion-reduce:transition-none sm:h-[52px] sm:w-[52px] dark:focus-visible:ring-offset-slate-900",
+                isSpeaking && playbackMode === "slow" && "shadow-[0_0_0_4px_rgba(14,165,233,0.2)]",
+              )}
+            >
+              <Turtle className="h-6 w-6" aria-hidden="true" />
+            </button>
+            <button
+              type="button"
+              onClick={handlePlayNormal}
+              aria-label={hasPlayed ? "Replay audio" : "Play audio"}
+              aria-pressed={isSpeaking && playbackMode === "normal"}
+              title={hasPlayed ? "Replay audio" : "Play audio"}
+              className={cn(
+                speakerStyles.speakerButton,
+                "flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-sky-100 text-sky-700 transition-[background-color,box-shadow,transform] duration-200 hover:bg-sky-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 motion-safe:active:scale-[0.96] motion-reduce:transition-none sm:h-[52px] sm:w-[52px] dark:bg-sky-900/40 dark:text-sky-300 dark:hover:bg-sky-900/60 dark:focus-visible:ring-offset-slate-900",
+                isSpeaking && playbackMode === "normal" && speakerStyles.playing,
+                isSpeaking && playbackMode === "normal" && "bg-sky-500 text-white shadow-[0_0_0_4px_rgba(14,165,233,0.16)] dark:bg-sky-600 dark:text-white",
+              )}
+            >
+              <Volume2 className={cn("h-7 w-7", speakerStyles.speakerIcon)} aria-hidden="true" />
+            </button>
+            <AudioWaveform isPlaying={isSpeaking} className="flex-1 pl-1" />
           </div>
 
-          {/* Hint */}
-          <div className="w-full mb-4">
-            <p className="text-sm text-slate-500 dark:text-slate-400 text-center italic">
-              Hint: {currentQuestion?.hint}
-            </p>
+          <div className={cn(styles.enterKeys, "mt-10 flex flex-wrap justify-center gap-2.5 sm:mt-12")} aria-label="French accent keyboard">
+            {ACCENT_KEYS.map((char) => (
+              <button
+                key={char}
+                type="button"
+                disabled={showFeedback || userInput.length >= characterLimit}
+                onMouseDown={(event) => event.preventDefault()}
+                onClick={() => insertCharacter(char)}
+                aria-label={"Insert " + char}
+                className="flex h-[50px] w-[50px] items-center justify-center rounded-2xl border border-slate-200 bg-white text-base font-semibold text-slate-900 shadow-[0_1px_2px_rgba(15,23,42,0.03)] transition-[background-color,border-color,box-shadow,transform] duration-150 hover:border-sky-300 hover:bg-sky-50 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 motion-safe:active:scale-[0.94] motion-reduce:transition-none disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800"
+              >
+                {char}
+              </button>
+            ))}
           </div>
 
-          {/* Text Input - Textarea for longer sentences */}
-          <div className="w-full">
+          <div className={cn(styles.enterAnswer, "relative mt-8 w-full sm:mt-9")}>
+            {showFeedback && (
+              <TranslateButton
+                iconVariant="option"
+                iconSize="md"
+                onClick={handleTranslate}
+                disabled={!canTranslate}
+                aria-label={showTranslation ? "Show French sentence" : "Translate sentence to English"}
+                aria-pressed={showTranslation}
+                title={showTranslation ? "Show French" : "Translate to English"}
+                className="absolute left-4 top-4 z-10 h-10 w-10 rounded-none border-0 bg-transparent shadow-none hover:bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:[&_svg]:scale-125"
+              />
+            )}
+            <label className="sr-only" htmlFor="listen-type-answer">
+              {showFeedback ? (showTranslation ? "English translation" : "Correct French sentence") : "Type the full sentence you hear"}
+            </label>
             <textarea
+              id="listen-type-answer"
               ref={textareaRef}
-              value={userInput}
-              onChange={(e) => setUserInput(e.target.value)}
+              value={showFeedback ? (showTranslation ? currentQuestion.englishText : currentQuestion.audioText) : userInput}
+              onChange={(e) => {
+                if (!showFeedback) setUserInput(e.target.value);
+              }}
               onKeyDown={(e) => {
                 // Submit on Ctrl+Enter or Cmd+Enter for textarea
                 if (
@@ -261,89 +318,28 @@ function ListenTypeContent() {
                   handleSubmit();
                 }
               }}
-              disabled={showFeedback}
-              placeholder="Type the full sentence you hear..."
-              rows={3}
+              readOnly={showFeedback}
+              maxLength={characterLimit}
+              rows={5}
               className={cn(
-                "w-full py-4 px-6 rounded-xl text-lg font-medium transition-all duration-200 border-2 outline-none resize-none",
-                "bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100",
-                "border-slate-200 dark:border-slate-700",
-                "focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/20",
-                "placeholder:text-slate-400 dark:placeholder:text-slate-500",
-                showFeedback && isCorrect && "border-emerald-500 bg-emerald-50",
-                showFeedback && !isCorrect && "border-red-500 bg-red-50",
+                "block min-h-[200px] w-full resize-none rounded-[20px] border-2 border-slate-200 bg-white px-6 py-5 text-lg leading-relaxed text-slate-900 outline-none transition-[background-color,border-color,box-shadow] duration-200 motion-reduce:transition-none dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100",
+                !showFeedback && "focus:border-sky-500 focus:ring-4 focus:ring-sky-100 dark:focus:ring-sky-900/30",
+                showFeedback && "pl-20 font-medium",
+                showFeedback && isCorrect && "border-green-500 bg-green-50 text-green-950 focus:border-green-500 dark:border-green-500 dark:bg-green-950/30 dark:text-green-100",
+                showFeedback && !isCorrect && "border-red-500 bg-red-50 text-red-950 focus:border-red-500 dark:border-red-500 dark:bg-red-950/30 dark:text-red-100",
               )}
               autoFocus
             />
-            <AccentKeyboard
-              disabled={showFeedback}
-              onAccentClick={(char) => {
-                const el = textareaRef.current;
-                if (!el) return;
-                const start = el.selectionStart;
-                const end = el.selectionEnd;
-                const newVal =
-                  userInput.slice(0, start) + char + userInput.slice(end);
-                setUserInput(newVal);
-                requestAnimationFrame(() => {
-                  el.focus();
-                  el.setSelectionRange(start + 1, start + 1);
-                });
-              }}
-            />
-            <p className="text-xs text-slate-400 dark:text-slate-500 mt-1 text-center">
-              Press Ctrl+Enter to submit
-            </p>
           </div>
 
-          {/* Character count */}
-          <div className="w-full mt-2 text-right">
-            <span className="text-sm text-slate-400">
-              {userInput.length} characters
-            </span>
-          </div>
+          {!showFeedback && (
+            <div className="mt-3 w-full text-right text-sm tabular-nums text-slate-500 dark:text-slate-400">
+              {userInput.length}/{characterLimit}
+            </div>
+          )}
         </div>
       </PracticeGameLayout>
 
-      {/* Answer Display Section */}
-      {showFeedback && (
-        <div className="fixed bottom-32 left-0 right-0 z-40 px-4 animate-in slide-in-from-bottom-5 fade-in duration-300">
-          <div className="max-w-2xl mx-auto bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-200 dark:border-slate-700 p-6">
-            <div className="flex flex-col gap-3 text-center">
-              <div>
-                <p className="text-sm text-slate-500 dark:text-slate-400 mb-1 uppercase tracking-wider font-semibold">
-                  French
-                </p>
-                <p className="text-xl font-medium text-slate-800 dark:text-slate-100">
-                  {currentQuestion.audioText}
-                </p>
-              </div>
-              <div className="w-12 h-px bg-slate-200 dark:bg-slate-700 mx-auto" />
-              <div>
-                <p className="text-sm text-slate-500 dark:text-slate-400 mb-1 uppercase tracking-wider font-semibold">
-                  English
-                </p>
-                <p className="text-lg text-slate-600 dark:text-slate-300 italic">
-                  {currentQuestion.englishText}
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Feedback Banner */}
-      {showFeedback && (
-        <FeedbackBanner
-          isCorrect={isCorrect}
-          correctAnswer={!isCorrect ? currentQuestion.audioText : null}
-          onContinue={handleContinue}
-          message={feedbackMessage}
-          continueLabel={
-            currentIndex + 1 === questions.length ? "FINISH" : "CONTINUE"
-          }
-        />
-      )}
     </>
   );
 }

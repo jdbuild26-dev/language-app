@@ -33,6 +33,14 @@ export const useTextToSpeech = () => {
   const [isPaused, setIsPaused] = useState(false);
   const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
   const syntaxRef = useRef(typeof window !== "undefined" ? window.speechSynthesis : null);
+  const requestIdRef = useRef(0);
+  const progressIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const clearProgress = useCallback(() => {
+    if (progressIntervalRef.current !== null) {
+      clearInterval(progressIntervalRef.current);
+      progressIntervalRef.current = null;
+    }
+  }, []);
 
   useEffect(() => {
     if (!syntaxRef.current) return;
@@ -66,6 +74,8 @@ export const useTextToSpeech = () => {
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const cancel = useCallback(() => {
+    requestIdRef.current += 1;
+    clearProgress();
     if (syntaxRef.current) {
       syntaxRef.current.cancel();
     }
@@ -73,7 +83,7 @@ export const useTextToSpeech = () => {
     activeUtterances.length = 0;
     setIsSpeaking(false);
     setIsPaused(false);
-  }, []);
+  }, [clearProgress]);
 
   const speak = useCallback(
     (text: string, lang = "fr-FR", rate = 0.9, options: {
@@ -81,11 +91,16 @@ export const useTextToSpeech = () => {
       onEnd?: () => void;
       onError?: (e: SpeechSynthesisErrorEvent) => void;
       onBoundary?: (e: SpeechSynthesisEvent) => void;
+      onProgress?: (characterIndex: number, totalCharacters: number) => void;
     } = {}) => {
       if (!syntaxRef.current) return;
+      const requestId = ++requestIdRef.current;
+      clearProgress();
 
       // Cancel any previous speech
       syntaxRef.current.cancel();
+      // Some engines retain the native paused flag after canceling a request.
+      syntaxRef.current.resume();
       stopKeepAlive();
       activeUtterances.length = 0;
 
@@ -94,14 +109,17 @@ export const useTextToSpeech = () => {
       // Chrome bug: long text with accented chars can cut off.
       // Workaround: split on sentence boundaries and queue utterances.
       const chunks = splitIntoChunks(text);
-      let currentVoices = voices.length > 0 ? voices : syntaxRef.current.getVoices();
+      const totalCharacters = chunks.reduce((total, chunk) => total + chunk.length, 0);
+      const chunkOffsets = chunks.map((_, index) =>
+        chunks.slice(0, index).reduce((total, chunk) => total + chunk.length, 0),
+      );
+      const currentVoices = voices.length > 0 ? voices : syntaxRef.current.getVoices();
       const voice =
         currentVoices.find((v) => v.lang === lang) ||
         currentVoices.find((v) => v.lang.startsWith(lang.split("-")[0]));
 
-      let chunkIndex = 0;
-
       const speakChunk = (idx: number) => {
+        if (requestIdRef.current !== requestId) return;
         if (idx >= chunks.length) {
           stopKeepAlive();
           setIsSpeaking(false);
@@ -116,22 +134,51 @@ export const useTextToSpeech = () => {
         if (voice) utterance.voice = voice;
         utterance.lang = lang;
         utterance.rate = rate;
+        let chunkPosition = 0;
 
-        if (options.onBoundary) utterance.onboundary = options.onBoundary;
+        if (options.onBoundary || options.onProgress) {
+          utterance.onboundary = (event) => {
+            if (requestIdRef.current !== requestId) return;
+            options.onBoundary?.(event);
+            chunkPosition = Math.max(chunkPosition, event.charIndex);
+            options.onProgress?.(chunkOffsets[idx] + chunkPosition, totalCharacters);
+          };
+        }
 
         utterance.onstart = () => {
+          if (requestIdRef.current !== requestId) return;
           setIsSpeaking(true);
           setIsPaused(false);
+          if (options.onProgress) {
+            clearProgress();
+            let lastTick = Date.now();
+            options.onProgress(chunkOffsets[idx], totalCharacters);
+            // Speech voices do not consistently emit word boundaries. Interpolate
+            // between events; pause with the engine and finish only on real onend.
+            progressIntervalRef.current = setInterval(() => {
+              const now = Date.now();
+              const elapsedSeconds = (now - lastTick) / 1000;
+              lastTick = now;
+              if (requestIdRef.current !== requestId || syntaxRef.current?.paused) return;
+              chunkPosition = Math.max(chunkPosition, Math.min(chunks[idx].length * 0.95, chunkPosition + elapsedSeconds * 14 * rate));
+              options.onProgress?.(chunkOffsets[idx] + chunkPosition, totalCharacters);
+            }, 100);
+          }
           if (idx === 0 && options.onStart) options.onStart();
         };
 
         utterance.onend = () => {
+          if (requestIdRef.current !== requestId) return;
+          clearProgress();
+          options.onProgress?.(chunkOffsets[idx] + chunks[idx].length, totalCharacters);
           const i = activeUtterances.indexOf(utterance);
           if (i > -1) activeUtterances.splice(i, 1);
           speakChunk(idx + 1);
         };
 
         utterance.onerror = (event) => {
+          if (requestIdRef.current !== requestId) return;
+          clearProgress();
           const i = activeUtterances.indexOf(utterance);
           if (i > -1) activeUtterances.splice(i, 1);
           const silentErrors = ["interrupted", "canceled", "synthesis-failed", "audio-busy"];
@@ -139,6 +186,7 @@ export const useTextToSpeech = () => {
             // If interrupted/canceled, don't continue the chain
             stopKeepAlive();
             setIsSpeaking(false);
+            if (options.onError) options.onError(event);
             return;
           }
           console.warn("TTS Error:", event.error || "unknown");
@@ -153,12 +201,12 @@ export const useTextToSpeech = () => {
 
       // Small delay to ensure browser is ready
       setTimeout(() => {
-        if (!syntaxRef.current) return;
+        if (!syntaxRef.current || requestIdRef.current !== requestId) return;
         speakChunk(0);
         startKeepAlive(syntaxRef.current);
       }, 50);
     },
-    [voices, cancel],
+    [voices, clearProgress],
   );
 
   const pause = useCallback(() => {

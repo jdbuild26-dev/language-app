@@ -14,6 +14,8 @@ import { fetchPracticeData } from "@/utils/practiceFetcher";
 import { useSearchParams } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import AudioWaveform from "@/components/ui/AudioWaveform";
+import speakerStyles from "@/components/ui/AudioSpeaker.module.css";
 import { useTranslateText } from "@/hooks/useTranslateText";
 
 export default function ListeningConversationPage() {
@@ -131,7 +133,7 @@ const normalizeConversation = (rawConversation: any) => {
 
 function ListeningConversationContent() {
   const handleExit = usePracticeExit();
-  const { speak } = useTextToSpeech();
+  const { speak, isSpeaking } = useTextToSpeech();
   const searchParams = useSearchParams();
   const tag = searchParams?.get("tag") ?? undefined;
 
@@ -482,41 +484,10 @@ function ListeningConversationContent() {
                     title="Replay current audio"
                     className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-5 py-3 rounded-2xl rounded-tl-sm shadow-sm flex items-center gap-3 w-fit hover:bg-slate-50 dark:hover:bg-slate-750 transition-colors group"
                   >
-                    <Volume2 className="w-5 h-5 text-indigo-500 animate-pulse shrink-0" />
-                    <svg
-                      width="120"
-                      height="24"
-                      viewBox="0 0 120 24"
-                      className="text-indigo-400"
-                    >
-                      <rect x="5" y="8" width="2" height="8" fill="currentColor" rx="1" />
-                      <rect x="9" y="5" width="2" height="14" fill="currentColor" rx="1" />
-                      <rect x="13" y="3" width="2" height="18" fill="currentColor" rx="1" />
-                      <rect x="17" y="7" width="2" height="10" fill="currentColor" rx="1" />
-                      <rect x="21" y="10" width="2" height="4" fill="currentColor" rx="1" />
-                      <rect x="25" y="4" width="2" height="16" fill="currentColor" rx="1" />
-                      <rect x="29" y="8" width="2" height="8" fill="currentColor" rx="1" />
-                      <rect x="33" y="6" width="2" height="12" fill="currentColor" rx="1" />
-                      <rect x="37" y="9" width="2" height="6" fill="currentColor" rx="1" />
-                      <rect x="41" y="7" width="2" height="10" fill="currentColor" rx="1" />
-                      <rect x="45" y="8" width="2" height="8" fill="currentColor" rx="1" />
-                      <rect x="49" y="5" width="2" height="14" fill="currentColor" rx="1" />
-                      <rect x="53" y="3" width="2" height="18" fill="currentColor" rx="1" />
-                      <rect x="57" y="7" width="2" height="10" fill="currentColor" rx="1" />
-                      <rect x="61" y="10" width="2" height="4" fill="currentColor" rx="1" />
-                      <rect x="65" y="4" width="2" height="16" fill="currentColor" rx="1" />
-                      <rect x="69" y="8" width="2" height="8" fill="currentColor" rx="1" />
-                      <rect x="73" y="6" width="2" height="12" fill="currentColor" rx="1" />
-                      <rect x="77" y="9" width="2" height="6" fill="currentColor" rx="1" />
-                      <rect x="81" y="7" width="2" height="10" fill="currentColor" rx="1" />
-                      <rect x="85" y="8" width="2" height="8" fill="currentColor" rx="1" />
-                      <rect x="89" y="5" width="2" height="14" fill="currentColor" rx="1" />
-                      <rect x="93" y="3" width="2" height="18" fill="currentColor" rx="1" />
-                      <rect x="97" y="7" width="2" height="10" fill="currentColor" rx="1" />
-                      <rect x="101" y="10" width="2" height="4" fill="currentColor" rx="1" />
-                      <rect x="105" y="6" width="2" height="12" fill="currentColor" rx="1" />
-                      <rect x="109" y="8" width="2" height="8" fill="currentColor" rx="1" />
-                    </svg>
+                    <span className={`${speakerStyles.speakerButton} ${isSpeaking ? speakerStyles.playing : ""} flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-indigo-50 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-400`}>
+                      <Volume2 className={`h-5 w-5 ${speakerStyles.speakerIcon}`} aria-hidden="true" />
+                    </span>
+                    <AudioWaveform size="compact" tone="indigo" isPlaying={isSpeaking} decorative />
                   </button>
                 </div>
               )}

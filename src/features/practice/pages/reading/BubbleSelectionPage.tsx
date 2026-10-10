@@ -14,10 +14,9 @@ import { loadMockCSV } from "@/utils/csvLoader";
 import { useSearchParams } from "next/navigation";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { usePracticeComplete } from "@/hooks/usePracticeComplete";
+import WordTileBuilder from "@/features/practice/components/WordTileBuilder";
 const PRACTICE_READING_SECTION_TEXT_CLASS =
   "practice-type-content-large font-sans font-medium";
-const PRACTICE_READING_OPTION_TEXT_CLASS =
-  "practice-type-content font-sans font-semibold";
 type BubbleQuestion = {
   bubble_tokens?: unknown;
   wordBubbles?: unknown;
@@ -425,68 +424,14 @@ function BubbleSelectionPageContent() {
               </motion.div>
           )}
 
-          <div className="w-full max-w-7xl border-t border-slate-200 dark:border-slate-700 py-5 xl:py-8 flex flex-col gap-4 xl:gap-6">
-            {/* Answer Area - Selected Words */}
-            <div className="w-full min-h-16 xl:min-h-[92px] flex flex-wrap gap-2 xl:gap-3 justify-center items-center px-1" aria-label="Your answer">
-              {selectedWords.length === 0 ? (
-                <span className="w-[2px] h-10 bg-slate-500 dark:bg-slate-300 rounded-full animate-caret-blink" />
-              ) : (
-                <>
-                  {selectedWords.map((word, index) => (
-                    <button
-                      key={`selected-${index}`}
-                      onClick={() => handleWordRemove(word, index)}
-                      disabled={showFeedback}
-                      className={cn(
-                        `px-4 py-2.5 xl:px-6 xl:py-3.5 rounded-2xl transition-all duration-200 border ${PRACTICE_READING_OPTION_TEXT_CLASS}`,
-                        showFeedback && isCorrect
-                          ? "bg-emerald-100 text-emerald-700 border-emerald-400 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-700"
-                          : showFeedback && !isCorrect
-                            ? "bg-red-100 text-red-700 border-red-400 dark:bg-red-950/40 dark:text-red-300 dark:border-red-700"
-                            : "bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border-slate-300 dark:border-slate-600 hover:border-blue-400 active:scale-95",
-                      )}
-                    >
-                      {word}
-                    </button>
-                  ))}
-                  {!showFeedback && (
-                    <span className="w-[2px] h-10 bg-slate-500 dark:bg-slate-300 rounded-full animate-caret-blink" />
-                  )}
-                </>
-              )}
-            </div>
-
-            {/* Word Bank */}
-            <div className="w-full flex flex-wrap gap-2 xl:gap-3 border-t border-slate-200 dark:border-slate-700 pt-4 xl:pt-6 justify-center px-1">
-              {wordBankSlots.map((word, index) =>
-                word === null ? (
-                  <div
-                    key={`ghost-${index}`}
-                    className="practice-type-content px-4 py-2.5 xl:px-6 xl:py-3.5 rounded-2xl font-semibold border border-dashed border-slate-300 dark:border-slate-600 bg-slate-100 dark:bg-slate-800/40 text-transparent select-none"
-                    aria-hidden="true"
-                  >
-                    &nbsp;&nbsp;&nbsp;&nbsp;
-                  </div>
-                ) : (
-                  <button
-                    key={`available-${index}`}
-                    onClick={() => handleWordSelect(word, index)}
-                    disabled={showFeedback}
-                    className={cn(
-                      `px-4 py-2.5 xl:px-6 xl:py-3.5 rounded-2xl transition-all duration-200 border ${PRACTICE_READING_OPTION_TEXT_CLASS}`,
-                      "bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-200",
-                      "border-slate-300 dark:border-slate-600",
-                      "hover:border-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700",
-                      "active:scale-95",
-                      showFeedback && "text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800/70 cursor-not-allowed",
-                    )}
-                  >
-                    {word}
-                  </button>
-                ),
-              )}
-            </div>
-          </div>
+          <WordTileBuilder
+            selectedWords={selectedWords}
+            wordBankSlots={wordBankSlots}
+            showFeedback={showFeedback}
+            isCorrect={isCorrect}
+            onWordSelect={handleWordSelect}
+            onWordRemove={handleWordRemove}
+          />
         </div>
       </PracticeGameLayout>
 

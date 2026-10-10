@@ -1,9 +1,9 @@
 "use client";
 
-import React, { useState, useEffect, Suspense, useCallback } from "react";
+import React, { useState, useEffect, useRef, Suspense, useCallback } from "react";
 import { usePracticeExit } from "@/hooks/usePracticeExit";
 import { useExerciseTimer } from "@/hooks/useExerciseTimer";
-import { Volume2, RotateCcw, Pause, Play, Languages, Loader2 } from "lucide-react";
+import { Volume2, RotateCcw, Pause, Play, Turtle, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
 import FeedbackBanner from "@/components/ui/FeedbackBanner";
@@ -13,6 +13,9 @@ import { fetchPracticeData } from "@/utils/practiceFetcher";
 import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import PracticeOptions from "@/components/ui/PracticeOptions";
+import AudioWaveform from "@/components/ui/AudioWaveform";
+import { TranslateButton } from "@/components/ui/TranslateButton";
+import PracticeTwoPanel from "@/features/practice/components/PracticeTwoPanel";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useQuestionLanguage } from "@/hooks/useQuestionLanguage";
 import { usePracticeComplete } from "@/hooks/usePracticeComplete";
@@ -31,6 +34,7 @@ type ListenQuestion = {
 
 type ListenPassageGroup = {
   passageText: string;
+  passageTranslation: string;
   title: string;
   level: string;
   timeLimitSeconds: number;
@@ -80,6 +84,7 @@ function groupByPassage(exercises: any[]): ListenPassageGroup[] {
       seen.set(key, groups.length);
       groups.push({
         passageText: key,
+        passageTranslation: c.passage_en || c.passageText_en || "",
         title: c.title_fr || c.title_en || c.passage_title_fr || "",
         level: item.Level || item.level || "A1",
         timeLimitSeconds: Number(c.timeLimitSeconds || item.timeLimitSeconds || 120),
@@ -102,8 +107,8 @@ export default function ListenPassagePage() {
 
 function ListenPassageContent() {
   const handleExit = usePracticeExit();
-  const { learningLang = "fr", knownLang = "en" } = useLanguage();
-  const { speak, isSpeaking, pause, resume, isPaused, cancel } = useTextToSpeech();
+  const { learningLang = "fr" } = useLanguage();
+  const { speak, isSpeaking, cancel } = useTextToSpeech();
   const searchParams = useSearchParams();
   const tag = searchParams?.get("tag") ?? undefined;
 
@@ -115,6 +120,26 @@ function ListenPassageContent() {
   const [selectedOptions, setSelectedOptions] = useState<(number | null)[]>([]);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [hasPlayed, setHasPlayed] = useState(false);
+  const [playbackProgress, setPlaybackProgress] = useState(0);
+  const [isStartingAudio, setIsStartingAudio] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
+  const [playbackRate, setPlaybackRate] = useState(0.9);
+  const [translatedQuestions, setTranslatedQuestions] = useState<Record<number, boolean>>({});
+  const [showPassageTranslation, setShowPassageTranslation] = useState(false);
+  const isAudioPlaying = isStartingAudio || (isSpeaking && !isPaused);
+  const progressPositionRef = useRef(0);
+  const progressTargetRef = useRef(0);
+  const progressFrameRef = useRef<number | null>(null);
+  const stopProgress = useCallback(() => {
+    if (progressFrameRef.current !== null) cancelAnimationFrame(progressFrameRef.current);
+    progressFrameRef.current = null;
+  }, []);
+  const setAudioPosition = useCallback((position: number) => {
+    const bounded = Math.max(0, Math.min(100, position));
+    progressPositionRef.current = bounded;
+    progressTargetRef.current = bounded;
+    setPlaybackProgress(bounded);
+  }, []);
 
   // Feedback Banner states
   const [showFeedback, setShowFeedback] = useState(false);
@@ -124,7 +149,27 @@ function ListenPassageContent() {
   const [isCompleted, setIsCompleted] = useState(false);
 
   const currentPassage = passages[passageIndex];
-  const { pick } = useQuestionLanguage(currentPassage?.level);
+  const { pick, pickTranslation } = useQuestionLanguage(currentPassage?.level);
+
+  useEffect(() => {
+    if (!isAudioPlaying || !currentPassage?.passageText) return;
+    const charactersPerSecond = 14 * playbackRate;
+    const percentPerSecond = charactersPerSecond / currentPassage.passageText.length * 100;
+    let lastFrame = performance.now();
+    const advance = (now: number) => {
+      const elapsed = Math.min(0.1, (now - lastFrame) / 1000);
+      lastFrame = now;
+      const position = progressPositionRef.current;
+      const gap = Math.max(0, progressTargetRef.current - position);
+      // Keep moving without speech events and ease toward word/chunk updates.
+      const nextPosition = Math.min(99.9, position + Math.max(percentPerSecond, gap * 3) * elapsed);
+      progressPositionRef.current = nextPosition;
+      setPlaybackProgress(nextPosition);
+      progressFrameRef.current = requestAnimationFrame(advance);
+    };
+    progressFrameRef.current = requestAnimationFrame(advance);
+    return stopProgress;
+  }, [isAudioPlaying, currentPassage?.passageText, playbackRate, stopProgress]);
 
   // ── Load ───────────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -149,9 +194,16 @@ function ListenPassageContent() {
       setIsSubmitted(false);
       setShowFeedback(false);
       setHasPlayed(false);
+      setAudioPosition(0);
+      stopProgress();
+      setIsStartingAudio(false);
+      setIsPaused(false);
+      setPlaybackRate(0.9);
+      setTranslatedQuestions({});
+      setShowPassageTranslation(false);
       cancel();
     }
-  }, [passageIndex, currentPassage, cancel]);
+  }, [passageIndex, currentPassage, cancel, setAudioPosition, stopProgress]);
 
   const totalIndividualQuestions = passages.reduce((acc, p) => acc + p.questions.length, 0);
 
@@ -171,14 +223,61 @@ function ListenPassageContent() {
   });
 
   // ── Handlers ───────────────────────────────────────────────────────────────
+  const startAudio = (rate = 0.9, requestedProgress = 0) => {
+    if (!currentPassage) return;
+    const passageText = currentPassage.passageText;
+    const requestedIndex = Math.floor((Math.max(0, Math.min(100, requestedProgress)) / 100) * passageText.length);
+    const isInsideWord = requestedIndex > 0
+      && /\S/.test(passageText[requestedIndex] || "")
+      && /\S/.test(passageText[requestedIndex - 1]);
+    const afterCurrentWord = isInsideWord ? passageText.slice(requestedIndex).search(/\s/) : 0;
+    const wordStart = afterCurrentWord < 0 ? passageText.length : requestedIndex + afterCurrentWord;
+    const nextWordOffset = passageText.slice(wordStart).search(/\S/);
+    const startIndex = nextWordOffset < 0 ? passageText.length : wordStart + nextWordOffset;
+    const remainingText = passageText.slice(startIndex);
+    setAudioPosition((startIndex / Math.max(1, passageText.length)) * 100);
+    if (!remainingText) { setIsPaused(false); return; }
+    setIsPaused(false);
+    setPlaybackRate(rate);
+    setIsStartingAudio(true);
+    speak(remainingText, "fr-FR", rate, {
+      onStart: () => setIsStartingAudio(false),
+      onProgress: (characterIndex, totalCharacters) => {
+        const passagePosition = startIndex + characterIndex;
+        progressTargetRef.current = totalCharacters ? Math.min(100, (passagePosition / Math.max(1, passageText.length)) * 100) : requestedProgress;
+      },
+      onEnd: () => { stopProgress(); setIsStartingAudio(false); setAudioPosition(100); },
+      onError: () => { stopProgress(); setIsStartingAudio(false); },
+    });
+    setHasPlayed(true);
+    if (!hasPlayed) resetTimer();
+  };
+
   const handlePlayAudio = () => {
-    if (isSpeaking) pause();
-    else if (isPaused) resume();
-    else if (currentPassage) {
-      speak(currentPassage.passageText, "fr-FR");
-      setHasPlayed(true);
-      resetTimer();
+    if (isAudioPlaying) {
+      cancel();
+      stopProgress();
+      setIsStartingAudio(false);
+      setIsPaused(true);
     }
+    else if (isPaused) startAudio(playbackRate, playbackProgress);
+    else startAudio(0.9, playbackProgress >= 100 ? 0 : playbackProgress);
+  };
+
+  const handleAudioSeek = (position: number) => {
+    cancel();
+    stopProgress();
+    setIsStartingAudio(false);
+    setIsPaused(false);
+    setAudioPosition(position);
+  };
+
+  const handlePlayerExit = () => {
+    cancel();
+    stopProgress();
+    setIsStartingAudio(false);
+    setIsPaused(false);
+    handleExit();
   };
 
   const handleOptionSelect = (qIdx: number, optIdx: number) => {
@@ -195,6 +294,7 @@ function ListenPassageContent() {
     if (selectedOptions.some(o => o === null)) return; // Ensure all answered
 
     setIsSubmitted(true);
+    setTranslatedQuestions({});
     let correctCount = 0;
     currentPassage.questions.forEach((q, i) => {
       if (selectedOptions[i] === q.correctIndex) correctCount++;
@@ -205,8 +305,11 @@ function ListenPassageContent() {
     setIsCorrect(allCorrect);
     setFeedbackMessage(allCorrect ? getFeedbackMessage(true) : `${correctCount}/${currentPassage.questions.length} correct`);
     setShowFeedback(true);
+    setIsStartingAudio(false);
+    setIsPaused(false);
     cancel();
-  }, [isSubmitted, currentPassage, selectedOptions, cancel]);
+    stopProgress();
+  }, [isSubmitted, currentPassage, selectedOptions, cancel, stopProgress]);
 
   const handleContinue = () => {
     setShowFeedback(false);
@@ -241,7 +344,7 @@ function ListenPassageContent() {
         isGameOver={isCompleted}
         score={score}
         totalQuestions={passages.length}
-        onExit={handleExit}
+        onExit={handlePlayerExit}
         onNext={showFeedback ? handleContinue : handleSubmit}
         onRestart={() => window.location.reload()}
         isSubmitEnabled={(allAnswered || showFeedback) && hasPlayed}
@@ -249,101 +352,113 @@ function ListenPassageContent() {
         submitLabel={showFeedback ? (passageIndex === passages.length - 1 ? "FINISH" : "CONTINUE") : "Check Answers"}
         timerValue={hasPlayed ? timerString : "--:--"}
       >
-        <div className="flex flex-col lg:flex-row w-full h-full min-h-0 bg-slate-50 dark:bg-slate-950">
-          
-          {/* LEFT — Audio Player Panel */}
-          <div className="flex-1 flex items-center justify-center p-8 lg:p-12 border-b lg:border-b-0 lg:border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
-            <div className="w-full max-w-sm">
-              <div className="bg-gradient-to-br from-rose-500 to-red-600 rounded-3xl p-10 shadow-xl relative overflow-hidden group">
-                {/* Decorative blobs */}
-                <div className="absolute -top-12 -right-12 w-32 h-32 bg-white/10 rounded-full blur-2xl group-hover:scale-125 transition-transform duration-700" />
-                <div className="absolute -bottom-8 -left-8 w-24 h-24 bg-black/10 rounded-full blur-xl" />
-
-                <div className="relative z-10 flex flex-col items-center gap-6">
-                  <div className="flex items-center gap-8">
-                    <button
-                      onClick={(e) => { e.stopPropagation(); cancel(); handlePlayAudio(); }}
-                      className="w-12 h-12 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center transition-all hover:rotate-[-30deg]"
-                    >
-                      <RotateCcw className="w-6 h-6 text-white" />
-                    </button>
-
-                    <button
-                      onClick={handlePlayAudio}
-                      className={cn(
-                        "w-24 h-24 rounded-full flex items-center justify-center transition-all duration-300 shadow-2xl",
-                        isSpeaking ? "bg-white text-rose-500 scale-110" : "bg-white/20 hover:bg-white/30"
-                      )}
-                    >
-                      {isSpeaking ? (
-                        <Pause className="w-12 h-12" />
-                      ) : isPaused ? (
-                        <Play className="w-12 h-12 text-white translate-x-1" />
-                      ) : (
-                        <Volume2 className="w-12 h-12 text-white" />
-                      )}
-                    </button>
-                  </div>
-                  
-                  <div className="text-center">
-                    <p className="text-white font-bold tracking-wide uppercase text-xs opacity-80 mb-1">
-                      {isSpeaking ? "En cours de lecture..." : "Prêt pour l'écoute"}
-                    </p>
-                    <p className="text-white/60 text-[10px] font-medium uppercase tracking-widest">
-                      {currentPassage.title || "Passage Audio"}
-                    </p>
-                  </div>
-                </div>
+        <PracticeTwoPanel ratio="three-two" className="md:gap-4 md:p-4">
+          {/* LEFT — Passage heading and audio player */}
+          <section className={cn("flex min-h-[18rem] min-w-0 flex-col md:min-h-0", isSubmitted ? "gap-4" : "rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800 md:p-6")} aria-label="Passage audio">
+            {!isSubmitted && (
+            <h2 className="practice-type-content-heading mb-5 border-b border-slate-200 pb-3 text-slate-900 dark:border-slate-700 dark:text-slate-100">
+              {currentPassage.title || "Passage"}
+            </h2>
+            )}
+            <div className={cn("flex w-full items-center", isSubmitted ? "shrink-0 flex-col gap-3 rounded-2xl border border-slate-200 bg-white p-3 shadow-sm dark:border-slate-700 dark:bg-slate-800 sm:flex-row" : "my-auto flex-col gap-6 py-6")}>
+              <div className={cn("flex shrink-0 items-center justify-center", isSubmitted ? "gap-2" : "gap-3 sm:gap-5")}>
+                <button type="button" onClick={() => { cancel(); startAudio(); }} aria-label="Replay passage" title="Replay" className="flex h-12 w-12 items-center justify-center rounded-full bg-rose-50 text-rose-600 transition-colors hover:bg-rose-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500 dark:bg-rose-900/30 dark:text-rose-300 dark:hover:bg-rose-900/50">
+                  <RotateCcw className="h-5 w-5" aria-hidden="true" />
+                </button>
+                <button type="button" onClick={handlePlayAudio} aria-label={isAudioPlaying ? "Pause passage" : isPaused ? "Resume passage" : playbackProgress > 0 && playbackProgress < 100 ? "Play passage from selected position" : "Play passage from beginning"} title={isAudioPlaying ? "Pause" : isPaused ? "Resume" : "Play"} className={cn("flex items-center justify-center rounded-full shadow-md transition-transform hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500 focus-visible:ring-offset-2", isSubmitted ? "h-12 w-12" : "h-20 w-20", isAudioPlaying ? "bg-rose-600 text-white" : "bg-rose-500 text-white hover:bg-rose-600")}>
+                  {isAudioPlaying ? <Pause className={isSubmitted ? "h-6 w-6" : "h-9 w-9"} aria-hidden="true" /> : isPaused || (hasPlayed && playbackProgress < 100) ? <Play className={isSubmitted ? "h-6 w-6" : "h-9 w-9"} aria-hidden="true" /> : <Volume2 className={isSubmitted ? "h-6 w-6" : "h-9 w-9"} aria-hidden="true" />}
+                </button>
+                <button type="button" onClick={() => startAudio(0.55)} aria-label="Play passage slowly" title="Slow playback" className="flex h-12 w-12 items-center justify-center rounded-full bg-rose-50 text-rose-600 transition-colors hover:bg-rose-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500 dark:bg-rose-900/30 dark:text-rose-300 dark:hover:bg-rose-900/50">
+                  <Turtle className="h-6 w-6" aria-hidden="true" />
+                </button>
               </div>
+              <div className={cn("flex w-full min-w-0 items-center", isSubmitted ? "flex-1 py-3" : "max-w-2xl gap-4 rounded-2xl border border-slate-200 bg-slate-50 px-5 py-5 dark:border-slate-700 dark:bg-slate-900")}>
+                <AudioWaveform
+                  tone="rose"
+                  isPlaying={isAudioPlaying}
+                  progress={playbackProgress}
+                  onSeek={handleAudioSeek}
+                />
+              </div>
+              {!isSubmitted && <p className="practice-type-meta font-medium text-slate-500 dark:text-slate-400" aria-live="polite">
+                {isAudioPlaying ? "En cours de lecture…" : isPaused ? "En pause" : "Prêt pour l’écoute"}
+              </p>}
             </div>
-          </div>
+            {isSubmitted && (
+              <section className="practice-comprehension-scroll min-h-[18rem] min-w-0 flex-1 overflow-y-auto rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-800 md:min-h-0 md:p-6" aria-label="Passage transcript">
+                <div className="mb-4 flex items-start justify-between gap-3 border-b border-slate-200 pb-3 dark:border-slate-700">
+                  <h2 className="practice-type-content-heading text-slate-900 dark:text-slate-100">{currentPassage.title || "Passage"}</h2>
+                  {currentPassage.passageTranslation && currentPassage.passageTranslation !== currentPassage.passageText && (
+                    <TranslateButton onClick={() => setShowPassageTranslation(value => !value)} aria-label={showPassageTranslation ? "Hide passage translation" : "Translate passage"} title={showPassageTranslation ? "Hide passage translation" : "Translate passage"} aria-expanded={showPassageTranslation} />
+                  )}
+                </div>
+                <p className="practice-type-content whitespace-pre-line text-slate-700 dark:text-slate-200">
+                  {currentPassage.passageText}
+                </p>
+                {showPassageTranslation && currentPassage.passageTranslation && (
+                  <p className="practice-type-content mt-6 whitespace-pre-line border-t border-slate-200 pt-5 text-slate-700 dark:border-slate-700 dark:text-slate-200">
+                    {currentPassage.passageTranslation}
+                  </p>
+                )}
+              </section>
+            )}
+          </section>
 
-          {/* RIGHT — Questions Panel */}
-          <div className="flex-1 flex flex-col p-6 lg:p-10 bg-white dark:bg-slate-900 overflow-y-auto custom-scrollbar">
-            <div className="w-full max-w-xl mx-auto space-y-10">
+          {/* RIGHT — Questions, sized like Reading Comprehension */}
+          <section className="practice-comprehension-scroll flex min-h-[18rem] min-w-0 flex-col gap-6 overflow-y-auto rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900 md:min-h-0 md:p-5" aria-label="Questions">
               {currentPassage.questions.map((q, qIdx) => {
                 const questionText = pick(q.question_fr, q.question_en) || q.question;
-                const options = q.options_fr?.length ? q.options_fr : q.options;
-                const transOptions = q.options_en || [];
+                const translatedQuestionText = pickTranslation(q.question_fr, q.question_en);
+                const options = learningLang === "fr"
+                  ? q.options_fr?.length ? q.options_fr : q.options
+                  : q.options_en?.length ? q.options_en : q.options;
+                const translationOptions = learningLang === "fr" ? q.options_en || [] : q.options_fr || [];
+                const canTranslateQuestion = Boolean(translatedQuestionText && translatedQuestionText !== questionText);
+                const canTranslateOptions = translationOptions.length === options.length
+                  && translationOptions.some((option, index) => Boolean(option && option !== options[index]));
+                const canTranslate = canTranslateQuestion || (isSubmitted && canTranslateOptions);
+                const isTranslated = Boolean(translatedQuestions[qIdx] && canTranslate);
+                const shownQuestion = isTranslated && canTranslateQuestion ? translatedQuestionText : questionText;
+                const shownOptions = isSubmitted && isTranslated && canTranslateOptions
+                  ? options.map((option, index) => translationOptions[index] || option)
+                  : options;
 
                 return (
-                  <div key={qIdx} className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-500" style={{ animationDelay: `${qIdx * 100}ms` }}>
+                  <div key={qIdx} className="flex flex-col gap-3 animate-in fade-in slide-in-from-right-4 duration-500" style={{ animationDelay: `${qIdx * 100}ms` }}>
                     <div className="flex items-start gap-4">
-                      <span className="shrink-0 mt-0.5 w-7 h-7 rounded-full bg-rose-50 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400 font-bold text-xs flex items-center justify-center border border-rose-100 dark:border-rose-800">
+                      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-rose-200 bg-rose-50 text-sm font-bold text-rose-700 dark:border-rose-800 dark:bg-rose-900/30 dark:text-rose-300">
                         {qIdx + 1}
                       </span>
-                      <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100 leading-tight">
-                        {questionText}
+                      <h3 className="practice-type-question-heading min-w-0 flex-1 border-b border-slate-200 pb-3 text-slate-900 dark:border-slate-700 dark:text-slate-100">
+                        {shownQuestion}
                       </h3>
+                      {canTranslate && (
+                        <TranslateButton
+                          iconVariant="option"
+                          iconSize="md"
+                          onClick={() => setTranslatedQuestions(previous => ({ ...previous, [qIdx]: !previous[qIdx] }))}
+                          aria-label={isTranslated ? "Show original" : isSubmitted ? "Translate question and answers" : "Translate question"}
+                          title={isTranslated ? "Show original" : isSubmitted ? "Translate question and answers" : "Translate question"}
+                          aria-pressed={isTranslated}
+                        />
+                      )}
                     </div>
 
                     <PracticeOptions
-                      options={options}
+                      options={shownOptions}
                       selectedOption={selectedOptions[qIdx]}
                       correctIndex={isSubmitted ? q.correctIndex : undefined}
                       showFeedback={isSubmitted}
                       onSelect={(optIdx) => handleOptionSelect(qIdx, optIdx)}
-                      itemClassName="w-full bg-slate-50 dark:bg-slate-800/50 hover:bg-white dark:hover:bg-slate-800 border-slate-100 dark:border-slate-700 p-4 rounded-xl text-left transition-all group"
-                      renderLabel={(opt, optIdx) => (
-                        <div className="flex flex-col">
-                          <span className="text-[15px] font-medium text-slate-700 dark:text-slate-200">{opt}</span>
-                          {isSubmitted && transOptions[optIdx] && (
-                            <span className="text-xs text-slate-400 mt-1 flex items-center gap-1">
-                              <Languages className="w-3 h-3" /> {transOptions[optIdx]}
-                            </span>
-                          )}
-                        </div>
-                      )}
+                      itemClassName="!min-h-16 !items-center !rounded-xl !border !px-3 !py-2.5 !font-normal"
                     />
                     
                     {qIdx < currentPassage.questions.length - 1 && <div className="pt-4 border-b border-slate-50 dark:border-slate-800/50" />}
                   </div>
                 );
               })}
-            </div>
-          </div>
-
-        </div>
+          </section>
+        </PracticeTwoPanel>
       </PracticeGameLayout>
 
       {showFeedback && (

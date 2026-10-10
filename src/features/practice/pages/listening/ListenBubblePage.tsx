@@ -3,19 +3,22 @@
 import React, { useState, useEffect, Suspense } from "react";
 import { usePracticeExit } from "@/hooks/usePracticeExit";
 import { useExerciseTimer } from "@/hooks/useExerciseTimer";
+import { usePracticeComplete } from "@/hooks/usePracticeComplete";
 import { useTextToSpeech } from "@/hooks/useTextToSpeech";
-import { Loader2, X, Volume2, RotateCcw } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { Loader2, Volume2 } from "lucide-react";
 import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
-import FeedbackBanner from "@/components/ui/FeedbackBanner";
+import WordTileBuilder from "@/features/practice/components/WordTileBuilder";
 import { getFeedbackMessage } from "@/utils/feedbackMessages";
 import { fetchPracticeData } from "@/utils/practiceFetcher";
 import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import TranslationExplainButton from "@/components/ui/TranslationExplainButton";
+import AudioWaveform from "@/components/ui/AudioWaveform";
+import speakerStyles from "@/components/ui/AudioSpeaker.module.css";
+import { motion } from "framer-motion";
 
 // Fisher-Yates shuffle algorithm
-function shuffleArray(array) {
+function shuffleArray(array: string[]): string[] {
   const shuffled = [...array];
   for (let i = shuffled.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
@@ -23,6 +26,19 @@ function shuffleArray(array) {
   }
   return shuffled;
 }
+
+function firstText(...values: unknown[]): string {
+  return values.find((value): value is string => typeof value === "string" && value.trim().length > 0) || "";
+}
+
+type ListenBubbleQuestion = {
+  sentence: string;
+  audioText: string;
+  translation: string;
+  wordBubbles: string[];
+  timeLimitSeconds: number;
+  level: string;
+};
 
 export default function ListenBubblePage() {
   return (
@@ -38,22 +54,29 @@ function ListenBubbleContent() {
   const searchParams = useSearchParams();
   const tag = searchParams?.get("tag") ?? undefined;
 
-  const [questions, setQuestions] = useState([]);
+  const [questions, setQuestions] = useState<ListenBubbleQuestion[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [currentIndex, setCurrentIndex] = useState(0);
 
-  const [selectedWords, setSelectedWords] = useState([]);
-  const [availableWords, setAvailableWords] = useState([]);
+  const [selectedWords, setSelectedWords] = useState<string[]>([]);
+  const [wordBankSlots, setWordBankSlots] = useState<(string | null)[]>([]);
   const [isCompleted, setIsCompleted] = useState(false);
   const [showFeedback, setShowFeedback] = useState(false);
   const [isCorrect, setIsCorrect] = useState(false);
   const [feedbackMessage, setFeedbackMessage] = useState("");
   const [score, setScore] = useState(0);
-  const [playedAudio, setPlayedAudio] = useState(false);
   const [submittedAnswer, setSubmittedAnswer] = useState("");
 
   const currentQuestion = questions[currentIndex];
   const timerDuration = currentQuestion?.timeLimitSeconds || 60;
+
+  usePracticeComplete({
+    isGameOver: isCompleted,
+    score,
+    totalQuestions: questions.length,
+    exerciseType: "listen_bubble",
+    level: currentQuestion?.level,
+  });
 
   const { timerString, resetTimer } = useExerciseTimer({
     duration: timerDuration,
@@ -72,33 +95,26 @@ function ListenBubbleContent() {
     const fetchQuestions = async () => {
       try {
         const data = await fetchPracticeData("listen_bubble", { tag });
-        const mapped = (Array.isArray(data) ? data : []).map((item: any) => {
-          const c = item.content || item;
+        const mapped: ListenBubbleQuestion[] = (Array.isArray(data) ? data : []).map((raw: unknown) => {
+          const item: Record<string, unknown> = raw && typeof raw === "object" ? raw as Record<string, unknown> : {};
+          const c: Record<string, unknown> = item.content && typeof item.content === "object" && !Array.isArray(item.content)
+            ? item.content as Record<string, unknown>
+            : item;
           // sentence: the correct FR sentence to reconstruct
-          const sentence =
-            c.sentence || item.sentence ||
-            c.audioText || item.audioText ||
-            item["Complete Sentence_FR"] || item["Complete Sentence _FR"] || "";
+          const sentence = firstText(c.sentence, item.sentence, c.audioText, item.audioText, item["Complete Sentence_FR"], item["Complete Sentence _FR"]);
           // audioText: what gets spoken (same as sentence for this exercise)
-          const audioText =
-            c.audioText || item.audioText || sentence;
+          const audioText = firstText(c.audioText, item.audioText, sentence);
           // translation: EN equivalent
-          const translation =
-            c.translation || item.translation ||
-            item["Complete Sentence_EN"] || item["Complete Sentence _EN"] || "";
+          const translation = firstText(c.translation, item.translation, item["Complete Sentence_EN"], item["Complete Sentence _EN"]);
           // wordBubbles: pre-built token list, or split from sentence
-          let wordBubbles: string[] = [];
-          if (Array.isArray(c.bubbleTokens) && c.bubbleTokens.length > 0) {
-            wordBubbles = c.bubbleTokens;
-          } else if (Array.isArray(item.wordBubbles) && item.wordBubbles.length > 0) {
-            wordBubbles = item.wordBubbles;
-          } else if (item["BubbleTokens"] && typeof item["BubbleTokens"] === "string") {
-            wordBubbles = item["BubbleTokens"].split("+").map((t: string) => t.trim()).filter(Boolean);
-          } else if (sentence) {
-            wordBubbles = sentence.split(" ").filter(Boolean);
-          }
+          const suppliedTokens = Array.isArray(c.bubbleTokens) ? c.bubbleTokens : Array.isArray(item.wordBubbles) ? item.wordBubbles : [];
+          const wordBubbles = suppliedTokens.length > 0
+            ? suppliedTokens.map(String).filter(Boolean)
+            : firstText(item["BubbleTokens"])
+              ? firstText(item["BubbleTokens"]).split("+").map((token) => token.trim()).filter(Boolean)
+              : sentence.trim().split(/\s+/).filter(Boolean);
           // distractors: extra wrong tokens to add to the word bank
-          const distractors: string[] = Array.isArray(c.distractors) ? c.distractors : [];
+          const distractors: string[] = Array.isArray(c.distractors) ? c.distractors.map(String) : [];
 
           return {
             sentence,
@@ -106,10 +122,13 @@ function ListenBubbleContent() {
             translation,
             wordBubbles: [...wordBubbles, ...distractors],
             timeLimitSeconds: Number(c.timeLimitSeconds || item.timeLimitSeconds || item.TimeLimitSeconds || item["Time Limit"] || 60),
-            level: item.Level || item.level || "A1",
+            level: firstText(item.Level, item.level) || "A1",
           };
-        }).filter((q: any) => q.sentence && q.wordBubbles.length > 0);
+        }).filter((q: ListenBubbleQuestion) => q.sentence && q.wordBubbles.length > 0);
         setQuestions(mapped);
+        setCurrentIndex(0);
+        setSelectedWords([]);
+        setWordBankSlots(mapped.length > 0 ? shuffleArray(mapped[0].wordBubbles) : []);
       } catch (error) {
         console.error("Error loading listen bubble data:", error);
       } finally {
@@ -119,77 +138,52 @@ function ListenBubbleContent() {
     fetchQuestions();
   }, [tag]);
 
-  // Initialize available words when question changes (shuffled)
+  // Reset the timer when the question changes.
   useEffect(() => {
     if (currentQuestion) {
-      // Generate bubbles from sentence if not provided
-      let words = [];
-      if (Array.isArray(currentQuestion.wordBubbles)) {
-        words = currentQuestion.wordBubbles;
-      } else {
-        // Simple split by space, can be improved to handle punctuation
-        // For now assuming sentence words are space separated
-        // We remove punctuation for available words to make it cleaner, or keep it?
-        // The reference image shows "Le", "chat", "mange", "Fido" etc.
-        // Let's standardise: splitting by space.
-        if (currentQuestion.sentence) {
-          words = currentQuestion.sentence.split(" ");
-        } else {
-          console.warn("Missing sentence in question:", currentQuestion);
-          words = [];
-        }
-      }
-
-      setAvailableWords(shuffleArray(words));
-      setSelectedWords([]);
-      setPlayedAudio(false);
       resetTimer();
-
-      // Auto play audio after a short delay
-      // setTimeout(() => {
-      //   speak(currentQuestion.audioText, "fr-FR");
-      //   setPlayedAudio(true);
-      // }, 500);
     }
   }, [currentIndex, currentQuestion, resetTimer]);
 
   const handlePlayAudio = () => {
     if (!currentQuestion) return;
     speak(currentQuestion.audioText, "fr-FR");
-    setPlayedAudio(true);
   };
 
-  const handleWordSelect = (word, index) => {
-    if (showFeedback) return;
+  const handleWordSelect = (word: string, index: number) => {
+    if (showFeedback || wordBankSlots[index] !== word) return;
 
     // Play audio for the selected word
     speak(word, "fr-FR");
 
-    // Add word to selected and remove from available
+    // Leave a placeholder in the bank, matching Reading's tile flow.
     setSelectedWords([...selectedWords, word]);
-    const newAvailable = [...availableWords];
-    newAvailable.splice(index, 1);
-    setAvailableWords(newAvailable);
+    const newSlots = [...wordBankSlots];
+    newSlots[index] = null;
+    setWordBankSlots(newSlots);
   };
 
-  const handleWordRemove = (word, index) => {
+  const handleWordRemove = (word: string, index: number) => {
     if (showFeedback) return;
 
     // Play audio for the removed word
     speak(word, "fr-FR");
 
-    // Remove word from selected and add back to available
+    // Remove word from the answer and return it to the bank.
     const newSelected = [...selectedWords];
     newSelected.splice(index, 1);
     setSelectedWords(newSelected);
-    setAvailableWords([...availableWords, word]);
+    const newSlots = [...wordBankSlots];
+    const emptyIndex = newSlots.findIndex((slot) => slot === null);
+    if (emptyIndex !== -1) newSlots[emptyIndex] = word;
+    setWordBankSlots(newSlots);
   };
 
   const handleSubmit = () => {
     if (showFeedback || selectedWords.length === 0) return;
 
     // Normalize answers - remove punctuation and extra whitespace, lowercase
-    const normalize = (str) =>
+    const normalize = (str: string) =>
       str
         .toLowerCase()
         .replace(/[.,!?;:'"]/g, "")
@@ -212,8 +206,10 @@ function ListenBubbleContent() {
 
   const handleContinue = () => {
     setShowFeedback(false);
+    setSelectedWords([]);
 
     if (currentIndex < questions.length - 1) {
+      setWordBankSlots(shuffleArray(questions[currentIndex + 1].wordBubbles));
       setCurrentIndex((prev) => prev + 1);
     } else {
       setIsCompleted(true);
@@ -253,115 +249,76 @@ function ListenBubbleContent() {
         progress={progress}
         isGameOver={isCompleted}
         score={score}
+        currentQuestionIndex={currentIndex}
         totalQuestions={questions.length}
         onExit={handleExit}
-        onNext={handleSubmit}
+        onNext={showFeedback ? handleContinue : handleSubmit}
         onRestart={() => window.location.reload()}
         isSubmitEnabled={selectedWords.length > 0 && !showFeedback}
-        showSubmitButton={!showFeedback}
-        submitLabel="Check"
-        timerValue={timerString}
-      >
-        <div className="flex flex-col items-center w-full max-w-2xl mx-auto px-4 py-6">
-          {/* Audio Player Card */}
-          <div className="w-full flex justify-center mb-10">
-            <button
-              onClick={handlePlayAudio}
-              className={cn(
-                "relative group flex flex-col items-center justify-center w-full max-w-md h-32 rounded-2xl transition-all duration-300",
-                "bg-gradient-to-r from-teal-400 to-teal-500 shadow-lg hover:shadow-xl hover:scale-[1.02]",
-                isSpeaking && "animate-pulse",
-              )}
-            >
-              <div className="p-4 rounded-full bg-white/20 backdrop-blur-sm mb-2 group-hover:bg-white/30 transition-colors">
-                {isSpeaking ? (
-                  <RotateCcw className="w-8 h-8 text-white animate-spin" />
-                ) : (
-                  <Volume2 className="w-8 h-8 text-white" />
-                )}
-              </div>
-              <span className="text-white/90 text-sm font-medium">
-                {isSpeaking ? "Playing audio..." : "Click to replay audio"}
-              </span>
-            </button>
-          </div>
-
-          {/* Answer Area - Selected Words */}
-          <div className="w-full min-h-[80px] bg-white dark:bg-slate-800 rounded-2xl p-4 mb-6 border-2 border-dashed border-slate-300 dark:border-slate-600 shadow-inner">
-            <div className="flex flex-wrap gap-2 justify-center min-h-[48px] items-center">
-              {selectedWords.length === 0 ? (
-                <p className="text-slate-400 dark:text-slate-500 italic">
-                  Tap words below to build the sentence
-                </p>
-              ) : (
-                selectedWords.map((word, index) => (
-                  <button
-                    key={`selected-${index}`}
-                    onClick={() => handleWordRemove(word, index)}
-                    disabled={showFeedback}
-                    className={cn(
-                      "px-4 py-2 rounded-xl text-base font-semibold transition-all duration-200 flex items-center gap-2",
-                      showFeedback && isCorrect
-                        ? "bg-emerald-500 text-white"
-                        : showFeedback && !isCorrect
-                          ? "bg-red-500 text-white"
-                          : "bg-blue-500 text-white hover:bg-blue-600 active:scale-95",
-                    )}
-                  >
-                    {word}
-                    {!showFeedback && <X className="w-4 h-4" />}
-                  </button>
-                ))
-              )}
-            </div>
-          </div>
-
-          {/* Word Bank */}
-          <div className="w-full bg-slate-100 dark:bg-slate-900/50 rounded-2xl p-4">
-            <div className="flex flex-wrap gap-2 justify-center">
-              {availableWords.map((word, index) => (
-                <button
-                  key={`available-${index}`}
-                  onClick={() => handleWordSelect(word, index)}
-                  disabled={showFeedback}
-                  className={cn(
-                    "px-4 py-2 rounded-xl text-base font-semibold transition-all duration-200 border-2",
-                    "bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200",
-                    "border-slate-200 dark:border-slate-700",
-                    "hover:border-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20",
-                    "active:scale-95",
-                    showFeedback && "opacity-50 cursor-not-allowed",
-                  )}
-                >
-                  {word}
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-      </PracticeGameLayout>
-
-      {/* Feedback Banner */}
-      {showFeedback && (
-        <FeedbackBanner
-          isCorrect={isCorrect}
-          correctAnswer={currentQuestion.sentence || ""}
-          userAnswer={submittedAnswer}
-          questionContext={currentQuestion.audioText || ""}
-          onContinue={handleContinue}
-          message={feedbackMessage}
-          continueLabel={
-            currentIndex + 1 === questions.length ? "FINISH" : "CONTINUE"
-          }
-        >
+        showSubmitButton
+        submitLabel={showFeedback ? (currentIndex + 1 === questions.length ? "Finish" : "Continue") : "Check"}
+        showFeedback={showFeedback}
+        isCorrect={isCorrect}
+        feedbackMessage={feedbackMessage}
+        correctAnswer={!isCorrect ? currentQuestion.sentence : null}
+        compactFeedback
+        feedbackInFlow
+        feedbackTone={showFeedback ? (isCorrect ? "success" : "error") : "neutral"}
+        feedbackChildren={showFeedback ? (
           <TranslationExplainButton
-            sourceSentence={currentQuestion.audioText || currentQuestion.sentence || ""}
-            correctAnswer={currentQuestion.sentence || ""}
+            sourceSentence={currentQuestion.audioText || currentQuestion.sentence}
+            correctAnswer={currentQuestion.sentence}
             userAnswer={submittedAnswer}
             isCorrect={isCorrect}
           />
-        </FeedbackBanner>
-      )}
+        ) : null}
+        timerValue={timerString}
+      >
+        <div className="practice-reading-page-shell mx-auto flex w-full max-w-7xl flex-col items-center px-4 pb-8 pt-8 sm:px-6 md:pt-10 xl:pt-24">
+          <div className="mb-8 flex w-full justify-center xl:mb-12">
+            <button
+              type="button"
+              onClick={handlePlayAudio}
+              aria-label={isSpeaking ? "Replay the spoken sentence" : "Play the spoken sentence"}
+              className="group flex min-h-[84px] w-full max-w-[600px] items-center gap-4 rounded-[22px] border border-slate-200 bg-white px-4 shadow-[0_2px_10px_rgba(15,23,42,0.04)] transition-[border-color,box-shadow] duration-200 hover:border-sky-300 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 motion-reduce:transition-none dark:border-slate-700 dark:bg-slate-900"
+            >
+              <span className={`${speakerStyles.speakerButton} ${isSpeaking ? speakerStyles.playing : ""} flex h-[52px] w-[52px] shrink-0 items-center justify-center rounded-2xl bg-sky-100 text-sky-600 transition-colors group-hover:bg-sky-200 dark:bg-slate-800 dark:text-sky-400 dark:group-hover:bg-slate-700`}>
+                <Volume2 className={`h-7 w-7 ${speakerStyles.speakerIcon}`} aria-hidden="true" />
+              </span>
+              <AudioWaveform isPlaying={isSpeaking} decorative className="flex-1" />
+            </button>
+          </div>
+
+          {showFeedback && !isCorrect && (
+            <motion.div
+              initial={{ opacity: 0, y: -12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, ease: "easeOut" }}
+              className="w-full border-t border-slate-200 pb-8 pt-6 dark:border-slate-700"
+            >
+              <div className="flex flex-wrap justify-center gap-3" role="group" aria-label={`Correct answer: ${currentQuestion.sentence}`}>
+                {currentQuestion.sentence.trim().split(/\s+/).map((word, index) => (
+                  <span
+                    key={`correct-${index}`}
+                    className="practice-type-content rounded-2xl border border-emerald-400 bg-emerald-50 px-4 py-2.5 font-sans font-semibold text-emerald-900 dark:border-emerald-600 dark:bg-emerald-950/50 dark:text-emerald-100 xl:px-6 xl:py-3.5"
+                  >
+                    {word}
+                  </span>
+                ))}
+              </div>
+            </motion.div>
+          )}
+
+          <WordTileBuilder
+            selectedWords={selectedWords}
+            wordBankSlots={wordBankSlots}
+            showFeedback={showFeedback}
+            isCorrect={isCorrect}
+            onWordSelect={handleWordSelect}
+            onWordRemove={handleWordRemove}
+          />
+        </div>
+      </PracticeGameLayout>
     </>
   );
 }
