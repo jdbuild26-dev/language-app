@@ -17,7 +17,7 @@ import AudioWaveform from "@/components/ui/AudioWaveform";
 import speakerStyles from "@/components/ui/AudioSpeaker.module.css";
 
 const LISTEN_SELECT_PROMPT_CLASS =
-  "practice-type-content-large font-sans font-medium";
+  "practice-type-content-large font-sans font-semibold";
 
 type ListenSelectQuestion = {
   questionText: string;
@@ -354,7 +354,7 @@ function ListenSelectContent() {
 
                       <p
                         className={cn(
-                          "min-w-0 flex-1 text-base font-medium leading-snug",
+                          "practice-type-content min-w-0 flex-1 !text-[20px] font-normal lg:!text-[21px]",
                           isCorrectOption
                             ? "text-green-800 dark:text-green-200"
                             : isWrongSelection
