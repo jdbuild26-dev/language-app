@@ -8,6 +8,7 @@ import { Loader2 } from "lucide-react";
 import AudioPlayer from "@/features/vocabulary/components/shared/AudioPlayer";
 import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
 import SegmentedInput from "@/features/vocabulary/components/ui/SegmentedInput";
+import { TranslateButton } from "@/components/ui/TranslateButton";
 import { getFeedbackMessage } from "@/utils/feedbackMessages";
 import { useRouter } from "next/navigation";
 
@@ -24,6 +25,7 @@ export default function AudioFillBlankPage() {
   const [showFeedback, setShowFeedback] = useState(false);
   const [isCorrect, setIsCorrect] = useState(false);
   const [feedbackMessage, setFeedbackMessage] = useState("");
+  const [showEnglish, setShowEnglish] = useState(false);
   const [score, setScore] = useState(0);
   const [isCompleted, setIsCompleted] = useState(false);
 
@@ -107,6 +109,7 @@ export default function AudioFillBlankPage() {
           return {
             id: item.external_id || item["ExerciseID"],
             fullSentence: content["CompleteSentence"] || content["Audio"],
+            fullSentenceEnglish: content["CompleteSentence_EN"] || content["Sentence_EN"] || "",
             displaySentence: content["SentenceWithBlank"],
             answer: item.evaluation?.correctAnswer || content["CorrectAnswer"],
             instruction:
@@ -212,6 +215,7 @@ export default function AudioFillBlankPage() {
 
   const handleContinue = () => {
     setShowFeedback(false);
+    setShowEnglish(false);
     setUserInputs([]);
     handleNext();
   };
@@ -273,11 +277,11 @@ export default function AudioFillBlankPage() {
       >
         <div className="flex flex-col items-center w-full max-w-2xl px-4">
           <div className="mb-8">
-            <AudioPlayer text={currentQ?.fullSentence || ""} />
+            <AudioPlayer text={currentQ?.fullSentence || ""} showTurtle={!showFeedback} />
           </div>
 
           <div className="text-lg md:text-xl font-medium text-center text-gray-800 dark:text-gray-100 mb-8 leading-relaxed w-full">
-            {currentQ?.displaySentence.split("___").map((part, i, arr) => (
+            {(currentQ?.displaySentence || "").split("___").map((part, i, arr) => (
               <React.Fragment key={i}>
                 <span className="leading-loose">{part}</span>
                 {i < arr.length - 1 && (
@@ -305,6 +309,7 @@ export default function AudioFillBlankPage() {
               </React.Fragment>
             ))}
           </div>
+          {showFeedback && currentQ?.fullSentence && <div className="flex max-w-full items-center gap-2 rounded-xl bg-white px-4 py-3 text-center text-lg font-medium text-slate-800 dark:bg-slate-800 dark:text-slate-100"><span>{showEnglish && currentQ.fullSentenceEnglish ? currentQ.fullSentenceEnglish : currentQ.fullSentence}</span>{currentQ.fullSentenceEnglish && <TranslateButton aria-label={showEnglish ? "Show French answer" : "Show English answer"} aria-pressed={showEnglish} onClick={() => setShowEnglish((value) => !value)} />}</div>}
         </div>
       </PracticeGameLayout>
     </>

@@ -8,6 +8,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { fetchPracticeQuestions } from "@/services/vocabularyApi";
 import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
+import { TranslateButton } from "@/components/ui/TranslateButton";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { getFeedbackMessage } from "@/utils/feedbackMessages";
 import { cn } from "@/lib/utils";
@@ -17,10 +18,11 @@ export default function ChooseOptionGamePage() {
   const { learningLang, knownLang } = useLanguage();
   const [questions, setQuestions] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [selectedOption, setSelectedOption] = useState(null);
+  const [selectedOptions, setSelectedOptions] = useState<Array<{ text: string; en?: string }>>([]);
   const [showFeedback, setShowFeedback] = useState(false);
   const [isCorrect, setIsCorrect] = useState(false);
   const [feedbackMessage, setFeedbackMessage] = useState("");
+  const [showEnglish, setShowEnglish] = useState(false);
   const [score, setScore] = useState(0);
   const [isGameOver, setIsGameOver] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -65,11 +67,14 @@ export default function ChooseOptionGamePage() {
 
           const shuffledOptions = shuffleArray(options);
 
+          const answerValue = item.CorrectAnswers || item.CorrectAnswer || item.correctAnswer || item.Answer || "";
+          const correctAnswers = Array.isArray(answerValue) ? answerValue.map(String) : String(answerValue).split("|").map((answer) => answer.trim()).filter(Boolean);
           return {
             id: item.ExerciseID || Math.random().toString(),
             question: item.Question || item.question || item.Sentence || "",
-            correctAnswer:
-              item.CorrectAnswer || item.correctAnswer || item.Answer || "",
+            questionEnglish: item.Question_EN || item.Sentence_EN || item.CompleteSentence_EN || "",
+            correctAnswer: correctAnswers.join(" • "),
+            correctAnswers,
             options: shuffledOptions,
             questionType:
               item.TypeName || item.QuestionType || "Choose from Options",
@@ -117,7 +122,7 @@ export default function ChooseOptionGamePage() {
     onExpire: () => {
       // Auto-submit when time expires
       if (!isGameOver && !showFeedback) {
-        if (!selectedOption) {
+        if (selectedOptions.length !== currentQuestion?.correctAnswers.length) {
           setIsCorrect(false);
           setFeedbackMessage("Time's up!");
           setShowFeedback(true);
@@ -139,13 +144,15 @@ export default function ChooseOptionGamePage() {
 
   const handleOptionClick = (option) => {
     if (showFeedback) return;
-    setSelectedOption(option);
+    setSelectedOptions((current) => current.some((item) => item.text === option.text)
+      ? current.filter((item) => item.text !== option.text)
+      : current.length < currentQuestion.correctAnswers.length ? [...current, option] : current);
   };
 
   const handleSubmit = () => {
-    if (!selectedOption || showFeedback) return;
+    if (selectedOptions.length !== currentQuestion.correctAnswers.length || showFeedback) return;
 
-    const correct = selectedOption.text === currentQuestion.correctAnswer;
+    const correct = selectedOptions.every((option, index) => option.text === currentQuestion.correctAnswers[index]);
     setIsCorrect(correct);
     setFeedbackMessage(getFeedbackMessage(correct));
     setShowFeedback(true);
@@ -156,8 +163,9 @@ export default function ChooseOptionGamePage() {
   };
 
   const handleContinue = () => {
+    setShowEnglish(false);
     setShowFeedback(false);
-    setSelectedOption(null);
+    setSelectedOptions([]);
 
     if (currentIndex + 1 < questions.length) {
       setCurrentIndex((prev) => prev + 1);
@@ -215,7 +223,7 @@ export default function ChooseOptionGamePage() {
         onExit={() => router.push("/vocabulary/practice")}
         onNext={showFeedback ? handleContinue : handleSubmit}
         onRestart={() => window.location.reload()}
-        isSubmitEnabled={(!!selectedOption && !showFeedback) || showFeedback} // Enabled if option selected OR if showing feedback (for continue)
+        isSubmitEnabled={selectedOptions.length === currentQuestion.correctAnswers.length || showFeedback}
         submitLabel={
           showFeedback
             ? currentIndex + 1 === questions.length
@@ -228,67 +236,42 @@ export default function ChooseOptionGamePage() {
         isCorrect={isCorrect}
         correctAnswer={!isCorrect ? currentQuestion.correctAnswer : null}
         feedbackMessage={feedbackMessage}
+        compactFeedback
       >
-        <div className="flex flex-col md:flex-row items-center md:items-start justify-center w-full max-w-6xl gap-8 md:gap-16">
-          {/* Left Side: Question / Prompt */}
-          <div className="w-full md:w-1/2 flex flex-col justify-center min-h-[200px]">
-            {/* Secondary Title (Context) - OPTIONAL based on API data, using placeholder logic for now */}
-            {/* Note: Screenshot shows "Word meaning 'they speak'" above options, but layout-wise text is left. */}
-            {/* Let's put the main sentence here. */}
-
+        <div className="flex w-full max-w-4xl flex-col items-center justify-center gap-8 px-4">
+          <div className="flex w-full flex-col items-center justify-center rounded-2xl bg-slate-100 px-5 py-8 dark:bg-slate-800">
             <div className="bg-transparent p-4 rounded-xl">
-              <h2 className="text-2xl md:text-3xl font-medium text-gray-800 dark:text-gray-100 leading-relaxed text-center md:text-left">
-                {(() => {
-                  const highlightText = (text) => {
-                    if (!showFeedback || !currentQuestion.correctAnswer)
-                      return text;
-
-                    const parts = text.split(
-                      new RegExp(`(${currentQuestion.correctAnswer})`, "gi"),
-                    );
-                    return parts.map((part, i) =>
-                      part.toLowerCase() ===
-                      currentQuestion.correctAnswer.toLowerCase() ? (
-                        <span
-                          key={i}
-                          className="text-green-600 font-bold bg-green-100 px-1 rounded-md mx-0.5 shadow-sm border border-green-200"
-                        >
-                          {part}
-                        </span>
-                      ) : (
-                        part
-                      ),
-                    );
-                  };
-
+              <h2 className="text-center text-2xl font-medium leading-relaxed text-gray-800 dark:text-gray-100 md:text-3xl">
+                {showEnglish && currentQuestion.questionEnglish ? currentQuestion.questionEnglish : (() => {
                   if (currentQuestion.question.includes("____")) {
                     return currentQuestion.question
                       .split("____")
                       .map((part, i, arr) => (
                         <React.Fragment key={i}>
-                          {highlightText(part)}
+                          {part}
                           {i < arr.length - 1 && (
-                            <span className="inline-block border-b-2 border-slate-800 dark:border-slate-200 min-w-[3rem] mx-1 relative top-1"></span>
+                            <span className={cn("mx-1 inline-block min-w-24 rounded-lg border px-3 py-0.5 align-middle", showFeedback ? selectedOptions[i]?.text === currentQuestion.correctAnswers[i] ? "border-green-500 bg-green-50 text-green-700" : "border-red-500 bg-red-50 text-red-700" : "border-slate-300 bg-white text-slate-700")}>{showFeedback ? currentQuestion.correctAnswers[i] : selectedOptions[i]?.text || "\u00a0"}</span>
                           )}
                         </React.Fragment>
                       ));
                   }
 
-                  return highlightText(currentQuestion.question);
+                  return currentQuestion.question;
                 })()}
               </h2>
             </div>
+            {showFeedback && currentQuestion.questionEnglish && <TranslateButton className="mt-3" aria-label={showEnglish ? "Show French sentence" : "Show English sentence"} aria-pressed={showEnglish} onClick={() => setShowEnglish((value) => !value)} />}
           </div>
 
           {/* Right Side: Options */}
-          <div className="w-full md:w-1/2 flex flex-col gap-4">
+          <div className="w-full">
             {/* Context Header above options if available, essentially 'Word Meanings' logic from screenshot */}
 
-            <div className="flex flex-col gap-3 w-full">
+            <div className="grid w-full grid-cols-1 gap-3 sm:grid-cols-2">
               {currentQuestion.options.map((option, idx) => {
-                const isSelected = selectedOption?.text === option.text;
+                const isSelected = selectedOptions.some((item) => item.text === option.text);
                 const isCorrectOption =
-                  option.text === currentQuestion.correctAnswer;
+                  currentQuestion.correctAnswers.includes(option.text);
 
                 // Determine styles
                 let containerClasses =

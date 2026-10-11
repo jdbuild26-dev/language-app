@@ -202,7 +202,8 @@ export default function TypingFillInBlankPage() {
       elements.push(<span key={`part-${i}`}>{parts[i]}</span>);
       if (i < currentQuestion.blanks.length) {
         elements.push(
-          <span key={`blank-${i}`} className="inline-block mx-1">
+          <span key={`blank-${i}`} className="mx-1 inline-flex flex-col items-center align-middle">
+            {currentQuestion.hints?.[i] && <span className="mb-1 text-sm font-medium text-slate-600 dark:text-slate-300">{currentQuestion.hints[i]}</span>}
             <input
               ref={(el) => (inputRefs.current[i] = el)}
               type="text"
@@ -210,8 +211,9 @@ export default function TypingFillInBlankPage() {
               onChange={(e) => handleInputChange(i, e.target.value)}
               onKeyDown={(e) => handleKeyDown(e, i)}
               disabled={showFeedback}
+              style={{ width: `${Math.max(7, currentQuestion.blanks[i].length + 2)}ch` }}
               className={cn(
-                "w-32 px-3 py-1 rounded-lg text-center font-semibold border-2 outline-none transition-all",
+                "min-w-28 max-w-[min(70vw,22rem)] px-3 py-1 rounded-lg text-center font-semibold border-2 outline-none transition-all",
                 "bg-white dark:bg-slate-700",
                 showFeedback && blankResults[i]
                   ? "border-emerald-500"
@@ -219,20 +221,7 @@ export default function TypingFillInBlankPage() {
                     ? "border-red-500"
                     : "border-slate-300 focus:border-blue-500",
               )}
-              placeholder={
-                currentQuestion.hints && currentQuestion.hints[i]
-                  ? currentQuestion.hints[i]
-                  : "..."
-              }
-              onFocus={(e) => {
-                e.target.placeholder = "";
-              }}
-              onBlur={(e) => {
-                e.target.placeholder =
-                  currentQuestion.hints && currentQuestion.hints[i]
-                    ? currentQuestion.hints[i]
-                    : "...";
-              }}
+              placeholder="..."
             />
           </span>,
         );
@@ -257,7 +246,7 @@ export default function TypingFillInBlankPage() {
         timerValue={timerString}
       >
         <div className="flex flex-col items-center w-full max-w-3xl mx-auto px-4 py-12">
-          <div className="w-full bg-white dark:bg-slate-800 rounded-3xl p-10 mb-8 shadow-2xl border-2 border-slate-100 dark:border-slate-700">
+          <div className="w-full bg-slate-100 dark:bg-slate-800 rounded-2xl p-6 sm:p-10 mb-8">
             <p className="text-2xl leading-relaxed text-center font-medium text-slate-700 dark:text-slate-200">
               {renderSentence()}
             </p>
@@ -275,6 +264,7 @@ export default function TypingFillInBlankPage() {
 
       {showFeedback && (
         <FeedbackBanner
+          compact
           isCorrect={isCorrect}
           onContinue={handleContinue}
           message={feedbackMessage}

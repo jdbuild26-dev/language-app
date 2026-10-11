@@ -6,6 +6,7 @@ import { fetchPracticeQuestions } from "@/services/vocabularyApi";
 import { Loader2, Check } from "lucide-react";
 import AudioPlayer from "@/features/vocabulary/components/shared/AudioPlayer";
 import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
+import { TranslateButton } from "@/components/ui/TranslateButton";
 import { cn } from "@/lib/utils";
 import { useTextToSpeech } from "@/hooks/useTextToSpeech";
 
@@ -16,6 +17,7 @@ export default function MultiSelectPage() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedIndices, setSelectedIndices] = useState([]);
   const [isChecked, setIsChecked] = useState(false);
+  const [showEnglish, setShowEnglish] = useState(false);
   const [score, setScore] = useState(0);
   const [isCompleted, setIsCompleted] = useState(false);
 
@@ -50,6 +52,8 @@ export default function MultiSelectPage() {
         const transformed = response.data.map((q) => ({
           id: q.ExerciseID || Math.random(),
           instruction: q.Instruction_EN || "Select what you hear",
+          sentenceFr: q.CompleteSentence || q.Sentence_FR || q.Audio || "",
+          sentenceEn: q.CompleteSentence_EN || q.Sentence_EN || "",
           options: [
             { text: q.Option1, en: q.Option1_EN },
             { text: q.Option2, en: q.Option2_EN },
@@ -103,6 +107,7 @@ export default function MultiSelectPage() {
         setCurrentIndex((prev) => prev + 1);
         setSelectedIndices([]);
         setIsChecked(false);
+        setShowEnglish(false);
       } else {
         setIsCompleted(true);
       }
@@ -171,6 +176,7 @@ export default function MultiSelectPage() {
         {/* Audio Player Section */}
         <div className="mb-10 w-full flex flex-col items-center justify-center">
           <AudioPlayer text={questions[currentIndex]?.audioText || ""} />
+          {isChecked && currentQ?.sentenceFr && <div className="mt-5 flex items-center gap-2 text-center text-lg font-medium text-slate-800 dark:text-slate-100"><span>{showEnglish && currentQ.sentenceEn ? currentQ.sentenceEn : currentQ.sentenceFr}</span>{currentQ.sentenceEn && <TranslateButton aria-label={showEnglish ? "Show French sentence" : "Show English sentence"} aria-pressed={showEnglish} onClick={() => setShowEnglish((value) => !value)} />}</div>}
         </div>
 
         {/* Options Grid */}

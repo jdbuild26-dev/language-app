@@ -6,6 +6,7 @@ import { CheckCircle, AlertCircle, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
+import { TranslateButton } from "@/components/ui/TranslateButton";
 import { cn } from "@/lib/utils";
 import { fetchPracticeQuestions } from "@/services/vocabularyApi";
 
@@ -23,6 +24,7 @@ export default function GroupWordsGamePage() {
   const [showFeedback, setShowFeedback] = useState(false);
   const [isCorrect, setIsCorrect] = useState(false);
   const [feedbackMessage, setFeedbackMessage] = useState("");
+  const [translatedWords, setTranslatedWords] = useState<Set<number>>(new Set());
 
   // Timer Hook
   const { timerString, resetTimer, isPaused } = useExerciseTimer({
@@ -85,7 +87,7 @@ export default function GroupWordsGamePage() {
             if (others_EN[idx]) translationsMap[word] = others_EN[idx];
           });
 
-          const all = [...correct, ...others].sort(() => Math.random() - 0.5);
+          const all = [...correct, ...others.slice(0, correct.length)].sort(() => Math.random() - 0.5);
 
           return {
             id: item.id || item.ExerciseID,
@@ -134,6 +136,7 @@ export default function GroupWordsGamePage() {
     if (isSubmitted) {
       // Next Logic
       setShowFeedback(false);
+      setTranslatedWords(new Set());
       if (currentIndex + 1 < totalQuestions) {
         setCurrentIndex((prev) => prev + 1);
         setSelectedWords([]);
@@ -155,7 +158,7 @@ export default function GroupWordsGamePage() {
     );
 
     setIsCorrect(allCorrect);
-    setFeedbackMessage(allCorrect ? "Great job!" : currentQuestion.reason);
+    setFeedbackMessage(allCorrect ? "Great job!" : "Some words do not belong in this group.");
     setShowFeedback(true);
 
     if (allCorrect) {
@@ -209,8 +212,9 @@ export default function GroupWordsGamePage() {
         timerValue={timerString}
         showFeedback={showFeedback}
         isCorrect={isCorrect}
-        correctAnswer={!isCorrect ? currentQuestion.reason : null}
+        correctAnswer={!isCorrect ? currentQuestion.correctGroup.join(", ") : null}
         feedbackMessage={feedbackMessage}
+        feedbackChildren={<p>{currentQuestion.reason}</p>}
       >
         <div className="flex-1 flex flex-col items-center justify-center -mt-10 w-full max-w-7xl">
           <div className="mb-10 text-center">
@@ -224,8 +228,7 @@ export default function GroupWordsGamePage() {
             </p>
           </div>
 
-          {/* Grid: 6 columns for 12 items = 2 rows. Wide spacing. */}
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6 md:gap-12 w-full px-4 md:px-0">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 w-full max-w-4xl px-4 md:px-0">
             {currentQuestion.allWords.map((word, idx) => {
               const isSelected = selectedWords.includes(word);
               const isTargetWord = currentQuestion.correctGroup.includes(word);
@@ -259,21 +262,18 @@ export default function GroupWordsGamePage() {
               }
 
               return (
+                <div key={idx} className="relative">
                 <button
-                  key={idx}
                   onClick={() => handleWordClick(word)}
                   disabled={isSubmitted}
                   className={cardStyle}
                 >
                   <div className="flex flex-col items-center justify-center space-y-1">
-                    <span>{word}</span>
-                    {showFeedback && currentQuestion.translationsMap[word] && (
-                      <span className="text-sm opacity-80 font-normal">
-                        {currentQuestion.translationsMap[word]}
-                      </span>
-                    )}
+                    <span>{translatedWords.has(idx) && currentQuestion.translationsMap[word] ? currentQuestion.translationsMap[word] : word}</span>
                   </div>
                 </button>
+                {currentQuestion.translationsMap[word] && <TranslateButton className="absolute right-2 top-2 z-10" aria-label={`Translate ${word}`} aria-pressed={translatedWords.has(idx)} onClick={() => setTranslatedWords((previous) => { const next = new Set(previous); if (next.has(idx)) next.delete(idx); else next.add(idx); return next; })} />}
+                </div>
               );
             })}
           </div>

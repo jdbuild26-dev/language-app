@@ -40,6 +40,7 @@ export default function IsThisFrenchWordPage() {
               id: item.external_id || item.id,
               word: item.content.word,
               isFrench: item.content.isFrench,
+              explanation: item.evaluation?.CorrectExplanation_EN || item.content.explanation || item.content.Explanation || "",
             };
           }
 
@@ -59,6 +60,7 @@ export default function IsThisFrenchWordPage() {
             id: item.id || item.ExerciseID,
             word: word,
             isFrench: isFr,
+            explanation: item.CorrectExplanation_EN || item.Explanation || item.explanation || "",
           };
         });
         setQuestions(normalized.sort(() => Math.random() - 0.5));
@@ -158,7 +160,7 @@ export default function IsThisFrenchWordPage() {
         onNext={showFeedback ? handleContinue : undefined}
         onRestart={() => window.location.reload()}
         isSubmitEnabled={showFeedback}
-        showSubmitButton={showFeedback}
+        showSubmitButton={false}
         submitLabel={
           showFeedback
             ? currentIndex + 1 === questions.length
@@ -167,16 +169,6 @@ export default function IsThisFrenchWordPage() {
             : "CHECK"
         }
         timerValue={timerString}
-        showFeedback={showFeedback}
-        isCorrect={isCorrect}
-        correctAnswer={
-          !isCorrect
-            ? currentQ.isFrench
-              ? "Yes, it's French!"
-              : "No, it's not French"
-            : null
-        }
-        feedbackMessage={feedbackMessage}
       >
         <div className="flex flex-col items-center justify-center w-full max-w-2xl gap-12">
           {/* Word Display */}
@@ -234,6 +226,11 @@ export default function IsThisFrenchWordPage() {
               </span>
             </button>
           </div>
+          {showFeedback && <div className="w-full rounded-xl bg-slate-100 p-5 text-center dark:bg-slate-800" role="status">
+            <p className={cn("text-lg font-semibold", isCorrect ? "text-green-700 dark:text-green-400" : "text-red-700 dark:text-red-400")}>{feedbackMessage} {currentQ.isFrench ? "This is a French word." : "This is not a French word."}</p>
+            {currentQ.explanation && <p className="mt-2 text-slate-700 dark:text-slate-200">{currentQ.explanation}</p>}
+            <button type="button" onClick={handleContinue} className="mt-4 rounded-lg bg-sky-600 px-5 py-2 font-semibold text-white hover:bg-sky-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500">{currentIndex + 1 === questions.length ? "Finish" : "Continue"}</button>
+          </div>}
         </div>
       </PracticeGameLayout>
     </>

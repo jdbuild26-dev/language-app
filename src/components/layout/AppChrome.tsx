@@ -4,6 +4,7 @@ import { usePathname } from "next/navigation";
 import Header from "@/components/layout/Header";
 import SecondaryNav from "@/components/layout/SecondaryNav";
 import FooterWrapper from "@/components/layout/FooterWrapper";
+import { isFullscreenVocabularyExercise } from "@/lib/isFullscreenVocabularyExercise";
 
 export default function AppChrome({ children }: { children: React.ReactNode }) {
   const pathname = usePathname() ?? "";
@@ -12,7 +13,7 @@ export default function AppChrome({ children }: { children: React.ReactNode }) {
   const isFullScreenStoryLesson = /^\/stories\/learn\/[^/]+/.test(pathname);
   const isFullScreenAIReport = pathname === "/ai-practice/report";
 
-  if (isFullScreenLesson || isFullScreenGrammarPractice || isFullScreenStoryLesson || isFullScreenAIReport) {
+  if (isFullScreenLesson || isFullScreenGrammarPractice || isFullScreenStoryLesson || isFullScreenAIReport || isFullscreenVocabularyExercise(pathname)) {
     return <>{children}</>;
   }
 

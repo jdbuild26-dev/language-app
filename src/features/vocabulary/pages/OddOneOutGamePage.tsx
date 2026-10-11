@@ -6,6 +6,7 @@ import { CheckCircle, XCircle, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
+import { TranslateButton } from "@/components/ui/TranslateButton";
 import { getFeedbackMessage } from "@/utils/feedbackMessages";
 import { fetchPracticeQuestions } from "@/services/vocabularyApi";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -25,6 +26,7 @@ export default function OddOneOutGamePage() {
   const [showFeedback, setShowFeedback] = useState(false);
   const [isCorrect, setIsCorrect] = useState(false);
   const [feedbackMessage, setFeedbackMessage] = useState("");
+  const [translatedWords, setTranslatedWords] = useState<Set<number>>(new Set());
 
   // Timer Hook
   const { timerString, resetTimer, isPaused } = useExerciseTimer({
@@ -132,6 +134,7 @@ export default function OddOneOutGamePage() {
     if (isSubmitted) {
       // Next Logic
       setShowFeedback(false);
+      setTranslatedWords(new Set());
       if (currentIndex + 1 < totalQuestions) {
         setCurrentIndex((prev) => prev + 1);
         setSelectedWord(null);
@@ -233,29 +236,23 @@ export default function OddOneOutGamePage() {
         timerValue={timerString}
         showFeedback={showFeedback}
         isCorrect={isCorrect}
-        correctAnswer={
-          !isCorrect
-            ? `${currentQuestion.correctAnswer} - ${currentQuestion.reason}`
-            : null
-        }
+        correctAnswer={!isCorrect ? currentQuestion.correctAnswer : null}
         feedbackMessage={feedbackMessage}
+        feedbackChildren={<p>{currentQuestion.reason}</p>}
       >
         <div className="flex-1 flex flex-col items-center justify-center -mt-10">
           {/* Grid */}
           <div className="grid grid-cols-2 gap-6 md:gap-10 w-full max-w-5xl">
             {currentQuestion.words.map((wordObj, idx) => (
+              <div key={idx} className="relative">
               <button
-                key={idx}
                 onClick={() => handleWordClick(wordObj)}
                 disabled={isSubmitted}
                 className={getWordStyle(wordObj)}
               >
                 <span className="text-lg md:text-xl font-medium">
-                  {wordObj.text}
+                  {translatedWords.has(idx) && wordObj.en ? wordObj.en : wordObj.text}
                 </span>
-                {isSubmitted && wordObj.en && (
-                  <span className="text-sm mt-1 opacity-80">{wordObj.en}</span>
-                )}
                 {isSubmitted &&
                   wordObj.text === currentQuestion.correctAnswer && (
                     <div className="absolute top-2 right-2">
@@ -271,6 +268,8 @@ export default function OddOneOutGamePage() {
                     </div>
                   )}
               </button>
+              {wordObj.en && <TranslateButton className="absolute right-2 top-2 z-10" aria-label={`Translate ${wordObj.text}`} aria-pressed={translatedWords.has(idx)} onClick={() => setTranslatedWords((previous) => { const next = new Set(previous); if (next.has(idx)) next.delete(idx); else next.add(idx); return next; })} />}
+              </div>
             ))}
           </div>
         </div>

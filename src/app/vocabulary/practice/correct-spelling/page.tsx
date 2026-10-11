@@ -1,2 +1,5 @@
-import CorrectSpellingPage from "@/features/vocabulary/pages/CorrectSpellingPage";
-export default function VocabCorrectSpellingPage() { return <CorrectSpellingPage />; }
+import { redirect } from "next/navigation";
+
+export default function VocabCorrectSpellingPage() {
+  redirect("/vocabulary/lessons/activities/correct-spelling");
+}
