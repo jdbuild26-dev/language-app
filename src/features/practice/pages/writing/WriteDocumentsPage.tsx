@@ -7,13 +7,16 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { usePracticeComplete } from "@/hooks/usePracticeComplete";
 import { cn } from "@/lib/utils";
 import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
+import PracticeTwoPanel from "@/features/practice/components/PracticeTwoPanel";
+import { insertImageAccent, imageCharacterLimit } from "@/features/practice/lib/writeImageInput";
 import { useWritingEvaluation } from "@/hooks/useWritingEvaluation";
 import WritingFeedbackResult from "@/components/WritingFeedbackResult";
 import { fetchPracticeData } from "@/utils/practiceFetcher";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import AccentKeyboard from "@/components/ui/AccentKeyboard";
 import { useSearchParams } from "next/navigation";
+
+const ACCENT_KEYS = ["é", "è", "ê", "à", "ç", "â", "î", "ô", "û", "ë", "ï", "ü"];
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -51,7 +54,6 @@ export default function WriteDocumentsPage() {
   const [userAnswer, setUserAnswer] = useState("");
   const [isCompleted, setIsCompleted] = useState(false);
   const [showFeedback, setShowFeedback] = useState(false);
-  const [isCorrect, setIsCorrect] = useState(false);
   const [score, setScore] = useState(0);
 
   const { evaluation, isSubmitting, evaluate, resetEvaluation } = useWritingEvaluation();
@@ -62,7 +64,7 @@ export default function WriteDocumentsPage() {
     duration: currentQ?.timeLimitSeconds || 360,
     mode: "timer",
     onExpire: () => { if (!isCompleted && !showFeedback) handleSubmit(); },
-    isPaused: isLoading || isCompleted || showFeedback,
+    isPaused: isLoading || isCompleted || showFeedback || isSubmitting,
   });
 
   usePracticeComplete({
@@ -136,7 +138,7 @@ export default function WriteDocumentsPage() {
                 : item.sampleAnswer ? [item.sampleAnswer] : [],
               sample_answers_en: Array.isArray(item.sample_answers_en) ? item.sample_answers_en : [],
               timeLimitSeconds: item.timeLimitSeconds || item.TimeLimitSeconds || 360,
-              charLimit: item.maxHighlightChars || item.charLimit || 1000,
+              charLimit: imageCharacterLimit(item.maxHighlightChars || item.charLimit || 1000),
               level: item.level || item.Level || "",
             };
           });
@@ -160,7 +162,7 @@ export default function WriteDocumentsPage() {
 
   // ── Submit ─────────────────────────────────────────────────────────────────
   const handleSubmit = async () => {
-    if (showFeedback || isSubmitting || !currentQ) return;
+    if (showFeedback || isSubmitting || !currentQ || !userAnswer.trim()) return;
     const result = await evaluate({
       task_type: "document",
       user_text: userAnswer,
@@ -171,7 +173,6 @@ export default function WriteDocumentsPage() {
     });
     if (result) {
       const finalScore = (result as any).overall_score ?? (result as any).score ?? 0;
-      setIsCorrect(finalScore >= 70);
       setShowFeedback(true);
       if (finalScore >= 70) setScore(s => s + 1);
     }
@@ -208,6 +209,20 @@ export default function WriteDocumentsPage() {
     : currentQ.topic_bullets_en;
   const instructionBox = currentQ.instruction_box_en || currentQ.instruction_box_fr || "Write the requested document";
 
+  const insertAccent = (char: string) => {
+    const el = textareaRef.current;
+    if (!el || isSubmitting || showFeedback || evaluation) return;
+    const start = el.selectionStart;
+    const end = el.selectionEnd;
+    const nextValue = insertImageAccent(userAnswer, start, end, char, charLimit);
+    if (nextValue === userAnswer) return;
+    setUserAnswer(nextValue);
+    requestAnimationFrame(() => {
+      el.focus();
+      el.setSelectionRange(start + 1, start + 1);
+    });
+  };
+
   return (
     <>
       <PracticeGameLayout
@@ -227,83 +242,73 @@ export default function WriteDocumentsPage() {
         submitLabel={isSubmitting ? "Evaluating…" : "Submit Answer"}
         timerValue={timerString}
         currentQuestionIndex={currentIndex}
+        disableContentScroll
       >
-        <div className="w-full max-w-3xl mx-auto px-4 py-8 flex flex-col gap-5">
-
-          {/* ── Top card: main instruction + bullet points ── */}
-          <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-6 flex flex-col gap-4">
-            <p className="text-sm text-slate-700 dark:text-slate-200 leading-relaxed">
-              {mainInstruction}
-            </p>
-
-            {bullets.length > 0 && (
-              <>
-                <hr className="border-slate-100 dark:border-slate-800" />
-                <ul className="flex flex-col gap-1.5">
+        <PracticeTwoPanel className="flex-1 overflow-y-auto md:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] md:gap-4 md:overflow-hidden md:p-4">
+          <section className="flex min-h-[320px] min-w-0 flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900 md:min-h-0" aria-labelledby="documents-objective-heading">
+            <h2 id="documents-objective-heading" className="practice-type-passage-heading !font-medium shrink-0 px-5 py-3 text-slate-900 dark:text-slate-100">OBJECTIVE</h2>
+            <hr className="mx-5 shrink-0 border-slate-200 dark:border-slate-700" />
+            <div className="practice-comprehension-scroll min-h-0 flex-1 overflow-y-auto px-5 py-5">
+              <p className="practice-type-content text-slate-700 dark:text-slate-200">
+                {mainInstruction}
+              </p>
+              {bullets.length > 0 && (
+                <ul className="mt-8 flex flex-col gap-2">
                   {bullets.map((b, i) => (
-                    <li key={i} className="flex items-start gap-2 text-sm text-slate-600 dark:text-slate-300">
-                      <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-slate-400 dark:bg-slate-500 shrink-0" />
-                      {b}
+                    <li key={i} className="practice-type-content flex items-start gap-3 text-slate-700 dark:text-slate-300">
+                      <span aria-hidden="true" className="mt-3 h-1.5 w-1.5 shrink-0 rounded-full bg-slate-400 dark:bg-slate-500" />
+                      <span>{b}</span>
                     </li>
                   ))}
                 </ul>
-              </>
-            )}
-          </div>
-
-          {/* ── Bottom card: textarea ── */}
-          <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-6 flex flex-col gap-3">
-            <p className="text-sm text-slate-500 dark:text-slate-400">
-              {instructionBox}
-            </p>
-
+              )}
+            </div>
+          </section>
+          <section className="flex min-h-[460px] min-w-0 flex-col gap-4 md:min-h-0" aria-label="Document answer">
+            <label className="sr-only" htmlFor="write-documents-answer">{instructionBox}</label>
             <textarea
+              id="write-documents-answer"
               ref={textareaRef}
               value={userAnswer}
               onChange={e => setUserAnswer(e.target.value)}
-              placeholder="Écrivez ici…"
-              disabled={showFeedback || !!evaluation}
+              onKeyDown={e => {
+                if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
+                  e.preventDefault();
+                  if (userAnswer.trim().length > 10) void handleSubmit();
+                }
+              }}
+              placeholder="|"
+              readOnly={showFeedback || !!evaluation}
+              disabled={isSubmitting}
               maxLength={charLimit}
-              rows={8}
               autoFocus
               className={cn(
-                "w-full resize-none rounded-xl border text-sm font-medium p-4 outline-none transition-all",
-                "bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-slate-100",
-                "placeholder:text-slate-400 dark:placeholder:text-slate-500",
-                showFeedback || evaluation
-                  ? "border-slate-200 dark:border-slate-700"
-                  : "border-slate-200 dark:border-slate-700 focus:border-sky-400 focus:ring-2 focus:ring-sky-400/20",
+                "practice-type-content practice-comprehension-scroll min-h-[320px] w-full flex-1 resize-none md:min-h-0 overflow-y-auto rounded-[20px] border-2 border-slate-200 bg-white px-6 py-5 font-normal text-slate-900 outline-none transition-[background-color,border-color,box-shadow] duration-200 motion-reduce:transition-none placeholder:text-slate-400 disabled:cursor-not-allowed dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100",
+                !showFeedback && !evaluation && !isSubmitting && "focus:border-sky-500 focus:ring-4 focus:ring-sky-100 dark:focus:ring-sky-900/30",
               )}
             />
-
-            <div className="flex justify-end">
-              <span className={cn(
-                "text-xs font-medium tabular-nums",
-                charCount >= charLimit * 0.9 ? "text-red-500" : "text-slate-400",
-              )}>
-                {charCount} / {charLimit}
-              </span>
+            <div className="flex shrink-0 flex-wrap items-center justify-end gap-3">
+              {!showFeedback && !evaluation && (
+                <div className="flex min-w-0 flex-1 flex-wrap justify-center gap-2" aria-label="French accent keyboard">
+                  {ACCENT_KEYS.map(char => (
+                    <button
+                      key={char}
+                      type="button"
+                      disabled={isSubmitting || charCount >= charLimit}
+                      aria-label={`Insert ${char}`}
+                      onMouseDown={e => e.preventDefault()}
+                      onClick={() => insertAccent(char)}
+                      className="flex h-[50px] w-[50px] items-center justify-center rounded-2xl border border-slate-200 bg-white text-base font-semibold text-slate-900 shadow-[0_1px_2px_rgba(15,23,42,0.03)] transition-[background-color,border-color,box-shadow,transform] duration-150 hover:border-sky-300 hover:bg-sky-50 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 motion-safe:active:scale-[0.94] motion-reduce:transition-none disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800"
+                    >
+                      {char}
+                    </button>
+                  ))}
+                </div>
+              )}
+              <span aria-label={`${charCount} of ${charLimit} characters`} className={cn("text-base font-semibold tabular-nums", charCount >= charLimit * 0.9 ? "text-red-500" : "text-slate-500 dark:text-slate-400")}>{charCount}/{charLimit}</span>
             </div>
-
-            {!showFeedback && !evaluation && (
-              <AccentKeyboard
-                disabled={false}
-                className=""
-                onAccentClick={(char) => {
-                  const el = textareaRef.current;
-                  if (!el) return;
-                  const start = el.selectionStart;
-                  const end = el.selectionEnd;
-                  const newVal = userAnswer.slice(0, start) + char + userAnswer.slice(end);
-                  setUserAnswer(newVal);
-                  requestAnimationFrame(() => {
-                    el.focus();
-                    el.setSelectionRange(start + 1, start + 1);
-                  });
-                }}
-              />
-            )}
-          </div>
+          </section>
+        </PracticeTwoPanel>
 
           {evaluation && (
             <div className="animate-in slide-in-from-bottom-4 duration-500">
@@ -315,7 +320,6 @@ export default function WriteDocumentsPage() {
               />
             </div>
           )}
-        </div>
       </PracticeGameLayout>
     </>
   );
