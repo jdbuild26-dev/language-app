@@ -7,13 +7,18 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { usePracticeComplete } from "@/hooks/usePracticeComplete";
 import { cn } from "@/lib/utils";
 import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
+import PracticeTwoPanel from "@/features/practice/components/PracticeTwoPanel";
+import AudioWaveform from "@/components/ui/AudioWaveform";
+import { useTextToSpeech } from "@/hooks/useTextToSpeech";
+import { imageCharacterLimit, insertImageAccent } from "@/features/practice/lib/writeImageInput";
 import { useWritingEvaluation } from "@/hooks/useWritingEvaluation";
 import WritingFeedbackResult from "@/components/WritingFeedbackResult";
 import { fetchPracticeData } from "@/utils/practiceFetcher";
-import { Loader2, Play, Pause } from "lucide-react";
+import { Loader2, Play, Pause, Volume2, RotateCcw, Turtle } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import AccentKeyboard from "@/components/ui/AccentKeyboard";
 import { useSearchParams } from "next/navigation";
+
+const ACCENT_KEYS = ["é", "è", "ê", "à", "ç", "â", "î", "ô", "û", "ë", "ï", "ü"];
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -31,88 +36,70 @@ type SummariseQuestion = {
 
 // ─── Audio Player ─────────────────────────────────────────────────────────────
 
-function AudioPlayer({ text, lang }: { text: string; lang: string }) {
-  const [isPlaying, setIsPlaying] = useState(false);
+function AudioPlayer({ text, lang, disabled = false }: { text: string; lang: string; disabled?: boolean }) {
+  const { speak, cancel, pause, resume, isSpeaking, isPaused } = useTextToSpeech();
   const [progress, setProgress] = useState(0);
-  const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [starting, setStarting] = useState(false);
+  const [rate, setRate] = useState(0.9);
+  const [playbackError, setPlaybackError] = useState("");
+  const isPlaying = !disabled && (starting || (isSpeaking && !isPaused));
 
-  const stop = () => {
-    window.speechSynthesis?.cancel();
-    setIsPlaying(false);
-    setProgress(0);
-    if (intervalRef.current) clearInterval(intervalRef.current);
+  useEffect(() => {
+    if (disabled) {
+      cancel();
+    }
+  }, [disabled, cancel]);
+
+  const startAudio = (speed = rate, position = progress) => {
+    if (disabled || !text) return;
+    if (!window.speechSynthesis) {
+      setPlaybackError("Audio playback is unavailable on this device.");
+      return;
+    }
+    const requested = Math.floor((Math.max(0, Math.min(100, position)) / 100) * text.length);
+    const insideWord = requested > 0 && /\S/.test(text[requested] || "") && /\S/.test(text[requested - 1]);
+    const nextSpace = insideWord ? text.slice(requested).search(/\s/) : 0;
+    const wordEnd = nextSpace < 0 ? text.length : requested + nextSpace;
+    const nextWord = text.slice(wordEnd).search(/\S/);
+    const offset = nextWord < 0 ? text.length : wordEnd + nextWord;
+    if (offset >= text.length) { setProgress(100); return; }
+    setProgress((offset / text.length) * 100);
+    setRate(speed);
+    setPlaybackError("");
+    setStarting(true);
+    speak(text.slice(offset), lang, speed, {
+      onStart: () => setStarting(false),
+      onProgress: (index, total) => setProgress(Math.min(99, ((offset + (index / Math.max(1, total)) * (text.length - offset)) / text.length) * 100)),
+      onEnd: () => { setStarting(false); setProgress(100); },
+      onError: () => { setStarting(false); setPlaybackError("Audio playback failed. Please try again."); },
+    });
   };
 
-  const play = () => {
-    if (!text || !window.speechSynthesis) return;
-    stop();
-
-    const utter = new SpeechSynthesisUtterance(text);
-    utter.lang = lang;
-    utter.rate = 0.9;
-    utteranceRef.current = utter;
-
-    // Fake progress bar — estimate ~150 words/min
-    const words = text.split(/\s+/).length;
-    const durationMs = (words / 150) * 60 * 1000;
-    const startTime = Date.now();
-
-    utter.onstart = () => {
-      setIsPlaying(true);
-      intervalRef.current = setInterval(() => {
-        const elapsed = Date.now() - startTime;
-        setProgress(Math.min((elapsed / durationMs) * 100, 99));
-      }, 200);
-    };
-
-    utter.onend = () => {
-      setIsPlaying(false);
-      setProgress(100);
-      if (intervalRef.current) clearInterval(intervalRef.current);
-    };
-
-    utter.onerror = () => {
-      setIsPlaying(false);
-      setProgress(0);
-      if (intervalRef.current) clearInterval(intervalRef.current);
-    };
-
-    window.speechSynthesis.speak(utter);
+  const togglePlayback = () => {
+    if (starting) { cancel(); setStarting(false); }
+    else if (isPlaying) pause();
+    else if (isPaused) resume();
+    else startAudio(rate, progress >= 100 ? 0 : progress);
   };
-
-  useEffect(() => () => stop(), []); // cleanup on unmount
+  const smallButton = "flex h-12 w-12 items-center justify-center rounded-full bg-sky-50 text-sky-600 transition-colors hover:bg-sky-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-sky-900/30 dark:text-sky-300 dark:hover:bg-sky-900/50";
 
   return (
-    <div className="flex items-center gap-4 w-full max-w-2xl mx-auto bg-slate-100 dark:bg-slate-800 rounded-2xl px-5 py-4 shadow-sm">
-      {/* Play / Pause button */}
-      <button
-        onClick={isPlaying ? stop : play}
-        disabled={!text}
-        className={cn(
-          "w-12 h-12 rounded-full flex items-center justify-center shrink-0 transition-all",
-          "bg-blue-600 hover:bg-blue-700 text-white shadow-md",
-          !text && "opacity-40 cursor-not-allowed",
-        )}
-      >
-        {isPlaying
-          ? <Pause className="w-5 h-5" />
-          : <Play className="w-5 h-5 ml-0.5" />
-        }
-      </button>
-
-      {/* Progress bar + label */}
-      <div className="flex-1 flex flex-col gap-1.5">
-        <span className="text-sm text-slate-500 dark:text-slate-400">
-          {isPlaying ? "Playing…" : progress === 100 ? "Finished" : "Tap play to start"}
-        </span>
-        <div className="h-1.5 w-full bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
-          <div
-            className="h-full bg-blue-500 rounded-full transition-all duration-200"
-            style={{ width: `${progress}%` }}
-          />
-        </div>
+    <div className="flex w-full flex-col items-center gap-6">
+      <div className="flex items-center justify-center gap-5">
+        <button type="button" disabled={disabled || !text} onClick={() => startAudio(0.9, 0)} aria-label="Replay passage" title="Replay" className={smallButton}>
+          <RotateCcw className="h-5 w-5" aria-hidden="true" />
+        </button>
+        <button type="button" disabled={disabled || !text} onClick={togglePlayback} aria-label={isPlaying ? "Pause passage" : isPaused ? "Resume passage" : "Play passage"} title={isPlaying ? "Pause" : isPaused ? "Resume" : "Play"} className="flex h-24 w-24 items-center justify-center rounded-full bg-sky-500 text-white shadow-md transition-transform hover:scale-105 hover:bg-sky-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 motion-reduce:transition-none disabled:cursor-not-allowed disabled:opacity-50">
+          {isPlaying ? <Pause className="h-10 w-10" aria-hidden="true" /> : isPaused || progress > 0 ? <Play className="h-10 w-10" aria-hidden="true" /> : <Volume2 className="h-10 w-10" aria-hidden="true" />}
+        </button>
+        <button type="button" disabled={disabled || !text} onClick={() => startAudio(0.55, 0)} aria-label="Play passage slowly" title="Slow playback" className={smallButton}>
+          <Turtle className="h-6 w-6" aria-hidden="true" />
+        </button>
       </div>
+      <div className="flex w-full items-center rounded-xl border-2 border-slate-200 bg-white px-5 py-4 dark:border-slate-700 dark:bg-slate-900">
+        <AudioWaveform tone="sky" progress={progress} isPlaying={isPlaying} className={cn("focus-within:!outline-sky-500", disabled && "pointer-events-none opacity-60")} onSeek={position => { if (disabled) return; cancel(); setStarting(false); setProgress(position); }} />
+      </div>
+      <p role="status" className="text-base text-slate-500 dark:text-slate-400">{playbackError || (isPlaying ? "Playing…" : isPaused ? "Paused" : progress >= 100 ? "Finished" : "Ready to listen")}</p>
     </div>
   );
 }
@@ -143,7 +130,7 @@ export default function SummariseAudioPage() {
     duration: currentQ?.timeLimitSeconds || 360,
     mode: "timer",
     onExpire: () => { if (!isCompleted && !showFeedback) handleSubmit(); },
-    isPaused: isLoading || isCompleted || showFeedback,
+    isPaused: isLoading || isCompleted || showFeedback || isSubmitting,
   });
 
   usePracticeComplete({
@@ -178,7 +165,7 @@ export default function SummariseAudioPage() {
             audio_fr: item.audio_fr || "",
             audio_en: item.audio_en || "",
             timeLimitSeconds: item.timeLimitSeconds || item.TimeLimitSeconds || 360,
-            charLimit: item.maxHighlightChars || 1000,
+            charLimit: imageCharacterLimit(item.maxHighlightChars || 1000),
             level: item.level || item.Level || "",
           }));
         setQuestions(normalized);
@@ -202,7 +189,7 @@ export default function SummariseAudioPage() {
 
   // ── Submit ─────────────────────────────────────────────────────────────────
   const handleSubmit = async () => {
-    if (showFeedback || isSubmitting || !currentQ) return;
+    if (showFeedback || isSubmitting || !currentQ || !userAnswer.trim()) return;
     const result = await evaluate({
       task_type: "summarise",
       user_text: userAnswer,
@@ -249,6 +236,20 @@ export default function SummariseAudioPage() {
   const audioLang = currentQ.audio_fr ? (learningLang === "fr" ? "fr-FR" : "en-US") : "en-US";
 
   const instructionLabel = currentQ.heading_fr || currentQ.heading_en || "Summarise what you hear";
+  const passageTitle = currentQ.title_fr || currentQ.title_en || "Passage";
+  const insertAccent = (char: string) => {
+    const el = textareaRef.current;
+    if (!el || isSubmitting || showFeedback || evaluation) return;
+    const start = el.selectionStart;
+    const end = el.selectionEnd;
+    const nextValue = insertImageAccent(userAnswer, start, end, char, charLimit);
+    if (nextValue === userAnswer) return;
+    setUserAnswer(nextValue);
+    requestAnimationFrame(() => {
+      el.focus();
+      el.setSelectionRange(start + char.length, start + char.length);
+    });
+  };
 
   return (
     <>
@@ -269,80 +270,61 @@ export default function SummariseAudioPage() {
         submitLabel={isSubmitting ? "Evaluating…" : "Submit Answer"}
         timerValue={timerString}
         currentQuestionIndex={currentIndex}
+        disableContentScroll
       >
-        <div className="w-full max-w-3xl mx-auto px-4 py-8 flex flex-col gap-6">
-
-          {/* Audio player */}
-          <AudioPlayer text={audioText} lang={audioLang} />
-
-          {/* Textarea card */}
-          <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-6 flex flex-col gap-3">
-
-            {/* Label */}
-            <p className="text-sm text-slate-500 dark:text-slate-400">
-              {instructionLabel}
-            </p>
-            <hr className="border-slate-100 dark:border-slate-800" />
-
-            {!evaluation ? (
-              <>
-                <textarea
-                  ref={textareaRef}
-                  value={userAnswer}
-                  onChange={e => setUserAnswer(e.target.value)}
-                  placeholder="Écrivez votre résumé ici…"
-                  disabled={showFeedback}
-                  maxLength={charLimit}
-                  rows={9}
-                  autoFocus
-                  className={cn(
-                    "w-full resize-none rounded-xl border text-sm font-medium p-4 outline-none transition-all",
-                    "bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100",
-                    "placeholder:text-slate-400 dark:placeholder:text-slate-500",
-                    "border-slate-200 dark:border-slate-700 focus:border-sky-400 focus:ring-2 focus:ring-sky-400/20",
-                  )}
-                />
-
-                {/* Char counter */}
-                <div className="flex justify-end">
-                  <span className={cn(
-                    "text-xs font-medium tabular-nums",
-                    charCount >= charLimit * 0.9 ? "text-red-500" : "text-slate-400",
-                  )}>
-                    {charCount} / {charLimit}
-                  </span>
+        <PracticeTwoPanel className="flex-1 overflow-y-auto md:gap-4 md:overflow-hidden md:p-4">
+          <section className="practice-comprehension-scroll flex min-h-[360px] min-w-0 flex-col items-center gap-10 overflow-y-auto rounded-2xl border border-slate-200 bg-white px-5 py-6 dark:border-slate-700 dark:bg-slate-900 md:min-h-0" aria-label="Listening passage">
+            <h2 className="practice-type-passage-heading !font-medium text-center text-slate-900 dark:text-slate-100">{passageTitle}</h2>
+            <AudioPlayer key={currentIndex} text={audioText} lang={audioLang} disabled={isSubmitting || showFeedback || !!evaluation} />
+          </section>
+          <section className="flex min-h-[460px] min-w-0 flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-900 md:min-h-0" aria-label="Audio summary">
+            <label className="sr-only" htmlFor="summarise-audio-answer">{instructionLabel}</label>
+            <textarea
+              id="summarise-audio-answer"
+              ref={textareaRef}
+              value={userAnswer}
+              onChange={e => setUserAnswer(e.target.value)}
+              onKeyDown={e => {
+                if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
+                  e.preventDefault();
+                  if (userAnswer.trim().length > 10) void handleSubmit();
+                }
+              }}
+              placeholder="|"
+              readOnly={showFeedback || !!evaluation}
+              disabled={isSubmitting}
+              maxLength={charLimit}
+              autoFocus
+              className={cn(
+                "practice-type-content practice-comprehension-scroll min-h-[320px] w-full flex-1 resize-none md:min-h-0 overflow-y-auto rounded-[20px] border-2 border-slate-200 bg-white px-6 py-5 font-normal text-slate-900 outline-none transition-[background-color,border-color,box-shadow] duration-200 motion-reduce:transition-none placeholder:text-slate-400 disabled:cursor-not-allowed dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100",
+                !showFeedback && !evaluation && !isSubmitting && "focus:border-sky-500 focus:ring-4 focus:ring-sky-100 dark:focus:ring-sky-900/30",
+              )}
+            />
+            <div className="flex shrink-0 flex-col gap-3">
+              {!showFeedback && !evaluation && (
+                <div className="grid w-full grid-cols-6 gap-1 xl:grid-cols-12" aria-label="French accent keyboard">
+                  {ACCENT_KEYS.map(char => (
+                    <button
+                      key={char}
+                      type="button"
+                      disabled={isSubmitting || charCount >= charLimit}
+                      aria-label={`Insert ${char}`}
+                      onMouseDown={e => e.preventDefault()}
+                      onClick={() => insertAccent(char)}
+                      className="flex h-11 w-full min-w-0 items-center justify-center rounded-xl border border-slate-200 bg-white text-base font-semibold text-slate-900 shadow-[0_1px_2px_rgba(15,23,42,0.03)] transition-[background-color,border-color,box-shadow,transform] duration-150 hover:border-sky-300 hover:bg-sky-50 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 motion-safe:active:scale-[0.94] motion-reduce:transition-none disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800"
+                    >
+                      {char}
+                    </button>
+                  ))}
                 </div>
-
-                {/* Accent keyboard */}
-                <AccentKeyboard
-                  disabled={showFeedback}
-                  className=""
-                  onAccentClick={(char) => {
-                    const el = textareaRef.current;
-                    if (!el) return;
-                    const start = el.selectionStart;
-                    const end = el.selectionEnd;
-                    const newVal = userAnswer.slice(0, start) + char + userAnswer.slice(end);
-                    setUserAnswer(newVal);
-                    requestAnimationFrame(() => {
-                      el.focus();
-                      el.setSelectionRange(start + 1, start + 1);
-                    });
-                  }}
-                />
-              </>
-            ) : (
-              <div className="animate-in slide-in-from-bottom-4 duration-500">
-                <WritingFeedbackResult
-                  evaluation={evaluation as any}
-                  mode="writing"
-                  userText={userAnswer}
-                  onContinue={handleContinue}
-                />
-              </div>
-            )}
-          </div>
-        </div>
+              )}
+              <span aria-label={`${charCount} of ${charLimit} characters`} className={cn("self-end text-base font-semibold tabular-nums", charCount >= charLimit * 0.9 ? "text-red-500" : "text-slate-500 dark:text-slate-400")}>{charCount}/{charLimit}</span>
+            </div>
+          </section>
+        </PracticeTwoPanel>
+        {evaluation && (
+          <WritingFeedbackResult evaluation={evaluation} mode="writing" userText={userAnswer} onContinue={handleContinue} />
+        )}
       </PracticeGameLayout>
     </>
   );
