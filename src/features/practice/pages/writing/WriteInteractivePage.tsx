@@ -617,7 +617,7 @@ export default function WriteInteractivePage() {
                     <textarea
                       value={userInput}
                       onChange={(e) => setUserInput(e.target.value)}
-                      placeholder="Type your response in French..."
+                      placeholder="|"
                       className={cn(
                         "w-full px-4 py-4 rounded-2xl border text-base transition-all outline-none shadow-sm min-h-[180px] resize-none",
                         "bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200",

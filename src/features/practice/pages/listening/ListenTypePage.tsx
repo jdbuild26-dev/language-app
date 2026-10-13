@@ -329,6 +329,7 @@ function ListenTypeContent() {
                 showFeedback && !isCorrect && "border-red-500 bg-red-50 text-red-950 focus:border-red-500 dark:border-red-500 dark:bg-red-950/30 dark:text-red-100",
               )}
               autoFocus
+              placeholder="|"
             />
           </div>
 

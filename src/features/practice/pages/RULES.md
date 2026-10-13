@@ -48,3 +48,13 @@ Use these effective sizes when matching or reviewing the current Translate the S
 Translate icons do not contain text. Check their button and icon dimensions against the reference component rather than assigning them a font size.
 
 Before reporting completion, check each requirement against the changed source, run the focused checks available for the edited files, and state any verification limit plainly. Keep unrelated user changes intact.
+
+## Translate by Speaking
+
+Use the supplied spoken-translation screenshots: plain centered source text at 24/30px weight 500, blue microphone changing to a square Stop icon, and a disabled replay control until an actual learner recording is available. Each recording has a fixed 60-second limit and stops automatically at that limit. After Submit, show the correct answer in green beneath the source, an inset horizontal rule, and the finalized recognized transcript colored by evaluation. Preserve replay and the shared Continue footer. Audio remains in browser memory only; release microphone tracks and revoke the recording URL on re-record, Next, exit, and unmount. Do not upload audio, synthesize replay from text, or show an AI report overlay for this exercise.
+
+## Speak on a Topic and Describe the Image
+
+Use a neutral grey two-column surface with no middle divider or right-side card. The topic objective is a white bordered card with an inset heading rule, 22/24px weight-500 heading, and 20/21px weight-400 instructions and bullets. The image is an unboxed 1:1 photo using Next Image and cover fitting. Center microphone and actual-recording replay controls on the right, using the spoken translation blue button styles and square Stop icon. Replay starts disabled. Limit each recording to exactly 60 seconds, independently of the exercise timer; stop and finalize speech before AI evaluation. Preserve existing topic and image evaluation endpoints, report, validation, completion tracking, and Continue flow. Release tracks and clear audio on re-record, context changes, Continue, and unmount.
+
+Recording activity uses the captured microphone stream: a volume-reactive ring and five frequency bars, with a visible Recording status during silence. Stop, reset, and unmount release the analyser and AudioContext. If live monitoring is unavailable, recording and its status remain usable.
