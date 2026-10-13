@@ -1,20 +1,23 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
+import Image from "next/image";
 import { usePracticeExit } from "@/hooks/usePracticeExit";
 import { useExerciseTimer } from "@/hooks/useExerciseTimer";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { usePracticeComplete } from "@/hooks/usePracticeComplete";
 import { cn } from "@/lib/utils";
 import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
+import PracticeTwoPanel from "@/features/practice/components/PracticeTwoPanel";
 import { useWriteImageEvaluation } from "@/features/practice/hooks/useWriteImageEvaluation";
 import WriteImageFeedbackResult from "@/features/practice/components/WriteImageFeedbackResult";
 import { fetchPracticeData } from "@/utils/practiceFetcher";
 import { Loader2, ImageIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import AccentKeyboard from "@/components/ui/AccentKeyboard";
 import { useSearchParams } from "next/navigation";
 import { imageSamples, imageCharacterLimit, insertImageAccent } from "../../lib/writeImageInput";
+
+const ACCENT_KEYS = ["é", "è", "ê", "à", "ç", "â", "î", "ô", "û", "ë", "ï", "ü"];
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -212,6 +215,19 @@ export default function WriteImagePage() {
   const charCount = userAnswer.length;
   const charLimit = currentQ?.charLimit || 1000;
   const instructionLabel = currentQ.instruction_box_en || currentQ.instruction_box_fr;
+  const insertAccent = (char: string) => {
+    const el = textareaRef.current;
+    if (!el || isSubmitting || showFeedback || evaluation) return;
+    const start = el.selectionStart;
+    const end = el.selectionEnd;
+    const nextValue = insertImageAccent(userAnswer, start, end, char, charLimit);
+    if (nextValue === userAnswer) return;
+    setUserAnswer(nextValue);
+    requestAnimationFrame(() => {
+      el.focus();
+      el.setSelectionRange(start + char.length, start + char.length);
+    });
+  };
   const sampleAnswers = imageSamples(currentQ.sample_answers_fr);
   const missingContent = !currentQ.image_url.trim()
     ? "This exercise needs an image before it can be evaluated."
@@ -242,99 +258,79 @@ export default function WriteImagePage() {
         submitLabel={isSubmitting ? "Evaluating…" : "Submit Answer"}
         timerValue={timerString}
         currentQuestionIndex={currentIndex}
+        disableContentScroll
       >
-        {/* ── Two-column layout matching mockup ── */}
-        <div className="flex flex-col lg:flex-row w-full h-full min-h-0 bg-slate-50 dark:bg-slate-950">
-
-          {/* LEFT — image */}
-          <div className="flex items-center justify-center w-full lg:w-1/2 p-8 lg:p-12 border-b lg:border-b-0 lg:border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
+        <PracticeTwoPanel className="flex-1 overflow-y-auto md:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] md:gap-4 md:overflow-hidden md:p-4">
+          <section className="flex min-h-[320px] min-w-0 items-center justify-center bg-neutral-50 p-4 dark:bg-slate-950 md:min-h-0" aria-label="Exercise image">
             {currentQ.image_url ? (
-              <img
-                src={currentQ.image_url}
-                alt="Exercise image"
-                className="max-w-full max-h-[380px] rounded-xl object-contain shadow-sm"
-              />
+              <div className="relative aspect-square w-full max-w-[min(100%,calc(100dvh-15rem))] shrink-0 overflow-hidden rounded-xl">
+                <Image
+                  src={currentQ.image_url}
+                  alt="Image to describe"
+                  fill
+                  sizes="(min-width: 768px) 40vw, 90vw"
+                  unoptimized
+                  className="object-cover"
+                />
+              </div>
             ) : (
-              <div className="flex flex-col items-center gap-3 text-slate-300 dark:text-slate-600">
-                <ImageIcon className="w-20 h-20" />
-                <p className="text-sm">Image not yet uploaded</p>
+              <div className="flex flex-col items-center gap-3 text-slate-400 dark:text-slate-500">
+                <ImageIcon className="h-20 w-20" aria-hidden="true" />
+                <p className="practice-type-content">Image not yet uploaded</p>
               </div>
             )}
-          </div>
-
-          {/* RIGHT — textarea */}
-          <div className="flex flex-col w-full lg:w-1/2 p-6 lg:p-10 bg-white dark:bg-slate-900">
-
-            {!evaluation ? (
-              <div className="flex flex-col h-full gap-4">
-                {/* Instruction label */}
-                <p className="text-sm text-slate-500 dark:text-slate-400">
-                  {instructionLabel}
-                </p>
-
-                {/* Textarea */}
-                <textarea
-                  ref={textareaRef}
-                  value={userAnswer}
-                  onChange={e => setUserAnswer(e.target.value)}
-                  placeholder="Écrivez ici…"
-                  disabled={showFeedback || isSubmitting}
-                  maxLength={charLimit}
-                  autoFocus
-                  className={cn(
-                    "flex-1 min-h-[200px] w-full resize-none rounded-xl border text-sm font-medium p-4 outline-none transition-all",
-                    "bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100",
-                    "placeholder:text-slate-400 dark:placeholder:text-slate-500",
-                    "border-slate-200 dark:border-slate-700 focus:border-sky-400 focus:ring-2 focus:ring-sky-400/20",
-                  )}
-                />
-
-                {/* Char counter */}
-                <div className="flex justify-end">
-                  <span className={cn(
-                    "text-xs font-medium tabular-nums",
-                    charCount >= charLimit * 0.9 ? "text-red-500" : "text-slate-400",
-                  )}>
-                    {charCount} / {charLimit}
-                  </span>
+          </section>
+          <section className="flex min-h-[460px] min-w-0 flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-900 md:min-h-0" aria-label="Image description">
+            <label className="sr-only" htmlFor="write-image-answer">{instructionLabel}</label>
+            <textarea
+              id="write-image-answer"
+              ref={textareaRef}
+              value={userAnswer}
+              onChange={e => setUserAnswer(e.target.value)}
+              onKeyDown={e => {
+                if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
+                  e.preventDefault();
+                  if (userAnswer.trim()) void handleSubmit();
+                }
+              }}
+              placeholder="|"
+              readOnly={showFeedback || !!evaluation}
+              disabled={isSubmitting || !!missingContent}
+              maxLength={charLimit}
+              autoFocus
+              className={cn(
+                "practice-type-content practice-comprehension-scroll min-h-[320px] w-full flex-1 resize-none md:min-h-0 overflow-y-auto rounded-[20px] border-2 border-slate-200 bg-white px-6 py-5 font-normal text-slate-900 outline-none transition-[background-color,border-color,box-shadow] duration-200 motion-reduce:transition-none placeholder:text-slate-400 disabled:cursor-not-allowed dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100",
+                !showFeedback && !evaluation && !isSubmitting && "focus:border-sky-500 focus:ring-4 focus:ring-sky-100 dark:focus:ring-sky-900/30",
+              )}
+            />
+            <div className="flex shrink-0 flex-col gap-3">
+              {!showFeedback && !evaluation && (
+                <div className="grid w-full grid-cols-6 gap-1 xl:grid-cols-12" aria-label="French accent keyboard">
+                  {ACCENT_KEYS.map(char => (
+                    <button
+                      key={char}
+                      type="button"
+                      disabled={isSubmitting || !!missingContent || charCount >= charLimit}
+                      aria-label={`Insert ${char}`}
+                      onMouseDown={e => e.preventDefault()}
+                      onClick={() => insertAccent(char)}
+                      className="flex h-11 w-full min-w-0 items-center justify-center rounded-xl border border-slate-200 bg-white text-base font-semibold text-slate-900 shadow-[0_1px_2px_rgba(15,23,42,0.03)] transition-[background-color,border-color,box-shadow,transform] duration-150 hover:border-sky-300 hover:bg-sky-50 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 motion-safe:active:scale-[0.94] motion-reduce:transition-none disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800"
+                    >
+                      {char}
+                    </button>
+                  ))}
                 </div>
-
-                {(missingContent || contentError || error) && (
-                  <p role="alert" className="text-sm text-red-600 dark:text-red-400">
-                    {missingContent || contentError || error}
-                  </p>
-                )}
-
-                {/* Accent keyboard */}
-                <AccentKeyboard
-                  disabled={showFeedback || isSubmitting}
-                  onAccentClick={(char) => {
-                    const el = textareaRef.current;
-                    if (!el) return;
-                    const start = el.selectionStart;
-                    const end = el.selectionEnd;
-                    const newVal = insertImageAccent(userAnswer, start, end, char, charLimit);
-                    if (newVal === userAnswer) return;
-                    setUserAnswer(newVal);
-                    requestAnimationFrame(() => {
-                      el.focus();
-                      el.setSelectionRange(start + char.length, start + char.length);
-                    });
-                  }}
-                />
-              </div>
-            ) : (
-              /* AI evaluation result */
-              <div className="flex-1 overflow-y-auto animate-in slide-in-from-bottom-4 duration-500">
-                <WriteImageFeedbackResult
-                  evaluation={evaluation}
-                  userText={submittedAnswer}
-                  onContinue={handleContinue}
-                />
-              </div>
+              )}
+              <span aria-label={`${charCount} of ${charLimit} characters`} className={cn("self-end text-base font-semibold tabular-nums", charCount >= charLimit * 0.9 ? "text-red-500" : "text-slate-500 dark:text-slate-400")}>{charCount}/{charLimit}</span>
+            </div>
+            {(missingContent || contentError || error) && (
+              <p role="alert" className="text-base text-red-600 dark:text-red-400">{missingContent || contentError || error}</p>
             )}
-          </div>
-        </div>
+          </section>
+        </PracticeTwoPanel>
+        {evaluation && (
+          <WriteImageFeedbackResult evaluation={evaluation} userText={submittedAnswer} onContinue={handleContinue} />
+        )}
       </PracticeGameLayout>
     </>
   );

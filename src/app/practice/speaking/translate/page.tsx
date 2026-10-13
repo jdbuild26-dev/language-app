@@ -1,337 +1,144 @@
 "use client";
 
-import React, { useState, useEffect, useRef, Suspense } from "react";
-import { 
-  Mic, 
-  Loader2, 
-  Volume2, 
-  Languages, 
-  ArrowRight, 
-  Sparkles, 
-  History,
-  CheckCircle2,
-  AlertCircle
-} from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Suspense, useEffect, useRef, useState } from "react";
+import { Loader2, Mic, Volume2, Square } from "lucide-react";
+import { useSearchParams } from "next/navigation";
 import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
 import { usePracticeExit } from "@/hooks/usePracticeExit";
-import { cn } from "@/lib/utils";
+import useSpeechRecognition from "@/hooks/useSpeechRecognition";
+import { usePracticeRecording } from "@/hooks/usePracticeRecording";
+import { useExerciseTimer } from "@/hooks/useExerciseTimer";
 import { fetchPracticeData } from "@/utils/practiceFetcher";
-import WritingFeedbackResult from "@/components/WritingFeedbackResult";
-import { useTextToSpeech } from "@/hooks/useTextToSpeech";
-import { useSearchParams } from "next/navigation";
-import { motion, AnimatePresence } from "framer-motion";
 
-interface Question {
-  id: number;
-  Sentence: string;
-  Translation: string;
-  Scenario: string;
-  Level?: string;
+import RecordingActivity from "@/features/practice/components/RecordingActivity";
+
+type Question = { sentence: string; answer: string; level: string };
+const record = (value: unknown): Record<string, unknown> => value && typeof value === "object" ? value as Record<string, unknown> : {};
+function question(value: unknown): Question {
+  const item = record(value);
+  const content = { ...record(item.content), ...item };
+  return {
+    sentence: String(content.Sentence ?? content.sentence ?? content.sourceText ?? content.Question ?? ""),
+    answer: String(content.Translation ?? content.translation ?? content.correctAnswer ?? content.Answer ?? ""),
+    level: String(content.Level ?? content.level ?? "A1"),
+  };
 }
 
 export default function TranslateBySpeakingPage() {
-  return (
-    <Suspense fallback={<div className="flex items-center justify-center min-h-screen"><Loader2 className="w-8 h-8 animate-spin text-indigo-500" /></div>}>
-      <TranslateBySpeakingContent />
-    </Suspense>
-  );
+  return <Suspense fallback={<Loader2 className="m-auto animate-spin" />}><TranslateBySpeakingContent /></Suspense>;
 }
 
 function TranslateBySpeakingContent() {
-  const handleExit = usePracticeExit();
-  const { speak } = useTextToSpeech();
-  const searchParams = useSearchParams();
-  const tag = searchParams?.get("tag") ?? undefined;
-
-  // Game State
+  const exit = usePracticeExit();
+  const params = useSearchParams();
+  const tag = params?.get("tag") ?? undefined;
+  const level = params?.get("level") ?? undefined;
   const [questions, setQuestions] = useState<Question[]>([]);
-  const [currentIndex, setCurrentIndex] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [index, setIndex] = useState(0);
   const [score, setScore] = useState(0);
-  const [isGameOver, setIsGameOver] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
+  const [finished, setFinished] = useState(false);
+  const [feedback, setFeedback] = useState<{ transcript: string; correct: boolean } | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
+  const [playing, setPlaying] = useState(false);
+  const audio = useRef<HTMLAudioElement | null>(null);
+  const request = useRef<AbortController | null>(null);
+  const busy = useRef(false);
+  const speech = useSpeechRecognition();
+  const current = questions[index];
+  const recording = usePracticeRecording(60, speech.stopListening);
+  const timer = useExerciseTimer({ duration: 360, mode: "timer", isPaused: loading || finished || submitting || Boolean(feedback), onExpire: () => { void recording.stop(); } });
 
-  // Interaction State
-  const [isListening, setIsListening] = useState(false);
-  const [spokenText, setSpokenText] = useState("");
-  const [evaluation, setEvaluation] = useState(null); 
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [showFeedback, setShowFeedback] = useState(false);
-
-  const recognitionRef = useRef<any>(null);
-
-  // Initialize Speech Recognition
   useEffect(() => {
-    if (typeof window !== "undefined" && ((window as any).SpeechRecognition || (window as any).webkitSpeechRecognition)) {
-      const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-      recognitionRef.current = new SpeechRecognition();
-      recognitionRef.current.continuous = true;
-      recognitionRef.current.lang = "fr-FR";
-      recognitionRef.current.interimResults = true;
+    let cancelled = false;
+    fetchPracticeData("speak_translate", { tag, level }).then((data: unknown[]) => {
+      if (!cancelled) setQuestions(data.map(question).filter(item => item.sentence && item.answer));
+    }).catch(() => { if (!cancelled) setMessage("Unable to load this exercise."); })
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, [tag, level]);
+  useEffect(() => () => { request.current?.abort(); audio.current?.pause(); }, []);
 
-      recognitionRef.current.onresult = (event: any) => {
-        const transcript = Array.from(event.results)
-          .map((result: any) => result[0].transcript)
-          .join("");
-        setSpokenText(transcript);
-      };
-
-      recognitionRef.current.onend = () => {
-        setIsListening(false);
-      };
-
-      recognitionRef.current.onerror = (event: any) => {
-        console.error("Speech recognition error", event.error);
-        setIsListening(false);
-      };
-    }
-
-    return () => {
-      if (recognitionRef.current) {
-        recognitionRef.current.stop();
-      }
-    };
-  }, []);
-
-  // Fetch Data
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const data = await fetchPracticeData("speak_translate", { tag }) as any[];
-        // Normalize: backend spreads content fields — Sentence, Translation, Scenario are at top level
-        const mapped = (Array.isArray(data) ? data : []).map((item: any) => ({
-          id:          item.id || item.ExerciseID,
-          Sentence:    item.Sentence    || item.sentence    || item.sourceText  || item.Question || "",
-          Translation: item.Translation || item.translation || item.correctAnswer || item.Answer || "",
-          Scenario:    item.Scenario    || item.scenario    || item.Description  || "",
-          Level:       item.Level       || item.level       || "A1",
-        })).filter((q: any) => q.Sentence);
-        setQuestions(mapped);
-      } catch (error) {
-        console.error("Error fetching speaking data:", error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchData();
-  }, [tag]);
-
-  const currentQuestion = questions[currentIndex];
-
-  const isStartingRef = useRef(false);
-
-  const handleToggleListening = () => {
-    if (!recognitionRef.current) {
-      alert("Speech recognition is not supported in this browser.");
+  async function toggleRecording() {
+    if (busy.current || feedback || recording.isStarting) return;
+    setMessage(null);
+    if (recording.isRecording) {
+      try { await Promise.all([recording.stop(), speech.stopAndReadTranscript()]); }
+      catch (error) { setMessage(error instanceof Error ? error.message : "Please record again."); }
       return;
     }
-
-    if (isListening) {
-      isStartingRef.current = false;
-      recognitionRef.current.stop();
-      setIsListening(false);
-    } else {
-      if (isStartingRef.current) return;
-      isStartingRef.current = true;
-      try { recognitionRef.current.stop(); } catch { /* already stopped */ }
-      setSpokenText("");
-      setEvaluation(null);
-      setShowFeedback(false);
-      setTimeout(() => {
-        try {
-          recognitionRef.current.start();
-          setIsListening(true);
-        } catch (e) {
-          console.warn("Speech recognition start failed:", e);
-        } finally {
-          isStartingRef.current = false;
-        }
-      }, 150);
-    }
-  };
-
-  const handleSubmit = async () => {
-    if (!spokenText || isSubmitting) return;
-
-    setIsSubmitting(true);
+    audio.current?.pause(); setPlaying(false);
+    speech.resetTranscript();
+    if (await recording.start()) speech.startListening();
+  }
+  async function replay() {
+    const player = audio.current;
+    if (!player) return;
+    if (playing) { player.pause(); setPlaying(false); return; }
+    player.currentTime = 0;
+    try { await player.play(); setPlaying(true); }
+    catch { setMessage("Unable to play this recording. Please try again."); }
+  }
+  async function submit() {
+    if (busy.current || !current) return;
+    busy.current = true; setSubmitting(true); setMessage(null);
+    const controller = new AbortController(); request.current = controller;
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"}/api/practice/evaluate-speaking`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          task_type: "translate",
-          transcript: spokenText,
-          reference: currentQuestion?.Translation,
-          context: `Translate the English sentence: "${currentQuestion?.Sentence}" into spoken French.`,
-          level: "A1", // Default level
-        }),
+      const [, transcript] = await Promise.all([recording.stop(), speech.stopAndReadTranscript()]);
+      if (!transcript.trim()) throw new Error("Record your translation before submitting.");
+      const response = await fetch((process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000") + "/api/practice/evaluate-speaking", {
+        method: "POST", signal: controller.signal, headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ task_type: "translate", transcript, reference: current.answer,
+          context: 'Translate the English sentence: "' + current.sentence + '" into spoken French.', level: current.level }),
       });
-
-      if (!response.ok) throw new Error("Failed to evaluate");
-      const result = await response.json();
-      setEvaluation(result);
-      setShowFeedback(true);
-      
-      const finalScore = result.overall_score !== undefined ? result.overall_score : (result.is_correct ? 100 : 0);
-      if (finalScore >= 70) {
-        setScore((prev) => prev + 1);
-      }
+      if (!response.ok) throw new Error("Unable to check your answer. Please try again.");
+      const result = record(await response.json());
+      if (typeof result.overall_score !== "number" && typeof result.is_correct !== "boolean") throw new Error("Unable to check your answer. Please try again.");
+      const correct = typeof result.overall_score === "number" ? result.overall_score >= 70 : result.is_correct === true;
+      if (!controller.signal.aborted) { setFeedback({ transcript, correct }); if (correct) setScore(value => value + 1); }
     } catch (error) {
-      console.error("Evaluation error:", error);
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const handleNext = () => {
-    setSpokenText("");
-    setEvaluation(null);
-    setShowFeedback(false);
-    setIsListening(false);
-
-    if (currentIndex < questions.length - 1) {
-      setCurrentIndex((prev) => prev + 1);
-    } else {
-      setIsGameOver(true);
-    }
-  };
-
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-slate-50 dark:bg-slate-900">
-        <Loader2 className="w-8 h-8 animate-spin text-indigo-500" />
-      </div>
-    );
+      if (!controller.signal.aborted) setMessage(error instanceof Error ? error.message : "Unable to check your answer.");
+    } finally { if (!controller.signal.aborted) { busy.current = false; setSubmitting(false); } }
   }
-
-  if (questions.length === 0) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-slate-50 dark:bg-slate-900">
-        <p className="text-xl text-slate-600 dark:text-slate-400">No content available.</p>
-        <Button onClick={() => handleExit()} variant="outline" className="mt-4">Back</Button>
-      </div>
-    );
+  function next() {
+    audio.current?.pause(); setPlaying(false);
+    recording.reset(); speech.stopListening(); speech.resetTranscript(); setFeedback(null); setMessage(null);
+    if (index + 1 < questions.length) { setIndex(value => value + 1); timer.resetTimer(); }
+    else setFinished(true);
   }
-
-  const progress = ((currentIndex + 1) / questions.length) * 100;
-
-  return (
-    <PracticeGameLayout
-      questionType="Translate by Speaking"
-      instructionFr="Traduisez la phrase à haute voix"
-      instructionEn="Translate the sentence out loud"
-      progress={progress}
-      score={score}
-      totalQuestions={questions.length}
-      isGameOver={isGameOver}
-      onExit={handleExit}
-      onNext={showFeedback ? handleNext : handleSubmit}
-      onRestart={() => window.location.reload()}
-      isSubmitEnabled={Boolean(spokenText) && !isSubmitting}
-      showSubmitButton={!showFeedback}
-      submitLabel={isSubmitting ? "Judging..." : "Submit Speech"}
-    >
-      <div className="flex flex-col items-center w-full max-w-3xl mx-auto px-4 py-8">
-        {/* Source Sentence Card */}
-        <div className="w-full bg-white dark:bg-slate-800 rounded-3xl p-8 mb-8 shadow-2xl border border-slate-100 dark:border-slate-700 text-center relative overflow-hidden group">
-          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-indigo-500 to-purple-500" />
-          
-          <div className="space-y-6 relative z-10">
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-indigo-50 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 text-xs font-black uppercase tracking-widest">
-              <Languages className="w-3.5 h-3.5" />
-              English Source
-            </div>
-            
-            <h2 className="text-3xl md:text-4xl font-black text-slate-900 dark:text-white leading-tight">
-              "{currentQuestion?.Sentence}"
-            </h2>
-            
-            <div className="flex items-center justify-center gap-4 text-slate-400">
-              <div className="h-px w-12 bg-slate-200 dark:bg-slate-700" />
-              <Sparkles className="w-5 h-5 text-indigo-500/50" />
-              <div className="h-px w-12 bg-slate-200 dark:bg-slate-700" />
-            </div>
-          </div>
-        </div>
-
-        {/* Interaction Zone */}
-        <div className="w-full flex flex-col items-center gap-8 mb-8">
-          <div className="relative">
-            {/* Pulse rings for recording */}
-            {isListening && (
-              <>
-                <motion.div 
-                  initial={{ scale: 1, opacity: 0.5 }}
-                  animate={{ scale: 1.5, opacity: 0 }}
-                  transition={{ repeat: Infinity, duration: 1.5 }}
-                  className="absolute inset-0 rounded-full bg-red-500"
-                />
-                <motion.div 
-                  initial={{ scale: 1, opacity: 0.3 }}
-                  animate={{ scale: 2, opacity: 0 }}
-                  transition={{ repeat: Infinity, duration: 2, delay: 0.5 }}
-                  className="absolute inset-0 rounded-full bg-red-400"
-                />
-              </>
-            )}
-            
-            <button
-              onClick={handleToggleListening}
-              disabled={isSubmitting || !!evaluation}
-              className={cn(
-                "w-24 h-24 rounded-full flex items-center justify-center transition-all duration-300 shadow-2xl relative z-10",
-                isListening
-                  ? "bg-red-500 text-white scale-110"
-                  : "bg-indigo-600 text-white hover:bg-indigo-700 hover:scale-105",
-                (isSubmitting || !!evaluation) && "opacity-50 cursor-not-allowed"
-              )}
-            >
-              <Mic className={cn("w-10 h-10", isListening && "animate-pulse")} />
-            </button>
-          </div>
-
-          {/* Transcript display */}
-          <div className={cn(
-            "w-full p-6 rounded-3xl bg-white dark:bg-slate-800 border-2 border-dashed transition-all duration-500 min-h-[120px] flex items-center justify-center text-center",
-            isListening ? "border-indigo-400 bg-indigo-50/10" : "border-slate-200 dark:border-slate-700"
-          )}>
-            <AnimatePresence mode="wait">
-              {spokenText ? (
-                <motion.p 
-                  key="spoken"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  className="text-2xl font-medium text-slate-800 dark:text-slate-200 italic"
-                >
-                  "{spokenText}"
-                </motion.p>
-              ) : (
-                <motion.p 
-                  key="empty"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  className="text-slate-400 dark:text-slate-500 font-medium"
-                >
-                  {isListening ? "Speaking..." : "Tap to start speaking in French"}
-                </motion.p>
-              )}
-            </AnimatePresence>
-          </div>
-        </div>
-
-        {/* AI Evaluation Result Overlay */}
-        {evaluation && (
-          <div className="w-full animate-in slide-in-from-bottom-8 duration-700">
-            <WritingFeedbackResult 
-              evaluation={evaluation} 
-              mode="speaking" 
-              userText={spokenText}
-              onContinue={handleNext}
-            />
-          </div>
-        )}
+  if (loading) return <div className="flex min-h-screen items-center justify-center"><Loader2 className="animate-spin text-blue-500" /></div>;
+  if (!current) return <div className="flex min-h-screen flex-col items-center justify-center gap-4"><p>{message || "No content available."}</p><button onClick={exit}>Back</button></div>;
+  return <PracticeGameLayout questionType="Translate by Speaking" instructionFr="Traduisez la phrase en français" instructionEn="Translate the sentence into French"
+    progress={(index + 1) / questions.length * 100} currentQuestionIndex={index} totalQuestions={questions.length}
+    score={score} isGameOver={finished} timerValue={timer.timerString} onExit={exit} onRestart={() => window.location.reload()}
+    onNext={feedback ? next : submit} showSubmitButton isSubmitEnabled={Boolean(feedback) || (Boolean(speech.transcript.trim()) && !submitting && !recording.isStarting)}
+    submitLabel={feedback ? "Continue" : submitting ? "Checking…" : "Submit Answer"}>
+    <div className="mx-auto flex w-full max-w-5xl flex-col items-center px-6 py-16 text-center lg:py-20">
+      <p className="text-2xl font-medium leading-relaxed lg:text-3xl">{current.sentence}</p>
+      {feedback && <>
+        <p className="mt-3 text-2xl font-medium leading-relaxed text-green-600 lg:text-3xl">{current.answer}</p>
+        <hr className="my-12 w-full border-neutral-300" />
+        <p className={"text-2xl leading-relaxed lg:text-3xl " + (feedback.correct ? "text-green-600" : "text-red-600")}>{feedback.transcript}</p>
+      </>}
+      <div className={"flex items-center justify-center gap-8 " + (feedback ? "mt-10" : "mt-24")}>
+        {!feedback && <button type="button" onClick={toggleRecording} disabled={submitting || recording.isStarting || timer.isExpired}
+          aria-label={recording.isRecording ? "Stop recording" : "Record your translation"}
+          style={recording.isRecording ? { boxShadow: "0 0 0 " + (4 + recording.soundLevel * 18) + "px rgb(59 130 246 / 18%)" } : undefined}
+          className="flex h-28 w-28 items-center justify-center rounded-full bg-blue-500 text-white transition-colors hover:bg-blue-600 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-200 disabled:opacity-50">
+          {recording.isStarting ? <Loader2 className="h-10 w-10 animate-spin" /> : recording.isRecording ? <Square className="h-10 w-10" fill="currentColor" /> : <Mic className="h-12 w-12" />}
+        </button>}
+        <div className="relative flex items-center justify-center">
+        <button type="button" onClick={replay} disabled={!recording.audioUrl || recording.isRecording || submitting} aria-label={playing ? "Stop replay" : "Replay your recording"}
+          className="flex h-16 w-16 items-center justify-center rounded-full bg-blue-500 text-white transition-colors hover:bg-blue-600 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-200 disabled:cursor-not-allowed disabled:bg-neutral-300">
+          {playing ? <Square className="h-7 w-7" fill="currentColor" /> : <Volume2 className="h-8 w-8" />}
+      </button>
       </div>
-    </PracticeGameLayout>
-  );
+      </div>
+      {!feedback && <div className="mt-6 h-14">{recording.isRecording && <RecordingActivity level={recording.soundLevel} bands={recording.frequencyBands} />}</div>}
+      {!feedback && <p className="mt-5 text-base text-slate-500" aria-live="polite">{recording.isRecording ? recording.remainingSeconds + "s remaining" : "Recording limit: 60s"}</p>}
+      {(message || recording.error || speech.error) && <p role="alert" className="mt-6 text-base text-red-600">{message || recording.error || speech.error}</p>}
+      {recording.audioUrl && <audio ref={audio} src={recording.audioUrl} onEnded={() => setPlaying(false)} onError={() => { setPlaying(false); setMessage("Unable to play this recording."); }} />}
+    </div>
+  </PracticeGameLayout>;
 }

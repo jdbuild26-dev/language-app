@@ -264,6 +264,7 @@ export default function DictationImagePage() {
                       feedback === "incorrect" &&
                         "border-red-500 bg-red-50 text-red-700",
                     )}
+                    placeholder="|"
                   />
                 );
               })}

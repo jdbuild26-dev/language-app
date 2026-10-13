@@ -4,6 +4,31 @@
 @tailwind components;
 @tailwind utilities;
 
+@keyframes empty-field-caret-blink {
+  50% { opacity: 0; }
+}
+
+input[placeholder="|"]::placeholder,
+textarea[placeholder="|"]::placeholder {
+  color: currentColor;
+  opacity: 1;
+  animation: empty-field-caret-blink 1s step-end infinite;
+}
+
+input[placeholder="|"]:focus::placeholder,
+textarea[placeholder="|"]:focus::placeholder {
+  opacity: 0;
+  animation: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  input[placeholder="|"]::placeholder,
+  textarea[placeholder="|"]::placeholder {
+    opacity: 1;
+    animation: none;
+  }
+}
+
 /* Practice typography uses named roles so zoom never reverses the hierarchy. */
 :root {
   --practice-font-family: "Noto Sans", Arial, sans-serif;

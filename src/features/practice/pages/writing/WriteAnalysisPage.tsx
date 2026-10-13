@@ -7,13 +7,16 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { usePracticeComplete } from "@/hooks/usePracticeComplete";
 import { cn } from "@/lib/utils";
 import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
+import PracticeTwoPanel from "@/features/practice/components/PracticeTwoPanel";
+import { imageCharacterLimit, insertImageAccent } from "@/features/practice/lib/writeImageInput";
 import { useWritingEvaluation } from "@/hooks/useWritingEvaluation";
 import WritingFeedbackResult from "@/components/WritingFeedbackResult";
 import { fetchPracticeData } from "@/utils/practiceFetcher";
-import { Loader2, ImageIcon } from "lucide-react";
+import { Loader2, BarChart3 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import AccentKeyboard from "@/components/ui/AccentKeyboard";
 import { useSearchParams } from "next/navigation";
+
+const ACCENT_KEYS = ["é", "è", "ê", "à", "ç", "â", "î", "ô", "û", "ë", "ï", "ü"];
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -58,7 +61,7 @@ export default function WriteAnalysisPage() {
     duration: currentQ?.timeLimitSeconds || 600,
     mode: "timer",
     onExpire: () => { if (!isCompleted && !showFeedback) handleSubmit(); },
-    isPaused: isLoading || isCompleted || showFeedback,
+    isPaused: isLoading || isCompleted || showFeedback || isSubmitting,
   });
 
   usePracticeComplete({
@@ -98,7 +101,7 @@ export default function WriteAnalysisPage() {
               sample_answers_en: Array.isArray(c.sample_answers_en) ? c.sample_answers_en : [],
               image_url: c.image_url || c.imageUrl || "",
               timeLimitSeconds: c.timeLimitSeconds || item.TimeLimitSeconds || 600,
-              charLimit: c.maxHighlightChars || 2000,
+              charLimit: imageCharacterLimit(c.maxHighlightChars || 2000),
               level: item.level || item.Level || "",
             };
           });
@@ -122,7 +125,7 @@ export default function WriteAnalysisPage() {
 
   // ── Submit ─────────────────────────────────────────────────────────────────
   const handleSubmit = async () => {
-    if (showFeedback || isSubmitting || !currentQ) return;
+    if (showFeedback || isSubmitting || !currentQ || !userAnswer.trim() || !currentQ.image_url.trim()) return;
     const result = await evaluate({
       task_type: "graph_data",
       user_text: userAnswer,
@@ -163,6 +166,20 @@ export default function WriteAnalysisPage() {
   const charCount = userAnswer.length;
   const charLimit = currentQ?.charLimit || 2000;
   const instructionLabel = currentQ.instruction_box_en || currentQ.instruction_box_fr;
+  const missingGraph = !currentQ.image_url.trim();
+  const insertAccent = (char: string) => {
+    const el = textareaRef.current;
+    if (!el || isSubmitting || showFeedback || evaluation) return;
+    const start = el.selectionStart;
+    const end = el.selectionEnd;
+    const nextValue = insertImageAccent(userAnswer, start, end, char, charLimit);
+    if (nextValue === userAnswer) return;
+    setUserAnswer(nextValue);
+    requestAnimationFrame(() => {
+      el.focus();
+      el.setSelectionRange(start + char.length, start + char.length);
+    });
+  };
 
   return (
     <>
@@ -178,92 +195,77 @@ export default function WriteAnalysisPage() {
         onExit={handleExit}
         onNext={handleSubmit}
         onRestart={() => window.location.reload()}
-        isSubmitEnabled={userAnswer.trim().length > 5 && !showFeedback && !isSubmitting && !evaluation}
+        isSubmitEnabled={Boolean(userAnswer.trim()) && !missingGraph && !showFeedback && !isSubmitting && !evaluation}
         showSubmitButton={!showFeedback && !evaluation}
         submitLabel={isSubmitting ? "Evaluating…" : "Submit Answer"}
         timerValue={timerString}
         currentQuestionIndex={currentIndex}
+        disableContentScroll
       >
-        <div className="flex flex-col lg:flex-row w-full h-full min-h-0 bg-slate-50 dark:bg-slate-950">
-          
-          {/* LEFT — data image */}
-          <div className="flex items-center justify-center w-full lg:w-1/2 p-8 lg:p-12 border-b lg:border-b-0 lg:border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
+        <PracticeTwoPanel className="flex-1 overflow-y-auto md:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] md:gap-4 md:overflow-hidden md:p-4">
+          <section className="flex min-h-[320px] min-w-0 items-center justify-center rounded-2xl border border-slate-200 bg-neutral-50 p-4 dark:border-slate-700 dark:bg-slate-950 md:min-h-0" aria-label="Exercise graph">
             {currentQ.image_url ? (
-              <img
-                src={currentQ.image_url}
-                alt="Exercise data"
-                className="max-w-full max-h-[380px] rounded-xl object-contain shadow-sm"
-              />
+              <div className="aspect-square w-full max-w-[min(100%,calc(100dvh-15rem))] overflow-hidden rounded-xl">
+                <img src={currentQ.image_url} alt="Graph to analyse" className="h-full w-full object-contain" />
+              </div>
             ) : (
-              <div className="flex flex-col items-center gap-3 text-slate-300 dark:text-slate-600">
-                <ImageIcon className="w-20 h-20" />
-                <p className="text-sm">Data image not yet uploaded</p>
+              <div className="flex flex-col items-center gap-3 text-slate-400 dark:text-slate-500">
+                <BarChart3 className="h-20 w-20" aria-hidden="true" />
+                <p className="practice-type-content">Graph not yet uploaded</p>
               </div>
             )}
-          </div>
-
-          {/* RIGHT — textarea */}
-          <div className="flex flex-col w-full lg:w-1/2 p-6 lg:p-10 bg-white dark:bg-slate-900">
-            {!evaluation ? (
-              <div className="flex flex-col h-full gap-4">
-                <p className="text-sm text-slate-500 dark:text-slate-400">
-                  {instructionLabel}
-                </p>
-
-                <textarea
-                  ref={textareaRef}
-                  value={userAnswer}
-                  onChange={e => setUserAnswer(e.target.value)}
-                  placeholder="Écrivez votre analyse ici…"
-                  disabled={showFeedback}
-                  maxLength={charLimit}
-                  autoFocus
-                  className={cn(
-                    "flex-1 min-h-[200px] w-full resize-none rounded-xl border text-sm font-medium p-4 outline-none transition-all",
-                    "bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100",
-                    "placeholder:text-slate-400 dark:placeholder:text-slate-500",
-                    "border-slate-200 dark:border-slate-700 focus:border-sky-400 focus:ring-2 focus:ring-sky-400/20",
-                  )}
-                />
-
-                <div className="flex justify-end">
-                  <span className={cn(
-                    "text-xs font-medium tabular-nums",
-                    charCount >= charLimit * 0.9 ? "text-red-500" : "text-slate-400",
-                  )}>
-                    {charCount} / {charLimit}
-                  </span>
+          </section>
+          <section className="flex min-h-[460px] min-w-0 flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-900 md:min-h-0" aria-label="Graph analysis">
+            <label className="sr-only" htmlFor="write-data-answer">{instructionLabel}</label>
+            <textarea
+              id="write-data-answer"
+              ref={textareaRef}
+              value={userAnswer}
+              onChange={e => setUserAnswer(e.target.value)}
+              onKeyDown={e => {
+                if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
+                  e.preventDefault();
+                  if (userAnswer.trim()) void handleSubmit();
+                }
+              }}
+              placeholder="|"
+              readOnly={showFeedback || !!evaluation}
+              disabled={isSubmitting || missingGraph}
+              maxLength={charLimit}
+              autoFocus
+              className={cn(
+                "practice-type-content practice-comprehension-scroll min-h-[320px] w-full flex-1 resize-none md:min-h-0 overflow-y-auto rounded-[20px] border-2 border-slate-200 bg-white px-6 py-5 font-normal text-slate-900 outline-none transition-[background-color,border-color,box-shadow] duration-200 motion-reduce:transition-none placeholder:text-slate-400 disabled:cursor-not-allowed dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100",
+                !showFeedback && !evaluation && !isSubmitting && "focus:border-sky-500 focus:ring-4 focus:ring-sky-100 dark:focus:ring-sky-900/30",
+              )}
+            />
+            <div className="flex shrink-0 flex-col gap-3">
+              {!showFeedback && !evaluation && (
+                <div className="grid w-full grid-cols-6 gap-1 xl:grid-cols-12" aria-label="French accent keyboard">
+                  {ACCENT_KEYS.map(char => (
+                    <button
+                      key={char}
+                      type="button"
+                      disabled={isSubmitting || missingGraph || charCount >= charLimit}
+                      aria-label={`Insert ${char}`}
+                      onMouseDown={e => e.preventDefault()}
+                      onClick={() => insertAccent(char)}
+                      className="flex h-11 w-full min-w-0 items-center justify-center rounded-xl border border-slate-200 bg-white text-base font-semibold text-slate-900 shadow-[0_1px_2px_rgba(15,23,42,0.03)] transition-[background-color,border-color,box-shadow,transform] duration-150 hover:border-sky-300 hover:bg-sky-50 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 motion-safe:active:scale-[0.94] motion-reduce:transition-none disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800"
+                    >
+                      {char}
+                    </button>
+                  ))}
                 </div>
-
-                <AccentKeyboard
-                  disabled={showFeedback}
-                  className=""
-                  onAccentClick={(char) => {
-                    const el = textareaRef.current;
-                    if (!el) return;
-                    const start = el.selectionStart;
-                    const end = el.selectionEnd;
-                    const newVal = userAnswer.slice(0, start) + char + userAnswer.slice(end);
-                    setUserAnswer(newVal);
-                    requestAnimationFrame(() => {
-                      el.focus();
-                      el.setSelectionRange(start + 1, start + 1);
-                    });
-                  }}
-                />
-              </div>
-            ) : (
-              <div className="flex-1 overflow-y-auto animate-in slide-in-from-bottom-4 duration-500">
-                <WritingFeedbackResult
-                  evaluation={evaluation as any}
-                  mode="writing"
-                  userText={userAnswer}
-                  onContinue={handleContinue}
-                />
-              </div>
+              )}
+              <span aria-label={`${charCount} of ${charLimit} characters`} className={cn("self-end text-base font-semibold tabular-nums", charCount >= charLimit * 0.9 ? "text-red-500" : "text-slate-500 dark:text-slate-400")}>{charCount}/{charLimit}</span>
+            </div>
+            {missingGraph && (
+              <p role="alert" className="text-base text-red-600 dark:text-red-400">This exercise needs a graph before it can be evaluated.</p>
             )}
-          </div>
-        </div>
+          </section>
+        </PracticeTwoPanel>
+        {evaluation && (
+          <WritingFeedbackResult evaluation={evaluation} mode="writing" userText={userAnswer} onContinue={handleContinue} />
+        )}
       </PracticeGameLayout>
     </>
   );

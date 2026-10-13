@@ -195,7 +195,7 @@ export default function WriteDocumentPage() {
                 <textarea
                   value={userAnswer}
                   onChange={(e) => setUserAnswer(e.target.value)}
-                  placeholder="Type your document content here..."
+                  placeholder="|"
                   disabled={showFeedback}
                   className={cn(
                     "w-full h-96 p-8 rounded-[2.5rem] border-2 resize-none text-lg relative z-10 transition-all duration-500 shadow-2xl shadow-blue-100/30 dark:shadow-none",

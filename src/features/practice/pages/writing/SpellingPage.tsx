@@ -7,12 +7,13 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { usePracticeComplete } from "@/hooks/usePracticeComplete";
 import { cn } from "@/lib/utils";
 import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
-import FeedbackBanner from "@/components/ui/FeedbackBanner";
+import PracticeTwoPanel from "@/features/practice/components/PracticeTwoPanel";
 import { getFeedbackMessage } from "@/utils/feedbackMessages";
 import { fetchPracticeData } from "@/utils/practiceFetcher";
-import { Loader2, Languages } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import AccentKeyboard from "@/components/ui/AccentKeyboard";
+import { TranslateButton } from "@/components/ui/TranslateButton";
 import { useSearchParams } from "next/navigation";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
@@ -28,6 +29,7 @@ type SpellingQuestion = {
   instruction_box_en?: string;
   correct_sentence_fr?: string;
   correct_sentence_en?: string;
+  characterLimit?: number;
   timeLimitSeconds?: number;
   level?: string;
   instructionFr?: string;
@@ -41,30 +43,34 @@ function normaliseItem(item: any): SpellingQuestion {
   const ev = item.evaluation || item;
   return {
     passage_title_fr:
-      c.title_fr || c.passage_title_fr || item.title_fr || item.passage_title_fr || "",
+      c.title_fr || c.passage_title_fr || item.title_fr || item.passage_title_fr || item["Passage Title_FR"] || "",
     passage_title_en:
-      c.title_en || c.passage_title_en || item.title_en || item.passage_title_en || "",
-    heading_fr: c.heading_fr || item.heading_fr || "",
-    heading_en: c.heading_en || item.heading_en || "",
+      c.title_en || c.passage_title_en || item.title_en || item.passage_title_en || item["Passage Title_EN"] || "",
+    heading_fr: c.heading_fr || item.heading_fr || item["Heading_FR"] || "",
+    heading_en: c.heading_en || item.heading_en || item["Heading_EN"] || "",
     wrong_sentence_fr:
-      c.wrong_sentence_fr || item.wrong_sentence_fr || item.incorrectText || "",
+      c.wrong_sentence_fr || item.wrong_sentence_fr || item.incorrectText || item["Wrong Sentence_FR"] || "",
     wrong_sentence_en:
-      c.wrong_sentence_en || item.wrong_sentence_en || "",
+      c.wrong_sentence_en || item.wrong_sentence_en || item["Wrong Sentence_EN"] || "",
     instruction_box_fr:
       c.instruction_box_fr || item.instruction_box_fr ||
-      item.instructionFr || item.Instruction_FR || "",
+      item.instructionFr || item.Instruction_FR || item["Instructions box_FR"] || "",
     instruction_box_en:
       c.instruction_box_en || item.instruction_box_en ||
-      item.instructionEn || item.Instruction_EN || "",
+      item.instructionEn || item.Instruction_EN || item["Instructions box_EN"] || "",
     correct_sentence_fr:
       ev.correct_sentence_fr || item.correct_sentence_fr ||
-      c.correct_sentence_fr || item.correctText || "",
+      c.correct_sentence_fr || item.correctText || item["Correct Sentence_FR"] || "",
     correct_sentence_en:
       ev.correct_sentence_en || item.correct_sentence_en ||
-      c.correct_sentence_en || "",
+      c.correct_sentence_en || item["Correct Sentence_EN"] || "",
+    characterLimit: Number(
+      item.config?.maxHighlightChars || item.characterLimit ||
+      item["Character Limit"] || 500,
+    ),
     timeLimitSeconds:
       item.timeLimitSeconds || item.config?.timeLimitSeconds ||
-      item.TimeLimitSeconds || 360,
+      item.TimeLimitSeconds || item.Time || 360,
     level: item.level || item.Level || "",
     instructionFr:
       item.instruction_fr || item.instructionFr || item.Instruction_FR || "",
@@ -91,6 +97,7 @@ export default function SpellingPage() {
   const [isCorrect, setIsCorrect] = useState(false);
   const [feedbackMessage, setFeedbackMessage] = useState("");
   const [score, setScore] = useState(0);
+  const [showReferenceEnglish, setShowReferenceEnglish] = useState(false);
 
   // Translate instruction state
   const [translatedInstruction, setTranslatedInstruction] = useState("");
@@ -100,17 +107,17 @@ export default function SpellingPage() {
   const currentQuestion = questions[currentIndex];
 
   // ── Resolve bilingual fields ──────────────────────────────────────────────
-  const wrongSentenceFr =
-    currentQuestion?.wrong_sentence_fr || currentQuestion?.incorrectText || "";
-  const wrongSentenceEn = currentQuestion?.wrong_sentence_en || "";
-  const correctSentenceFr =
-    currentQuestion?.correct_sentence_fr || currentQuestion?.correctText || "";
+  const wrongSentenceFr = currentQuestion?.wrong_sentence_fr || "";
+  const correctSentenceFr = currentQuestion?.correct_sentence_fr || "";
   const correctSentenceEn = currentQuestion?.correct_sentence_en || "";
-
-  const passageTitle =
-    currentQuestion?.passage_title_fr || currentQuestion?.passage_title_en || "";
-  const heading =
-    currentQuestion?.heading_fr || currentQuestion?.heading_en || "";
+  const configuredCharacterLimit = currentQuestion?.characterLimit;
+  const characterLimit = Math.max(
+    1,
+    typeof configuredCharacterLimit === "number" && Number.isFinite(configuredCharacterLimit)
+      ? configuredCharacterLimit
+      : 500,
+    correctSentenceFr.length,
+  );
 
   // The instruction shown next to the translate button
   const instructionBox =
@@ -160,7 +167,8 @@ export default function SpellingPage() {
         // Filter to passage-style exercises (has wrong_sentence_fr or wrong_sentence_en)
         const filtered = raw.filter((item: any) =>
           item.wrong_sentence_fr || item.wrong_sentence_en ||
-          item.incorrectText || item.content?.wrong_sentence_fr
+          item.incorrectText || item.content?.wrong_sentence_fr ||
+          item["Wrong Sentence_FR"]
         );
         const source = filtered.length > 0 ? filtered : raw;
         setQuestions(source.map(normaliseItem));
@@ -177,6 +185,7 @@ export default function SpellingPage() {
   useEffect(() => {
     if (currentQuestion && !isCompleted) {
       setUserInput("");
+      setShowReferenceEnglish(false);
       setShowTranslation(false);
       setTranslatedInstruction("");
       resetTimer();
@@ -197,6 +206,7 @@ export default function SpellingPage() {
 
   const handleContinue = () => {
     setShowFeedback(false);
+    setShowReferenceEnglish(false);
     if (currentIndex < questions.length - 1) {
       setCurrentIndex((prev) => prev + 1);
     } else {
@@ -225,7 +235,6 @@ export default function SpellingPage() {
     // Otherwise call the translation API
     try {
       setIsTranslating(true);
-      const targetLang = learningLang === "fr" ? "en" : "fr";
       const res = await fetch(`${API_URL}/api/practice/explain-translation`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -275,7 +284,6 @@ export default function SpellingPage() {
     questions.length > 0 ? ((currentIndex + 1) / questions.length) * 100 : 0;
 
   return (
-    <>
       <PracticeGameLayout
         questionType="Fix the Spelling"
         instructionFr="Corrigez l'orthographe"
@@ -286,130 +294,128 @@ export default function SpellingPage() {
         score={score}
         totalQuestions={questions.length}
         onExit={handleExit}
-        onNext={handleSubmit}
+        onNext={showFeedback ? handleContinue : handleSubmit}
         onRestart={() => window.location.reload()}
-        isSubmitEnabled={userInput.trim().length > 0 && !showFeedback}
-        showSubmitButton={!showFeedback}
-        submitLabel="Submit Answer"
+        isSubmitEnabled={showFeedback || userInput.trim().length > 0}
+        showSubmitButton
+        showFeedback={showFeedback}
+        isCorrect={isCorrect}
+        feedbackMessage={feedbackMessage}
+        feedbackInFlow
+        compactFeedback
+        onFeedbackTranslate={() => setShowReferenceEnglish((visible) => !visible)}
+        feedbackTranslationVisible={showReferenceEnglish}
+        submitLabel={showFeedback ? (currentIndex + 1 === questions.length ? "Finish" : "Continue") : "Submit Answer"}
         timerValue={timerString}
         currentQuestionIndex={currentIndex}
         disableContentScroll
       >
-        {/* ── Full-height two-column layout ── */}
-        <div className="flex flex-col lg:flex-row w-full h-full min-h-0">
+        {/* Match the two-column layout used by the reading exercises. */}
+        <PracticeTwoPanel className="overflow-y-auto md:gap-4 md:overflow-hidden md:p-4">
 
           {/* ══════════════════════════════════════════════
               LEFT PANEL — passage display
           ══════════════════════════════════════════════ */}
-          <div className="flex flex-col w-full lg:w-1/2 border-b lg:border-b-0 lg:border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 overflow-y-auto">
-            <div className="flex flex-col h-full p-6 lg:p-8 gap-4">
-
-              {/* Title row */}
-              <div className="flex flex-col gap-0.5">
-                {heading && (
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400">
-                    {heading}
-                  </p>
-                )}
-                {passageTitle && (
-                  <h2 className="text-sm font-bold text-slate-800 dark:text-white uppercase tracking-wide">
-                    {passageTitle}
-                  </h2>
-                )}
-                <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-400 dark:text-slate-500 mt-0.5">
-                  PASSAGE
-                </p>
-              </div>
-
-              {/* Correct EN sentence — always visible as the reference passage */}
-              {correctSentenceEn && (
-                <div className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed text-justify">
-                  {correctSentenceEn}
-                </div>
-              )}
-
-              {/* Divider */}
-              <hr className="border-slate-200 dark:border-slate-700" />
-
-              {/* Wrong FR sentence — plain box with border */}
-              <div className="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 text-sm leading-relaxed text-slate-700 dark:text-slate-300">
+          <div className="flex min-h-[460px] min-w-0 flex-col gap-3 md:min-h-0">
+            <section className="flex min-h-[210px] flex-1 flex-col overflow-hidden rounded-xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900" aria-label="Incorrect French sentence">
+              <h2 className="practice-type-passage-heading !font-medium shrink-0 px-5 py-3 text-slate-900 dark:text-slate-100">
+                INCORRECT SENTENCE <span className="text-base font-normal text-slate-500 dark:text-slate-400">(French)</span>
+              </h2>
+              <hr className="mx-5 shrink-0 border-neutral-300 dark:border-slate-700" />
+              <p className="practice-type-content min-h-0 flex-1 overflow-y-auto px-5 py-3 text-slate-700 dark:text-slate-300">
                 {wrongSentenceFr}
-              </div>
+              </p>
+            </section>
 
-            </div>
+            <section className="flex min-h-[210px] flex-1 flex-col overflow-hidden rounded-xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900" aria-label="Correct sentence reference">
+              <div className="flex shrink-0 items-center justify-between px-5 py-2 text-slate-900 dark:text-slate-100">
+                <h2 className="practice-type-passage-heading !font-medium">
+                  CORRECT SENTENCE <span className="text-base font-normal text-slate-500 dark:text-slate-400">({showFeedback && !showReferenceEnglish ? "French" : "English"})</span>
+                </h2>
+                {showFeedback && correctSentenceEn && (
+                  <TranslateButton
+                    onClick={() => setShowReferenceEnglish((visible) => !visible)}
+                    aria-label={showReferenceEnglish ? "Show correct French sentence" : "Translate correct sentence to English"}
+                    aria-pressed={showReferenceEnglish}
+                    title={showReferenceEnglish ? "Show French" : "Translate to English"}
+                  />
+                )}
+              </div>
+              <hr className="mx-5 shrink-0 border-neutral-300 dark:border-slate-700" />
+              <p className="practice-type-content min-h-0 flex-1 overflow-y-auto px-5 py-3 text-slate-700 dark:text-slate-300">
+                {showFeedback && !showReferenceEnglish ? correctSentenceFr : correctSentenceEn}
+              </p>
+            </section>
           </div>
 
           {/* ══════════════════════════════════════════════
               RIGHT PANEL — question + answer input
           ══════════════════════════════════════════════ */}
-          <div className="flex flex-col w-full lg:w-1/2 bg-slate-50 dark:bg-slate-950 overflow-y-auto">
-            <div className="flex flex-col h-full p-6 lg:p-8 gap-5">
+          <div className="flex min-h-[460px] min-w-0 flex-col rounded-2xl border border-slate-200 bg-white p-3 md:min-h-0 dark:border-slate-700 dark:bg-slate-900">
+            <section className="flex min-h-0 flex-1 flex-col gap-4 rounded-xl bg-white dark:bg-slate-900" aria-label="Corrected French sentence entry">
 
               {/* Instruction row with translate button */}
-              <div className="flex items-start gap-2 text-slate-700 dark:text-slate-200">
-                <span className="text-base mt-0.5 shrink-0">✍️</span>
-                <div className="flex flex-col gap-1 flex-1">
-                  <div className="flex items-center gap-2">
-                    <p className="text-base font-semibold leading-snug">
+              <div className="flex shrink-0 items-start gap-2 px-4 py-2 text-slate-800 dark:text-slate-200">
+                <div className="flex min-w-0 flex-1 flex-col gap-1">
+                  <div className="flex items-center gap-1">
+                    <p className="practice-type-question-heading !font-medium">
                       {showTranslation && translatedInstruction
                         ? translatedInstruction
                         : instructionBox}
                     </p>
-                    {/* Translate button */}
-                    <button
+                    <TranslateButton
                       onClick={handleTranslateInstruction}
-                      disabled={isTranslating}
+                      isLoading={isTranslating}
                       aria-label={showTranslation ? "Show original" : "Translate instruction"}
+                      aria-pressed={showTranslation}
                       title={showTranslation ? "Show original" : "Translate instruction"}
-                      className="inline-flex items-center justify-center shrink-0 text-blue-500 hover:text-blue-600 disabled:opacity-50 transition-colors"
-                    >
-                      {isTranslating ? (
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                      ) : (
-                        <Languages className="w-4 h-4" />
-                      )}
-                    </button>
+                    />
                   </div>
                   {/* Show both when translation is active */}
                   {showTranslation && translatedInstruction && (
-                    <p className="text-xs text-slate-400 dark:text-slate-500 italic">
+                    <p className="text-base italic text-slate-500 dark:text-slate-400">
                       {instructionBox}
                     </p>
                   )}
                 </div>
               </div>
+              <hr className="mx-5 shrink-0 border-neutral-300 dark:border-slate-700" />
 
               {/* Answer textarea */}
-              <div className="flex-1 flex flex-col gap-3 min-h-0">
+              <div className="flex min-h-0 flex-1 flex-col gap-3 p-4">
                 <textarea
                   ref={textareaRef}
+                  aria-label="Corrected French sentence"
                   value={userInput}
                   onChange={(e) => setUserInput(e.target.value)}
+                  maxLength={characterLimit}
                   onKeyDown={(e) => {
-                    if (e.key === "Enter" && !e.shiftKey && userInput.trim()) {
+                    if ((e.ctrlKey || e.metaKey) && e.key === "Enter" && userInput.trim()) {
                       e.preventDefault();
                       handleSubmit();
                     }
                   }}
-                  placeholder="Write the corrected sentence here..."
-                  disabled={showFeedback}
-                  autoFocus
+                  placeholder="|"
+                  readOnly={showFeedback}
                   className={cn(
-                    "w-full flex-1 min-h-[180px] lg:min-h-0 py-4 px-5 rounded-xl text-sm font-medium",
-                    "transition-all duration-200 border outline-none resize-none",
-                    "bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-100",
+                    "practice-type-content w-full min-h-[220px] flex-1 overflow-y-auto resize-none rounded-[20px] border-2 border-slate-200 bg-neutral-100 px-6 py-5 font-normal text-slate-800 outline-none transition-[background-color,border-color,box-shadow] duration-200 motion-reduce:transition-none dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100",
                     "placeholder:text-slate-400 dark:placeholder:text-slate-500",
+                    !showFeedback && "focus:border-sky-500 focus:ring-4 focus:ring-sky-100 dark:focus:ring-sky-900/30",
                     showFeedback && isCorrect
-                      ? "border-emerald-500 bg-emerald-50 dark:bg-emerald-900/10"
+                      ? "border-green-500 bg-green-50 text-green-950 dark:border-green-500 dark:bg-green-950/30 dark:text-green-100"
                       : showFeedback && !isCorrect
-                        ? "border-red-400 bg-red-50 dark:bg-red-900/10"
-                        : "border-slate-200 dark:border-slate-700 focus:border-sky-400 focus:ring-2 focus:ring-sky-400/20",
+                        ? "border-red-500 bg-red-50 text-red-950 dark:border-red-500 dark:bg-red-950/30 dark:text-red-100"
+                        : "",
                   )}
                 />
 
+                <div className="text-right text-base font-semibold tabular-nums text-slate-500 dark:text-slate-400" aria-label={`${userInput.length} of ${characterLimit} characters`}>
+                  {userInput.length}/{characterLimit}
+                </div>
+
                 {/* Accent keyboard */}
                 <AccentKeyboard
-                  disabled={showFeedback}
+                  disabled={showFeedback || userInput.length >= characterLimit}
                   onAccentClick={(char) => {
                     const el = textareaRef.current;
                     if (!el) return;
@@ -417,6 +423,7 @@ export default function SpellingPage() {
                     const end = el.selectionEnd;
                     const newVal =
                       userInput.slice(0, start) + char + userInput.slice(end);
+                    if (newVal.length > characterLimit) return;
                     setUserInput(newVal);
                     requestAnimationFrame(() => {
                       el.focus();
@@ -426,24 +433,10 @@ export default function SpellingPage() {
                 />
               </div>
 
-            </div>
+            </section>
           </div>
 
-        </div>
+        </PracticeTwoPanel>
       </PracticeGameLayout>
-
-      {/* Feedback Banner */}
-      {showFeedback && (
-        <FeedbackBanner
-          isCorrect={isCorrect}
-          correctAnswer={!isCorrect ? correctSentenceFr : null}
-          onContinue={handleContinue}
-          message={feedbackMessage}
-          continueLabel={
-            currentIndex + 1 === questions.length ? "FINISH" : "CONTINUE"
-          }
-        />
-      )}
-    </>
   );
 }

@@ -300,7 +300,7 @@ export default function InteractivePracticePage() {
                 value={userResponse}
                 onChange={(e) => setUserResponse(e.target.value)}
                 onKeyPress={(e) => e.key === 'Enter' && isUserTurn && handleUserSubmit()}
-                placeholder={isUserTurn ? "Type your response in French..." : "Waiting for AI..."}
+                placeholder="|"
                 disabled={!isUserTurn}
                 className={cn(
                   "flex-1 bg-slate-50 dark:bg-slate-900 border-none rounded-2xl h-14 px-6 text-lg placeholder-slate-400 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900 transition-all",
