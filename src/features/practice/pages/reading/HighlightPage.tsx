@@ -59,7 +59,7 @@ export default function HighlightPage() {
   const timerDuration = currentQuestion?.config?.timeLimitSeconds || 360;
 
   // Translate question text (if user wants to see it in known lang)
-  const { displayText: questionDisplayText, isTranslating: isTranslatingQ, toggle: toggleTranslate, reset: resetTranslate } = useTranslateText(questionText, kLang);
+  const { displayText: questionDisplayText, isTranslating: isTranslatingQ, toggle: toggleTranslate, reset: resetTranslate } = useTranslateText(questionText, lLang, currentQuestion?.content?.[`question_${kLang}`]);
 
   useEffect(() => { resetTranslate(); }, [currentIndex]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -210,7 +210,7 @@ export default function HighlightPage() {
                 <MousePointer2 className="w-5 h-5 opacity-50" />
              </div>
              
-             <h3 className="practice-type-content-heading mb-4 text-slate-900 dark:text-white border-b pb-2">
+             <h3 className="practice-type-content-heading mb-4 text-slate-900 dark:text-white border-b pb-2 !font-medium">
                 {currentQuestion?.content?.[`title_${lLang}`] || "Passage"}
              </h3>
 

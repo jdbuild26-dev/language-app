@@ -6,7 +6,10 @@ import { useExerciseTimer } from "@/hooks/useExerciseTimer";
 import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
 import PracticeTwoPanel from "@/features/practice/components/PracticeTwoPanel";
 import CustomSelect from "@/components/ui/CustomSelect";
-import { Check, Loader2, ImageOff, X } from "lucide-react";
+import { Loader2, ImageOff } from "lucide-react";
+import { ReadingAnswerFeedback } from "@/features/practice/components/ReadingAnswerFeedback";
+import { findBilingualAnswer } from "@/features/practice/lib/answerPairTranslation";
+import { getReadingFeedbackTone } from "@/features/practice/lib/readingFeedback";
 import { TranslateButton } from "@/components/ui/TranslateButton";
 import { cn } from "@/lib/utils";
 import { Dialog, DialogContent, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -129,7 +132,7 @@ function DiagramLabellingContent() {
   const [isCompleted, setIsCompleted] = useState(false);
   const [feedbackMessage, setFeedbackMessage] = useState("");
   const [isCorrect, setIsCorrect] = useState(false);
-  const [revealedTranslations, setRevealedTranslations] = useState<Record<string | number, boolean>>({});
+  const [feedbackTone, setFeedbackTone] = useState<"success" | "partial" | "error">("error");
   const [showPassageTranslation, setShowPassageTranslation] = useState(false);
 
   // Translate question state
@@ -193,6 +196,7 @@ function DiagramLabellingContent() {
     ? ex?.passage_fr || ex?.passage_en || (ex?.paragraphs || []).join("\n\n")
     : ex?.passage_en || ex?.passage_fr || (ex?.paragraphs || []).join("\n\n");
   const translatedPassageText = learningLang === "fr" ? ex?.passage_en || "" : ex?.passage_fr || "";
+  const translatedPassageTitle = (learningLang === "fr" ? ex?.title_en : ex?.title_fr) || "Passage";
   const questionText = pick(ex?.question_fr, ex?.question_en) || "Match each number with the correct answer.";
   const translatedQuestionFromData = pickTranslation(ex?.question_fr, ex?.question_en);
   const imageUrl     = previewImage && currentIndex === 0 ? "/images/diagram-layout-preview.png" : ex?.imageUrl || "";
@@ -243,12 +247,11 @@ function DiagramLabellingContent() {
     setShowFeedback(false);
     setIsCorrect(false);
     setFeedbackMessage("");
-    setRevealedTranslations({});
     setShowPassageTranslation(false);
     setTranslatedQuestion("");
     setShowTranslation(false);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentIndex, ex]);
+  }, [currentIndex, ex, tag, learningLang]);
 
   // ── Timer ──────────────────────────────────────────────────────────────────
   const { timerString, resetTimer } = useExerciseTimer({
@@ -256,9 +259,7 @@ function DiagramLabellingContent() {
     mode: "timer",
     onExpire: () => {
       if (!isCompleted && !showFeedback) {
-        setIsCorrect(false);
-        setFeedbackMessage("Time's up!");
-        setShowFeedback(true);
+        handleCheck(true);
       }
     },
     isPaused: isCompleted || showFeedback || isLoading,
@@ -272,7 +273,8 @@ function DiagramLabellingContent() {
     setAnswers(prev => ({ ...prev, [id]: value }));
   };
 
-  const handleCheck = () => {
+  const handleCheck = (timeExpired = false) => {
+    if (showFeedback) return;
     let correctCount = 0;
     questions.forEach(q => {
       const correctWord = learningLang === "fr" ? q.correct_fr : q.correct_en;
@@ -280,10 +282,11 @@ function DiagramLabellingContent() {
     });
 
     const total = questions.length;
-    const isPerfect = correctCount === total;
-    setTotalScore(prev => prev + correctCount);
+    const isPerfect = total > 0 && correctCount === total;
+    if (!timeExpired) setTotalScore(prev => prev + correctCount);
     setIsCorrect(isPerfect);
-    setFeedbackMessage(`${correctCount} out of ${total} correct.`);
+    setFeedbackTone(getReadingFeedbackTone(correctCount, total));
+    setFeedbackMessage(`${timeExpired ? "Time's up! " : ""}${correctCount} out of ${total} correct.`);
     setShowFeedback(true);
   };
 
@@ -312,7 +315,6 @@ function DiagramLabellingContent() {
     setTotalScore(0);
     setIsCorrect(false);
     setFeedbackMessage("");
-    setRevealedTranslations({});
     setShowPassageTranslation(false);
   };
 
@@ -396,7 +398,8 @@ function DiagramLabellingContent() {
       onRestart={handleRestart}
       currentQuestionIndex={currentIndex}
       questionCounterValue={currentIndex + 1}
-      feedbackTone={showFeedback ? (isCorrect ? "success" : "error") : "neutral"}
+      feedbackTone={showFeedback ? feedbackTone : "neutral"}
+      feedbackAppearance="soft"
       isSubmitEnabled={showFeedback || allAnswered}
       showSubmitButton={true}
       disableContentScrollOnDesktop
@@ -416,7 +419,7 @@ function DiagramLabellingContent() {
         {/* Passage and answers scroll independently on desktop. */}
         <section ref={passageRef} className="practice-dark-panel min-h-[18rem] rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-800 md:min-h-0 md:overflow-y-auto md:p-6 custom-scrollbar" aria-label="Passage">
           <div className="mb-4 flex items-start justify-between gap-3 border-b border-slate-200 pb-3 dark:border-slate-700">
-            <h2 className="practice-type-content-heading text-slate-900 dark:text-slate-100">
+            <h2 className="practice-type-content-heading !font-medium text-slate-900 dark:text-slate-100">
               {passageTitle}
             </h2>
             {showFeedback && translatedPassageText && translatedPassageText !== passageText && (
@@ -427,9 +430,16 @@ function DiagramLabellingContent() {
             {passageText}
           </p>
           {showFeedback && showPassageTranslation && translatedPassageText && (
-            <p className="practice-type-content mt-6 whitespace-pre-line border-t border-slate-200 pt-5 font-sans text-slate-700 dark:border-slate-700 dark:text-slate-200">
-              {translatedPassageText}
-            </p>
+            <div className="mt-6 border-t border-slate-200 pt-5 dark:border-slate-700">
+              {translatedPassageTitle && (
+                <h2 className="practice-type-content-heading mb-3 !font-medium text-slate-900 dark:text-slate-100">
+                  {translatedPassageTitle}
+                </h2>
+              )}
+              <p className="practice-type-content whitespace-pre-line font-sans text-slate-700 dark:text-slate-200">
+                {translatedPassageText}
+              </p>
+            </div>
           )}
         </section>
 
@@ -455,7 +465,7 @@ function DiagramLabellingContent() {
           )}
 
           <div className="mb-4">
-            <h3 className="practice-type-content-heading flex items-start gap-2 text-slate-900 dark:text-slate-100">
+            <h3 className="practice-type-content-heading !font-medium flex items-start gap-2 text-slate-900 dark:text-slate-100">
               <TranslateButton
                 onClick={handleTranslateQuestion}
                 isLoading={isTranslating}
@@ -471,16 +481,14 @@ function DiagramLabellingContent() {
           <div className="grid grid-cols-1 gap-3">
             {questions.map(q => {
               const correctWord = learningLang === "fr" ? q.correct_fr : q.correct_en;
-              const correctWordOther = learningLang === "fr" ? q.correct_en : q.correct_fr;
+              const answerPairs = (ex.questions || []).map(question => ({ fr: question.correct_fr, en: question.correct_en }));
               const hasSelection = Boolean(answers[q.id]);
               const isWrong = showFeedback && hasSelection && answers[q.id] !== correctWord;
               const isRight = showFeedback && hasSelection && answers[q.id] === correctWord;
               const opts = dropdownOptions[q.id] || [];
-              const hasTranslation = Boolean(correctWordOther && correctWordOther !== correctWord);
-              const displayedCorrectWord = revealedTranslations[q.id] && hasTranslation ? correctWordOther : correctWord;
 
               return (
-                <div key={q.id} className="flex min-w-0 items-start gap-2">
+                <div key={q.id} className="diagram-answer-row flex min-w-0 items-start gap-2">
                   {/* Number badge */}
                   <div className={cn(
                     "flex w-9 shrink-0 items-center justify-center rounded-lg border text-sm font-bold transition-colors",
@@ -495,25 +503,17 @@ function DiagramLabellingContent() {
 
                   <div className="min-w-0 flex-1">
                     {showFeedback ? (
-                      <div className="flex min-w-0 items-center gap-2">
-                        <div className="flex w-full min-w-0 flex-1 flex-wrap items-stretch gap-2" role="status" aria-label={`Answer ${q.id}: ${isRight ? "correct" : isWrong ? "incorrect" : "unanswered"}`}>
-                          {isWrong && (
-                            <div className="practice-answer-wrong diagram-feedback-answer flex min-h-11 min-w-max basis-0 grow items-center gap-1 rounded-xl border border-red-200 bg-red-50 px-2 py-2 font-normal text-red-800 dark:border-red-700 dark:bg-red-950/40 dark:text-red-300">
-                              <X className="h-4 w-4 shrink-0" strokeWidth={2.5} aria-hidden="true" />
-                              <span className="whitespace-nowrap">{answers[q.id]}</span>
-                            </div>
-                          )}
-                          <div className="practice-answer-correct diagram-feedback-answer flex min-h-11 min-w-max basis-0 grow items-center gap-1 rounded-xl border border-green-200 bg-green-50 px-2 py-2 font-normal text-green-800 dark:border-green-700 dark:bg-green-950/40 dark:text-green-300">
-                            <Check className="h-4 w-4 shrink-0 text-green-700 dark:text-inherit" strokeWidth={2.5} aria-hidden="true" />
-                            <span className="whitespace-nowrap">{displayedCorrectWord}</span>
-                          </div>
-                        </div>
-                        <div className="h-8 w-8 shrink-0">
-                          {hasTranslation && (
-                            <TranslateButton onClick={() => setRevealedTranslations(prev => ({ ...prev, [q.id]: !prev[q.id] }))} aria-label={`${revealedTranslations[q.id] ? "Show original" : "Translate"} answer ${q.id}`} title={revealedTranslations[q.id] ? "Show original answer" : "Translate answer"} aria-pressed={Boolean(revealedTranslations[q.id])} />
-                          )}
-                        </div>
-                      </div>
+                      <ReadingAnswerFeedback
+                        key={`${tag}:${currentIndex}:${q.id}:${learningLang}`}
+                        answerNumber={q.id}
+                        answerClassName="diagram-feedback-answer"
+                        isCorrect={isRight}
+                        wrong={isWrong ? answers[q.id] : undefined}
+                        correct={correctWord}
+                        wrongTranslation={findBilingualAnswer(answers[q.id], answerPairs, learningLang)}
+                        correctTranslation={findBilingualAnswer(correctWord, answerPairs, learningLang)}
+                        targetLang={learningLang === "fr" ? "en" : "fr"}
+                      />
                     ) : (
                       <CustomSelect
                         options={opts}
@@ -521,7 +521,7 @@ function DiagramLabellingContent() {
                         onChange={(val: string) => handleSelect(q.id, val)}
                         placeholder="---------------------------"
                         ariaLabel={`Select answer for number ${q.id}`}
-                        className="practice-select-text min-w-0 [&>button]:font-normal"
+                        className="practice-select-text diagram-answer-select min-w-0 [&>button]:font-normal"
                       />
                     )}
                   </div>

@@ -35,6 +35,7 @@ type ListenQuestion = {
 type ListenPassageGroup = {
   passageText: string;
   passageTranslation: string;
+  translatedTitle: string;
   title: string;
   level: string;
   timeLimitSeconds: number;
@@ -85,6 +86,7 @@ function groupByPassage(exercises: any[]): ListenPassageGroup[] {
       groups.push({
         passageText: key,
         passageTranslation: c.passage_en || c.passageText_en || "",
+        translatedTitle: c.title_en || c.passage_title_en || "Passage",
         title: c.title_fr || c.title_en || c.passage_title_fr || "",
         level: item.Level || item.level || "A1",
         timeLimitSeconds: Number(c.timeLimitSeconds || item.timeLimitSeconds || 120),
@@ -356,7 +358,7 @@ function ListenPassageContent() {
           {/* LEFT — Passage heading and audio player */}
           <section className={cn("flex min-h-[18rem] min-w-0 flex-col md:min-h-0", isSubmitted ? "gap-4" : "rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800 md:p-6")} aria-label="Passage audio">
             {!isSubmitted && (
-            <h2 className="practice-type-content-heading mb-5 border-b border-slate-200 pb-3 text-slate-900 dark:border-slate-700 dark:text-slate-100">
+            <h2 className="practice-type-content-heading mb-5 border-b border-slate-200 pb-3 text-slate-900 dark:border-slate-700 dark:text-slate-100 !font-medium">
               {currentPassage.title || "Passage"}
             </h2>
             )}
@@ -387,7 +389,7 @@ function ListenPassageContent() {
             {isSubmitted && (
               <section className="practice-comprehension-scroll min-h-[18rem] min-w-0 flex-1 overflow-y-auto rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-800 md:min-h-0 md:p-6" aria-label="Passage transcript">
                 <div className="mb-4 flex items-start justify-between gap-3 border-b border-slate-200 pb-3 dark:border-slate-700">
-                  <h2 className="practice-type-content-heading text-slate-900 dark:text-slate-100">{currentPassage.title || "Passage"}</h2>
+                  <h2 className="practice-type-content-heading text-slate-900 dark:text-slate-100 !font-medium">{currentPassage.title || "Passage"}</h2>
                   {currentPassage.passageTranslation && currentPassage.passageTranslation !== currentPassage.passageText && (
                     <TranslateButton onClick={() => setShowPassageTranslation(value => !value)} aria-label={showPassageTranslation ? "Hide passage translation" : "Translate passage"} title={showPassageTranslation ? "Hide passage translation" : "Translate passage"} aria-expanded={showPassageTranslation} />
                   )}
@@ -396,9 +398,12 @@ function ListenPassageContent() {
                   {currentPassage.passageText}
                 </p>
                 {showPassageTranslation && currentPassage.passageTranslation && (
-                  <p className="practice-type-content mt-6 whitespace-pre-line border-t border-slate-200 pt-5 text-slate-700 dark:border-slate-700 dark:text-slate-200">
-                    {currentPassage.passageTranslation}
-                  </p>
+                  <div className="mt-6 border-t border-slate-200 pt-5 dark:border-slate-700">
+                    <h2 className="practice-type-content-heading mb-3 !font-medium text-slate-900 dark:text-slate-100">{currentPassage.translatedTitle}</h2>
+                    <p className="practice-type-content whitespace-pre-line text-slate-700 dark:text-slate-200">
+                      {currentPassage.passageTranslation}
+                    </p>
+                  </div>
                 )}
               </section>
             )}

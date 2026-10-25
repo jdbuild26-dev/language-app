@@ -4,10 +4,64 @@ These pages implement Main Practice. Vocabulary Practice lives in `src/features/
 
 ## Screenshot changes
 
+All passage translation sections (Reading Comprehension, Diagram Labelling, Complete the Passage, Fill in the Blanks Passage, and Listening Passage) show the stored translated title above the translated body, falling back to "Passage" when a translated title is absent. Use weight 500 and retain the original title size. Reserve scrollbar space on the actual scroll container, including nested custom-scrollbar panels, before translation expands it so passage width and wrapping do not shift.
+
+Main Practice content/passage headings and panel instructions that previously used bold weight 700 use weight 500, including their translated states. Preserve every heading's existing font size, line height, and layout. Main exercise headers in the shared chrome remain at their original weight 700. Keep existing regular-weight questions, answer text, number badges, error headings, completion screens, and report headings unchanged.
+
+Translation actions prefer stored bilingual text without a request or loading state, including identical source/target words. Reorder passage titles and Highlight questions pass their stored counterparts to the shared translation hook; Highlight Text uses its already selected opposite-language question directly. Only request a translation when the counterpart is absent, using the actual displayed source language. Preserve existing typography and layout while toggling.
+
 1. Turn each user annotation and follow-up into a checkable requirement, including states that appear only after submission. Treat later corrections as the latest specification.
 2. Inspect the named reference exercise and shared components before copying its layout or behavior. For translation work, compare `writing/TranslateTypedPage.tsx`, `listening/ListenTypePage.tsx`, and `PracticeGameLayout.tsx` as applicable. Match the relevant font size, weight, spacing, answer field, accent keys, and footer controls.
 3. Review the entire interaction: initial question, typing and paste, submit, correct and incorrect feedback, every translation toggle, continue, and the next question. A visually matching initial screen alone is incomplete.
 4. For this user's practice-screen work, verify through source inspection and local checks. Open a browser only if the user later explicitly asks for browser verification.
+
+## Reading dropdown answer sizes
+
+After submission, Fill in the Blanks Passage's translated body replaces numbered blank markers with the correct target-language answers, highlighted in green at the existing content size. Match answers by blank ID, never by learner selections or translated word position. If a required answer translation is missing, show a clear unavailable message instead of blank dashes or an original-language word.
+
+Fill in the Blanks Passage keeps only the exercise height cap: at `md` and wider, the existing viewport-height layout has a maximum height of 50rem. Preserve its full width, original 7:3 column split, footer behavior, and font sizes. Do not add a centered frame, outer margins, width cap, rounded outer border, or shadow. Other exercises retain their existing height behavior.
+
+Diagram dropdowns highlight the active number badge. Do not add an answer-number label such as "Réponse 1" inside the menu. Retain option text sizes and weights.
+
+Diagram Labelling's passage translation reveals the stored translated passage title above the translated paragraph below the original. Match its original heading size and weight 500, and toggle the translated heading and paragraph together. Use the title in the translated passage's language when supplied.
+
+Diagram Labelling's open dropdown menu has a white surface, a 1px blue outline, a subtle shadow, and a thin scrollbar so its choices are distinguishable from answered rows behind it. Use light blue only for hovered options and a stronger blue tint with the existing checkmark for the selected option. Preserve the dashed placeholder, trigger-matched menu width, active trigger outline, white resting fields, and regular-weight option typography. Use dark menu and hover surfaces with the blue outline in dark mode.
+
+Main Practice dropdowns using `practice-select-text` use regular weight **400** for both selected text and every open option, including selected and hovered options. Keep headings at their separately specified weights.
+
+On desktop (`lg`, at least 1024 CSS pixels wide), Diagram Labelling, Image Labelling, and Fill in the Blanks Passage use **21px** for selected dropdown text, open dropdown options, and submitted wrong and correct answers. Translated submitted answers use the same 21px size. Submission must not shrink answer text. This rule applies to answer text rather than number badges, headings, or footer feedback. Keep the existing sizes below `lg`.
+
+Diagram Labelling's passage heading and answer instruction use the same **24px desktop size and weight 500**, including translated states. Keep the shared top exercise title as it is. Passage and answer panels scroll independently on desktop when their content exceeds the available height; do not scroll the passage automatically while it is being read.
+
+For these three exercises, use a soft green footer when every answer is correct, soft amber for a mixture of correct and incorrect/unanswered answers, and soft red when none is correct. Apply the same classification on timer expiry, preserving the existing scoring rules. Keep individual wrong/correct answers red/green with their cross/check icons. Show submitted feedback until the learner chooses Continue or Finish, including after the last all-correct question.
+
+Each submitted answer row has one translation action for its wrong and correct answers together. Prefer explicit bilingual answers matched by their source text; never infer translation pairs from the positions of independently shuffled options. Fetch missing translations with a bounded request, show a retryable error without displaying a mixed-language pair on failure, and allow returning to the original answers. Cancel stale translations when the exercise changes, restarts, or unmounts. Keep both answer colors and sizes in translated states. Opt these pages into the softer footer appearance without changing unrelated exercises.
+
+Match Image to Description uses the shared practice content size for every option: **21px on desktop**, before submission, after submission for correct/wrong/unselected options, and when translated. Keep the question at the shared 24px desktop size with regular weight 400.
+
+## Reading Comprehension
+
+The original passage title and its translated title both use weight 500. The passage translation includes its stored translated title above the translated paragraph, below the original passage. Match the original passage title's size and toggle both translated title and text together.
+
+Keep the shared exercise header ("Read the passage and answer all questions") at its original weight 700 in both original and translated states. The weight-500 requirement applies only to the passage headings.
+
+Fill in the Blanks Passage also shows a passage title and inset divider, with the passage translation action beside its title after submission when bilingual passage text is available. Reveal its translation below the original and reset it for each exercise. Its submitted answer text follows the same shared content size as its dropdowns at every breakpoint (20px below `lg`, 21px at `lg`), including translations.
+
+Justify the passage and its displayed translation. Questions use the same shared content size as their options (**21px on desktop**, weight 400), including translated and submitted states. Keep the passage title and shared top exercise title as headings.
+
+After Submit, each question and all its options must display in the same language. The row's translate action switches the whole question/options bundle together and returns them together to the original submitted language. Prefer the learning-language bundle; if only the other language has a complete question and option list, use that complete bundle. Do not offer a partial translation when the target question or any target option is missing. Preserve the existing level-based question language before submission, selected option indices, and correct/wrong feedback.
+
+## Complete the Passage
+
+Keep the options directly below the question divider with a fixed 16px gap before and after submission. Explicitly start the panel contents at the top; the option grid has no extra outer margin or padding. Do not vertically center the options in the panel.
+
+Do not repeat the correct answer in the footer; keep the correct option highlighted in the answer panel. Option translation controls use a darker blue and remain fully visible when unrelated answer text and radio indicators are muted after submission.
+
+Show the learning-language passage title above the passage, falling back to its other-language title or "Passage" when absent. Match Reading Comprehension's shared passage-heading size and inset divider. After submission, place the existing passage translation control beside this title; it reveals or hides the full passage translation below the original. Preserve the sentence blank, option feedback, independent scrolling, and next-question translation reset.
+
+## Reorder Sentences
+
+Keep the data's passage title in a separate non-shrinking header with an inset divider above the independently scrolling sentence list. Use "Passage" when the data has no title. Center the heading and sentence list in one responsive container capped at 1200px, with matching side insets before and after submission. Sentence text uses the shared content size (20px below `lg`, 21px at `lg`) and regular weight 400 in original, translated, and submitted states. Preserve drag ordering, feedback colors, and per-sentence translation.
 
 ## Current writing-screen contract
 

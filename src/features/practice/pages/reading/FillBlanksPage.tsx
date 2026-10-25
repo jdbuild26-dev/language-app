@@ -3,7 +3,11 @@
 import React, { useEffect, useState, Suspense } from "react";
 import { usePracticeExit } from "@/hooks/usePracticeExit";
 import { useExerciseTimer } from "@/hooks/useExerciseTimer";
-import { Check, X, XCircle, Loader2 } from "lucide-react";
+import { XCircle, Loader2 } from "lucide-react";
+import { ReadingAnswerFeedback } from "@/features/practice/components/ReadingAnswerFeedback";
+import { findBilingualAnswer } from "@/features/practice/lib/answerPairTranslation";
+import { getReadingFeedbackTone } from "@/features/practice/lib/readingFeedback";
+import { getCorrectedPassageParts } from "@/features/practice/lib/correctedPassage";
 import { TranslateButton } from "@/components/ui/TranslateButton";
 import { loadMockCSV } from "@/utils/csvLoader";
 import { cn } from "@/lib/utils";
@@ -20,6 +24,7 @@ type PassageSegment = { type: "text"; text: string } | { type: "blank"; id: numb
 
 type BlankEntry = {
   correct: string;
+  correct_fr?: string;
   correct_en?: string;
   options: string[];
   options_en?: string[];
@@ -30,6 +35,8 @@ type FillBlanksExercise = {
   level?: string;
   passage_fr?: string;
   passage_en?: string;
+  passage_title_fr?: string;
+  passage_title_en?: string;
   passageSegments: PassageSegment[];
   blanksData: Record<string, BlankEntry>;
   timeLimitSeconds?: number;
@@ -107,9 +114,8 @@ function FillBlanksContent() {
 
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [showFeedback, setShowFeedback] = useState(false);
-  const [revealedTranslations, setRevealedTranslations] = useState<Record<string, boolean>>({});
   const [isCorrect, setIsCorrect] = useState(false);
-  const [feedbackTone, setFeedbackTone] = useState<"success" | "error">("error");
+  const [feedbackTone, setFeedbackTone] = useState<"success" | "partial" | "error">("error");
   const [feedbackMessage, setFeedbackMessage] = useState("");
   const [score, setScore] = useState(0);
   const [totalScore, setTotalScore] = useState(0);
@@ -117,6 +123,7 @@ function FillBlanksContent() {
 
   // Both heading languages are already available locally.
   const [showTranslation, setShowTranslation] = useState(false);
+  const [showPassageTranslation, setShowPassageTranslation] = useState(false);
 
   // ── Load data ──────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -153,12 +160,13 @@ function FillBlanksContent() {
             if (typeof v === "object" && v !== null) {
               blanksData[k] = {
                 correct:    String(v.correct || ''),
-                correct_en: String(v.correct_en || v.correct || ''),
+                correct_fr: String(v.correct_fr || (learningLang === "fr" ? v.correct : '') || ''),
+                correct_en: String(v.correct_en || (learningLang === "en" ? v.correct : '') || ''),
                 options:    normalizeOptions(v.options),
                 options_en: normalizeOptions(v.options_en),
               };
             } else {
-              blanksData[k] = { correct: String(v), correct_en: String(v), options: [], options_en: [] };
+              blanksData[k] = { correct: String(v), options: [], options_en: [] };
             }
           }
 
@@ -167,6 +175,8 @@ function FillBlanksContent() {
             level:            item.Level || item.level || '',
             passage_fr:       passageFr,
             passage_en:       passageEn,
+            passage_title_fr: c.passage_title_fr || item.passage_title_fr || c.title_fr || item.title_fr || '',
+            passage_title_en: c.passage_title_en || item.passage_title_en || c.title_en || item.title_en || '',
             passageSegments:  derivedSegments,
             blanksData,
             timeLimitSeconds: Number(cfg.timeLimitSeconds || item.timeLimitSeconds || 480),
@@ -207,15 +217,15 @@ function FillBlanksContent() {
   useEffect(() => {
     setAnswers({});
     setShowFeedback(false);
-    setRevealedTranslations({});
     setIsCorrect(false);
     setFeedbackTone("error");
     setFeedbackMessage("");
     setScore(0);
     setShowTranslation(false);
+    setShowPassageTranslation(false);
     resetTimer();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentIndex, ex]);
+  }, [currentIndex, ex, tag, learningLang]);
 
   // ── Timer ──────────────────────────────────────────────────────────────────
   const { timerString, resetTimer } = useExerciseTimer({
@@ -232,7 +242,7 @@ function FillBlanksContent() {
   };
 
   const checkAnswers = (timeExpired = false) => {
-    if (!ex) return;
+    if (!ex || showFeedback) return;
     const keys = Object.keys(ex.blanksData);
     if (keys.length === 0) return;
 
@@ -245,14 +255,13 @@ function FillBlanksContent() {
     setScore(correctCount);
     setTotalScore(prev => prev + correctCount);
     setIsCorrect(allCorrect);
-    setFeedbackTone(allCorrect ? "success" : "error");
+    setFeedbackTone(getReadingFeedbackTone(correctCount, keys.length));
     setFeedbackMessage(
       allCorrect
         ? "Excellent! All answers correct."
         : timeExpired ? "Time's up!" : `${correctCount} out of ${keys.length} correct.`
     );
     setShowFeedback(true);
-    if (allCorrect && currentIndex >= exercises.length - 1) setIsCompleted(true);
   };
 
   const handleSubmit = () => { if (!showFeedback) checkAnswers(); };
@@ -292,6 +301,14 @@ function FillBlanksContent() {
   }
 
   const totalBlanks = Object.keys(ex.blanksData).length;
+  const passageTitle = learningLang === "fr"
+    ? ex.passage_title_fr || ex.passage_title_en || "Passage"
+    : ex.passage_title_en || ex.passage_title_fr || "Passage";
+  const sourcePassage = learningLang === "fr" ? ex.passage_fr : ex.passage_en;
+  const translatedPassage = learningLang === "fr" ? ex.passage_en : ex.passage_fr;
+  const correctedTranslation = getCorrectedPassageParts(translatedPassage || "", ex.blanksData, learningLang === "fr" ? "en" : "fr");
+  const translatedPassageTitle = (learningLang === "fr" ? ex.passage_title_en : ex.passage_title_fr) || "Passage";
+  const canTranslatePassage = Boolean(translatedPassage && translatedPassage !== sourcePassage);
   const allAnswered = Object.keys(ex.blanksData).every(k => answers[k]);
   const progress = exercises.length > 0
     ? ((currentIndex + Object.keys(answers).length / (totalBlanks || 1)) / exercises.length) * 100
@@ -305,6 +322,7 @@ function FillBlanksContent() {
   // ── Render ─────────────────────────────────────────────────────────────────
   return (
     <PracticeGameLayout
+      capExerciseHeight
       questionType="Fill in the blanks"
       questionTypeFr="Complétez le passage"
       questionTypeEn="Fill in the blanks"
@@ -318,6 +336,7 @@ function FillBlanksContent() {
       currentQuestionIndex={currentIndex}
       questionCounterValue={currentIndex + 1}
       feedbackTone={feedbackTone}
+      feedbackAppearance="soft"
       onExit={handleExit}
       onNext={showFeedback ? handleContinue : handleSubmit}
       onRestart={() => window.location.reload()}
@@ -336,7 +355,16 @@ function FillBlanksContent() {
         {/* ── Passage (7 cols) ── */}
         <div className="practice-dark-panel min-h-0 self-stretch flex flex-col bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden md:h-full">
           <div className="px-4 py-4 md:px-7 md:py-7 md:flex-1 md:min-h-0 md:overflow-y-auto custom-scrollbar">
-            <div className="practice-reading-passage-text !leading-[2]">
+            <div className="mb-4 flex items-start justify-between gap-3 border-b border-slate-200 pb-3 dark:border-slate-700">
+              <h2 className="practice-type-content-heading min-w-0 text-slate-900 dark:text-slate-100 !font-medium">{passageTitle}</h2>
+              {showFeedback && canTranslatePassage && (
+                <TranslateButton onClick={() => setShowPassageTranslation(value => !value)}
+                  aria-label={showPassageTranslation ? "Hide passage translation" : "Translate passage"}
+                  title={showPassageTranslation ? "Hide passage translation" : "Translate passage"}
+                  aria-expanded={showPassageTranslation} />
+              )}
+            </div>
+            <div className="practice-reading-passage-text !leading-[2] text-justify">
               {ex.passageSegments.map((segment, index) => {
                 if (segment.type === "text") {
                   return <span key={index}>{segment.text}</span>;
@@ -376,6 +404,18 @@ function FillBlanksContent() {
                 );
               })}
             </div>
+            {showFeedback && showPassageTranslation && canTranslatePassage && (
+              <div className="mt-6 border-t border-slate-200 pt-5 dark:border-slate-700">
+                <h2 className="practice-type-content-heading mb-3 !font-medium text-slate-900 dark:text-slate-100">{translatedPassageTitle}</h2>
+                <p className="practice-type-content whitespace-pre-line text-justify font-normal text-slate-700 dark:text-slate-200">
+                  {correctedTranslation ? correctedTranslation.map((part, index) => part.answer ? (
+                    <span key={index} className="rounded bg-green-50 px-1 text-green-700 underline decoration-2 underline-offset-4 dark:bg-green-950/40 dark:text-green-300">{part.text}</span>
+                  ) : <React.Fragment key={index}>{part.text}</React.Fragment>) : (
+                    <span role="status">{learningLang === "fr" ? "Correct answer translations are unavailable for this passage." : "Les traductions des bonnes réponses ne sont pas disponibles pour ce passage."}</span>
+                  )}
+                </p>
+              </div>
+            )}
           </div>
         </div>
 
@@ -390,7 +430,7 @@ function FillBlanksContent() {
                 iconSize="md"
                 className="h-10 w-10"
               />
-              <h2 className="practice-reading-heading min-w-0 flex-1 !font-bold">
+              <h2 className="practice-reading-heading min-w-0 flex-1 !font-medium">
                 {showTranslation
                   ? showQuestionInKnown
                     ? "Choisissez le meilleur mot pour chaque espace"
@@ -407,8 +447,7 @@ function FillBlanksContent() {
                 const userAnswer = answers[key];
                 const isCorrectAnswer = showFeedback && userAnswer === blank.correct;
                 const isWrongAnswer = showFeedback && userAnswer !== blank.correct;
-                const hasTranslation = learningLang === "fr" && Boolean(blank.correct_en && blank.correct_en !== blank.correct);
-                const displayedCorrectWord = revealedTranslations[key] && hasTranslation ? blank.correct_en : blank.correct;
+                const answerPairs = Object.values(ex.blanksData).map(entry => ({ fr: entry.correct_fr, en: entry.correct_en }));
 
                 return (
                   <div key={key} className="flex min-w-0 items-start gap-2">
@@ -423,25 +462,18 @@ function FillBlanksContent() {
                     </div>
                     <div className="min-w-0 flex-1">
                       {showFeedback ? (
-                        <div className="flex min-w-0 items-center gap-2">
-                          <div className="flex min-w-0 flex-1 flex-wrap items-stretch gap-2" role="status" aria-label={`Answer ${id}: ${isCorrectAnswer ? "correct" : userAnswer ? "incorrect" : "unanswered"}`}>
-                            {isWrongAnswer && (
-                              <div className="practice-answer-wrong fill-feedback-answer flex min-h-11 min-w-0 basis-32 grow shrink items-center gap-1 rounded-xl border border-red-200 bg-red-50 px-2 py-2 font-normal text-red-800 dark:border-red-700 dark:bg-red-950/40 dark:text-red-300">
-                                <X className="h-4 w-4 shrink-0" strokeWidth={2.5} aria-hidden="true" />
-                                <span className="min-w-0 break-words">{userAnswer || "No answer"}</span>
-                              </div>
-                            )}
-                            <div className="practice-answer-correct fill-feedback-answer flex min-h-11 min-w-0 basis-32 grow shrink items-center gap-1 rounded-xl border border-green-200 bg-green-50 px-2 py-2 font-normal text-green-800 dark:border-green-700 dark:bg-green-950/40 dark:text-green-300">
-                              <Check className="h-4 w-4 shrink-0 text-green-700 dark:text-inherit" strokeWidth={2.5} aria-hidden="true" />
-                              <span className="min-w-0 break-words">{displayedCorrectWord}</span>
-                            </div>
-                          </div>
-                          <div className="h-8 w-8 shrink-0">
-                            {hasTranslation && (
-                              <TranslateButton iconVariant="option" onClick={() => setRevealedTranslations(previous => ({ ...previous, [key]: !previous[key] }))} aria-label={`${revealedTranslations[key] ? "Show original" : "Translate"} answer ${id}`} title={revealedTranslations[key] ? "Show original answer" : "Translate answer"} aria-pressed={Boolean(revealedTranslations[key])} />
-                            )}
-                          </div>
-                        </div>
+                        <ReadingAnswerFeedback
+                          key={`${tag}:${currentIndex}:${key}:${learningLang}`}
+                          answerNumber={id}
+                          answerClassName="fill-feedback-answer"
+                          isCorrect={isCorrectAnswer}
+                          showUnanswered={!userAnswer}
+                          wrong={isWrongAnswer && userAnswer ? userAnswer : undefined}
+                          correct={blank.correct}
+                          wrongTranslation={findBilingualAnswer(userAnswer, answerPairs, learningLang)}
+                          correctTranslation={findBilingualAnswer(blank.correct, answerPairs, learningLang)}
+                          targetLang={learningLang === "fr" ? "en" : "fr"}
+                        />
                       ) : (
                         <CustomSelect
                           options={blank.options}

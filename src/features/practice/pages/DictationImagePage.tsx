@@ -225,7 +225,7 @@ export default function DictationImagePage() {
           <div className="flex flex-col items-center md:items-start gap-8 max-w-2xl">
             {/* Question / Hint */}
             <div className="text-center md:text-left">
-              <h2 className="text-2xl md:text-4xl font-bold text-slate-800 dark:text-slate-100 mb-2">
+              <h2 className="text-2xl md:text-4xl !font-medium text-slate-800 dark:text-slate-100 mb-2">
                 {currentQuestion.question}
               </h2>
             </div>

@@ -514,7 +514,7 @@ function SpeakingConversationContent() {
 
             {currentExchange && (
               <div className="px-4 py-5 animate-in fade-in slide-in-from-bottom-4 duration-500 border-b border-slate-100 dark:border-slate-700/50 mb-2">
-                <h3 className="practice-reading-heading flex items-start gap-3 text-[15px] font-bold text-slate-800 dark:text-slate-200">
+                <h3 className="practice-reading-heading flex items-start gap-3 text-[15px] !font-medium text-slate-800 dark:text-slate-200">
                   <button type="button" onClick={toggleTranslate} disabled={isTranslatingP} className="inline-flex items-center justify-center shrink-0 text-violet-500 hover:text-violet-600 disabled:opacity-60 transition-colors mt-0.5">
                     {isTranslatingP ? <Loader2 className="w-5 h-5 animate-spin" /> : <Languages className="w-5 h-5 shrink-0" />}
                   </button>

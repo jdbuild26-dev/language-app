@@ -280,7 +280,7 @@ function ListenOrderContent() {
     >
       <div className="flex min-h-0 w-full flex-1 flex-col py-4 sm:py-6">
         {headingText && <div className="mx-auto flex w-full max-w-4xl shrink-0 items-center justify-center border-b border-slate-200 px-3 pb-3 dark:border-slate-700 sm:px-4 sm:pb-4">
-          <h2 className="practice-type-content-heading text-center text-slate-900 dark:text-slate-100">{headingText}</h2>
+          <h2 className="practice-type-content-heading text-center text-slate-900 dark:text-slate-100 !font-medium">{headingText}</h2>
         </div>}
 
         <div className={cn("min-h-0 w-full flex-1", headingText && "mt-4 sm:mt-6")}>
