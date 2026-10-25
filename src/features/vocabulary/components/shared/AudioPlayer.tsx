@@ -1,8 +1,10 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import { useTextToSpeech } from "@/hooks/useTextToSpeech";
 import { Volume2, Turtle } from "lucide-react";
+import ListeningPlaybackButton from "@/components/ui/ListeningPlaybackButton";
+import { cn } from "@/lib/utils";
 
 /**
  * Reusable AudioPlayer component with standard and slow playback options.
@@ -16,50 +18,66 @@ export default function AudioPlayer({
   className = "",
   lang = "fr-FR",
   showTurtle = true,
+  appearance = "vocabulary",
+  controlSize = "default" as "default" | "large",
+  externalPlaying = false,
 }) {
   const { speak, isSpeaking } = useTextToSpeech();
+  const [playbackMode, setPlaybackMode] = useState<"normal" | "slow" | null>(null);
+  const normalPlaying = (isSpeaking && playbackMode === "normal") || (externalPlaying && playbackMode === null);
+  const slowPlaying = isSpeaking && playbackMode === "slow";
 
   const handlePlayNormal = () => {
+    setPlaybackMode("normal");
     speak(text, lang, 1.0);
   };
 
   const handlePlaySlow = () => {
+    setPlaybackMode("slow");
     speak(text, lang, 0.75); // Slower rate for "turtle" mode
   };
 
-  return (
-    <div className={`flex items-center gap-4 ${className}`}>
-      {/* Main Volume Button - Increased size as per user request */}
-      <button
-        onClick={handlePlayNormal}
-        className={`
-          w-16 h-16 md:w-20 md:h-20 rounded-2xl flex items-center justify-center shadow-lg transition-all transform active:scale-95
-          ${
-            isSpeaking
-              ? "bg-blue-100 text-blue-600 ring-4 ring-blue-200 dark:bg-blue-900/40 dark:text-blue-300 dark:ring-blue-800"
-              : "bg-sky-400 hover:bg-sky-500 text-white dark:bg-sky-600 dark:hover:bg-sky-500"
-          }
-        `}
-        title="Play Audio"
-      >
-        <Volume2
-          className={`w-8 h-8 md:w-10 md:h-10 ${isSpeaking ? "animate-pulse" : ""}`}
-        />
-      </button>
+  if (appearance === "main-practice") {
+    return (
+      <div className={`flex items-center gap-4 ${className}`}>
+        <ListeningPlaybackButton mode="normal" size={controlSize} label="Play audio at normal speed" onClick={handlePlayNormal} active={isSpeaking && playbackMode === "normal"} />
+        {showTurtle && <ListeningPlaybackButton mode="slow" size={controlSize} label="Play audio slowly" onClick={handlePlaySlow} active={isSpeaking && playbackMode === "slow"} />}
+      </div>
+    );
+  }
 
-      {/* Turtle Button (Slow Mode) */}
-      {showTurtle && (
+  return (
+      <div className={cn("relative flex items-center justify-center gap-4 sm:gap-5", className)}>
         <button
-          onClick={handlePlaySlow}
-          className="
-            w-12 h-12 md:w-14 md:h-14 rounded-xl flex items-center justify-center shadow-md transition-all transform active:scale-95
-            bg-sky-500 hover:bg-sky-600 text-white dark:bg-sky-600 dark:hover:bg-sky-500
-          "
-          title="Slow Playback"
+          type="button"
+          onClick={handlePlayNormal}
+          aria-label="Play audio"
+          aria-pressed={normalPlaying}
+          className={cn(
+            "flex h-24 w-24 shrink-0 items-center justify-center rounded-full shadow-sm transition-[transform,box-shadow,background-color] hover:scale-[1.03] active:scale-[0.97] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-rose-300",
+            normalPlaying
+              ? "bg-rose-100 text-rose-600 ring-4 ring-rose-200 shadow-lg"
+              : "bg-gradient-to-br from-rose-300 to-rose-400 text-white",
+          )}
         >
-          <Turtle className="w-6 h-6 md:w-7 md:h-7" />
+          <Volume2 className={cn("h-11 w-11", normalPlaying && "motion-safe:animate-pulse")} aria-hidden="true" />
         </button>
-      )}
-    </div>
+        {showTurtle && (
+          <button
+            type="button"
+            onClick={handlePlaySlow}
+            aria-label="Play audio slowly"
+            aria-pressed={slowPlaying}
+            className={cn(
+              "flex h-14 w-14 shrink-0 items-center justify-center rounded-full shadow-sm transition-[transform,box-shadow,background-color] hover:scale-[1.03] active:scale-[0.97] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-rose-300",
+              slowPlaying
+                ? "bg-rose-100 text-rose-600 ring-4 ring-rose-200 shadow-lg"
+                : "bg-gradient-to-br from-rose-300 to-rose-400 text-white",
+            )}
+          >
+            <Turtle className={cn("h-7 w-7", slowPlaying && "motion-safe:animate-pulse")} aria-hidden="true" />
+          </button>
+        )}
+      </div>
   );
 }

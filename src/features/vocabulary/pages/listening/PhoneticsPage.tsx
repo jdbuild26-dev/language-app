@@ -1,23 +1,32 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useExerciseTimer } from "@/hooks/useExerciseTimer";
 import { useTextToSpeech } from "@/hooks/useTextToSpeech";
 import { fetchPracticeQuestions } from "@/services/vocabularyApi";
 import { Loader2, CheckCircle2, XCircle } from "lucide-react";
 import AudioPlayer from "@/features/vocabulary/components/shared/AudioPlayer";
 import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
+import { TranslateButton } from "@/components/ui/TranslateButton";
+import { translateText } from "@/services/aiPracticeApi";
 import { cn } from "@/lib/utils";
 import { getFeedbackMessage } from "@/utils/feedbackMessages";
+
+type Question = { id: string; prompt: string; instruction: string; explanation?: string; options: Array<{ text: string; en?: string }>; correctIndex: number };
 
 export default function PhoneticsPage() {
   const { speak } = useTextToSpeech();
 
   // State
   const [loading, setLoading] = useState(true);
-  const [questions, setQuestions] = useState([]);
+  const [questions, setQuestions] = useState<Question[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedOptionIndex, setSelectedOptionIndex] = useState(null);
+  const [translatedOptions, setTranslatedOptions] = useState<number[]>([]);
+  const [optionTranslations, setOptionTranslations] = useState<Record<number, string>>({});
+  const [translatingOptions, setTranslatingOptions] = useState<number[]>([]);
+  const [translationErrors, setTranslationErrors] = useState<number[]>([]);
+  const translationGeneration = useRef(0);
   const [showFeedback, setShowFeedback] = useState(false);
   const [isCorrect, setIsCorrect] = useState(false);
   const [feedbackMessage, setFeedbackMessage] = useState("");
@@ -25,7 +34,7 @@ export default function PhoneticsPage() {
   const [score, setScore] = useState(0);
 
   // Timer Hook
-  const { timerString, resetTimer, isPaused } = useExerciseTimer({
+  const { timerString, resetTimer } = useExerciseTimer({
     duration: 30,
     mode: "timer",
     onExpire: () => {
@@ -88,6 +97,7 @@ export default function PhoneticsPage() {
 
   const handleOptionClick = (index) => {
     if (showFeedback) return;
+    speak(questions[currentIndex].options[index].text, "fr-FR");
     setSelectedOptionIndex(index);
   };
 
@@ -106,13 +116,43 @@ export default function PhoneticsPage() {
   };
 
   const handleContinue = () => {
+    translationGeneration.current += 1;
     setShowFeedback(false);
     setSelectedOptionIndex(null);
+    setTranslatedOptions([]);
+    setOptionTranslations({});
+    setTranslatingOptions([]);
+    setTranslationErrors([]);
 
     if (currentIndex < questions.length - 1) {
       setCurrentIndex((prev) => prev + 1);
     } else {
       setIsCompleted(true);
+    }
+  };
+
+  const toggleOptionTranslation = async (index: number, option: { text: string; en?: string }) => {
+    if (translatedOptions.includes(index)) {
+      setTranslatedOptions((previous) => previous.filter((item) => item !== index));
+      return;
+    }
+    if (option.en || optionTranslations[index]) {
+      setTranslatedOptions((previous) => [...previous, index]);
+      return;
+    }
+    if (translatingOptions.includes(index)) return;
+    setTranslatingOptions((previous) => [...previous, index]);
+    setTranslationErrors((previous) => previous.filter((item) => item !== index));
+    const generation = translationGeneration.current;
+    try {
+      const result = await translateText(option.text, "en");
+      if (generation !== translationGeneration.current) return;
+      setOptionTranslations((previous) => ({ ...previous, [index]: result.translation }));
+      setTranslatedOptions((previous) => [...previous, index]);
+    } catch {
+      if (generation === translationGeneration.current) setTranslationErrors((previous) => [...previous, index]);
+    } finally {
+      if (generation === translationGeneration.current) setTranslatingOptions((previous) => previous.filter((item) => item !== index));
     }
   };
 
@@ -181,12 +221,12 @@ export default function PhoneticsPage() {
                 const isSelected = selectedOptionIndex === idx;
 
                 return (
+                  <div key={idx} className="relative">
                   <button
-                    key={idx}
                     onClick={() => handleOptionClick(idx)}
                     disabled={showFeedback}
                     className={cn(
-                      "group relative p-4 rounded-2xl border-[3px] text-left font-medium text-lg md:text-xl transition-all flex items-center gap-4 bg-white dark:bg-slate-800 shadow-sm",
+                      "group relative p-4 pr-14 rounded-2xl border-[3px] text-left font-medium text-lg md:text-xl transition-all flex items-center gap-4 bg-white dark:bg-slate-800 shadow-sm",
                       // Default
                       "border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700",
                       // Selected
@@ -208,13 +248,25 @@ export default function PhoneticsPage() {
 
                     <div className="flex-1 flex flex-col text-left">
                       <span>{opt.text}</span>
-                      {showFeedback && opt.en && (
+                      {translatedOptions.includes(idx) && (opt.en || optionTranslations[idx]) && (
                         <span className="text-sm font-normal text-slate-500 dark:text-slate-400">
-                          {opt.en}
+                          {opt.en || optionTranslations[idx]}
                         </span>
                       )}
                     </div>
                   </button>
+                  {showFeedback && (
+                    <TranslateButton
+                      iconVariant="option"
+                      className="absolute right-3 top-1/2 z-10 -translate-y-1/2"
+                      aria-label={translatedOptions.includes(idx) ? `Hide translation for ${opt.text}` : `Translate ${opt.text}`}
+                      aria-pressed={translatedOptions.includes(idx)}
+                      isLoading={translatingOptions.includes(idx)}
+                      title={translationErrors.includes(idx) ? "Translation unavailable. Try again." : "Toggle translation"}
+                      onClick={() => void toggleOptionTranslation(idx, opt)}
+                    />
+                  )}
+                  </div>
                 );
               })}
             </div>

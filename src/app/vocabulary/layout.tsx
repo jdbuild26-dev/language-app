@@ -8,6 +8,8 @@ import {
   Gamepad2,
 } from "lucide-react";
 import PageTabs from "@/components/ui/PageTabs";
+import { usePathname } from "next/navigation";
+import { isFullscreenVocabularyExercise } from "@/lib/isFullscreenVocabularyExercise";
 
 const vocabularyTabs = [
   {
@@ -24,6 +26,12 @@ const vocabularyTabs = [
 ];
 
 export default function VocabularyLayout({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname() ?? "";
+
+  if (isFullscreenVocabularyExercise(pathname)) {
+    return <>{children}</>;
+  }
+
   return (
     <div className="max-w-7xl mx-auto px-4 py-6">
       <PageTabs

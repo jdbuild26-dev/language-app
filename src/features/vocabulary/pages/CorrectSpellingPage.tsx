@@ -8,12 +8,13 @@ import { cn } from "@/lib/utils";
 import { fetchVocabulary } from "@/services/vocabularyApi";
 import { Button } from "@/components/ui/button";
 import AccentKeyboard from "@/components/ui/AccentKeyboard";
+import { prepareSpellingWords, type PreparedSpellingWord } from "@/features/vocabulary/lib/spellingWords";
 
 export default function CorrectSpellingPage() {
-  const [words, setWords] = useState([]);
+  const [words, setWords] = useState<PreparedSpellingWord[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState<string | null>(null);
   const [userInput, setUserInput] = useState("");
   const [status, setStatus] = useState("idle"); // idle, correct, incorrect
   const [showHint, setShowHint] = useState(false);
@@ -25,17 +26,16 @@ export default function CorrectSpellingPage() {
   const loadWords = async () => {
     try {
       setLoading(true);
+      setError(null);
       const data = await fetchVocabulary();
-      // Filter words that have a wrong spelling defined
-      const spellingWords = data.words.filter(
-        (w) => w.wrongSpelling && w.wrongSpelling.trim().length > 0,
-      );
+      const spellingWords = prepareSpellingWords(Array.isArray(data.words) ? data.words : []);
 
       if (spellingWords.length === 0) {
-        setError("No spelling words found. Please check the database.");
+        setError("No spelling words are available. Please check the vocabulary data.");
       } else {
         // Shuffle
         setWords(spellingWords.sort(() => Math.random() - 0.5));
+        setCurrentIndex(0);
       }
     } catch (err) {
       setError("Failed to load vocabulary");
@@ -111,7 +111,7 @@ export default function CorrectSpellingPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[60vh]">
+      <div className="flex items-center justify-center min-h-dvh">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
       </div>
     );
@@ -119,7 +119,7 @@ export default function CorrectSpellingPage() {
 
   if (error) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
+      <div className="flex flex-col items-center justify-center min-h-dvh gap-4">
         <p className="text-red-500">{error}</p>
         <Button onClick={loadWords} variant="outline">
           Retry
@@ -139,7 +139,8 @@ export default function CorrectSpellingPage() {
   const displayWrong = wrongSpellings.length > 0 ? wrongSpellings[0] : "???"; // Should not happen given filter
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-8 space-y-8">
+    <div className="min-h-dvh w-full px-4 py-8">
+      <div className="max-w-2xl mx-auto space-y-8">
       {/* Header */}
       <div className="flex items-center justify-between">
         <Link
@@ -207,7 +208,7 @@ export default function CorrectSpellingPage() {
                   ? "border-red-500 bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-300"
                   : "border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:border-indigo-500",
             )}
-            placeholder="Type here..."
+            placeholder="|"
             autoFocus
           />
         </div>
@@ -253,6 +254,7 @@ export default function CorrectSpellingPage() {
             </Button>
           )}
         </div>
+      </div>
       </div>
     </div>
   );

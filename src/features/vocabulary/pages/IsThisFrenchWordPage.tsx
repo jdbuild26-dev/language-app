@@ -8,10 +8,15 @@ import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
 import { getFeedbackMessage } from "@/utils/feedbackMessages";
 import { cn } from "@/lib/utils";
 import { fetchPracticeQuestions } from "@/services/vocabularyApi";
+import { useTextToSpeech } from "@/hooks/useTextToSpeech";
+import { frenchWordAnswer } from "../lib/practiceAnswers";
+
+type Question = { id: string; word: string; isFrench: boolean; explanation: string };
 
 export default function IsThisFrenchWordPage() {
   const router = useRouter();
-  const [questions, setQuestions] = useState([]);
+  const { speak } = useTextToSpeech();
+  const [questions, setQuestions] = useState<Question[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState(null);
   const [showFeedback, setShowFeedback] = useState(false);
@@ -39,7 +44,8 @@ export default function IsThisFrenchWordPage() {
             return {
               id: item.external_id || item.id,
               word: item.content.word,
-              isFrench: item.content.isFrench,
+              isFrench: frenchWordAnswer(item.content.isFrench, item.evaluation?.correctAnswer ?? item.content.correctAnswer),
+              explanation: item.evaluation?.CorrectExplanation_EN || item.content.explanation || item.content.Explanation || "",
             };
           }
 
@@ -47,18 +53,13 @@ export default function IsThisFrenchWordPage() {
           const word =
             item.word || item.Question || item.Word || item.Word_FR || "";
 
-          let isFr = item.isFrench;
-          if (isFr === undefined) {
-            const ans = (item.CorrectAnswer || item.Answer || "")
-              .toString()
-              .toLowerCase();
-            isFr = ["yes", "oui", "true", "1"].includes(ans);
-          }
+          const isFr = frenchWordAnswer(item.isFrench, item.CorrectAnswer ?? item.correctAnswer ?? item.Answer);
 
           return {
             id: item.id || item.ExerciseID,
             word: word,
             isFrench: isFr,
+            explanation: item.CorrectExplanation_EN || item.Explanation || item.explanation || "",
           };
         });
         setQuestions(normalized.sort(() => Math.random() - 0.5));
@@ -71,7 +72,7 @@ export default function IsThisFrenchWordPage() {
   };
 
   // Timer Hook
-  const { timerString, resetTimer, isPaused } = useExerciseTimer({
+  const { timerString, resetTimer } = useExerciseTimer({
     duration: 15,
     mode: "timer",
     onExpire: () => {
@@ -95,6 +96,7 @@ export default function IsThisFrenchWordPage() {
     if (showFeedback) return;
 
     const currentQ = questions[currentIndex];
+    speak(currentQ.word, "fr-FR");
     const correct = answer === currentQ.isFrench;
 
     setSelectedAnswer(answer);
@@ -158,7 +160,7 @@ export default function IsThisFrenchWordPage() {
         onNext={showFeedback ? handleContinue : undefined}
         onRestart={() => window.location.reload()}
         isSubmitEnabled={showFeedback}
-        showSubmitButton={showFeedback}
+        showSubmitButton={false}
         submitLabel={
           showFeedback
             ? currentIndex + 1 === questions.length
@@ -167,73 +169,75 @@ export default function IsThisFrenchWordPage() {
             : "CHECK"
         }
         timerValue={timerString}
-        showFeedback={showFeedback}
-        isCorrect={isCorrect}
-        correctAnswer={
-          !isCorrect
-            ? currentQ.isFrench
-              ? "Yes, it's French!"
-              : "No, it's not French"
-            : null
-        }
-        feedbackMessage={feedbackMessage}
       >
-        <div className="flex flex-col items-center justify-center w-full max-w-2xl gap-12">
+        <div className="mx-auto flex w-full max-w-3xl flex-col items-center gap-10 px-4 py-10 sm:gap-12 sm:py-12">
+          <h2 className="practice-type-question-heading !font-medium text-center text-slate-900 dark:text-slate-100">
+            Est-ce un mot français ?
+          </h2>
           {/* Word Display */}
           <div className="text-center">
-            <h2 className="text-3xl md:text-4xl font-bold text-slate-800 dark:text-slate-100 tracking-wide">
+            <p className="practice-type-content-large !text-[clamp(2rem,3vw,2.5rem)] !leading-tight font-semibold tracking-normal text-slate-800 dark:text-slate-100 break-words">
               {currentQ?.word}
-            </h2>
+            </p>
           </div>
 
           {/* Yes / No Buttons */}
           <div className="flex gap-6">
             {/* Yes Button */}
             <button
+              type="button"
+              aria-label="Yes, this is a French word"
+              aria-pressed={selectedAnswer === true}
               onClick={() => handleAnswer(true)}
               disabled={showFeedback}
               className={cn(
-                "flex flex-col items-center justify-center w-24 h-24 md:w-28 md:h-28 rounded-2xl border-2 transition-all duration-200 shadow-sm",
-                "hover:shadow-lg hover:-translate-y-1",
+                "flex flex-col items-center justify-center w-28 h-28 md:w-36 md:h-36 rounded-2xl border-2 transition-colors duration-200 shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2",
                 showFeedback && selectedAnswer === true && isCorrect
                   ? "bg-green-100 border-green-500 text-green-700"
                   : showFeedback && selectedAnswer === true && !isCorrect
                     ? "bg-red-100 border-red-500 text-red-700"
-                    : "bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700 hover:border-sky-400",
+                    : "bg-white text-sky-500 dark:bg-slate-800 border-gray-200 dark:border-slate-700 hover:border-sky-400",
               )}
             >
               <Check
-                className="w-10 h-10 md:w-12 md:h-12 text-sky-500"
+                className="w-12 h-12 md:w-16 md:h-16"
                 strokeWidth={2.5}
               />
-              <span className="mt-2 text-sm font-semibold text-slate-600 dark:text-slate-300">
+              <span className="mt-2 text-base font-semibold text-slate-600 dark:text-slate-300">
                 Yes
               </span>
             </button>
 
             {/* No Button */}
             <button
+              type="button"
+              aria-label="No, this is not a French word"
+              aria-pressed={selectedAnswer === false}
               onClick={() => handleAnswer(false)}
               disabled={showFeedback}
               className={cn(
-                "flex flex-col items-center justify-center w-24 h-24 md:w-28 md:h-28 rounded-2xl border-2 transition-all duration-200 shadow-sm",
-                "hover:shadow-lg hover:-translate-y-1",
+                "flex flex-col items-center justify-center w-28 h-28 md:w-36 md:h-36 rounded-2xl border-2 transition-colors duration-200 shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2",
                 showFeedback && selectedAnswer === false && isCorrect
                   ? "bg-green-100 border-green-500 text-green-700"
                   : showFeedback && selectedAnswer === false && !isCorrect
                     ? "bg-red-100 border-red-500 text-red-700"
-                    : "bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700 hover:border-sky-400",
+                    : "bg-white text-sky-500 dark:bg-slate-800 border-gray-200 dark:border-slate-700 hover:border-sky-400",
               )}
             >
               <X
-                className="w-10 h-10 md:w-12 md:h-12 text-sky-500"
+                className="w-12 h-12 md:w-16 md:h-16"
                 strokeWidth={2.5}
               />
-              <span className="mt-2 text-sm font-semibold text-slate-600 dark:text-slate-300">
+              <span className="mt-2 text-base font-semibold text-slate-600 dark:text-slate-300">
                 No
               </span>
             </button>
           </div>
+          {showFeedback && <div className="w-full text-center" role="status">
+            <p className={cn("practice-type-content font-semibold", isCorrect ? "text-green-700 dark:text-green-400" : "text-red-700 dark:text-red-400")}>{feedbackMessage} {currentQ.isFrench ? "This is a French word." : "This is not a French word."}</p>
+            {currentQ.explanation && <p className="practice-type-content mt-2 text-slate-700 dark:text-slate-200">{currentQ.explanation}</p>}
+            <button type="button" onClick={handleContinue} className="mt-4 rounded-lg bg-sky-600 px-5 py-2 font-semibold text-white hover:bg-sky-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500">{currentIndex + 1 === questions.length ? "Finish" : "Continue"}</button>
+          </div>}
         </div>
       </PracticeGameLayout>
     </>

@@ -9,11 +9,13 @@ import AudioPlayer from "@/features/vocabulary/components/shared/AudioPlayer";
 import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
 import FeedbackBanner from "@/components/ui/FeedbackBanner";
 
+type Question = { id: string; fullSentence: string; displaySentence: string; answer: string; instruction: string };
+
 export default function DictationPage() {
   const { speak, isSpeaking } = useTextToSpeech();
 
   const [loading, setLoading] = useState(true);
-  const [questions, setQuestions] = useState([]);
+  const [questions, setQuestions] = useState<Question[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
 
   const [userInput, setUserInput] = useState("");
@@ -21,10 +23,10 @@ export default function DictationPage() {
   const [score, setScore] = useState(0);
   const [isCompleted, setIsCompleted] = useState(false);
 
-  const inputRef = useRef(null);
+  const inputRef = useRef<HTMLInputElement | null>(null);
 
   // Timer Hook
-  const { timerString, resetTimer, isPaused } = useExerciseTimer({
+  const { timerString, resetTimer } = useExerciseTimer({
     duration: 60, // Dictation might take longer? keeping 60s
     mode: "timer",
     onExpire: () => {
@@ -73,7 +75,7 @@ export default function DictationPage() {
     }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = (e?: React.SyntheticEvent) => {
     e?.preventDefault();
     if (status !== "idle") {
       handleNext();
@@ -193,7 +195,7 @@ export default function DictationPage() {
             onKeyDown={(e) => {
               if (e.key === "Enter") handleSubmit();
             }}
-            placeholder="Type the missing word..."
+            placeholder="|"
             className={`w-full p-4 text-center text-xl rounded-xl border-2 outline-none transition-all
                       ${
                         status === "idle"
