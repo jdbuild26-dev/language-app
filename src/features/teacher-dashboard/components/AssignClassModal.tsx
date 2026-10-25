@@ -144,7 +144,7 @@ export function AssignClassModal({ isOpen, onClose }: AssignClassModalProps) {
               Assignment Title
             </Label>
             <Input
-              placeholder="e.g., Week 3 Grammar Practice"
+              placeholder="|"
               value={formData.title}
               onChange={(e) => setFormData({ ...formData, title: e.target.value })}
               className="bg-slate-900 border-slate-800 text-white h-11 rounded-xl"

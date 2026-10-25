@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, Suspense } from "react";
-import { Volume2, RotateCcw, Loader2, CheckCircle2, XCircle } from "lucide-react";
+import { Volume2, Turtle, Loader2, CheckCircle2, XCircle } from "lucide-react";
 import { useTextToSpeech } from "@/hooks/useTextToSpeech";
 import { cn } from "@/lib/utils";
 import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
@@ -170,6 +170,7 @@ function AudioDropdownContent() {
   const [loading, setLoading] = useState(true);
 
   const [playingId, setPlayingId] = useState<number | null>(null);
+  const [playingSpeed, setPlayingSpeed] = useState<"normal" | "slow" | null>(null);
   const [answers, setAnswers] = useState<Record<number, string>>({});
   const [submitted, setSubmitted] = useState(false);
   const [score, setScore] = useState(0);
@@ -213,20 +214,23 @@ function AudioDropdownContent() {
     setSubmitted(false);
     setScore(0);
     setPlayingId(null);
+    setPlayingSpeed(null);
   }, [currentIndex]);
 
-  useEffect(() => {
-    if (!isSpeaking) setPlayingId(null);
-  }, [isSpeaking]);
-
   // ── Handlers ──────────────────────────────────────────────────────────────
-  const playRecording = (id: number, text: string, rate = 0.9) => {
+  const playRecording = (id: number, text: string, speed: "normal" | "slow") => {
     setPlayingId(id);
-    speak(text, "fr-FR", rate);
+    setPlayingSpeed(speed);
+    speak(text, "fr-FR", speed === "slow" ? 0.7 : 0.9);
   };
 
   const handleAnswerChange = (blankId: number, value: string) => {
     if (submitted) return;
+    if (value) {
+      setPlayingId(null);
+      setPlayingSpeed(null);
+      speak(value, "fr-FR");
+    }
     setAnswers(prev => ({ ...prev, [blankId]: value }));
   };
 
@@ -323,21 +327,27 @@ function AudioDropdownContent() {
             <h3 className="text-xs tracking-widest font-semibold text-slate-400 mb-4 uppercase">Audio Recordings</h3>
             <div className="space-y-3 flex-1 min-h-0 overflow-y-auto pr-1">
               {ex.audioRecordings.map(rec => {
-                const isThisPlaying = isSpeaking && playingId === rec.id;
+                const normalPlaying = isSpeaking && playingId === rec.id && playingSpeed === "normal";
+                const slowPlaying = isSpeaking && playingId === rec.id && playingSpeed === "slow";
                 return (
                   <div key={rec.id} className="rounded-2xl border border-slate-200 bg-slate-50 dark:bg-slate-900 dark:border-slate-700 p-4">
                     <div className="flex items-center justify-between gap-3">
                       <p className="text-xs tracking-[0.2em] font-semibold text-blue-600">{rec.label}</p>
                       <div className="flex items-center gap-2 shrink-0">
-                        <button type="button" onClick={() => playRecording(rec.id, rec.text, 0.9)}
-                          className={cn("w-9 h-9 rounded-full border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 flex items-center justify-center transition-colors",
-                            isThisPlaying ? "text-blue-600 border-blue-400" : "text-slate-400 hover:text-slate-600")}>
-                          <Volume2 className={cn("w-4 h-4", isThisPlaying && "animate-pulse")} />
+                        <button type="button" onClick={() => playRecording(rec.id, rec.text, "normal")}
+                          aria-label={`Play ${rec.label}`}
+                          aria-pressed={normalPlaying}
+                          className={cn("w-11 h-11 rounded-full flex items-center justify-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-300",
+                            normalPlaying ? "bg-rose-100 text-rose-600 ring-2 ring-rose-200" : "bg-gradient-to-br from-rose-300 to-rose-400 text-white hover:from-rose-400 hover:to-rose-500")}>
+                          <Volume2 className={cn("w-5 h-5", normalPlaying && "animate-pulse")} />
                         </button>
-                        <button type="button" onClick={() => playRecording(rec.id, rec.text, 0.7)}
-                          className="w-9 h-9 rounded-full border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 flex items-center justify-center text-slate-400 hover:text-slate-600 transition-colors"
+                        <button type="button" onClick={() => playRecording(rec.id, rec.text, "slow")}
+                          aria-label={`Play ${rec.label} slowly`}
+                          aria-pressed={slowPlaying}
+                          className={cn("w-11 h-11 rounded-full flex items-center justify-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-300",
+                            slowPlaying ? "bg-rose-100 text-rose-600 ring-2 ring-rose-200" : "bg-gradient-to-br from-rose-300 to-rose-400 text-white hover:from-rose-400 hover:to-rose-500")}
                           title="Play slower">
-                          <RotateCcw className="w-4 h-4" />
+                          <Turtle className={cn("w-5 h-5", slowPlaying && "animate-pulse")} />
                         </button>
                       </div>
                     </div>

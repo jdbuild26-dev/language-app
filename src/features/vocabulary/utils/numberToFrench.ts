@@ -107,7 +107,7 @@ function hundredsToTokens(n) {
   const h = Math.floor(n / 100);
   const remainder = n % 100;
 
-  const tokens = [];
+  const tokens: string[] = [];
 
   if (h === 1) {
     tokens.push("cent");
@@ -134,7 +134,7 @@ export function numberToFrenchTokens(n) {
   const thousands = Math.floor(n / 1000);
   const remainder = n % 1000;
 
-  const tokens = [];
+  const tokens: string[] = [];
 
   if (thousands === 1) {
     tokens.push("mille");

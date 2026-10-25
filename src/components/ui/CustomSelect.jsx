@@ -29,6 +29,7 @@ export default function CustomSelect({
   onChange,
   placeholder = "Select…",
   ariaLabel,
+  menuLabel,
   disabled = false,
   isCorrect = false,
   isWrong = false,
@@ -92,7 +93,7 @@ export default function CustomSelect({
   const showDashPlaceholder = !value && /^-+$/.test(placeholder);
 
   return (
-    <div ref={ref} className={cn("relative w-full", className)}>
+    <div ref={ref} data-custom-select className={cn("relative w-full", className)}>
       {/* Trigger */}
       <motion.button
         type="button"
@@ -145,6 +146,8 @@ export default function CustomSelect({
           <motion.ul
             ref={listRef}
             role="listbox"
+            aria-label={menuLabel || ariaLabel}
+            data-menu-label={menuLabel}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}

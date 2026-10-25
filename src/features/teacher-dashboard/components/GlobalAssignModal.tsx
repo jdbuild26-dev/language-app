@@ -151,7 +151,7 @@ export function GlobalAssignModal({
             </LabelAny>
             <InputAny
               id="title"
-              placeholder="e.g., Weekend Practice"
+              placeholder="|"
               value={formData.title}
               onChange={(e: any) => setFormData({ ...formData, title: e.target.value })}
               className="bg-slate-900 border-slate-800 text-white focus:ring-sky-500 h-11 rounded-xl"

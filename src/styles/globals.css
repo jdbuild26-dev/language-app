@@ -29,6 +29,13 @@ textarea[placeholder="|"]:focus::placeholder {
   }
 }
 
+/* Main Practice hides the empty-field hint when it cannot accept input. */
+[data-main-practice] :is(input, textarea)[placeholder="|"]:is(:focus, :disabled, [readonly])::placeholder {
+  color: transparent;
+  opacity: 0;
+  animation: none;
+}
+
 /* Practice typography uses named roles so zoom never reverses the hierarchy. */
 :root {
   --practice-font-family: "Noto Sans", Arial, sans-serif;
@@ -132,15 +139,93 @@ textarea[placeholder="|"]:focus::placeholder {
   .practice-game-typography .practice-select-text [role="option"] {
     font-size: var(--practice-font-content);
     font-family: var(--practice-font-content-family);
+    font-weight: 400;
     line-height: 1.4;
   }
 
   .practice-game-typography .diagram-feedback-answer,
-  .practice-game-typography .image-feedback-answer,
-  .practice-game-typography .fill-feedback-answer {
+  .practice-game-typography .image-feedback-answer {
     font-size: 1rem;
     font-family: var(--practice-font-content-family);
     line-height: 1.4;
+  }
+
+  .practice-game-typography .fill-feedback-answer {
+    font-size: var(--practice-font-content);
+    font-family: var(--practice-font-content-family);
+    line-height: 1.4;
+  }
+
+  .practice-game-typography .diagram-answer-select [role="listbox"] {
+    background-color: theme("colors.white");
+    border: 1px solid theme("colors.blue.300");
+    border-radius: 0.625rem;
+    padding-block: 0.375rem;
+    box-shadow: 0 8px 20px rgb(15 23 42 / 0.12);
+  }
+
+  .practice-game-typography .diagram-answer-select [role="option"] {
+    min-height: 2.75rem;
+    margin-inline: 0.375rem;
+    border-radius: 0.375rem;
+  }
+
+  .practice-game-typography .diagram-answer-select [role="listbox"][data-menu-label]::before {
+    content: attr(data-menu-label);
+    display: block;
+    position: sticky;
+    top: -0.375rem;
+    z-index: 20;
+    margin-top: -0.375rem;
+    padding: 0.5rem 0.875rem;
+    border-bottom: 1px solid theme("colors.blue.200");
+    background-color: theme("colors.blue.50");
+    color: theme("colors.blue.800");
+    font-size: 0.875rem;
+    font-weight: 500;
+    line-height: 1.5;
+  }
+
+  .practice-game-typography .diagram-answer-row:has([aria-expanded="true"]) > div:first-child {
+    border-color: theme("colors.blue.600");
+    background-color: theme("colors.blue.600");
+    color: theme("colors.white");
+  }
+
+  .dark .practice-game-typography .diagram-answer-select [role="listbox"][data-menu-label]::before {
+    background-color: theme("colors.slate.800");
+    border-color: theme("colors.blue.700");
+    color: theme("colors.blue.200");
+  }
+
+  .practice-game-typography .diagram-answer-select [role="option"] > span.absolute {
+    background-color: theme("colors.blue.50");
+    border-radius: 0.375rem;
+  }
+
+  .practice-game-typography .diagram-answer-select [role="option"][aria-selected="true"] > span.absolute {
+    background-color: theme("colors.blue.100");
+  }
+
+  .dark .practice-game-typography .diagram-answer-select [role="listbox"] {
+    background-color: theme("colors.slate.900");
+    border-color: theme("colors.blue.400");
+  }
+
+  .dark .practice-game-typography .diagram-answer-select [role="option"] > span.absolute {
+    background-color: theme("colors.slate.800");
+  }
+
+  .dark .practice-game-typography .diagram-answer-select [role="option"][aria-selected="true"] > span.absolute {
+    background-color: theme("colors.blue.900");
+  }
+
+  @media (min-width: 64rem) {
+    .practice-game-typography .diagram-feedback-answer,
+    .practice-game-typography .image-feedback-answer,
+    .practice-game-typography .fill-feedback-answer {
+      font-size: var(--practice-font-content);
+    }
   }
 
   .practice-game-typography .practice-fill-passage {
@@ -185,6 +270,11 @@ textarea[placeholder="|"]:focus::placeholder {
   }
 
   .practice-comprehension-scroll {
+    scrollbar-gutter: stable;
+  }
+
+  .practice-game-typography .custom-scrollbar,
+  .practice-game-typography .practice-game-scroll {
     scrollbar-gutter: stable;
   }
 
@@ -283,6 +373,12 @@ textarea[placeholder="|"]:focus::placeholder {
 
   .practice-reading-heading {
     @apply text-slate-900 dark:text-slate-100;
+  }
+
+  .practice-passage-content,
+  .practice-reading-passage-text {
+    text-align: justify;
+    text-align-last: start;
   }
 
   .practice-reading-passage-text {
@@ -959,5 +1055,128 @@ textarea[placeholder="|"]:focus::placeholder {
   }
   .scrollbar-hide::-webkit-scrollbar {
     display: none; /* Chrome, Safari and Opera */
+  }
+}
+
+/* Main Practice shares one scrollbar treatment, including portalled image dialogs.
+   Keep this after the legacy utilities so conversation hover styles agree too. */
+:is([data-main-practice], [data-main-practice-scroll]) {
+  --main-practice-scroll-thumb: #cbd5e1;
+  --main-practice-scroll-thumb-hover: #94a3b8;
+}
+
+.dark :is([data-main-practice], [data-main-practice-scroll]) {
+  --main-practice-scroll-thumb: #475569;
+  --main-practice-scroll-thumb-hover: #64748b;
+}
+
+:is([data-main-practice], [data-main-practice-scroll]),
+:is([data-main-practice], [data-main-practice-scroll]) * {
+  scrollbar-width: thin;
+  scrollbar-color: var(--main-practice-scroll-thumb) transparent;
+}
+
+/* Reset both native properties so Chromium uses the explicit 6px styling. */
+@supports selector(::-webkit-scrollbar) {
+  :is([data-main-practice], [data-main-practice-scroll]),
+  :is([data-main-practice], [data-main-practice-scroll]) *,
+  .dark :is([data-main-practice], [data-main-practice-scroll]),
+  .dark :is([data-main-practice], [data-main-practice-scroll]) * {
+    scrollbar-width: auto;
+    scrollbar-color: auto;
+  }
+}
+
+:is([data-main-practice], [data-main-practice-scroll])::-webkit-scrollbar,
+:is([data-main-practice], [data-main-practice-scroll]) *::-webkit-scrollbar {
+  display: block;
+  width: 6px;
+  height: 6px;
+}
+
+:is([data-main-practice], [data-main-practice-scroll])::-webkit-scrollbar-track,
+:is([data-main-practice], [data-main-practice-scroll]) *::-webkit-scrollbar-track,
+:is([data-main-practice], [data-main-practice-scroll])::-webkit-scrollbar-corner,
+:is([data-main-practice], [data-main-practice-scroll]) *::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+:is([data-main-practice], [data-main-practice-scroll])::-webkit-scrollbar-thumb,
+:is([data-main-practice], [data-main-practice-scroll]) *::-webkit-scrollbar-thumb,
+.dark :is([data-main-practice], [data-main-practice-scroll])::-webkit-scrollbar-thumb,
+.dark :is([data-main-practice], [data-main-practice-scroll]) *::-webkit-scrollbar-thumb {
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: var(--main-practice-scroll-thumb);
+  background-clip: padding-box;
+}
+
+:is([data-main-practice], [data-main-practice-scroll])::-webkit-scrollbar-thumb:hover,
+:is([data-main-practice], [data-main-practice-scroll]) *::-webkit-scrollbar-thumb:hover,
+.dark :is([data-main-practice], [data-main-practice-scroll])::-webkit-scrollbar-thumb:hover,
+.dark :is([data-main-practice], [data-main-practice-scroll]) *::-webkit-scrollbar-thumb:hover {
+  background-color: var(--main-practice-scroll-thumb-hover);
+}
+
+:is([data-main-practice], [data-main-practice-scroll])::-webkit-scrollbar-button,
+:is([data-main-practice], [data-main-practice-scroll]) *::-webkit-scrollbar-button {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+/* Main Practice options use borders; remove the shadow-only treatment. */
+[data-main-practice] [data-practice-option] {
+  box-shadow: none;
+}
+
+[data-main-practice] button[data-practice-option]:focus-visible {
+  outline: 2px solid #3b82f6;
+  outline-offset: 3px;
+}
+
+/* Main Practice dropdowns retain borders and concentric menu corners. */
+[data-main-practice] [data-custom-select] > button {
+  box-shadow: none;
+  transition: background-color 150ms, box-shadow 150ms;
+}
+
+[data-main-practice] [data-custom-select] > button:not(:disabled):hover,
+[data-main-practice] [data-custom-select] > button[aria-expanded="true"] {
+  box-shadow: none;
+}
+
+[data-main-practice] [data-custom-select] > button:focus-visible {
+  outline: 2px solid #3b82f6;
+  outline-offset: 3px;
+}
+
+[data-main-practice] [data-custom-select] > [role="listbox"] {
+  border-radius: 14px;
+  padding-block: 6px;
+  box-shadow: none;
+}
+
+[data-main-practice] [data-custom-select] [role="option"] {
+  margin: 0 6px;
+  border-radius: 8px;
+}
+
+[data-main-practice] [data-custom-select] [role="option"] + [role="option"] {
+  margin-top: 4px;
+}
+
+[data-main-practice] [data-custom-select] [role="option"] > span.absolute {
+  border-radius: inherit;
+}
+
+[data-main-practice] [data-custom-select] [role="option"]:hover,
+[data-main-practice] [data-custom-select] [role="option"][aria-selected="true"] {
+  box-shadow: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-main-practice] [data-custom-select] > button {
+    transition: none;
   }
 }

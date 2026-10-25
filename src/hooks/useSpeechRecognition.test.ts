@@ -27,7 +27,7 @@ function SpeechCaptureHarness() {
   return { hook, recognition: Recognition.current };
 }
 beforeEach(() => { vi.useFakeTimers(); vi.stubGlobal("window", { SpeechRecognition: Recognition }); });
-afterEach(() => { harness.cleanup.splice(0).forEach(cleanup => cleanup()); vi.useRealTimers(); vi.unstubAllGlobals(); });
+afterEach(() => { harness.cleanup.splice(0).forEach(cleanup => cleanup()); vi.useRealTimers(); vi.unstubAllGlobals(); vi.restoreAllMocks(); });
 
 it("waits for recognition end instead of submitting a truncated interim transcript", async () => {
   const { hook, recognition } = SpeechCaptureHarness();
@@ -86,4 +86,21 @@ it("separates recognition chunks without merging words", async () => {
   ] });
   recognition.onend?.();
   await expect(hook.stopAndReadTranscript()).resolves.toBe("Je vois un bureau. Deux personnes travaillent.");
+});
+
+it("rejects unavailable recognition instead of returning an empty evaluable answer", async () => {
+  vi.stubGlobal("window", {});
+  const hook = useSpeechRecognition();
+  harness.effects.splice(0).forEach(effect => { const cleanup = effect(); if (cleanup) harness.cleanup.push(cleanup); });
+  await expect(hook.stopAndReadTranscript()).rejects.toThrow(/not supported/i);
+  hook.resetTranscript();
+  await expect(hook.stopAndReadTranscript()).rejects.toThrow(/not supported/i);
+});
+
+it("rejects recognition startup failures instead of returning an empty answer", async () => {
+  vi.spyOn(console, "error").mockImplementation(() => {});
+  const start = vi.spyOn(Recognition.prototype, "start").mockImplementationOnce(() => { throw new Error("failed"); });
+  const { hook } = SpeechCaptureHarness();
+  await expect(hook.stopAndReadTranscript()).rejects.toThrow(/capture failed/i);
+  start.mockRestore();
 });

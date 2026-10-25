@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import type { ElementType, MouseEventHandler } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import { useUser, useAuth } from "@clerk/nextjs";
@@ -21,6 +22,8 @@ import {
   checkCategoryBookmarked,
 } from "@/services/reviewCardsApi";
 import ConfirmationModal from "@/components/ui/ConfirmationModal";
+
+type Category = { name: string; slug: string; wordCount: number; subcategories: string[] };
 
 // Level colors config
 const levelColors = {
@@ -63,7 +66,7 @@ const levelColors = {
 };
 
 // Action button component
-function ActionButton({ icon: Icon, label, onClick }) {
+function ActionButton({ icon: Icon, label, onClick }: { icon: ElementType; label: string; onClick?: MouseEventHandler<HTMLButtonElement> }) {
   return (
     <button
       onClick={onClick}
@@ -201,21 +204,23 @@ function CategoryCard({
 }
 
 export default function CEFRLevelPage() {
-  const { level } = useParams();
+  const params = useParams();
+  const levelParam = params?.level;
+  const level = (Array.isArray(levelParam) ? levelParam[0] : levelParam) || "a1";
   const { user } = useUser();
   const { getToken } = useAuth();
   const { learningLang } = useLanguage();
-  const [categories, setCategories] = useState([]);
-  const [progressMap, setProgressMap] = useState({});
-  const [bookmarkMap, setBookmarkMap] = useState({});
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [progressMap, setProgressMap] = useState<Record<string, number>>({});
+  const [bookmarkMap, setBookmarkMap] = useState<Record<string, boolean>>({});
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const colors = levelColors[level] || levelColors.a1;
+  const [error, setError] = useState<string | null>(null);
+  const colors = levelColors[level as keyof typeof levelColors] || levelColors.a1;
 
   // Modal state
   const [modalOpen, setModalOpen] = useState(false);
   const [modalLoading, setModalLoading] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState(null);
+  const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
   const [isRemoveAction, setIsRemoveAction] = useState(false);
 
   useEffect(() => {

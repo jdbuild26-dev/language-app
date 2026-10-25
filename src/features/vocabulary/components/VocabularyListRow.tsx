@@ -10,7 +10,7 @@ export default function VocabularyListRow({
   onAction,
   isActionLoading,
   renderActions, // New prop for custom action rendering
-}) {
+}: { word: any; index: number; ActionIcon?: React.ElementType; onAction?: (id: string) => void; isActionLoading?: boolean; renderActions?: (word: any) => React.ReactNode }) {
   // Helper to play audio (placeholder for now)
   const playAudio = (e, text) => {
     e.stopPropagation();

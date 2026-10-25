@@ -2636,62 +2636,74 @@ export async function fetchPracticeQuestions(
 /**
  * Fetch specialized Match Pairs data
  */
-export async function fetchMatchPairsData(level) {
+export async function fetchMatchPairsData(level?: string): Promise<Array<{ id: string; french: string; english: string; image?: string | null; level?: string }>> {
   const url = `${API_BASE_URL}/api/practice/match-pairs${level ? `?level=${level}` : ""}`;
-  const response = await fetch(url);
-
-  if (response.status === 404) {
-    console.warn(
-      `[vocabularyApi] API 404 for match-pairs, falling back to CSV: match_pairs.csv`,
-    );
-    try {
-      const Papa = await import("papaparse");
-      const csvResponse = await fetch(`/mock-data/csv/match_pairs.csv`);
-      if (!csvResponse.ok) {
-        throw new Error(`Failed to fetch fallback CSV: match_pairs.csv`);
+  try {
+    const response = await fetch(url);
+    if (response.ok) {
+      const data = await response.json();
+      if (Array.isArray(data) && data.some((pair) => pair?.id && pair?.french && pair?.english)) {
+        return data;
       }
-      const csvText = await csvResponse.text();
-
-      return new Promise((resolve, reject) => {
-        Papa.parse(csvText, {
-          header: true,
-          skipEmptyLines: true,
-          complete: (results) => {
-            try {
-              // Transform CSV data to expected format
-              const transformedData = results.data
-                .map((row) => ({
-                  id: Math.random().toString(36).substr(2, 9),
-                  french: row["Word - French"],
-                  english: row["English word"],
-                  image: row["Image"]
-                    ? `/mock-data/images/${row["Image"]}`
-                    : null,
-                  instructionFr: "Associez les paires",
-                  instructionEn: "Match the pairs",
-                  level: row["Level"],
-                }))
-                // Filter by level if requested and level column exists
-                .filter(
-                  (item) => !level || !item.level || item.level === level,
-                );
-
-              resolve(transformedData);
-            } catch (err) {
-              reject(err);
-            }
-          },
-          error: (err) => reject(err),
-        });
-      });
-    } catch (err) {
-      console.error(`[vocabularyApi] Fallback failed for match-pairs:`, err);
-      throw new Error("Failed to fetch match pairs");
     }
+  } catch (err) {
+    console.warn("[vocabularyApi] Match-pairs API unavailable; using local CSV", err);
   }
 
-  if (!response.ok) throw new Error("Failed to fetch match pairs");
-  return response.json();
+  try {
+    const Papa = await import("papaparse");
+    const csvResponse = await fetch("/mock-data/csv/match_pairs.csv");
+    if (!csvResponse.ok) throw new Error("Failed to fetch fallback CSV: match_pairs.csv");
+    const csvText = await csvResponse.text();
+
+    return new Promise<Array<{ id: string; french: string; english: string; image?: string | null; level?: string }>>((resolve, reject) => {
+      Papa.parse(csvText, {
+        header: true,
+        skipEmptyLines: true,
+        complete: (results) => {
+          try {
+            const transformedData = results.data.flatMap((row, rowIndex) => {
+              if (level && row["Level"] && row["Level"] !== level) return [];
+              const rowId = row["ExerciseID"] || rowIndex;
+              let pairs: Array<Record<string, any>> = [];
+              try {
+                pairs = JSON.parse(row["pairs"] || "[]");
+              } catch {
+                // Older rows can still use one French and English word per row.
+              }
+
+              if (Array.isArray(pairs) && pairs.length > 0) {
+                return pairs.map((pair, pairIndex) => ({
+                  id: `${rowId}_${pair.id ?? pairIndex}`,
+                  french: pair.right || pair["Word - French"] || pair.french || "",
+                  english: pair.left || pair["English word"] || pair.english || "",
+                  image: pair.image || pair.imageUrl || null,
+                  level: row["Level"],
+                })).filter((pair) => pair.french && pair.english);
+              }
+
+              const french = row["Word - French"] || row.french;
+              const english = row["English word"] || row.english;
+              return french && english ? [{
+                id: String(rowId),
+                french,
+                english,
+                image: row["Image"] ? `/mock-data/images/${row["Image"]}` : null,
+                level: row["Level"],
+              }] : [];
+            });
+            resolve(transformedData);
+          } catch (err) {
+            reject(err);
+          }
+        },
+        error: (err) => reject(err),
+      });
+    });
+  } catch (err) {
+    console.error("[vocabularyApi] Fallback failed for match-pairs:", err);
+    throw new Error("Failed to fetch match pairs");
+  }
 }
 
 /**

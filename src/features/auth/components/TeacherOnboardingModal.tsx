@@ -253,6 +253,7 @@ function TeacherOnboardingModalContent({ onComplete }) {
                           experience: { ...formData.experience, years: val },
                         });
                       }}
+                      placeholder="|"
                     />
                   </div>
 
@@ -275,6 +276,7 @@ function TeacherOnboardingModalContent({ onComplete }) {
                           },
                         })
                       }
+                      placeholder="|"
                     />
                   </div>
 
@@ -297,6 +299,7 @@ function TeacherOnboardingModalContent({ onComplete }) {
                           },
                         })
                       }
+                      placeholder="|"
                     />
                   </div>
                 </div>

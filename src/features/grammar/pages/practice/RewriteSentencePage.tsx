@@ -293,7 +293,7 @@ export default function RewriteSentencePage({ mode = "transformation" }) {
               value={userInput}
               onChange={(e) => setUserInput(e.target.value)}
               disabled={showFeedback}
-              placeholder="Type your answer here..."
+              placeholder="|"
               className={cn(
                 "w-full bg-slate-100 dark:bg-slate-800 border rounded-xl p-6 text-xl md:text-2xl resize-none outline-none transition-all",
                 showFeedback ? "min-h-[130px]" : "min-h-[220px]",

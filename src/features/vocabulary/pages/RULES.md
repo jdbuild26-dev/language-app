@@ -6,3 +6,5 @@ This directory (`src/features/vocabulary/pages`) contains the **Vocabulary Pract
 
 - Vocabulary practice activities have specific mechanics, like displaying English translations for options upon submission.
 - Main practice activities are located in `src/features/practice/pages/` and should **not** have these vocabulary-specific mechanics applied to them.
+
+Match the Words (`/vocabulary/practice/match-words`) shows French and English words together, so its word boxes have no translation buttons or speaker icons. Clicking a box plays that word in its displayed language while selecting it for automatic matching. Keep the existing rolling replacements and automatic completion; do not add a Submit step. Audio Match retains its audio-only French cards.

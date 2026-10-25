@@ -15,10 +15,10 @@ export default function LearnedCardsSessionPage() {
   const { user, isLoaded } = useUser();
   const { getToken } = useAuth();
   const { learningLang } = useLanguage();
-  const [cards, setCards] = useState([]);
+  const [cards, setCards] = useState<Array<{ id: string; level?: string; category?: string }>>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState<string | null>(null);
 
   // Fetch all learned cards
   const loadCards = useCallback(async () => {

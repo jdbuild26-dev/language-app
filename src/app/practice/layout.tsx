@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import { Loader2 } from "lucide-react";
+import MainPracticeTyping from "@/features/practice/components/MainPracticeTyping";
 
 export default function PracticeLayout({
   children,
@@ -14,7 +15,9 @@ export default function PracticeLayout({
         </div>
       }
     >
-      {children}
+      <MainPracticeTyping>
+        {children}
+      </MainPracticeTyping>
     </Suspense>
   );
 }

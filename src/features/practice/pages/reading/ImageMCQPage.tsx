@@ -238,7 +238,7 @@ function ImageMCQContent() {
                     <img src={currentQuestion.imageUrl} alt={currentQuestion.imageAlt || "Image for this question"} className="block h-auto max-h-[60vh] w-full object-cover md:h-full md:max-h-full" />
                   </button>
                 </DialogTrigger>
-                <DialogContent className="max-h-[95dvh] max-w-[min(95vw,80rem)] overflow-auto p-3 sm:p-5">
+                <DialogContent data-main-practice-scroll className="max-h-[95dvh] max-w-[min(95vw,80rem)] overflow-auto p-3 sm:p-5">
                   <DialogTitle className="sr-only">Question image</DialogTitle>
                   <img src={currentQuestion.imageUrl} alt={currentQuestion.imageAlt || "Image for this question"} className="mx-auto max-h-[85dvh] max-w-full rounded-xl object-contain" />
                 </DialogContent>
@@ -274,7 +274,7 @@ function ImageMCQContent() {
                   <span className="block break-words">{showOptionTranslation ? translation : option}</span>
                 );
                 const optionClasses = cn(
-                  "flex min-h-20 w-full min-w-0 items-center gap-3 rounded-xl border-2 px-4 py-2 text-left text-lg font-normal leading-normal transition-colors",
+                  "practice-type-content flex min-h-20 w-full min-w-0 items-center gap-3 rounded-xl border-2 px-4 py-2 text-left font-normal !leading-normal transition-colors",
                   isCorrectOption
                     ? "border-emerald-500 bg-emerald-50 text-emerald-800 dark:border-emerald-400 dark:bg-emerald-950/30 dark:text-emerald-200"
                     : isWrongOption
@@ -286,7 +286,7 @@ function ImageMCQContent() {
 
                 if (!showFeedback) {
                   return (
-                    <button key={index} type="button" aria-pressed={isSelected} onClick={() => handleOptionSelect(index)} className={cn(optionClasses, "cursor-pointer hover:border-blue-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500")}>
+                    <button key={index} data-practice-option type="button" aria-pressed={isSelected} onClick={() => handleOptionSelect(index)} className={cn(optionClasses, "cursor-pointer hover:border-blue-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500")}>
                       <span className={cn("h-5 w-5 shrink-0 rounded-full border-2", isSelected ? "border-blue-600 bg-blue-600 shadow-[inset_0_0_0_4px_white]" : "border-slate-300 dark:border-slate-500")} aria-hidden="true" />
                       <span className="min-w-0 flex-1">{optionText}</span>
                       <span className="h-10 w-10 shrink-0" aria-hidden="true" />
@@ -295,7 +295,7 @@ function ImageMCQContent() {
                 }
 
                 return (
-                  <div key={index} className={optionClasses}>
+                  <div key={index} data-practice-option data-option-selected={isSelected} className={optionClasses}>
                     {isCorrectOption ? <CheckCircle2 className="h-5 w-5 shrink-0" aria-hidden="true" /> : isWrongOption ? <XCircle className="h-5 w-5 shrink-0" aria-hidden="true" /> : <span className="h-5 w-5 shrink-0 rounded-full border-2 border-slate-300 dark:border-slate-500" aria-hidden="true" />}
                     <div className="min-w-0 flex-1">
                       {isCorrectOption && <span className="sr-only">Correct answer: </span>}

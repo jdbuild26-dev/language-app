@@ -253,7 +253,7 @@ export async function getInitialGreeting(scenario: PracticeScenario): Promise<Gr
 /**
  * Translate text using the backend API.
  */
-export async function translateText(text: string, targetLang: string = "en"): Promise<{ text: string, translation: string }> {
+export async function translateText(text: string, targetLang: string = "en", signal?: AbortSignal): Promise<{ text: string, translation: string }> {
   // Corrected URL to match ai_practice.py route
   const url = `${API_URL}/api/ai-practice/translate`;
   
@@ -261,6 +261,7 @@ export async function translateText(text: string, targetLang: string = "en"): Pr
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ text, target_lang: targetLang }),
+    signal,
   });
 
   if (!response.ok) {

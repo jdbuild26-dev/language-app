@@ -141,12 +141,15 @@ function ReorderContent() {
   };
 
   const currentQuestion = questions[currentIndex];
-  const { pick, learningLang } = useQuestionLanguage(currentQuestion?.level);
+  const { pick, pickTranslation, showQuestionInKnown, learningLang } = useQuestionLanguage(currentQuestion?.level);
   usePracticeComplete({ isGameOver: isCompleted, score, totalQuestions: questions.length, exerciseType: "reorder_sentences", level: currentQuestion?.level });
   const headingText = pick(currentQuestion?.title_fr, currentQuestion?.title_en)
-    || currentQuestion?.title || "";
+    || currentQuestion?.title || "Passage";
 
-  const { displayText: headingDisplayText, isTranslating: isTranslatingH, toggle: toggleTranslate, reset: resetTranslate } = useTranslateText(headingText, learningLang);
+  const headingTranslation = pickTranslation(currentQuestion?.title_fr, currentQuestion?.title_en);
+  const headingSourceLang = headingText === currentQuestion?.title_fr ? "fr"
+    : headingText === currentQuestion?.title_en ? "en" : showQuestionInKnown ? "en" : "fr";
+  const { displayText: headingDisplayText, isTranslating: isTranslatingH, toggle: toggleTranslate, reset: resetTranslate } = useTranslateText(headingText, headingSourceLang, headingTranslation);
   // Reset translation when question changes
   React.useEffect(() => { resetTranslate(); }, [currentIndex]); // eslint-disable-line react-hooks/exhaustive-deps
   const timerDuration = currentQuestion?.timeLimitSeconds || 360;
@@ -249,10 +252,10 @@ function ReorderContent() {
         feedbackTranslationVisible={showSentenceTranslations}
         timerValue={timerString}
       >
-        <div className="flex w-full min-h-0 flex-1 flex-col py-4 sm:py-6">
+        <div className="mx-auto flex w-full max-w-[1200px] min-h-0 flex-1 flex-col py-4 sm:py-6">
           {headingText && (
-            <div className="mx-auto flex w-full max-w-4xl shrink-0 items-start gap-2 border-b border-slate-200 px-3 pb-3 dark:border-slate-700 sm:px-4 sm:pb-4">
-              <h2 className="practice-type-content-heading min-w-0 flex-1 text-center text-slate-900 dark:text-slate-100">
+            <div className="mx-3 flex shrink-0 items-start gap-2 border-b border-slate-200 pb-3 dark:border-slate-700 sm:mx-4 sm:pb-4">
+              <h2 className="practice-type-content-heading min-w-0 flex-1 text-center text-slate-900 dark:text-slate-100 !font-medium">
                 {headingDisplayText}
               </h2>
               <TranslateButton
@@ -325,7 +328,7 @@ const SortableItem = ({
       value={itemValue}
       dragListener={!showFeedback}
       className={cn(
-        "mx-auto flex w-full max-w-4xl items-start gap-2 rounded-2xl border-2 bg-white p-3 transition-colors duration-200 select-none dark:bg-slate-800 sm:gap-3 sm:p-4",
+        "flex w-full items-start gap-2 rounded-2xl border-2 bg-white p-3 transition-colors duration-200 select-none dark:bg-slate-800 sm:gap-3 sm:p-4",
         !showFeedback && "cursor-grab active:cursor-grabbing hover:border-slate-300 dark:hover:border-slate-600",
         isCorrectPosition ? "bg-emerald-50 dark:bg-emerald-900/20 border-emerald-500"
           : isWrongPosition ? "bg-red-50 dark:bg-red-900/20 border-red-500"
@@ -353,7 +356,7 @@ const SortableItem = ({
 
       <div className="flex min-w-0 flex-1 items-start gap-2">
         <div className="flex min-w-0 flex-1 flex-col">
-          <span className="practice-type-content text-slate-700 dark:text-slate-200 font-medium select-none break-words">
+          <span className="practice-type-content text-slate-700 dark:text-slate-200 font-normal select-none break-words">
             {showSentenceTranslation && enSentence && learningLang === "fr" ? enSentence : sentence}
           </span>
         </div>

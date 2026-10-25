@@ -231,7 +231,7 @@ export default function ClassesPage() {
                   setNewClass({ ...newClass, name: e.target.value })
                 }
                 className="col-span-3"
-                placeholder="e.g. Intensive French B2"
+                placeholder="|"
               />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
@@ -245,7 +245,7 @@ export default function ClassesPage() {
                   setNewClass({ ...newClass, description: e.target.value })
                 }
                 className="col-span-3"
-                placeholder="Optional description"
+                placeholder="|"
               />
             </div>
 

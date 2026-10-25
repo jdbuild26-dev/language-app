@@ -15,10 +15,10 @@ export default function ReviewWordsPage() {
   const router = useRouter();
   const { user, isLoaded } = useUser();
   const { getToken } = useAuth();
-  const [cards, setCards] = useState([]);
+  const [cards, setCards] = useState<Array<{ cardId: string; id: string; cardData: any }>>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [removingCardId, setRemovingCardId] = useState(null);
+  const [error, setError] = useState<string | null>(null);
+  const [removingCardId, setRemovingCardId] = useState<string | null>(null);
 
   // Fetch review cards
   const loadCards = useCallback(async () => {

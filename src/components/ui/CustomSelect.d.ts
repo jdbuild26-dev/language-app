@@ -6,6 +6,7 @@ export interface CustomSelectProps {
   onChange?: (value: string) => void;
   placeholder?: string;
   ariaLabel?: string;
+  menuLabel?: string;
   disabled?: boolean;
   isCorrect?: boolean;
   isWrong?: boolean;

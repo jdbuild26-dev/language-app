@@ -9,9 +9,20 @@ type AudioWaveformProps = {
   tone?: "sky" | "indigo" | "rose";
   progress?: number;
   onSeek?: (progress: number) => void;
+  showSeekHandle?: boolean;
   decorative?: boolean;
   className?: string;
+  patternKey?: string;
 };
+
+function patternedHeights(heights: number[], key?: string): number[] {
+  if (!key) return heights;
+  let seed = Array.from(key).reduce((value, character) => (Math.imul(value, 31) + character.charCodeAt(0)) >>> 0, 2166136261);
+  return heights.map((height) => {
+    seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
+    return Math.max(8, Math.min(35, Math.round(height * 0.45 + 8 + (seed / 0xffffffff) * 19)));
+  });
+}
 
 /** State-driven bar visualizer for spoken audio across practice exercises. */
 export default function AudioWaveform({
@@ -20,10 +31,12 @@ export default function AudioWaveform({
   tone = "sky",
   progress,
   onSeek,
+  showSeekHandle = false,
   decorative = false,
   className,
+  patternKey,
 }: AudioWaveformProps) {
-  const heights = size === "compact" ? BAR_HEIGHTS.slice(15, 34) : BAR_HEIGHTS;
+  const heights = patternedHeights(size === "compact" ? BAR_HEIGHTS.slice(15, 34) : BAR_HEIGHTS, patternKey);
   const position = Math.max(0, Math.min(100, progress ?? 0));
   if (onSeek) {
     const bars = heights.map((height, index) => (
@@ -37,6 +50,13 @@ export default function AudioWaveform({
         <svg viewBox={`0 0 ${heights.length * 10} 36`} preserveAspectRatio="none" aria-hidden="true" className={cn(styles.seekBars, styles.seekPlayed)} style={{ clipPath: `inset(0 ${100 - position}% 0 0)`, color: tone === "sky" ? "#38bdf8" : tone === "indigo" ? "#6366f1" : "#f43f5e" }}>
           {bars}
         </svg>
+        {showSeekHandle && (
+          <span
+            aria-hidden="true"
+            className={styles.seekHandle}
+            style={{ left: `clamp(8px, ${position}%, calc(100% - 8px))`, backgroundColor: tone === "sky" ? "#38bdf8" : tone === "indigo" ? "#6366f1" : "#f43f5e" }}
+          />
+        )}
         <input
           type="range"
           min={0}

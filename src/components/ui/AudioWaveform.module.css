@@ -52,6 +52,18 @@
   cursor: pointer;
 }
 
+.seekHandle {
+  position: absolute;
+  top: 50%;
+  width: 16px;
+  height: 16px;
+  border: 2px solid white;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  box-shadow: 0 1px 4px rgb(15 23 42 / 30%);
+  pointer-events: none;
+}
+
 .waveform[role="slider"] {
   cursor: pointer;
   border-radius: 9999px;

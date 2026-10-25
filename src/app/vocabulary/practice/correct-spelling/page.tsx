@@ -1,5 +1,5 @@
-import { redirect } from "next/navigation";
+import CorrectSpellingPage from "@/features/vocabulary/pages/CorrectSpellingPage";
 
 export default function VocabCorrectSpellingPage() {
-  redirect("/vocabulary/lessons/activities/correct-spelling");
+  return <CorrectSpellingPage />;
 }

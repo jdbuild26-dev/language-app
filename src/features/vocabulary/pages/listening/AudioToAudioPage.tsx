@@ -6,16 +6,21 @@ import { fetchPracticeQuestions } from "@/services/vocabularyApi";
 import { Loader2 } from "lucide-react";
 import AudioPlayer from "@/features/vocabulary/components/shared/AudioPlayer";
 import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
+import { TranslateButton } from "@/components/ui/TranslateButton";
 import { useTextToSpeech } from "@/hooks/useTextToSpeech";
 import { cn } from "@/lib/utils";
 import { getFeedbackMessage } from "@/utils/feedbackMessages";
 
+type Option = { text: string; en?: string };
+type Question = { id: string; instruction: string; displaySentence: string; fullSentence: string; options: Option[]; correctAnswer: string };
+
 export default function AudioToAudioPage() {
   const { speak } = useTextToSpeech();
   const [loading, setLoading] = useState(true);
-  const [questions, setQuestions] = useState([]);
+  const [questions, setQuestions] = useState<Question[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [selectedOption, setSelectedOption] = useState(null);
+  const [selectedOption, setSelectedOption] = useState<Option | null>(null);
+  const [translatedOptions, setTranslatedOptions] = useState<number[]>([]);
   const [showFeedback, setShowFeedback] = useState(false);
   const [isCorrect, setIsCorrect] = useState(false);
   const [feedbackMessage, setFeedbackMessage] = useState("");
@@ -23,7 +28,7 @@ export default function AudioToAudioPage() {
   const [isCompleted, setIsCompleted] = useState(false);
 
   // Timer Hook
-  const { timerString, resetTimer, isPaused } = useExerciseTimer({
+  const { timerString, resetTimer } = useExerciseTimer({
     duration: 30,
     mode: "timer",
     onExpire: () => {
@@ -138,6 +143,7 @@ export default function AudioToAudioPage() {
   const handleContinue = () => {
     setShowFeedback(false);
     setSelectedOption(null);
+    setTranslatedOptions([]);
 
     if (currentIndex < questions.length - 1) {
       setCurrentIndex((prev) => prev + 1);
@@ -243,12 +249,12 @@ export default function AudioToAudioPage() {
                 const isCorrectHighlight = showFeedback && isCorrect;
 
                 return (
+                  <div key={idx} className="relative">
                   <button
-                    key={idx}
                     onClick={() => handleOptionSelect(opt)}
                     disabled={showFeedback}
                     className={cn(
-                      "group relative p-4 rounded-2xl border-[3px] text-left font-medium text-lg md:text-xl transition-all flex items-center gap-4 bg-white dark:bg-slate-800 shadow-sm",
+                      "group relative p-4 pr-14 rounded-2xl border-[3px] text-left font-medium text-lg md:text-xl transition-all flex items-center gap-4 bg-white dark:bg-slate-800 shadow-sm",
                       // Default (Base border/text)
                       "border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700",
                       // Selected (Pre-submission)
@@ -382,7 +388,7 @@ export default function AudioToAudioPage() {
                           <span className="text-lg font-medium">
                             {opt.text}
                           </span>
-                          {opt.en && (
+                          {translatedOptions.includes(idx) && opt.en && (
                             <span className="text-sm font-normal text-slate-500 dark:text-slate-400 mt-0.5">
                               {opt.en}
                             </span>
@@ -391,6 +397,18 @@ export default function AudioToAudioPage() {
                       )}
                     </div>
                   </button>
+                  {showFeedback && opt.en && (
+                    <TranslateButton
+                      iconVariant="option"
+                      className="absolute right-3 top-1/2 z-10 -translate-y-1/2"
+                      aria-label={translatedOptions.includes(idx) ? `Hide translation for ${opt.text}` : `Translate ${opt.text}`}
+                      aria-pressed={translatedOptions.includes(idx)}
+                      onClick={() => setTranslatedOptions((previous) => previous.includes(idx)
+                        ? previous.filter((index) => index !== idx)
+                        : [...previous, idx])}
+                    />
+                  )}
+                  </div>
                 );
               })}
             </div>

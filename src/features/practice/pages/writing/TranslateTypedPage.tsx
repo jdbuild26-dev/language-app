@@ -102,7 +102,6 @@ export default function TranslateTypedPage() {
   const [isCompleted, setIsCompleted] = useState(false);
   const [showFeedback, setShowFeedback] = useState(false);
   const [showQuestionTranslation, setShowQuestionTranslation] = useState(false);
-  const [showAnswerTranslation, setShowAnswerTranslation] = useState(false);
   const [isCorrect, setIsCorrect] = useState(false);
   const [feedbackMessage, setFeedbackMessage] = useState("");
   const [score, setScore] = useState(0);
@@ -142,7 +141,6 @@ export default function TranslateTypedPage() {
     if (currentQuestion && !isCompleted) {
       setUserInput("");
       setShowQuestionTranslation(false);
-      setShowAnswerTranslation(false);
       resetTimer();
     }
   }, [currentIndex, currentQuestion, isCompleted, resetTimer]);
@@ -160,7 +158,6 @@ export default function TranslateTypedPage() {
     setShowFeedback(false);
     setFeedbackMessage("");
     setShowQuestionTranslation(false);
-    setShowAnswerTranslation(false);
     if (currentIndex < questions.length - 1) {
       setCurrentIndex((prev) => prev + 1);
     } else {
@@ -235,23 +232,41 @@ export default function TranslateTypedPage() {
         feedbackMessage={feedbackMessage}
         feedbackInFlow
         compactFeedback
-        onFeedbackTranslate={() => setShowAnswerTranslation((visible) => !visible)}
-        feedbackTranslationVisible={showAnswerTranslation}
+        onFeedbackTranslate={() => setShowQuestionTranslation((visible) => !visible)}
+        feedbackTranslationVisible={showQuestionTranslation}
         submitLabel={showFeedback ? (currentIndex + 1 === questions.length ? "Finish" : "Continue") : "Check"}
         timerValue={timerString}
       >
         <div className="mx-auto flex w-full max-w-[888px] flex-col px-4 pb-8 pt-8 sm:px-6 sm:pt-12">
-          <div className="flex min-h-[76px] w-full items-center justify-center self-center text-center sm:min-h-[84px]">
-            <p className="practice-type-content-large min-w-0 break-words font-medium text-slate-900 dark:text-slate-100">
-              {showFeedback && showQuestionTranslation ? correctAnswer : currentQuestion?.sourceText}
+          {showFeedback && (
+            <h2 className="practice-type-passage-heading mb-2 text-center !font-medium text-slate-500 dark:text-slate-400">Correct answer</h2>
+          )}
+          <div className={cn(
+            "w-full self-center text-center",
+            showFeedback
+              ? "relative mb-6 border-b border-slate-200 px-12 pb-6 dark:border-slate-700"
+              : "flex min-h-[76px] items-center justify-center sm:min-h-[84px]",
+          )}>
+            <p
+              className={cn(
+                "practice-type-content min-w-0 break-words text-center font-normal",
+                showFeedback
+                  ? "text-green-800 dark:text-green-200"
+                  : "text-slate-900 dark:text-slate-100",
+              )}
+              aria-label={showFeedback ? (showQuestionTranslation ? "English translation of the correct answer" : "Correct French answer") : "Sentence to translate"}
+            >
+              {showFeedback && !showQuestionTranslation ? correctAnswer : currentQuestion?.sourceText}
             </p>
             {showFeedback && (
               <TranslateButton
+                iconVariant="option"
+                iconSize="md"
                 onClick={() => setShowQuestionTranslation((visible) => !visible)}
-                aria-label={showQuestionTranslation ? "Show English question" : "Translate question to French"}
+                aria-label={showQuestionTranslation ? "Show correct French sentence" : "Translate correct answer to English"}
                 aria-pressed={showQuestionTranslation}
-                title={showQuestionTranslation ? "Show English" : "Translate to French"}
-                className="ml-1 h-10 w-10"
+                title={showQuestionTranslation ? "Show French" : "Translate to English"}
+                className="absolute right-0 top-0 h-10 w-10 shrink-0"
               />
             )}
           </div>
@@ -274,34 +289,25 @@ export default function TranslateTypedPage() {
 
           <div className="relative mt-8 w-full sm:mt-9">
             {showFeedback && (
-              <TranslateButton
-                iconVariant="option"
-                iconSize="md"
-                onClick={() => setShowAnswerTranslation((visible) => !visible)}
-                aria-label={showAnswerTranslation ? "Show correct French sentence" : "Translate answer to English"}
-                aria-pressed={showAnswerTranslation}
-                title={showAnswerTranslation ? "Show French" : "Translate to English"}
-                className="absolute left-4 top-4 z-10 h-10 w-10 rounded-none border-0 bg-transparent shadow-none hover:bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:[&_svg]:scale-125"
-              />
+              <h2 className="practice-type-passage-heading mb-2 !font-medium text-slate-500 dark:text-slate-400">Your answer</h2>
             )}
             <label className="sr-only" htmlFor="translate-typed-answer">
-              {showFeedback ? (showAnswerTranslation ? "English translation" : "Correct French sentence") : "Type your French translation"}
+              {showFeedback ? "Your submitted answer" : "Type your French translation"}
             </label>
             <textarea
               id="translate-typed-answer"
               ref={textareaRef}
-              value={showFeedback ? (showAnswerTranslation ? currentQuestion.sourceText : correctAnswer) : userInput}
+              value={userInput}
               onChange={(e) => setUserInput(e.target.value)}
               onKeyDown={handleKeyDown}
               readOnly={showFeedback}
               maxLength={characterLimit}
-              placeholder="Type your translation here..."
+              placeholder="|"
               rows={5}
               autoFocus
               className={cn(
-                "block min-h-[200px] w-full resize-none rounded-[20px] border-2 border-slate-200 bg-white px-6 py-5 text-lg font-normal leading-relaxed text-slate-900 outline-none transition-[background-color,border-color,box-shadow] duration-200 motion-reduce:transition-none placeholder:text-slate-400 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100",
+                "practice-type-content block min-h-[200px] w-full resize-none rounded-[20px] border-2 border-slate-200 bg-white px-6 py-5 font-normal !leading-relaxed text-slate-900 outline-none transition-[background-color,border-color,box-shadow] duration-200 motion-reduce:transition-none placeholder:text-slate-400 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100",
                 !showFeedback && "focus:border-sky-500 focus:ring-4 focus:ring-sky-100 dark:focus:ring-sky-900/30",
-                showFeedback && "pl-20 font-medium",
                 showFeedback && isCorrect && "border-green-500 bg-green-50 text-green-950 focus:border-green-500 dark:border-green-500 dark:bg-green-950/30 dark:text-green-100",
                 showFeedback && !isCorrect && "border-red-500 bg-red-50 text-red-950 focus:border-red-500 dark:border-red-500 dark:bg-red-950/30 dark:text-red-100",
               )}

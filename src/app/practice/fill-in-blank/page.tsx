@@ -297,7 +297,7 @@ export default function FillInBlankGamePage() {
                       onChange={(e) =>
                         handleInputChange(part.index, e.target.value)
                       }
-                      placeholder={part.hint} // Show English hint as placeholder
+                      placeholder="|"
                       disabled={showFeedback}
                       className={cn(
                         "w-[180px] h-12 px-4 rounded-xl border-2 outline-none text-center font-bold transition-all duration-200",

@@ -160,6 +160,16 @@ const practiceActivities = [
 
   // Writing Activities
   {
+    id: "correct-spelling",
+    name: "Correct Spelling",
+    icon: Edit3,
+    desc: "Correct the spelling",
+    path: "/vocabulary/practice/correct-spelling",
+    category: "writing",
+    color: "from-emerald-400 to-teal-500",
+    shadow: "shadow-emerald-200 dark:shadow-emerald-900/20",
+  },
+  {
     id: "fill-blank",
     name: "Fill in the Blank",
     icon: Keyboard,

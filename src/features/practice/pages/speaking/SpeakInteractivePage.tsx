@@ -13,6 +13,7 @@ import { fetchPracticeData } from "@/utils/practiceFetcher";
 import { useSearchParams } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { useTranslateText } from "@/hooks/useTranslateText";
+import { getStoredTranslation } from "@/features/practice/lib/storedTranslation";
 import { Button } from "@/components/ui/button";
 import WritingFeedbackResult from "@/components/WritingFeedbackResult";
 
@@ -37,6 +38,7 @@ function normalizeExchanges(raw: any[]): any[] {
         ?? ex.options[ex.correctOptionId]
         ?? ex.options[0];
       return {
+        ...ex,
         isQuestion: true,
         speakerText: ex.speakerText || ex.speakerText_en || '',
         speakerAudio: ex.speakerText || ex.speakerText_en || '',
@@ -46,6 +48,7 @@ function normalizeExchanges(raw: any[]): any[] {
       };
     }
     return {
+      ...ex,
       isQuestion: false,
       speakerText: ex.speakerText || ex.speakerText_en || '',
       speakerAudio: ex.speakerText || ex.speakerText_en || '',
@@ -101,9 +104,11 @@ function SpeakInteractiveContent() {
   const currentExchange = conversation?.exchanges[currentTurnIndex];
 
   // Translate prompt per exchange
-  const { displayText: promptDisplayText, isTranslating: isTranslatingP, toggle: toggleTranslate, reset: resetTranslate } = useTranslateText(currentExchange?.prompt || currentExchange?.speakerText || "", "fr");
+  const promptSource = currentExchange?.prompt || currentExchange?.speakerText || "";
+  const storedPrompt = getStoredTranslation(promptSource, currentExchange);
+  const { displayText: promptDisplayText, isTranslating: isTranslatingP, toggle: toggleTranslate, reset: resetTranslate } = useTranslateText(promptSource, storedPrompt.sourceLang, storedPrompt.translation);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  React.useEffect(() => { resetTranslate(); }, [currentTurnIndex]);
+  React.useEffect(() => { resetTranslate(); }, [currentTurnIndex, convIndex]);
   const totalExchanges = conversation?.exchanges.length || 0;
   const timerDuration = conversation?.timeLimitSeconds || 300;
   const totalConversations = allConversations.length;
@@ -623,7 +628,7 @@ function SpeakInteractiveContent() {
             {currentExchange?.isQuestion && !hasAnswered && (
               <>
                 <div className="px-4 py-5 animate-in fade-in slide-in-from-bottom-4 duration-500 border-b border-slate-100 dark:border-slate-700/50 mb-2">
-                  <h3 className="practice-reading-heading flex items-start gap-3 text-[15px] font-bold text-slate-800 dark:text-slate-200">
+                  <h3 className="practice-reading-heading flex items-start gap-3 text-[15px] !font-medium text-slate-800 dark:text-slate-200">
                     <button type="button" onClick={toggleTranslate} disabled={isTranslatingP} className="inline-flex items-center justify-center shrink-0 text-indigo-500 hover:text-indigo-600 disabled:opacity-60 transition-colors mt-0.5">{isTranslatingP ? <Loader2 className="w-5 h-5 animate-spin" /> : <Languages className="w-5 h-5 shrink-0" />}</button>
                     <span className="leading-relaxed">
                       {promptDisplayText ||

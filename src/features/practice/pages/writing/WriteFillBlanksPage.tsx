@@ -7,13 +7,15 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { usePracticeComplete } from "@/hooks/usePracticeComplete";
 import { cn } from "@/lib/utils";
 import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
-import FeedbackBanner from "@/components/ui/FeedbackBanner";
 import { getFeedbackMessage } from "@/utils/feedbackMessages";
 import { fetchPracticeData } from "@/utils/practiceFetcher";
 import AccentKeyboard from "@/components/ui/AccentKeyboard";
+import { TranslateButton } from "@/components/ui/TranslateButton";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useSearchParams } from "next/navigation";
+import { getWritingCompletedPassage } from "@/features/practice/lib/writingCompletedPassage";
+import styles from "./WriteFillBlanksPage.module.css";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -30,6 +32,7 @@ type FillBlanksQuestion = {
   heading_fr: string;
   heading_en: string;
   complete_passage_en: string;
+  fill_paragraph_en: string;
   fill_paragraph_fr: string;
   blanksData: Record<string, BlankEntry>;
   timeLimitSeconds: number;
@@ -38,20 +41,24 @@ type FillBlanksQuestion = {
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-/** Parse "[1] __________" passage into text + blank segments */
-type Segment = { type: "text"; text: string } | { type: "blank"; blankId: number };
+type PassageSegment = { type: "text"; text: string } | { type: "blank"; blankId: number };
 
-function parsePassage(paragraph: string): Segment[] {
-  const segments: Segment[] = [];
-  const re = /\[(\d+)\]\s*_{2,}/g;
-  let last = 0;
-  let m: RegExpExecArray | null;
-  while ((m = re.exec(paragraph)) !== null) {
-    if (m.index > last) segments.push({ type: "text", text: paragraph.slice(last, m.index) });
-    segments.push({ type: "blank", blankId: parseInt(m[1]) });
-    last = m.index + m[0].length;
+function parsePassage(paragraph: string): PassageSegment[] {
+  const segments: PassageSegment[] = [];
+  const marker = /\[(\d+)\][ \t]*_{2,}/g;
+  let lastIndex = 0;
+  let match: RegExpExecArray | null;
+
+  while ((match = marker.exec(paragraph)) !== null) {
+    if (match.index > lastIndex) {
+      segments.push({ type: "text", text: paragraph.slice(lastIndex, match.index) });
+    }
+    segments.push({ type: "blank", blankId: Number(match[1]) });
+    lastIndex = marker.lastIndex;
   }
-  if (last < paragraph.length) segments.push({ type: "text", text: paragraph.slice(last) });
+  if (lastIndex < paragraph.length) {
+    segments.push({ type: "text", text: paragraph.slice(lastIndex) });
+  }
   return segments;
 }
 
@@ -88,7 +95,7 @@ function convertOldFormat(passage: string, targetWordsRaw: any): {
       const actualWord = match[0]; // preserve original casing
       blanksData[String(blankId)] = {
         correct_fr: actualWord,
-        correct_en: actualWord,
+        correct_en: "",
         masked_fr: buildMask(actualWord),
         masked_en: buildMask(actualWord),
       };
@@ -128,6 +135,7 @@ export default function WriteFillBlanksPage() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isCompleted, setIsCompleted] = useState(false);
   const [showFeedback, setShowFeedback] = useState(false);
+  const [showPassageTranslation, setShowPassageTranslation] = useState(false);
   const [isCorrect, setIsCorrect] = useState(false);
   const [score, setScore] = useState(0);
   const [userInputs, setUserInputs] = useState<Record<string, string>>({});
@@ -163,7 +171,7 @@ export default function WriteFillBlanksPage() {
         const normalized: FillBlanksQuestion[] = raw
           .filter((item: any) =>
             // Accept new format (has fill_paragraph_fr) OR old format (has passage)
-            (item.fill_paragraph_fr || item.fill_paragraph_en || item.passage) &&
+            (item.fill_paragraph_fr || item.fill_paragraph_en || item.passage || item["Fill Paragraph_FR"]) &&
             (item.Category === "main" || !item.Category)
           )
           .map((item: any) => {
@@ -171,7 +179,7 @@ export default function WriteFillBlanksPage() {
             const isOldFormat = !item.fill_paragraph_fr && !item.fill_paragraph_en &&
               item.passage && item.targetWords;
 
-            let fill_paragraph_fr = item.fill_paragraph_fr || item.fill_paragraph_en || item.passage || "";
+            let fill_paragraph_fr = item.fill_paragraph_fr || item.fill_paragraph_en || item.passage || item["Fill Paragraph_FR"] || "";
             let blanksData: Record<string, BlankEntry> = item.blanksData || {};
 
             if (isOldFormat) {
@@ -180,12 +188,29 @@ export default function WriteFillBlanksPage() {
               blanksData = converted.blanksData;
             }
 
+            if (Object.keys(blanksData).length === 0 && item["Correct Answer_FR"]) {
+              const splitWords = (value: unknown) => String(value || "").split("+").map(word => word.trim());
+              const correctFr = splitWords(item["Correct Answer_FR"]);
+              const correctEn = splitWords(item["Correct Answer_EN"]);
+              const maskedFr = splitWords(item["Masked Answer_FR"]);
+              const maskedEn = splitWords(item["Masked Answer_EN"]);
+              correctFr.forEach((word, index) => {
+                blanksData[String(index + 1)] = {
+                  correct_fr: word,
+                  correct_en: correctEn[index] || "",
+                  masked_fr: maskedFr[index] || buildMask(word),
+                  masked_en: maskedEn[index] || buildMask(correctEn[index] || word),
+                };
+              });
+            }
+
             return {
-              title_fr: item.title_fr || item.passage_title_fr || item.title || "",
-              title_en: item.title_en || item.passage_title_en || item.title || "",
+              title_fr: item.title_fr || item.passage_title_fr || item.title || item["Passage Title_FR"] || "",
+              title_en: item.title_en || item.passage_title_en || item.title || item["Passage Title_EN"] || "",
               heading_fr: item.heading_fr || "",
               heading_en: item.heading_en || "",
-              complete_passage_en: item.complete_passage_en || item.englishTranslation || "",
+              complete_passage_en: item.complete_passage_en || item.englishTranslation || item["Complete Passage_EN"] || "",
+              fill_paragraph_en: item.fill_paragraph_en || item["Fill Paragraph_EN"] || "",
               fill_paragraph_fr,
               blanksData,
               timeLimitSeconds: item.timeLimitSeconds || item.TimeLimitSeconds || 360,
@@ -204,7 +229,9 @@ export default function WriteFillBlanksPage() {
   useEffect(() => {
     if (currentQ && !isCompleted) {
       setUserInputs({});
+      setFocusedKey(null);
       setShowFeedback(false);
+      setShowPassageTranslation(false);
       inputRefs.current = {};
       resetTimer();
     }
@@ -278,6 +305,7 @@ export default function WriteFillBlanksPage() {
 
   const handleContinue = () => {
     setShowFeedback(false);
+    setShowPassageTranslation(false);
     if (currentIndex < questions.length - 1) setCurrentIndex(i => i + 1);
     else setIsCompleted(true);
   };
@@ -290,19 +318,15 @@ export default function WriteFillBlanksPage() {
 
     return (
       <span
-        className="inline-flex items-center align-middle mx-1 rounded-xl border border-slate-300 dark:border-slate-600 overflow-hidden bg-white dark:bg-slate-800 shadow-sm"
-        style={{ verticalAlign: "middle" }}
+        className={cn(styles.word, chars.length <= 4 && styles.shortWord)}
       >
         {chars.map((ch, i) => {
-          const isLast = i === chars.length - 1;
-          const isFirst = i === 0;
 
           if (ch === "_") {
             const si = slotIdx++;
             const key = `${blankId}_${si}`;
             const userChar = userInputs[key] || "";
             const correctChar = getCorrectCharForSlot(mask, entry.correct_fr, si);
-            const isFocused = focusedKey === key;
             const isWrong = showFeedback && userChar.toLowerCase() !== correctChar.toLowerCase();
             const isRight = showFeedback && userChar.toLowerCase() === correctChar.toLowerCase();
 
@@ -310,30 +334,24 @@ export default function WriteFillBlanksPage() {
               <span
                 key={i}
                 className={cn(
-                  "relative flex items-center justify-center",
-                  "w-8 h-9",
-                  !isFirst && "border-l border-slate-200 dark:border-slate-600",
-                  isFocused && !showFeedback && "bg-blue-50 dark:bg-blue-900/30 ring-2 ring-inset ring-blue-500 z-10",
-                  isWrong && "bg-red-50 dark:bg-red-900/20",
-                  isRight && "bg-emerald-50 dark:bg-emerald-900/20",
+                  styles.cell,
+                  isWrong && styles.incorrect,
+                  isRight && styles.correct,
                 )}
               >
                 <input
                   ref={el => { inputRefs.current[key] = el; }}
                   type="text"
+                  data-practice-answer
                   maxLength={1}
                   value={userChar}
                   onChange={e => handleCharInput(blankId, si, e.target.value.slice(-1))}
                   onKeyDown={e => handleKeyDown(e, blankId, si)}
-                  onFocus={() => setFocusedKey(key)}
+                  onFocus={event => { setFocusedKey(key); event.currentTarget.select(); }}
                   onBlur={() => setFocusedKey(prev => prev === key ? null : prev)}
                   disabled={showFeedback}
-                  className={cn(
-                    "absolute inset-0 w-full h-full bg-transparent text-center text-sm font-mono outline-none",
-                    isWrong ? "text-red-600 dark:text-red-400" :
-                    isRight ? "text-emerald-700 dark:text-emerald-400" :
-                    "text-slate-800 dark:text-white",
-                  )}
+                  aria-label={`Word ${blankId}, missing letter ${si + 1}`}
+                  className={styles.input}
                 />
               </span>
             );
@@ -343,10 +361,7 @@ export default function WriteFillBlanksPage() {
           return (
             <span
               key={i}
-              className={cn(
-                "flex items-center justify-center w-8 h-9 text-sm font-mono text-slate-700 dark:text-slate-300 select-none",
-                !isFirst && "border-l border-slate-200 dark:border-slate-600",
-              )}
+              className={cn(styles.cell, styles.supplied)}
             >
               {ch}
             </span>
@@ -356,21 +371,16 @@ export default function WriteFillBlanksPage() {
     );
   };
 
-  // ── Render FR passage with inline blanks ───────────────────────────────────
-  const renderPassage = () => {
-    if (!currentQ?.fill_paragraph_fr) return null;
-    const segments = parsePassage(currentQ.fill_paragraph_fr);
+  const renderPassage = () => parsePassage(currentQ.fill_paragraph_fr).map((segment, index) => {
+    if (segment.type === "text") return <span key={index}>{segment.text}</span>;
+    const entry = currentQ.blanksData[String(segment.blankId)];
+    if (!entry) return null;
     return (
-      <div className="text-sm leading-[3rem] text-slate-700 dark:text-slate-300">
-        {segments.map((seg, i) => {
-          if (seg.type === "text") return <span key={i}>{seg.text}</span>;
-          const entry = currentQ.blanksData[String(seg.blankId)];
-          if (!entry) return <span key={i} className="text-slate-400">___</span>;
-          return <React.Fragment key={i}>{renderBlankWord(seg.blankId, entry)}</React.Fragment>;
-        })}
-      </div>
+      <span key={index} className="mx-[3px] inline-flex max-w-full overflow-x-auto align-middle whitespace-nowrap px-[3px] py-[3px]">
+        {renderBlankWord(segment.blankId, entry)}
+      </span>
     );
-  };
+  });
 
   // ── States ─────────────────────────────────────────────────────────────────
   if (isLoading) return (
@@ -387,10 +397,17 @@ export default function WriteFillBlanksPage() {
   );
 
   const progress = ((currentIndex + 1) / questions.length) * 100;
+  const completedEnglish = /\[\d+\]/.test(currentQ.fill_paragraph_en)
+    ? currentQ.fill_paragraph_en
+    : currentQ.complete_passage_en || currentQ.fill_paragraph_en;
+  const completedParts = showFeedback ? getWritingCompletedPassage(
+    showPassageTranslation ? completedEnglish : currentQ.fill_paragraph_fr,
+    currentQ.blanksData,
+    showPassageTranslation ? "en" : "fr",
+  ) : null;
 
   return (
-    <>
-      <PracticeGameLayout
+    <PracticeGameLayout
         questionType="Fill in the Blanks"
         instructionFr="Complétez le texte"
         instructionEn="Fill in the Blanks"
@@ -400,78 +417,84 @@ export default function WriteFillBlanksPage() {
         score={score}
         totalQuestions={questions.length}
         onExit={handleExit}
-        onNext={handleSubmit}
+        onNext={showFeedback ? handleContinue : handleSubmit}
         onRestart={() => window.location.reload()}
-        isSubmitEnabled={!showFeedback}
-        showSubmitButton={!showFeedback}
-        submitLabel="Submit Answer"
+        isSubmitEnabled
+        showSubmitButton
+        showFeedback={showFeedback}
+        isCorrect={isCorrect}
+        feedbackTone={isCorrect ? "success" : "error"}
+        feedbackMessage={getFeedbackMessage(isCorrect)}
+        feedbackInFlow
+        compactFeedback
+        submitLabel={showFeedback ? (currentIndex + 1 === questions.length ? "Finish" : "Continue") : "Submit Answer"}
         timerValue={timerString}
         currentQuestionIndex={currentIndex}
       >
-        <div className="w-full max-w-4xl mx-auto px-4 py-8 flex flex-col gap-5">
-          <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm p-6 lg:p-10 flex flex-col gap-5">
+        <div className="mx-auto flex w-full max-w-[1280px] shrink-0 flex-col px-4 pb-6 pt-6 sm:px-6 sm:pt-8">
+          <div className="grid grid-cols-[44px_minmax(0,1fr)_44px] items-start border-b border-slate-200 pb-6 dark:border-slate-700">
 
             {/* Title */}
-            <div className="text-center">
-              {currentQ.heading_en && (
-                <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1">
-                  {currentQ.heading_en}
-                </p>
-              )}
-              <h2 className="text-xl font-bold text-slate-800 dark:text-white">
-                {currentQ.title_en || currentQ.title_fr}
-              </h2>
-              <div className="h-0.5 w-12 bg-blue-500 mx-auto mt-2 rounded-full" />
+            <div className="col-start-2 text-center">
+              <div className="flex min-h-11 items-center justify-center gap-2">
+                <h2 className="practice-type-question-heading text-center !font-medium text-slate-900 dark:text-slate-100">
+                  {(showPassageTranslation ? currentQ.title_en : currentQ.title_fr) || "Passage"}
+                </h2>
+              </div>
             </div>
-
-            {/* EN reference passage */}
-            {currentQ.complete_passage_en && (
-              <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
-                {currentQ.complete_passage_en}
-              </p>
+            {showFeedback && completedEnglish && (
+              <TranslateButton
+                onClick={() => setShowPassageTranslation(visible => !visible)}
+                aria-label={showPassageTranslation ? "Show completed French passage" : "Show completed English passage"}
+                aria-pressed={showPassageTranslation}
+                aria-controls="fitb-completed-passage"
+                title={showPassageTranslation ? "Show French" : "Translate to English"}
+                className="col-start-3 h-11 w-11 justify-self-end"
+              />
             )}
 
-            {/* Divider */}
-            <hr className="border-slate-200 dark:border-slate-700" />
-
-            {/* FR passage with inline letter-box blanks */}
-            {renderPassage()}
-
           </div>
+
+          <section
+            aria-label="Complete the French passage"
+            className="px-3 py-6 sm:px-4 dark:bg-slate-900"
+            style={{ backgroundImage: "radial-gradient(circle, rgba(148,163,184,0.13) 1px, transparent 1px)", backgroundSize: "24px 24px" }}
+          >
+            <div className="practice-passage-content practice-type-content font-normal !leading-[44px] text-slate-700 dark:text-slate-200">
+              {renderPassage()}
+            </div>
+          </section>
+
+          {showFeedback && (
+            <section id="fitb-completed-passage" aria-label={showPassageTranslation ? "Completed English passage" : "Completed French passage"} lang={showPassageTranslation ? "en" : "fr"} className="practice-type-content border-t border-slate-200 px-3 py-6 font-normal text-slate-700 sm:px-4 dark:border-slate-700 dark:text-slate-200">
+              {completedParts ? (
+                <p className="practice-passage-content">{completedParts.map((part, index) => (
+                  <span key={index} className={part.answer ? "text-green-700 dark:text-green-400" : undefined}>{part.text}</span>
+                ))}</p>
+              ) : showPassageTranslation && !/\[\d+\]/.test(completedEnglish) ? (
+                <>
+                  <p className="practice-passage-content">{completedEnglish}</p>
+                  <p className="mt-3 text-sm text-slate-500 dark:text-slate-400" role="status">Answer highlighting is unavailable for this translation.</p>
+                </>
+              ) : (
+                <p role="status">The completed passage is unavailable.</p>
+              )}
+            </section>
+          )}
 
           {/* Accent keyboard */}
           {!showFeedback && (
             <AccentKeyboard
               disabled={showFeedback}
-              className=""
+              className="shrink-0 gap-1.5 border-t border-slate-200 py-6 dark:border-slate-700"
               onAccentClick={(char) => {
                 if (!focusedKey) return;
                 const [bidStr, siStr] = focusedKey.split("_");
                 handleCharInput(parseInt(bidStr), parseInt(siStr), char);
-                requestAnimationFrame(() => inputRefs.current[focusedKey]?.focus());
               }}
             />
           )}
         </div>
       </PracticeGameLayout>
-
-      {showFeedback && (
-        <FeedbackBanner
-          isCorrect={isCorrect}
-          feedbackTone={isCorrect ? "success" : "error"}
-          correctAnswer={
-            !isCorrect
-              ? Object.entries(currentQ?.blanksData || {})
-                  .sort(([a], [b]) => parseInt(a) - parseInt(b))
-                  .map(([id, e]) => `${id}. ${e.correct_fr}`)
-                  .join("  •  ")
-              : null
-          }
-          onContinue={handleContinue}
-          message={getFeedbackMessage(isCorrect)}
-          continueLabel={currentIndex + 1 === questions.length ? "FINISH" : "CONTINUE"}
-        />
-      )}
-    </>
   );
 }

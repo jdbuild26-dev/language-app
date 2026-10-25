@@ -19,6 +19,8 @@ import PracticeTwoPanel from "@/features/practice/components/PracticeTwoPanel";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useQuestionLanguage } from "@/hooks/useQuestionLanguage";
 import { usePracticeComplete } from "@/hooks/usePracticeComplete";
+import { shuffleQuestionOptions } from "@/features/practice/lib/shuffleQuestionOptions";
+import { getComprehensionQuestionView } from "@/features/practice/lib/comprehensionLanguage";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -35,6 +37,7 @@ type ListenQuestion = {
 type ListenPassageGroup = {
   passageText: string;
   passageTranslation: string;
+  translatedTitle: string;
   title: string;
   level: string;
   timeLimitSeconds: number;
@@ -79,16 +82,17 @@ function groupByPassage(exercises: any[]): ListenPassageGroup[] {
     }
 
     if (seen.has(key)) {
-      groups[seen.get(key)!].questions.push(...itemQuestions);
+      groups[seen.get(key)!].questions.push(...itemQuestions.map(question => shuffleQuestionOptions(question)));
     } else {
       seen.set(key, groups.length);
       groups.push({
         passageText: key,
         passageTranslation: c.passage_en || c.passageText_en || "",
+        translatedTitle: c.title_en || c.passage_title_en || "Passage",
         title: c.title_fr || c.title_en || c.passage_title_fr || "",
         level: item.Level || item.level || "A1",
         timeLimitSeconds: Number(c.timeLimitSeconds || item.timeLimitSeconds || 120),
-        questions: itemQuestions,
+        questions: itemQuestions.map(question => shuffleQuestionOptions(question)),
       });
     }
   }
@@ -149,7 +153,7 @@ function ListenPassageContent() {
   const [isCompleted, setIsCompleted] = useState(false);
 
   const currentPassage = passages[passageIndex];
-  const { pick, pickTranslation } = useQuestionLanguage(currentPassage?.level);
+  const { showQuestionInKnown } = useQuestionLanguage(currentPassage?.level);
 
   useEffect(() => {
     if (!isAudioPlaying || !currentPassage?.passageText) return;
@@ -218,12 +222,12 @@ function ListenPassageContent() {
   const { timerString, resetTimer } = useExerciseTimer({
     duration: currentPassage?.timeLimitSeconds || 120,
     mode: "timer",
-    onExpire: () => { if (!isCompleted && !isSubmitted) handleSubmit(); },
+    onExpire: () => { if (!isCompleted && !isSubmitted) handleSubmit(true); },
     isPaused: isCompleted || isSubmitted || !hasPlayed || isLoading,
   });
 
   // ── Handlers ───────────────────────────────────────────────────────────────
-  const startAudio = (rate = 0.9, requestedProgress = 0) => {
+  const startAudio = (rate = playbackRate, requestedProgress = 0) => {
     if (!currentPassage) return;
     const passageText = currentPassage.passageText;
     const requestedIndex = Math.floor((Math.max(0, Math.min(100, requestedProgress)) / 100) * passageText.length);
@@ -261,7 +265,17 @@ function ListenPassageContent() {
       setIsPaused(true);
     }
     else if (isPaused) startAudio(playbackRate, playbackProgress);
-    else startAudio(0.9, playbackProgress >= 100 ? 0 : playbackProgress);
+    else startAudio(playbackRate, playbackProgress >= 100 ? 0 : playbackProgress);
+  };
+
+  const handleToggleSlow = () => {
+    const nextRate = playbackRate === 0.55 ? 0.9 : 0.55;
+    setPlaybackRate(nextRate);
+    if (isAudioPlaying) {
+      cancel();
+      stopProgress();
+      startAudio(nextRate, progressPositionRef.current);
+    }
   };
 
   const handleAudioSeek = (position: number) => {
@@ -289,9 +303,9 @@ function ListenPassageContent() {
     });
   };
 
-  const handleSubmit = useCallback(() => {
+  const handleSubmit = useCallback((expired = false) => {
     if (isSubmitted || !currentPassage) return;
-    if (selectedOptions.some(o => o === null)) return; // Ensure all answered
+    if (!expired && selectedOptions.some(o => o === null)) return;
 
     setIsSubmitted(true);
     setTranslatedQuestions({});
@@ -312,6 +326,9 @@ function ListenPassageContent() {
   }, [isSubmitted, currentPassage, selectedOptions, cancel, stopProgress]);
 
   const handleContinue = () => {
+    cancel();
+    stopProgress();
+    setIsStartingAudio(false);
     setShowFeedback(false);
     if (passageIndex < passages.length - 1) setPassageIndex(i => i + 1);
     else setIsCompleted(true);
@@ -345,7 +362,7 @@ function ListenPassageContent() {
         score={score}
         totalQuestions={passages.length}
         onExit={handlePlayerExit}
-        onNext={showFeedback ? handleContinue : handleSubmit}
+        onNext={showFeedback ? handleContinue : () => handleSubmit()}
         onRestart={() => window.location.reload()}
         isSubmitEnabled={(allAnswered || showFeedback) && hasPlayed}
         showSubmitButton={true}
@@ -356,7 +373,7 @@ function ListenPassageContent() {
           {/* LEFT — Passage heading and audio player */}
           <section className={cn("flex min-h-[18rem] min-w-0 flex-col md:min-h-0", isSubmitted ? "gap-4" : "rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800 md:p-6")} aria-label="Passage audio">
             {!isSubmitted && (
-            <h2 className="practice-type-content-heading mb-5 border-b border-slate-200 pb-3 text-slate-900 dark:border-slate-700 dark:text-slate-100">
+            <h2 className="practice-type-content-heading mb-5 border-b border-slate-200 pb-3 text-slate-900 dark:border-slate-700 dark:text-slate-100 !font-medium">
               {currentPassage.title || "Passage"}
             </h2>
             )}
@@ -368,7 +385,7 @@ function ListenPassageContent() {
                 <button type="button" onClick={handlePlayAudio} aria-label={isAudioPlaying ? "Pause passage" : isPaused ? "Resume passage" : playbackProgress > 0 && playbackProgress < 100 ? "Play passage from selected position" : "Play passage from beginning"} title={isAudioPlaying ? "Pause" : isPaused ? "Resume" : "Play"} className={cn("flex items-center justify-center rounded-full shadow-md transition-transform hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500 focus-visible:ring-offset-2", isSubmitted ? "h-12 w-12" : "h-20 w-20", isAudioPlaying ? "bg-rose-600 text-white" : "bg-rose-500 text-white hover:bg-rose-600")}>
                   {isAudioPlaying ? <Pause className={isSubmitted ? "h-6 w-6" : "h-9 w-9"} aria-hidden="true" /> : isPaused || (hasPlayed && playbackProgress < 100) ? <Play className={isSubmitted ? "h-6 w-6" : "h-9 w-9"} aria-hidden="true" /> : <Volume2 className={isSubmitted ? "h-6 w-6" : "h-9 w-9"} aria-hidden="true" />}
                 </button>
-                <button type="button" onClick={() => startAudio(0.55)} aria-label="Play passage slowly" title="Slow playback" className="flex h-12 w-12 items-center justify-center rounded-full bg-rose-50 text-rose-600 transition-colors hover:bg-rose-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500 dark:bg-rose-900/30 dark:text-rose-300 dark:hover:bg-rose-900/50">
+                <button type="button" onClick={handleToggleSlow} aria-label="Slow playback" aria-pressed={playbackRate === 0.55} title={playbackRate === 0.55 ? "Switch to normal speed" : "Switch to slow speed"} className={cn("flex h-12 w-12 items-center justify-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500", playbackRate === 0.55 ? "bg-rose-600 text-white hover:bg-rose-700 dark:bg-rose-600 dark:text-white" : "bg-rose-50 text-rose-600 hover:bg-rose-100 dark:bg-rose-900/30 dark:text-rose-300 dark:hover:bg-rose-900/50")}>
                   <Turtle className="h-6 w-6" aria-hidden="true" />
                 </button>
               </div>
@@ -378,27 +395,31 @@ function ListenPassageContent() {
                   isPlaying={isAudioPlaying}
                   progress={playbackProgress}
                   onSeek={handleAudioSeek}
+                  showSeekHandle
                 />
               </div>
-              {!isSubmitted && <p className="practice-type-meta font-medium text-slate-500 dark:text-slate-400" aria-live="polite">
-                {isAudioPlaying ? "En cours de lecture…" : isPaused ? "En pause" : "Prêt pour l’écoute"}
-              </p>}
             </div>
             {isSubmitted && (
               <section className="practice-comprehension-scroll min-h-[18rem] min-w-0 flex-1 overflow-y-auto rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-800 md:min-h-0 md:p-6" aria-label="Passage transcript">
                 <div className="mb-4 flex items-start justify-between gap-3 border-b border-slate-200 pb-3 dark:border-slate-700">
-                  <h2 className="practice-type-content-heading text-slate-900 dark:text-slate-100">{currentPassage.title || "Passage"}</h2>
+                  <h2 className="practice-type-content-heading text-slate-900 dark:text-slate-100 !font-medium">{currentPassage.title || "Passage"}</h2>
                   {currentPassage.passageTranslation && currentPassage.passageTranslation !== currentPassage.passageText && (
-                    <TranslateButton onClick={() => setShowPassageTranslation(value => !value)} aria-label={showPassageTranslation ? "Hide passage translation" : "Translate passage"} title={showPassageTranslation ? "Hide passage translation" : "Translate passage"} aria-expanded={showPassageTranslation} />
+                    <TranslateButton onClick={() => {
+                      const next = !showPassageTranslation;
+                      setShowPassageTranslation(next);
+                    }} aria-label={showPassageTranslation ? "Hide passage translation" : "Translate passage"} title={showPassageTranslation ? "Hide passage translation" : "Translate passage"} aria-expanded={showPassageTranslation} />
                   )}
                 </div>
-                <p className="practice-type-content whitespace-pre-line text-slate-700 dark:text-slate-200">
+                <p className="practice-passage-content practice-type-content whitespace-pre-line text-slate-700 dark:text-slate-200">
                   {currentPassage.passageText}
                 </p>
                 {showPassageTranslation && currentPassage.passageTranslation && (
-                  <p className="practice-type-content mt-6 whitespace-pre-line border-t border-slate-200 pt-5 text-slate-700 dark:border-slate-700 dark:text-slate-200">
-                    {currentPassage.passageTranslation}
-                  </p>
+                  <div className="mt-6 border-t border-slate-200 pt-5 dark:border-slate-700">
+                    <h2 className="practice-type-content-heading mb-3 !font-medium text-slate-900 dark:text-slate-100">{currentPassage.translatedTitle}</h2>
+                    <p className="practice-passage-content practice-type-content whitespace-pre-line text-slate-700 dark:text-slate-200">
+                      {currentPassage.passageTranslation}
+                    </p>
+                  </div>
                 )}
               </section>
             )}
@@ -407,21 +428,12 @@ function ListenPassageContent() {
           {/* RIGHT — Questions, sized like Reading Comprehension */}
           <section className="practice-comprehension-scroll flex min-h-[18rem] min-w-0 flex-col gap-6 overflow-y-auto rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900 md:min-h-0 md:p-5" aria-label="Questions">
               {currentPassage.questions.map((q, qIdx) => {
-                const questionText = pick(q.question_fr, q.question_en) || q.question;
-                const translatedQuestionText = pickTranslation(q.question_fr, q.question_en);
-                const options = learningLang === "fr"
-                  ? q.options_fr?.length ? q.options_fr : q.options
-                  : q.options_en?.length ? q.options_en : q.options;
-                const translationOptions = learningLang === "fr" ? q.options_en || [] : q.options_fr || [];
-                const canTranslateQuestion = Boolean(translatedQuestionText && translatedQuestionText !== questionText);
-                const canTranslateOptions = translationOptions.length === options.length
-                  && translationOptions.some((option, index) => Boolean(option && option !== options[index]));
-                const canTranslate = canTranslateQuestion || (isSubmitted && canTranslateOptions);
-                const isTranslated = Boolean(translatedQuestions[qIdx] && canTranslate);
-                const shownQuestion = isTranslated && canTranslateQuestion ? translatedQuestionText : questionText;
-                const shownOptions = isSubmitted && isTranslated && canTranslateOptions
-                  ? options.map((option, index) => translationOptions[index] || option)
-                  : options;
+                const { question: shownQuestion, options: shownOptions, canTranslate, translated: isTranslated } = getComprehensionQuestionView(q, {
+                  learningLang,
+                  showQuestionInKnown,
+                  submitted: isSubmitted,
+                  translated: Boolean(translatedQuestions[qIdx]),
+                });
 
                 return (
                   <div key={qIdx} className="flex flex-col gap-3 animate-in fade-in slide-in-from-right-4 duration-500" style={{ animationDelay: `${qIdx * 100}ms` }}>
@@ -429,7 +441,7 @@ function ListenPassageContent() {
                       <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-rose-200 bg-rose-50 text-sm font-bold text-rose-700 dark:border-rose-800 dark:bg-rose-900/30 dark:text-rose-300">
                         {qIdx + 1}
                       </span>
-                      <h3 className="practice-type-question-heading min-w-0 flex-1 border-b border-slate-200 pb-3 text-slate-900 dark:border-slate-700 dark:text-slate-100">
+                      <h3 className="practice-type-content font-normal !leading-relaxed min-w-0 flex-1 border-b border-slate-200 pb-3 text-slate-900 dark:border-slate-700 dark:text-slate-100">
                         {shownQuestion}
                       </h3>
                       {canTranslate && (

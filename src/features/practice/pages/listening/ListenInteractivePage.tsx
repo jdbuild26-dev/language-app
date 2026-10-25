@@ -306,7 +306,7 @@ function ListenInteractiveContent() {
             {/* Question */}
             {!showFeedback && currentExchange && (
               <div className="px-6 py-4 border-b border-slate-50 dark:border-slate-800">
-                <h3 className="flex items-start gap-3 text-base font-bold text-slate-800 dark:text-slate-100 leading-snug">
+                <h3 className="flex items-start gap-3 text-base !font-medium text-slate-800 dark:text-slate-100 leading-snug">
                   <Languages className="w-5 h-5 text-orange-500 shrink-0 mt-0.5" />
                   {pick(currentExchange.questionText_en, currentExchange.questionText) || "How would you respond?"}
                 </h3>

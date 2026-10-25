@@ -17,6 +17,7 @@ import { Button } from "@/components/ui/button";
 import AudioWaveform from "@/components/ui/AudioWaveform";
 import speakerStyles from "@/components/ui/AudioSpeaker.module.css";
 import { useTranslateText } from "@/hooks/useTranslateText";
+import { getStoredTranslation } from "@/features/practice/lib/storedTranslation";
 
 export default function ListeningConversationPage() {
   return (
@@ -113,6 +114,7 @@ const normalizeConversation = (rawConversation: any) => {
     })
     .sort((a, b) => a.order - b.order)
     .map((exchange) => ({
+      ...exchange,
       speakerText: exchange.speakerText,
       speakerAudio: exchange.speakerAudio,
       speaker: exchange.speaker,
@@ -176,8 +178,10 @@ function ListeningConversationContent() {
   const totalConversations = allConversations.length;
 
   // Translate question text per exchange
-  const { displayText: questionDisplayText, isTranslating: isTranslatingQ, toggle: toggleTranslate, reset: resetTranslate } = useTranslateText(currentExchange?.questionText || "", "fr");
-  useEffect(() => { resetTranslate(); }, [currentTurnIndex]); // eslint-disable-line react-hooks/exhaustive-deps
+  const questionSource = currentExchange?.questionText || "";
+  const storedQuestion = getStoredTranslation(questionSource, currentExchange);
+  const { displayText: questionDisplayText, isTranslating: isTranslatingQ, toggle: toggleTranslate, reset: resetTranslate } = useTranslateText(questionSource, storedQuestion.sourceLang, storedQuestion.translation);
+  useEffect(() => { resetTranslate(); }, [currentTurnIndex, convIndex]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const timerDuration = 45; // Increased for conversation context
 
@@ -530,7 +534,7 @@ function ListeningConversationContent() {
             {/* Question — only when exchange has options */}
             {currentExchange?.options?.length > 0 && (
               <div className="px-4 py-5 animate-in fade-in slide-in-from-bottom-4 duration-500 border-b border-slate-100 dark:border-slate-700/50 mb-2">
-                <h3 className="practice-reading-heading flex items-start gap-3 text-[15px] font-bold text-slate-800 dark:text-slate-200">
+                <h3 className="practice-reading-heading flex items-start gap-3 text-[15px] !font-medium text-slate-800 dark:text-slate-200">
                   <button type="button" onClick={toggleTranslate} disabled={isTranslatingQ} className="inline-flex items-center justify-center shrink-0 text-orange-500 hover:text-orange-600 disabled:opacity-60 transition-colors mt-0.5">
                     {isTranslatingQ ? <Loader2 className="w-5 h-5 animate-spin" /> : <Languages className="w-5 h-5 shrink-0" />}
                   </button>

@@ -8,6 +8,8 @@ import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
 import { useTextToSpeech } from "@/hooks/useTextToSpeech";
 import { fetchMatchPairsData } from "@/services/vocabularyApi";
 
+type Card = { id: string; pairId: string; content: string; type: "audio" | "text" };
+
 // MOCK DATA Fallback
 const MOCK_DATA = [
   {
@@ -66,15 +68,15 @@ export default function MatchPairsB1GamePage() {
   const [loading, setLoading] = useState(false);
 
   // Split State for Top (Audio) and Bottom (Text) rows
-  const [topCards, setTopCards] = useState([]); // Audio cards
-  const [bottomCards, setBottomCards] = useState([]); // Text cards
+  const [topCards, setTopCards] = useState<Card[]>([]); // Audio cards
+  const [bottomCards, setBottomCards] = useState<Card[]>([]); // Text cards
 
-  const [selectedTopId, setSelectedTopId] = useState(null);
-  const [selectedBottomId, setSelectedBottomId] = useState(null);
+  const [selectedTopId, setSelectedTopId] = useState<string | null>(null);
+  const [selectedBottomId, setSelectedBottomId] = useState<string | null>(null);
 
-  const [matchedIds, setMatchedIds] = useState([]); // Array of pairIds
-  const [errorIds, setErrorIds] = useState([]); // Array of cardIds showing error
-  const [successIds, setSuccessIds] = useState([]); // Array of cardIds showing success (Green)
+  const [matchedIds, setMatchedIds] = useState<string[]>([]); // Array of pairIds
+  const [errorIds, setErrorIds] = useState<string[]>([]); // Array of cardIds showing error
+  const [successIds, setSuccessIds] = useState<string[]>([]); // Array of cardIds showing success (Green)
 
   const [isGameOver, setIsGameOver] = useState(false);
   const [score, setScore] = useState(0);
@@ -106,32 +108,30 @@ export default function MatchPairsB1GamePage() {
       }
 
       const rawData = data.map((item, idx) => ({
-        id: item.id || idx,
+        id: String(item.id || idx),
         french: item.french, // Text to speak (French word/sentence)
         english: item.english, // Text to display (English translation)
-        instructionFr: item.instructionFr || "Associez les paires",
-        instructionEn: item.instructionEn || "Match the pairs",
       }));
 
       // Shuffle and pick pairs
       const shuffledSource = [...rawData].sort(() => 0.5 - Math.random());
       const activePairs = shuffledSource.slice(0, PAIRS_PER_ROUND);
 
-      const top = activePairs
+      const top: Card[] = activePairs
         .map((p) => ({
           id: `audio-${p.id}`,
           pairId: p.id,
           content: p.french, // Text to speak
-          type: "audio",
+          type: "audio" as const,
         }))
         .sort(() => 0.5 - Math.random());
 
-      const bottom = activePairs
+      const bottom: Card[] = activePairs
         .map((p) => ({
           id: `text-${p.id}`,
           pairId: p.id,
           content: p.english, // Text to display
-          type: "text",
+          type: "text" as const,
         }))
         .sort(() => 0.5 - Math.random());
 
@@ -152,7 +152,7 @@ export default function MatchPairsB1GamePage() {
     }
   };
 
-  const handleTopClick = (card) => {
+  const handleTopClick = (card: Card) => {
     if (
       isGameOver ||
       matchedIds.includes(card.pairId) ||
@@ -172,7 +172,7 @@ export default function MatchPairsB1GamePage() {
     }
   };
 
-  const handleBottomClick = (card) => {
+  const handleBottomClick = (card: Card) => {
     if (
       isGameOver ||
       matchedIds.includes(card.pairId) ||
@@ -180,6 +180,7 @@ export default function MatchPairsB1GamePage() {
     )
       return;
 
+    speak(card.content, "en-US");
     // Logic: Same row click -> Replace selection
     setSelectedBottomId(card.id);
 
@@ -189,7 +190,7 @@ export default function MatchPairsB1GamePage() {
     }
   };
 
-  const checkMatch = (topId, bottomId) => {
+  const checkMatch = (topId: string, bottomId: string) => {
     const topCard = topCards.find((c) => c.id === topId);
     const bottomCard = bottomCards.find((c) => c.id === bottomId);
 

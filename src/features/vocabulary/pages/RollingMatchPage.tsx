@@ -2,48 +2,43 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Loader2, Volume2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
+import AudioWaveform from "@/components/ui/AudioWaveform";
 import { fetchMatchPairsData } from "@/services/vocabularyApi";
 import { useTextToSpeech } from "@/hooks/useTextToSpeech";
 import { cn } from "@/lib/utils";
 
-type Pair = { id: string; french: string; english: string };
+import { completeMatch, createMatchBoard, type MatchBoard, type MatchPair as Pair } from "@/features/vocabulary/lib/rollingMatch";
 type Side = "french" | "english";
 
-/** A fixed number of visible slots draws from a larger, ordered pair queue. */
-export default function RollingMatchPage({ mode = "words" }: { mode?: "words" | "audio" }) {
+/** Fixed slots draw independently from a shared pool, keeping matches available. */
+export default function RollingMatchPage({ mode = "words", pairLimit = 30 }: { mode?: "words" | "audio"; pairLimit?: number }) {
   const router = useRouter();
-  const { speak } = useTextToSpeech();
+  const { speak, cancel, isSpeaking } = useTextToSpeech();
   const visibleCount = mode === "audio" ? 6 : 4;
-  const [pairs, setPairs] = useState<Pair[]>([]);
-  const [leftSlots, setLeftSlots] = useState<(Pair | null)[]>([]);
-  const [rightSlots, setRightSlots] = useState<(Pair | null)[]>([]);
-  const [nextIndex, setNextIndex] = useState(0);
-  const pendingLeft = useRef<Pair[]>([]);
-  const pendingRight = useRef<Pair[]>([]);
+  const [board, setBoard] = useState<MatchBoard | null>(null);
+  const pairs = board?.pairs ?? [];
+  const leftSlots = board?.leftSlots ?? [];
+  const rightSlots = board?.rightSlots ?? [];
+  const matched = board?.matched ?? 0;
+  const complete = !!board && matched === pairs.length;
   const [selected, setSelected] = useState<{ side: Side; id: string } | null>(null);
+  const [playingPairId, setPlayingPairId] = useState<string | null>(null);
   const [incorrect, setIncorrect] = useState<string[]>([]);
-  const [matched, setMatched] = useState(0);
-  const [complete, setComplete] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const timeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   const locked = useRef(false);
+
+  useEffect(() => () => cancel(), [cancel]);
 
   useEffect(() => {
     let active = true;
     fetchMatchPairsData(undefined)
       .then((data: Pair[]) => {
         if (!active) return;
-        const usable = data.filter((pair) => pair.id && pair.french && pair.english);
-        if (!usable.length) throw new Error("No matching words are available.");
-        const shuffled = [...usable].sort(() => Math.random() - 0.5);
-        setPairs(shuffled);
-        const initial = Array.from({ length: visibleCount }, (_, index) => shuffled[index] ?? null);
-        setLeftSlots(initial);
-        setRightSlots([...initial].sort(() => Math.random() - 0.5));
-        setNextIndex(Math.min(visibleCount, shuffled.length));
+        setBoard(createMatchBoard(data, { visibleCount, pairLimit }));
       })
       .catch((cause: unknown) => {
         if (active) setError(cause instanceof Error ? cause.message : "Unable to load matching words.");
@@ -53,11 +48,24 @@ export default function RollingMatchPage({ mode = "words" }: { mode?: "words" | 
       active = false;
       if (timeout.current) clearTimeout(timeout.current);
     };
-  }, [visibleCount]);
+  }, [visibleCount, pairLimit]);
 
   const choose = (side: Side, pair: Pair) => {
-    if (locked.current) return;
-    if (side === "french") speak(pair.french, "fr-FR");
+    if (locked.current || complete) return;
+    if (mode === "words") {
+      speak(side === "french" ? pair.french : pair.english, side === "french" ? "fr-FR" : "en-US", 1);
+    }
+    if (mode === "audio" && side === "french") {
+      setPlayingPairId(pair.id);
+      speak(pair.french, "fr-FR", 0.9, {
+        onEnd: () => setPlayingPairId((current) => current === pair.id ? null : current),
+        onError: () => setPlayingPairId((current) => current === pair.id ? null : current),
+      });
+    }
+    if (mode === "audio" && side === "english") {
+      setPlayingPairId(null);
+      speak(pair.english, "en-US");
+    }
     if (!selected || selected.side === side) {
       setSelected({ side, id: pair.id });
       return;
@@ -71,34 +79,7 @@ export default function RollingMatchPage({ mode = "words" }: { mode?: "words" | 
       return;
     }
     timeout.current = setTimeout(() => {
-      let nextLeft: Pair | null = null;
-      let nextRight: Pair | null = null;
-      let advance = 0;
-      if (pendingLeft.current.length && pendingRight.current.length) {
-        nextLeft = pendingRight.current.shift() ?? null;
-        nextRight = pendingLeft.current.shift() ?? null;
-      } else {
-        const anotherVisibleMatch = leftSlots.some((item) => item && item.id !== pair.id && rightSlots.some((other) => other?.id === item.id));
-        if (anotherVisibleMatch && nextIndex + 1 < pairs.length) {
-          nextLeft = pairs[nextIndex];
-          nextRight = pairs[nextIndex + 1];
-          pendingLeft.current.push(nextLeft);
-          pendingRight.current.push(nextRight);
-          advance = 2;
-        } else if (nextIndex < pairs.length) {
-          nextLeft = pairs[nextIndex];
-          nextRight = nextLeft;
-          advance = 1;
-        }
-      }
-      setLeftSlots((current) => current.map((item) => item?.id === pair.id ? nextLeft : item));
-      setRightSlots((current) => current.map((item) => item?.id === pair.id ? nextRight : item));
-      if (advance) setNextIndex((value) => value + advance);
-      setMatched((count) => {
-        const updated = count + 1;
-        if (updated === pairs.length) setComplete(true);
-        return updated;
-      });
+      if (board) setBoard(completeMatch(board, pair.id));
       locked.current = false;
     }, 450);
   };
@@ -107,23 +88,27 @@ export default function RollingMatchPage({ mode = "words" }: { mode?: "words" | 
   if (error) return <div role="alert" className="flex min-h-dvh items-center justify-center p-8 text-center text-red-700">{error}</div>;
 
   const renderSide = (side: Side) => (
-    <div className="grid flex-1 gap-3" aria-label={side === "french" ? "French words" : "English words"}>
+    <div className="grid min-w-0 flex-1 gap-3" aria-label={side === "french" ? "French words" : "English words"}>
       {(side === "french" ? leftSlots : rightSlots).map((pair, index) => pair ? (
+        <div key={`${side}-${pair.id}`} className="relative min-w-0">
         <button
-          key={`${side}-${pair.id}`}
           type="button"
           onClick={() => choose(side, pair)}
           aria-label={mode === "audio" && side === "french" ? `Play and select French word ${index + 1}` : undefined}
           aria-pressed={selected?.side === side && selected.id === pair.id}
           className={cn(
-            "min-h-16 w-full rounded-xl border-2 bg-white px-5 py-3 text-center text-lg font-medium break-words transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 dark:bg-slate-800",
+            "min-w-0 w-full rounded-xl border-2 border-solid bg-white text-center font-medium [overflow-wrap:anywhere] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 dark:bg-slate-800",
+            mode === "words" ? "min-h-24 px-12 py-6 text-[21px] leading-relaxed" : "min-h-16 px-5 py-3 text-lg",
             selected?.side === side && selected.id === pair.id ? "border-sky-500 bg-sky-50 text-sky-900" : "border-slate-200 dark:border-slate-700",
             incorrect.includes(pair.id) && "border-red-500 bg-red-50 text-red-800",
           )}
         >
-          {mode === "audio" && side === "french" ? <Volume2 className="mx-auto h-6 w-6" aria-hidden="true" /> : side === "french" ? pair.french : pair.english}
+          {mode === "audio" && side === "french"
+            ? <AudioWaveform size="compact" patternKey={pair.id} isPlaying={isSpeaking && playingPairId === pair.id} decorative className="mx-auto w-36 max-w-full" />
+            : side === "french" ? pair.french : pair.english}
         </button>
-      ) : <div key={`${side}-empty-${index}`} className="min-h-16" aria-hidden="true" />)}
+        </div>
+      ) : <div key={`${side}-empty-${index}`} className={mode === "words" ? "min-h-24" : "min-h-16"} aria-hidden="true" />)}
     </div>
   );
 
@@ -140,7 +125,7 @@ export default function RollingMatchPage({ mode = "words" }: { mode?: "words" | 
       onRestart={() => window.location.reload()}
       showSubmitButton={false}
     >
-      <div className="mx-auto flex w-full max-w-4xl gap-3 px-3 sm:gap-6">
+      <div className={cn("flex w-full gap-3 px-3 pb-8 sm:gap-6 sm:px-6", mode === "words" ? "mx-auto mt-8 max-w-5xl sm:mt-10 lg:mt-12" : "m-auto max-w-4xl py-6 sm:py-8")}>
         {renderSide("french")}
         {renderSide("english")}
       </div>

@@ -110,6 +110,7 @@ export default function SpellingPage() {
   const wrongSentenceFr = currentQuestion?.wrong_sentence_fr || "";
   const correctSentenceFr = currentQuestion?.correct_sentence_fr || "";
   const correctSentenceEn = currentQuestion?.correct_sentence_en || "";
+  const passageTitleFr = currentQuestion?.passage_title_fr || "Passage";
   const configuredCharacterLimit = currentQuestion?.characterLimit;
   const characterLimit = Math.max(
     1,
@@ -303,7 +304,7 @@ export default function SpellingPage() {
         feedbackMessage={feedbackMessage}
         feedbackInFlow
         compactFeedback
-        onFeedbackTranslate={() => setShowReferenceEnglish((visible) => !visible)}
+        onFeedbackTranslate={correctSentenceEn ? () => setShowReferenceEnglish((visible) => !visible) : undefined}
         feedbackTranslationVisible={showReferenceEnglish}
         submitLabel={showFeedback ? (currentIndex + 1 === questions.length ? "Finish" : "Continue") : "Submit Answer"}
         timerValue={timerString}
@@ -319,33 +320,47 @@ export default function SpellingPage() {
           <div className="flex min-h-[460px] min-w-0 flex-col gap-3 md:min-h-0">
             <section className="flex min-h-[210px] flex-1 flex-col overflow-hidden rounded-xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900" aria-label="Incorrect French sentence">
               <h2 className="practice-type-passage-heading !font-medium shrink-0 px-5 py-3 text-slate-900 dark:text-slate-100">
-                INCORRECT SENTENCE <span className="text-base font-normal text-slate-500 dark:text-slate-400">(French)</span>
+                {passageTitleFr}
               </h2>
               <hr className="mx-5 shrink-0 border-neutral-300 dark:border-slate-700" />
-              <p className="practice-type-content min-h-0 flex-1 overflow-y-auto px-5 py-3 text-slate-700 dark:text-slate-300">
+              <p className="practice-passage-content practice-type-content min-h-0 flex-1 overflow-y-auto px-5 py-3 text-slate-700 dark:text-slate-300">
                 {wrongSentenceFr}
               </p>
             </section>
 
-            <section className="flex min-h-[210px] flex-1 flex-col overflow-hidden rounded-xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900" aria-label="Correct sentence reference">
-              <div className="flex shrink-0 items-center justify-between px-5 py-2 text-slate-900 dark:text-slate-100">
-                <h2 className="practice-type-passage-heading !font-medium">
-                  CORRECT SENTENCE <span className="text-base font-normal text-slate-500 dark:text-slate-400">({showFeedback && !showReferenceEnglish ? "French" : "English"})</span>
-                </h2>
-                {showFeedback && correctSentenceEn && (
-                  <TranslateButton
-                    onClick={() => setShowReferenceEnglish((visible) => !visible)}
-                    aria-label={showReferenceEnglish ? "Show correct French sentence" : "Translate correct sentence to English"}
-                    aria-pressed={showReferenceEnglish}
-                    title={showReferenceEnglish ? "Show French" : "Translate to English"}
-                  />
-                )}
-              </div>
-              <hr className="mx-5 shrink-0 border-neutral-300 dark:border-slate-700" />
-              <p className="practice-type-content min-h-0 flex-1 overflow-y-auto px-5 py-3 text-slate-700 dark:text-slate-300">
-                {showFeedback && !showReferenceEnglish ? correctSentenceFr : correctSentenceEn}
-              </p>
-            </section>
+            {showFeedback && (
+              <section className="flex min-h-[210px] flex-1 flex-col overflow-hidden rounded-xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900" aria-label="Correct French passage">
+                <div className="flex shrink-0 items-center justify-between px-5 py-2 text-slate-900 dark:text-slate-100">
+                  <h2 className="practice-type-passage-heading !font-medium text-green-700 dark:text-green-400">
+                    {passageTitleFr}
+                  </h2>
+                  {correctSentenceEn && (
+                    <TranslateButton
+                      onClick={() => setShowReferenceEnglish((visible) => !visible)}
+                      aria-label={showReferenceEnglish ? "Hide English translation" : "Show English translation"}
+                      aria-pressed={showReferenceEnglish}
+                      title={showReferenceEnglish ? "Hide English translation" : "Show English translation"}
+                    />
+                  )}
+                </div>
+                <hr className="mx-5 shrink-0 border-neutral-300 dark:border-slate-700" />
+                <div className="min-h-0 flex-1 overflow-y-auto px-5 py-3">
+                  <p className="practice-passage-content practice-type-content text-slate-700 dark:text-slate-300" lang="fr">
+                    {correctSentenceFr}
+                  </p>
+                  {showReferenceEnglish && correctSentenceEn && (
+                    <div className="mt-4 border-t border-neutral-300 pt-3 dark:border-slate-700" lang="en" aria-label="English translation">
+                      <h3 className="practice-type-passage-heading !font-medium text-slate-900 dark:text-slate-100">
+                        {currentQuestion?.passage_title_en || "Passage"}
+                      </h3>
+                      <p className="practice-passage-content practice-type-content mt-3 text-slate-700 dark:text-slate-300">
+                        {correctSentenceEn}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </section>
+            )}
           </div>
 
           {/* ══════════════════════════════════════════════

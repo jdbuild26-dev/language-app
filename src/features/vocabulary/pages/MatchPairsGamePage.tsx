@@ -10,21 +10,24 @@ import { useTextToSpeech } from "@/hooks/useTextToSpeech";
 
 import { fetchMatchPairsData } from "@/utils/practiceFetcher";
 
+type Pair = { id: string; french: string; english: string };
+type Card = { id: string; pairId: string; content: string; type: "top" | "bottom" };
+
 export default function MatchPairsGamePage() {
   const router = useRouter();
   const { speak } = useTextToSpeech();
 
   const [loading, setLoading] = useState(true);
-  const [exercises, setExercises] = useState([]);
-  const [topCards, setTopCards] = useState([]); // French
-  const [bottomCards, setBottomCards] = useState([]); // English
+  const [exercises, setExercises] = useState<Pair[]>([]);
+  const [topCards, setTopCards] = useState<Card[]>([]); // French
+  const [bottomCards, setBottomCards] = useState<Card[]>([]); // English
 
-  const [selectedTopId, setSelectedTopId] = useState(null);
-  const [selectedBottomId, setSelectedBottomId] = useState(null);
+  const [selectedTopId, setSelectedTopId] = useState<string | null>(null);
+  const [selectedBottomId, setSelectedBottomId] = useState<string | null>(null);
 
-  const [matchedIds, setMatchedIds] = useState([]); // Array of pairIds
-  const [errorIds, setErrorIds] = useState([]); // Array of cardIds showing error
-  const [successIds, setSuccessIds] = useState([]); // Array of cardIds showing success (Green)
+  const [matchedIds, setMatchedIds] = useState<string[]>([]); // Array of pairIds
+  const [errorIds, setErrorIds] = useState<string[]>([]); // Array of cardIds showing error
+  const [successIds, setSuccessIds] = useState<string[]>([]); // Array of cardIds showing success (Green)
 
   const [isGameOver, setIsGameOver] = useState(false);
   const [score, setScore] = useState(0);
@@ -51,33 +54,33 @@ export default function MatchPairsGamePage() {
   }, []);
 
   // Timer Hook
-  const { timerString, resetTimer, isPaused } = useExerciseTimer({
+  const { timerString, resetTimer } = useExerciseTimer({
     duration: 60,
     mode: "timer",
     onExpire: () => setIsGameOver(true),
     isPaused: loading || isGameOver,
   });
 
-  const initializeGame = (data = exercises) => {
+  const initializeGame = (data: Pair[] = exercises) => {
     // Shuffle and pick pairs
     const shuffledSource = [...data].sort(() => 0.5 - Math.random());
     const activePairs = shuffledSource.slice(0, PAIRS_PER_ROUND);
 
-    const top = activePairs
+    const top: Card[] = activePairs
       .map((p) => ({
         id: `fr-${p.id}`,
         pairId: p.id,
         content: p.french,
-        type: "top",
+        type: "top" as const,
       }))
       .sort(() => 0.5 - Math.random()); // Shuffle top row
 
-    const bottom = activePairs
+    const bottom: Card[] = activePairs
       .map((p) => ({
         id: `en-${p.id}`,
         pairId: p.id,
         content: p.english,
-        type: "bottom",
+        type: "bottom" as const,
       }))
       .sort(() => 0.5 - Math.random()); // Shuffle bottom row
 
@@ -88,7 +91,7 @@ export default function MatchPairsGamePage() {
     setIsGameOver(false);
   };
 
-  const handleTopClick = (card) => {
+  const handleTopClick = (card: Card) => {
     if (
       isGameOver ||
       matchedIds.includes(card.pairId) ||
@@ -108,7 +111,7 @@ export default function MatchPairsGamePage() {
     }
   };
 
-  const handleBottomClick = (card) => {
+  const handleBottomClick = (card: Card) => {
     if (
       isGameOver ||
       matchedIds.includes(card.pairId) ||
@@ -116,7 +119,7 @@ export default function MatchPairsGamePage() {
     )
       return;
 
-    // No Audio for bottom
+    speak(card.content, "en-US");
 
     // Replace previous bottom selection
     setSelectedBottomId(card.id);
@@ -127,7 +130,7 @@ export default function MatchPairsGamePage() {
     }
   };
 
-  const checkMatch = (topId, bottomId) => {
+  const checkMatch = (topId: string, bottomId: string) => {
     const topCard = topCards.find((c) => c.id === topId);
     const bottomCard = bottomCards.find((c) => c.id === bottomId);
 
