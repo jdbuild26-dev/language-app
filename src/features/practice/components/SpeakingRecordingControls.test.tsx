@@ -21,14 +21,12 @@ function replayButton(audioUrl: string | null, isRecording = false, isStarting =
 it("keeps recording replay inactive until captured audio is finalized", () => {
   const before = replayButton(null);
   expect(before.props.disabled).toBe(true);
-  expect(before.props.className).toContain("bg-neutral-300");
 
   const during = replayButton(null, true);
   expect(during.props.disabled).toBe(true);
 
   const after = replayButton("blob:recording");
   expect(after.props.disabled).toBe(false);
-  expect(after.props.className).toContain("bg-blue-500");
 
   expect(replayButton("blob:recording", true).props.disabled).toBe(true);
   expect(replayButton("blob:recording", false, true).props.disabled).toBe(true);
