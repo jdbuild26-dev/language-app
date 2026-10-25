@@ -22,7 +22,7 @@ function getSpeechRecognitionAPI(): (new () => SpeechRecognitionInstance) | null
   return w.SpeechRecognition || w.webkitSpeechRecognition || null;
 }
 
-export default function useSpeechRecognition() {
+export default function useSpeechRecognition(languageOverride?: string) {
   const [isListening, setIsListening] = useState(false);
   const [transcript, setTranscript] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -70,7 +70,8 @@ export default function useSpeechRecognition() {
       ja: "ja-JP",
       ko: "ko-KR",
     };
-    recognition.lang = localeMap[learningLang] || `${learningLang}-${learningLang.toUpperCase()}`;
+    const recognitionLanguage = languageOverride || learningLang;
+    recognition.lang = localeMap[recognitionLanguage] || `${recognitionLanguage}-${recognitionLanguage.toUpperCase()}`;
 
     recognition.onstart = () => {
       listening.current = true;
@@ -122,7 +123,7 @@ export default function useSpeechRecognition() {
       listening.current = false;
       finishStop("Speech capture was cancelled.");
     };
-  }, [learningLang, finishStop]);
+  }, [learningLang, languageOverride, finishStop]);
 
   const resetTranscript = useCallback(() => {
     finishStop("Speech capture was cancelled.");
@@ -143,6 +144,8 @@ export default function useSpeechRecognition() {
         recognition.start();
       } catch (err) {
         console.error("Failed to start recognition:", err);
+        captureError.current = "Speech capture failed. Please record your answer again.";
+        setError(captureError.current);
       }
     }
   }, []);
@@ -163,7 +166,8 @@ export default function useSpeechRecognition() {
     const recognition = recognitionRef.current;
     if (pendingStop.current) return pendingStop.current.promise;
     if (captureError.current) throw new Error(captureError.current);
-    if (!recognition || !listening.current) return latestTranscript.current;
+    if (!recognition) throw new Error("Speech recognition is not supported in this browser.");
+    if (!listening.current) return latestTranscript.current;
     let resolve!: (value: string) => void;
     let reject!: (error: Error) => void;
     const promise = new Promise<string>((done, fail) => { resolve = done; reject = fail; });

@@ -6,21 +6,63 @@ import { fetchPracticeQuestions } from "@/services/vocabularyApi";
 import { Loader2, Check } from "lucide-react";
 import AudioPlayer from "@/features/vocabulary/components/shared/AudioPlayer";
 import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
-import { cn } from "@/lib/utils";
+import { TranslateButton } from "@/components/ui/TranslateButton";
+import PracticeOptionCard from "@/components/ui/PracticeOptionCard";
 import { useTextToSpeech } from "@/hooks/useTextToSpeech";
+import { useTranslateText } from "@/hooks/useTranslateText";
+import { multiSelectIndices } from "../../lib/practiceAnswers";
+
+type Question = { id: string; instruction: string; sentenceFr: string; sentenceEn: string; options: Array<{ text: string; en?: string }>; correctIndices: number[]; audioText: string };
+
+function SubmittedSentence({ sentenceFr, sentenceEn, submitted }: {
+  sentenceFr: string; sentenceEn: string; submitted: boolean;
+}) {
+  const { displayText, isTranslating, showTranslation, error, toggle } =
+    useTranslateText(sentenceFr, "fr", sentenceEn);
+
+  return (
+    <div className="flex max-w-full flex-col items-center">
+      <div
+      aria-hidden={!submitted}
+      className={`mt-5 flex max-w-full items-center gap-2 text-center text-lg font-medium text-slate-800 dark:text-slate-100 ${!submitted ? "invisible" : ""}`}
+    >
+      <span className="grid min-w-0 break-words">
+        <span aria-hidden="true" className="invisible col-start-1 row-start-1">
+          {sentenceFr}
+        </span>
+        {sentenceEn && (
+          <span aria-hidden="true" className="invisible col-start-1 row-start-1">
+            {sentenceEn}
+          </span>
+        )}
+        <span className="col-start-1 row-start-1">{displayText}</span>
+      </span>
+      <TranslateButton
+        disabled={!submitted}
+        isLoading={isTranslating}
+        aria-label={showTranslation ? "Show French sentence" : "Show English sentence"}
+        aria-pressed={showTranslation}
+        onClick={toggle}
+      />
+    </div>
+      {submitted && error && <p role="status" className="mt-1 text-sm text-slate-500">{error}</p>}
+    </div>
+  );
+}
 
 export default function MultiSelectPage() {
-  const { speak, isSpeaking, cancel } = useTextToSpeech();
+  const { speak, isSpeaking } = useTextToSpeech();
   const [loading, setLoading] = useState(true);
-  const [questions, setQuestions] = useState([]);
+  const [questions, setQuestions] = useState<Question[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [selectedIndices, setSelectedIndices] = useState([]);
+  const [selectedIndices, setSelectedIndices] = useState<number[]>([]);
+  const [translatedOptions, setTranslatedOptions] = useState<number[]>([]);
   const [isChecked, setIsChecked] = useState(false);
   const [score, setScore] = useState(0);
   const [isCompleted, setIsCompleted] = useState(false);
 
   // Timer Hook
-  const { timerString, resetTimer, isPaused } = useExerciseTimer({
+  const { timerString, resetTimer } = useExerciseTimer({
     duration: 30,
     mode: "timer",
     onExpire: () => {
@@ -50,6 +92,8 @@ export default function MultiSelectPage() {
         const transformed = response.data.map((q) => ({
           id: q.ExerciseID || Math.random(),
           instruction: q.Instruction_EN || "Select what you hear",
+          sentenceFr: q.CompleteSentence || q.Sentence_FR || q.Question || q.Audio || q.Prompt || "",
+          sentenceEn: q.CompleteSentence_EN || q.Sentence_EN || q.Question_EN || "",
           options: [
             { text: q.Option1, en: q.Option1_EN },
             { text: q.Option2, en: q.Option2_EN },
@@ -58,14 +102,7 @@ export default function MultiSelectPage() {
             { text: q.Option5, en: q.Option5_EN },
             { text: q.Option6, en: q.Option6_EN },
           ].filter((o) => o.text),
-          correctIndices:
-            q.CorrectOptionIndexes || q.CorrectOptions
-              ? (q.CorrectOptionIndexes || q.CorrectOptions)
-                  .toString()
-                  .split(/[|,]+/)
-                  .map((s) => parseInt(s.trim()) - 1)
-                  .filter((i) => !isNaN(i))
-              : [],
+          correctIndices: multiSelectIndices(q.CorrectOptionIndexes || q.CorrectOptions, 6),
           audioText: q.Question || q.Audio || q.Prompt || "",
         }));
         setQuestions(transformed);
@@ -83,7 +120,7 @@ export default function MultiSelectPage() {
 
   const handleOptionToggle = (idx) => {
     if (isChecked) return;
-    cancel(); // Stop audio when user interacts
+    speak(questions[currentIndex].options[idx].text, "fr-FR");
     setSelectedIndices((prev) => {
       if (prev.includes(idx)) return prev.filter((i) => i !== idx);
       return [...prev, idx];
@@ -102,6 +139,7 @@ export default function MultiSelectPage() {
       if (currentIndex < questions.length - 1) {
         setCurrentIndex((prev) => prev + 1);
         setSelectedIndices([]);
+        setTranslatedOptions([]);
         setIsChecked(false);
       } else {
         setIsCompleted(true);
@@ -167,49 +205,55 @@ export default function MultiSelectPage() {
       submitLabel={submitLabel}
       timerValue={timerString}
     >
-      <div className="flex flex-col items-center w-full max-w-5xl">
-        {/* Audio Player Section */}
-        <div className="mb-10 w-full flex flex-col items-center justify-center">
-          <AudioPlayer text={questions[currentIndex]?.audioText || ""} />
-        </div>
+      <div className="practice-reading-page-shell mx-auto flex min-h-full w-full max-w-7xl flex-1 flex-col items-center justify-start px-4 pb-6 pt-[clamp(2rem,8vh,5rem)] sm:px-6 md:pb-8">
+        <div className="flex w-full max-w-6xl flex-col items-center">
+          {/* Audio Player Section */}
+          <div className="mb-14 flex w-full flex-col items-center justify-center">
+            <AudioPlayer text={questions[currentIndex]?.audioText || ""} />
+            {isChecked && currentQ?.sentenceFr && (
+              <SubmittedSentence
+                key={`${currentIndex}-${currentQ.id}`}
+                sentenceFr={currentQ.sentenceFr}
+                sentenceEn={currentQ.sentenceEn}
+                submitted={isChecked}
+              />
+            )}
+          </div>
 
-        {/* Options Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-6 w-full">
-          {currentQ?.options.map((opt, idx) => {
-            const isSelected = selectedIndices.includes(idx);
-            const isActuallyCorrect = currentQ.correctIndices.includes(idx);
-            let style =
-              "bg-white dark:bg-slate-800 border-2 border-gray-200 dark:border-slate-700 hover:border-blue-400 text-gray-700 dark:text-gray-200";
-
-            if (isChecked) {
-              if (isActuallyCorrect)
-                style = "bg-green-50 border-green-500 text-green-700 font-bold";
-              else if (isSelected)
-                style = "bg-red-50 border-red-500 text-red-700 opacity-60";
-              else style = "opacity-40";
-            } else if (isSelected) {
-              style =
-                "bg-blue-50 border-blue-500 text-blue-700 shadow-md ring-1 ring-blue-500 font-semibold"; // Active state matches provided image style roughly
-            }
-
-            return (
-              <button
-                key={idx}
-                onClick={() => handleOptionToggle(idx)}
-                disabled={isChecked}
-                className={`py-8 px-4 rounded-2xl text-center flex flex-col items-center justify-center transition-all transform active:scale-95 shadow-sm ${style}`}
-              >
-                <span className="text-xl md:text-2xl font-medium">
-                  {opt.text}
-                </span>
-                {opt.en && isChecked && (
-                  <span className="text-sm mt-1 opacity-80 font-normal">
-                    {opt.en}
-                  </span>
-                )}
-              </button>
-            );
-          })}
+          {/* Options Grid */}
+          <div className="grid w-full grid-cols-2 gap-4 sm:gap-6 md:grid-cols-3">
+            {currentQ?.options.map((opt, idx) => {
+              const isSelected = selectedIndices.includes(idx);
+              const isActuallyCorrect = currentQ.correctIndices.includes(idx);
+              return (
+                <PracticeOptionCard
+                  key={idx}
+                  selected={isSelected}
+                  correct={isActuallyCorrect}
+                  submitted={isChecked}
+                  onSelect={() => handleOptionToggle(idx)}
+                  className="min-h-[96px] rounded-[18px] text-xl sm:text-2xl"
+                  action={isChecked && opt.en && (
+                    <TranslateButton
+                      iconVariant="option"
+                      aria-label={translatedOptions.includes(idx) ? `Hide translation for ${opt.text}` : `Translate ${opt.text}`}
+                      aria-pressed={translatedOptions.includes(idx)}
+                      onClick={() => setTranslatedOptions((previous) => previous.includes(idx)
+                        ? previous.filter((index) => index !== idx)
+                        : [...previous, idx])}
+                    />
+                  )}
+                >
+                  <span>{opt.text}</span>
+                  {opt.en && translatedOptions.includes(idx) && (
+                    <span className="text-sm mt-1 opacity-80 font-normal">
+                      {opt.en}
+                    </span>
+                  )}
+                </PracticeOptionCard>
+              );
+            })}
+          </div>
         </div>
       </div>
     </PracticeGameLayout>

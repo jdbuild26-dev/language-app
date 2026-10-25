@@ -7,19 +7,25 @@ import { fetchPracticeQuestions } from "@/services/vocabularyApi";
 import { Loader2 } from "lucide-react";
 import AudioPlayer from "@/features/vocabulary/components/shared/AudioPlayer";
 import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
-import SegmentedInput from "@/features/vocabulary/components/ui/SegmentedInput";
+import { cn } from "@/lib/utils";
+import { TranslateButton } from "@/components/ui/TranslateButton";
 import { getFeedbackMessage } from "@/utils/feedbackMessages";
 import { useRouter } from "next/navigation";
+import { splitAudioBlankSentence } from "../../lib/practiceAnswers";
+import { useTranslateText } from "@/hooks/useTranslateText";
+
+type Question = { id: string; fullSentence: string; fullSentenceEnglish: string; displaySentence: string; answer: string; answers: string[]; instruction: string };
 
 export default function AudioFillBlankPage() {
   const router = useRouter();
-  const { speak } = useTextToSpeech();
+  const { speak, isSpeaking } = useTextToSpeech();
 
   const [loading, setLoading] = useState(true);
-  const [questions, setQuestions] = useState([]);
+  const [questions, setQuestions] = useState<Question[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
 
-  const [userInputs, setUserInputs] = useState([]);
+  const [userInputs, setUserInputs] = useState<string[]>([]);
+  const [blankResults, setBlankResults] = useState<boolean[]>([]);
 
   const [showFeedback, setShowFeedback] = useState(false);
   const [isCorrect, setIsCorrect] = useState(false);
@@ -27,7 +33,7 @@ export default function AudioFillBlankPage() {
   const [score, setScore] = useState(0);
   const [isCompleted, setIsCompleted] = useState(false);
 
-  const inputsRef = useRef([]);
+  const inputsRef = useRef<Array<HTMLInputElement | null>>([]);
 
   // Timer Hook
   const { timerString, resetTimer } = useExerciseTimer({
@@ -53,31 +59,11 @@ export default function AudioFillBlankPage() {
   useEffect(() => {
     if (questions.length > 0 && !isCompleted) {
       const currentQ = questions[currentIndex];
-      const answer = currentQ.answer
-        ? currentQ.answer.trim().toUpperCase()
-        : "";
-
-      const initialInputs = new Array(answer.length).fill("");
-
-      // Hint logic: Pre-fill first and last characters if answer is long enough
-      if (answer.length > 0) {
-        initialInputs[0] = answer[0];
-        if (answer.length > 1) {
-          initialInputs[answer.length - 1] = answer[answer.length - 1];
-        }
-      }
-
-      setUserInputs(initialInputs);
-      inputsRef.current = inputsRef.current.slice(0, answer.length);
-
-      setTimeout(() => {
-        const firstEmptyIndex = initialInputs.findIndex((val) => val === "");
-        if (firstEmptyIndex !== -1 && inputsRef.current[firstEmptyIndex]) {
-          inputsRef.current[firstEmptyIndex].focus();
-        } else if (inputsRef.current[1] && initialInputs[1] === "") {
-          inputsRef.current[1].focus();
-        }
-      }, 500);
+      setUserInputs(new Array(currentQ.answers.length).fill(""));
+      setBlankResults([]);
+      inputsRef.current = inputsRef.current.slice(0, currentQ.answers.length);
+      const focusTimer = setTimeout(() => inputsRef.current[0]?.focus(), 500);
+      return () => clearTimeout(focusTimer);
     }
   }, [currentIndex, questions, isCompleted]);
 
@@ -103,12 +89,16 @@ export default function AudioFillBlankPage() {
         const transformed = response.data.map((item) => {
           // Handle both nested structure (from vocabularyApi transformer) and flat structure
           const content = item.content || item;
+          const answer = item.evaluation?.correctAnswer || content["CorrectAnswer"] || "";
+          const answers = Array.isArray(answer) ? answer.map(String) : String(answer).split("|").map(word => word.trim());
 
           return {
             id: item.external_id || item["ExerciseID"],
             fullSentence: content["CompleteSentence"] || content["Audio"],
+            fullSentenceEnglish: content["CompleteSentence_EN"] || content["Sentence_EN"] || "",
             displaySentence: content["SentenceWithBlank"],
-            answer: item.evaluation?.correctAnswer || content["CorrectAnswer"],
+            answer: answers.join(", "),
+            answers,
             instruction:
               item.instruction_en ||
               item["Instruction_EN"] ||
@@ -128,62 +118,17 @@ export default function AudioFillBlankPage() {
     if (showFeedback) return;
 
     const newInputs = [...userInputs];
-
-    if (!value) {
-      newInputs[index] = "";
-      setUserInputs(newInputs);
-      return;
-    }
-
-    const char = value.slice(-1).toUpperCase();
-    // Allow letters, numbers, and common punctuation (apostrophe, hyphen, space, etc.)
-    if (!/^[A-Z0-9\u00C0-\u00FF\s\-'.,!?]$/.test(char)) {
-      return;
-    }
-
-    newInputs[index] = char;
+    newInputs[index] = value;
     setUserInputs(newInputs);
-
-    if (index < userInputs.length - 1) {
-      const currentQ = questions[currentIndex];
-      const answer = currentQ.answer.trim();
-      const isNextHint = index + 1 === answer.length - 1 && answer.length > 1;
-      inputsRef.current[index + 1]?.focus();
-    }
   };
 
   const handleKeyDown = (index, e) => {
     if (showFeedback) return;
 
-    if (e.key === "Backspace") {
-      const currentQ = questions[currentIndex];
-      const answer = currentQ.answer ? currentQ.answer.trim() : "";
-      const isHint = (idx) => {
-        if (answer.length <= 0) return false;
-        if (idx === 0) return true;
-        if (answer.length > 1 && idx === answer.length - 1) return true;
-        return false;
-      };
-
-      if (userInputs[index] && !isHint(index)) {
-        const newInputs = [...userInputs];
-        newInputs[index] = "";
-        setUserInputs(newInputs);
-      } else if (index > 0) {
-        const prevIndex = index - 1;
-        inputsRef.current[prevIndex]?.focus();
-        if (!isHint(prevIndex)) {
-          const newInputs = [...userInputs];
-          newInputs[prevIndex] = "";
-          setUserInputs(newInputs);
-        }
-      }
-    } else if (e.key === "ArrowLeft" && index > 0) {
-      inputsRef.current[index - 1]?.focus();
-    } else if (e.key === "ArrowRight" && index < userInputs.length - 1) {
-      inputsRef.current[index + 1]?.focus();
-    } else if (e.key === "Enter") {
-      handleSubmit();
+    if (e.key === "Enter") {
+      e.preventDefault();
+      if (index < userInputs.length - 1) inputsRef.current[index + 1]?.focus();
+      else if (userInputs.every(value => value.trim())) handleSubmit();
     }
   };
 
@@ -191,16 +136,10 @@ export default function AudioFillBlankPage() {
     if (showFeedback) return;
 
     const currentQ = questions[currentIndex];
-    const userAnswer = userInputs.join("");
-    const normalizedAnswer = currentQ.answer
-      .trim()
-      .toUpperCase()
-      .replace(/[^A-Z0-9\u00C0-\u00FF]/g, ""); // Keep only letters and numbers
-    const normalizedInput = userAnswer
-      .toUpperCase()
-      .replace(/[^A-Z0-9\u00C0-\u00FF]/g, ""); // Keep only letters and numbers
-
-    const correct = normalizedInput === normalizedAnswer;
+    const normalize = value => value.trim().toUpperCase().replace(/[^A-Z0-9\u00C0-\u00FF]/g, "");
+    const results = currentQ.answers.map((answer, index) => normalize(userInputs[index] || "") === normalize(answer));
+    const correct = results.every(Boolean);
+    setBlankResults(results);
     setIsCorrect(correct);
     setFeedbackMessage(getFeedbackMessage(correct));
     setShowFeedback(true);
@@ -212,6 +151,7 @@ export default function AudioFillBlankPage() {
 
   const handleContinue = () => {
     setShowFeedback(false);
+    answerTranslation.reset();
     setUserInputs([]);
     handleNext();
   };
@@ -225,6 +165,7 @@ export default function AudioFillBlankPage() {
   };
 
   const currentQ = questions[currentIndex];
+  const answerTranslation = useTranslateText(currentQ?.fullSentence || "", "fr", currentQ?.fullSentenceEnglish);
   const progress =
     questions.length > 0 ? ((currentIndex + 1) / questions.length) * 100 : 0;
 
@@ -253,7 +194,7 @@ export default function AudioFillBlankPage() {
         onRestart={() => window.location.reload()}
         isSubmitEnabled={
           (userInputs.length > 0 &&
-            userInputs.every((i) => i !== "") &&
+            userInputs.every((i) => i.trim() !== "") &&
             !showFeedback) ||
           showFeedback
         }
@@ -271,40 +212,54 @@ export default function AudioFillBlankPage() {
         correctAnswer={!isCorrect && currentQ ? currentQ.answer : null}
         feedbackMessage={feedbackMessage}
       >
-        <div className="flex flex-col items-center w-full max-w-2xl px-4">
-          <div className="mb-8">
-            <AudioPlayer text={currentQ?.fullSentence || ""} />
+        <div className="mx-auto flex w-full max-w-5xl flex-col items-center gap-8 px-4 py-8 sm:gap-10 sm:px-6 sm:py-10">
+          <div className="flex justify-center">
+            <AudioPlayer key={currentIndex} text={currentQ?.fullSentence || ""} showTurtle={!showFeedback} externalPlaying={isSpeaking} />
           </div>
 
-          <div className="text-lg md:text-xl font-medium text-center text-gray-800 dark:text-gray-100 mb-8 leading-relaxed w-full">
-            {currentQ?.displaySentence.split("___").map((part, i, arr) => (
+          <div className="practice-type-content-large w-full text-center font-normal !leading-[2.6] text-gray-800 dark:text-gray-100">
+            {splitAudioBlankSentence(currentQ?.displaySentence || "").map((part, i, arr) => (
               <React.Fragment key={i}>
                 <span className="leading-loose">{part}</span>
                 {i < arr.length - 1 && (
-                  <span className="inline-flex mx-2 align-middle shadow-sm rounded-lg overflow-hidden border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800">
-                    <SegmentedInput
-                      values={userInputs}
-                      onChange={(idx, val) => handleInputChange(idx, val)}
-                      onKeyDown={(idx, e) => handleKeyDown(idx, e)}
+                    <input
+                      ref={element => { inputsRef.current[i] = element; }}
+                      type="text"
+                      aria-label={`Missing word ${i + 1}`}
+                      autoComplete="off"
+                      autoCapitalize="none"
+                      spellCheck={false}
+                      value={userInputs[i] || ""}
+                      onChange={event => handleInputChange(i, event.target.value)}
+                      onKeyDown={event => handleKeyDown(i, event)}
                       disabled={showFeedback}
-                      hints={userInputs
-                        .map((_, i) => {
-                          const answerLength = currentQ.answer.length;
-                          return i === 0 ||
-                            (answerLength > 1 && i === answerLength - 1)
-                            ? i
-                            : -1;
-                        })
-                        .filter((i) => i !== -1)}
-                      showFeedback={showFeedback}
-                      isCorrect={isCorrect}
-                      inputRefs={inputsRef}
+                      style={{ width: `${Math.max(10, (currentQ.answers[i]?.length || 0) + 2)}ch` }}
+                      className={cn(
+                        "practice-type-content-large mx-1.5 inline-block min-h-12 max-w-[min(70vw,22rem)] rounded-xl border-2 bg-white px-3 py-2 text-center align-middle font-normal shadow-sm outline-none transition-[border-color,box-shadow] focus-visible:ring-2 focus-visible:ring-sky-300 focus-visible:ring-offset-2 sm:mx-2 dark:bg-slate-800 dark:focus-visible:ring-offset-slate-950",
+                        showFeedback
+                          ? blankResults[i] ? "border-green-500 bg-green-50 text-green-700 dark:bg-green-950/30 dark:text-green-300" : "border-red-500 bg-red-50 text-red-700 dark:bg-red-950/30 dark:text-red-300"
+                          : "border-slate-300 text-slate-800 focus:border-sky-500 dark:border-slate-600 dark:text-slate-100",
+                      )}
                     />
-                  </span>
                 )}
               </React.Fragment>
             ))}
           </div>
+          {showFeedback && currentQ?.fullSentence && (
+            <div className="max-w-full text-center">
+              <div className="practice-type-content-large flex flex-wrap items-center justify-center gap-3 font-normal text-green-700 dark:text-green-400">
+                <span lang={answerTranslation.showTranslation ? "en" : "fr"}>{answerTranslation.displayText}</span>
+                <TranslateButton
+                  className="h-12 w-12 [&_svg]:h-7 [&_svg]:w-7"
+                  aria-label={answerTranslation.showTranslation ? "Show French answer" : "Show English answer"}
+                  aria-pressed={answerTranslation.showTranslation}
+                  isLoading={answerTranslation.isTranslating}
+                  onClick={answerTranslation.toggle}
+                />
+              </div>
+              {answerTranslation.error && <p role="status" className="mt-2 text-base text-red-700 dark:text-red-400">{answerTranslation.error}</p>}
+            </div>
+          )}
         </div>
       </PracticeGameLayout>
     </>

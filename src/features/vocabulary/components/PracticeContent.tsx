@@ -73,6 +73,16 @@ const practiceActivities = [
     color: "from-rose-400 to-red-500",
     shadow: "shadow-rose-200 dark:shadow-rose-900/20",
   },
+  {
+    id: "match-words",
+    name: "Match the Words",
+    icon: GitMerge,
+    desc: "Match French and English words",
+    path: "/vocabulary/practice/match-words",
+    category: "reading",
+    color: "from-sky-400 to-indigo-500",
+    shadow: "shadow-sky-200 dark:shadow-sky-900/20",
+  },
 
   // Listening Activities
 
@@ -150,6 +160,16 @@ const practiceActivities = [
 
   // Writing Activities
   {
+    id: "correct-spelling",
+    name: "Correct Spelling",
+    icon: Edit3,
+    desc: "Correct the spelling",
+    path: "/vocabulary/practice/correct-spelling",
+    category: "writing",
+    color: "from-emerald-400 to-teal-500",
+    shadow: "shadow-emerald-200 dark:shadow-emerald-900/20",
+  },
+  {
     id: "fill-blank",
     name: "Fill in the Blank",
     icon: Keyboard,
@@ -158,16 +178,6 @@ const practiceActivities = [
     category: "writing",
     color: "from-cyan-400 to-blue-500",
     shadow: "shadow-cyan-200 dark:shadow-cyan-900/20",
-  },
-  {
-    id: "correct-spelling",
-    name: "Correct Spelling",
-    icon: CheckCircle2,
-    desc: "Fix misspelled words",
-    path: "/vocabulary/practice/correct-spelling",
-    category: "writing",
-    color: "from-emerald-400 to-teal-500",
-    shadow: "shadow-emerald-200 dark:shadow-emerald-900/20",
   },
   {
     id: "dictation-image",
