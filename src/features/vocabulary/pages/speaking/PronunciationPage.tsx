@@ -22,6 +22,18 @@ const MOCK_WORDS = [
   { id: 3, word: "merci", meaning: "thank you" },
 ];
 
+type Recognition = {
+  continuous: boolean;
+  lang: string;
+  interimResults: boolean;
+  onstart: (() => void) | null;
+  onresult: ((event: { results: ArrayLike<ArrayLike<{ transcript: string }>> }) => void) | null;
+  onerror: ((event: { error: string }) => void) | null;
+  onend: (() => void) | null;
+  start: () => void;
+  stop: () => void;
+};
+
 export default function PronunciationPage() {
   const router = useRouter();
 
@@ -38,25 +50,26 @@ export default function PronunciationPage() {
   // 'idle', 'recording', 'analyzing', 'correct', 'incorrect'
   const [feedbackState, setFeedbackState] = useState("idle");
 
-  const recognitionRef = useRef(null);
+  const recognitionRef = useRef<Recognition | null>(null);
   const currentWord = questions[currentIndex];
 
   // Initialize Speech Recognition
   useEffect(() => {
-    if (window.SpeechRecognition || window.webkitSpeechRecognition) {
-      const SpeechRecognition =
-        window.SpeechRecognition || window.webkitSpeechRecognition;
-      recognitionRef.current = new SpeechRecognition();
-      recognitionRef.current.continuous = false;
-      recognitionRef.current.lang = "fr-FR";
-      recognitionRef.current.interimResults = false; // Need final result for analysis
+    const browserWindow = window as typeof window & { SpeechRecognition?: new () => Recognition; webkitSpeechRecognition?: new () => Recognition };
+    const SpeechRecognition = browserWindow.SpeechRecognition || browserWindow.webkitSpeechRecognition;
+    if (SpeechRecognition) {
+      const recognition = new SpeechRecognition();
+      recognitionRef.current = recognition;
+      recognition.continuous = false;
+      recognition.lang = "fr-FR";
+      recognition.interimResults = false; // Need final result for analysis
 
-      recognitionRef.current.onstart = () => {
+      recognition.onstart = () => {
         setIsListening(true);
         setFeedbackState("recording");
       };
 
-      recognitionRef.current.onresult = (event) => {
+      recognition.onresult = (event) => {
         const transcript = Array.from(event.results)
           .map((result) => result[0].transcript)
           .join("");
@@ -64,14 +77,14 @@ export default function PronunciationPage() {
         analyzeSpeech(transcript);
       };
 
-      recognitionRef.current.onerror = (event) => {
+      recognition.onerror = (event) => {
         console.error("Speech recognition error", event.error);
         setIsListening(false);
         setFeedbackState("idle");
         // Could show an error toast here
       };
 
-      recognitionRef.current.onend = () => {
+      recognition.onend = () => {
         setIsListening(false);
         // If it ended naturally without results, go back to idle.
         // But if we got results, `onresult` will handle the state change.

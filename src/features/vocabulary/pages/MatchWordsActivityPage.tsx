@@ -8,6 +8,9 @@ import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
 import { useTextToSpeech } from "@/hooks/useTextToSpeech";
 import { fetchMatchPairsData } from "@/services/vocabularyApi";
 
+type Pair = { id: string; french: string; english: string; image?: string | null };
+type Card = { id: string; pairId: string; content: string; type: "top" | "bottom"; isImage?: boolean };
+
 export default function MatchWordsActivityPage({ mode = "text" }) {
   return (
     <Suspense fallback={<div className="flex items-center justify-center min-h-screen"><Loader2 className="w-8 h-8 animate-spin text-sky-500" /></div>}>
@@ -23,19 +26,19 @@ function MatchWordsContent({ mode = "text" }) {
   const searchParams = useSearchParams();
 
   // Allow overriding mode via query param if needed, though prop is cleaner for distinct routes
-  const currentMode = searchParams.get("mode") || mode;
+  const currentMode = searchParams?.get("mode") || mode;
 
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [topCards, setTopCards] = useState([]); // French words
-  const [bottomCards, setBottomCards] = useState([]); // English words or Images
+  const [error, setError] = useState<string | null>(null);
+  const [topCards, setTopCards] = useState<Card[]>([]); // French words
+  const [bottomCards, setBottomCards] = useState<Card[]>([]); // English words or Images
 
-  const [selectedTopId, setSelectedTopId] = useState(null);
-  const [selectedBottomId, setSelectedBottomId] = useState(null);
+  const [selectedTopId, setSelectedTopId] = useState<string | null>(null);
+  const [selectedBottomId, setSelectedBottomId] = useState<string | null>(null);
 
-  const [matchedIds, setMatchedIds] = useState([]);
-  const [errorIds, setErrorIds] = useState([]);
-  const [successIds, setSuccessIds] = useState([]);
+  const [matchedIds, setMatchedIds] = useState<string[]>([]);
+  const [errorIds, setErrorIds] = useState<string[]>([]);
+  const [successIds, setSuccessIds] = useState<string[]>([]);
 
   const [isGameOver, setIsGameOver] = useState(false);
   const [score, setScore] = useState(0);
@@ -73,25 +76,25 @@ function MatchWordsContent({ mode = "text" }) {
     }
   };
 
-  const initializeGame = (data) => {
+  const initializeGame = (data: Pair[]) => {
     const shuffledSource = [...data].sort(() => 0.5 - Math.random());
     const activePairs = shuffledSource.slice(0, PAIRS_PER_ROUND);
 
-    const top = activePairs
+    const top: Card[] = activePairs
       .map((p) => ({
         id: `fr-${p.id}`,
         pairId: p.id,
         content: p.french,
-        type: "top",
+        type: "top" as const,
       }))
       .sort(() => 0.5 - Math.random());
 
-    const bottom = activePairs
+    const bottom: Card[] = activePairs
       .map((p) => ({
         id: `bottom-${p.id}`,
         pairId: p.id,
         content: currentMode === "image" ? p.image || p.english : p.english,
-        type: "bottom",
+        type: "bottom" as const,
         isImage: currentMode === "image" && !!p.image,
       }))
       .sort(() => 0.5 - Math.random());
@@ -106,7 +109,7 @@ function MatchWordsContent({ mode = "text" }) {
     resetTimer();
   };
 
-  const handleTopClick = (card) => {
+  const handleTopClick = (card: Card) => {
     if (
       isGameOver ||
       matchedIds.includes(card.pairId) ||
@@ -122,7 +125,7 @@ function MatchWordsContent({ mode = "text" }) {
     }
   };
 
-  const handleBottomClick = (card) => {
+  const handleBottomClick = (card: Card) => {
     if (
       isGameOver ||
       matchedIds.includes(card.pairId) ||
@@ -130,6 +133,7 @@ function MatchWordsContent({ mode = "text" }) {
     )
       return;
 
+    if (!card.isImage) speak(card.content, "en-US");
     setSelectedBottomId(card.id);
 
     if (selectedTopId) {
@@ -137,7 +141,7 @@ function MatchWordsContent({ mode = "text" }) {
     }
   };
 
-  const checkMatch = (topId, bottomId) => {
+  const checkMatch = (topId: string, bottomId: string) => {
     const topCard = topCards.find((c) => c.id === topId);
     const bottomCard = bottomCards.find((c) => c.id === bottomId);
 

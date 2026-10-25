@@ -1,2 +1,5 @@
-import AudioMatchingPage from "@/features/vocabulary/pages/listening/AudioMatchingPage";
-export default function VocabAudioMatchPage() { return <AudioMatchingPage />; }
+import RollingMatchPage from "@/features/vocabulary/pages/RollingMatchPage";
+
+export default function VocabularyAudioMatchPage() {
+  return <RollingMatchPage mode="audio" />;
+}

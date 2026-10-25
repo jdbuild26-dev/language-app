@@ -1,2 +1,3 @@
-import RepeatWordPage from "@/features/practice/pages/RepeatWordPage";
-export default function VocabRepeatWordPage() { return <RepeatWordPage />; }
+import VocabularyRepeatPage from "@/features/vocabulary/pages/VocabularyRepeatPage";
+
+export default function VocabRepeatWordPage() { return <VocabularyRepeatPage mode="word" />; }

@@ -3,32 +3,35 @@
 import React, { useState, useEffect, useRef } from "react";
 import { usePracticeExit } from "@/hooks/usePracticeExit";
 import { useExerciseTimer } from "@/hooks/useExerciseTimer";
-import { Volume2, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
 import FeedbackBanner from "@/components/ui/FeedbackBanner";
 import { getFeedbackMessage } from "@/utils/feedbackMessages";
-import { useTextToSpeech } from "@/hooks/useTextToSpeech";
+import AudioPlayer from "@/features/vocabulary/components/shared/AudioPlayer";
+import { TranslateButton } from "@/components/ui/TranslateButton";
+import { useTranslateText } from "@/hooks/useTranslateText";
 import { useRouter } from "next/navigation";
 import { fetchPracticeQuestions } from "@/services/vocabularyApi";
+
+type Question = { id: string; fullText: string; displayParts: string[]; blanks: string[]; hints: string[]; timeLimitSeconds: number };
 
 export default function TypingFillInBlankPage() {
   const router = useRouter();
   const handleExit = () => router.push("/vocabulary/practice");
-  const { speak, isSpeaking } = useTextToSpeech();
-  const inputRefs = useRef([]);
+  const inputRefs = useRef<Array<HTMLInputElement | null>>([]);
 
-  const [questions, setQuestions] = useState([]);
+  const [questions, setQuestions] = useState<Question[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState<string | null>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [userInputs, setUserInputs] = useState([]);
+  const [userInputs, setUserInputs] = useState<string[]>([]);
   const [isCompleted, setIsCompleted] = useState(false);
   const [showFeedback, setShowFeedback] = useState(false);
   const [isCorrect, setIsCorrect] = useState(false);
   const [feedbackMessage, setFeedbackMessage] = useState("");
   const [score, setScore] = useState(0);
-  const [blankResults, setBlankResults] = useState([]);
+  const [blankResults, setBlankResults] = useState<boolean[]>([]);
 
   useEffect(() => {
     const loadData = async () => {
@@ -97,6 +100,10 @@ export default function TypingFillInBlankPage() {
   }, []);
 
   const currentQuestion = questions[currentIndex];
+  const correctSentence = currentQuestion?.fullText || currentQuestion?.displayParts.map((part, index) =>
+    `${index > 0 ? currentQuestion.blanks[index - 1] || "" : ""}${part}`,
+  ).join("") || "";
+  const answerTranslation = useTranslateText(correctSentence, "fr");
   const timerDuration = currentQuestion?.timeLimitSeconds || 60;
 
   const { timerString, resetTimer } = useExerciseTimer({
@@ -117,15 +124,8 @@ export default function TypingFillInBlankPage() {
       setUserInputs(new Array(currentQuestion.blanks.length).fill(""));
       setBlankResults([]);
       resetTimer();
-      setTimeout(() => inputRefs.current[0]?.focus(), 100);
     }
   }, [currentIndex, currentQuestion, isCompleted, resetTimer]);
-
-  const handlePlayAudio = () => {
-    if (currentQuestion) {
-      speak(currentQuestion.fullText, "fr-FR");
-    }
-  };
 
   const handleInputChange = (index, value) => {
     const newInputs = [...userInputs];
@@ -197,21 +197,42 @@ export default function TypingFillInBlankPage() {
   const renderSentence = () => {
     if (!currentQuestion) return null;
     const parts = currentQuestion.displayParts;
-    const elements = [];
+    const elements: React.ReactNode[] = [];
     for (let i = 0; i < parts.length; i++) {
       elements.push(<span key={`part-${i}`}>{parts[i]}</span>);
       if (i < currentQuestion.blanks.length) {
         elements.push(
-          <span key={`blank-${i}`} className="inline-block mx-1">
+          <span
+            key={`blank-${i}`}
+            className="relative mx-2 inline-flex items-center align-middle"
+          >
+            {currentQuestion.hints?.[i] && (
+              <label
+                htmlFor={`writing-word-${i}`}
+                id={`writing-clue-${i}`}
+                className="sr-only"
+              >
+                {currentQuestion.hints[i]}
+              </label>
+            )}
             <input
-              ref={(el) => (inputRefs.current[i] = el)}
+              id={`writing-word-${i}`}
+              aria-label={`Missing word ${i + 1}`}
+              aria-describedby={
+                currentQuestion.hints?.[i] ? `writing-clue-${i}` : undefined
+              }
+              ref={(el) => { inputRefs.current[i] = el; }}
               type="text"
               value={userInputs[i] || ""}
               onChange={(e) => handleInputChange(i, e.target.value)}
               onKeyDown={(e) => handleKeyDown(e, i)}
               disabled={showFeedback}
+              style={{
+                width: `${Math.max(7, currentQuestion.blanks[i].length + 2, (currentQuestion.hints?.[i]?.length || 0) + 2)}ch`,
+                lineHeight: 1.2,
+              }}
               className={cn(
-                "w-32 px-3 py-1 rounded-lg text-center font-semibold border-2 outline-none transition-all",
+                "practice-type-content h-12 min-w-28 max-w-[min(70vw,22rem)] px-3 py-1 rounded-lg text-center font-normal tracking-normal text-slate-800 dark:text-slate-100 border-2 outline-none transition-colors placeholder:text-slate-400 focus:placeholder:text-transparent disabled:placeholder:text-transparent caret-slate-800 dark:caret-slate-100",
                 "bg-white dark:bg-slate-700",
                 showFeedback && blankResults[i]
                   ? "border-emerald-500"
@@ -219,20 +240,7 @@ export default function TypingFillInBlankPage() {
                     ? "border-red-500"
                     : "border-slate-300 focus:border-blue-500",
               )}
-              placeholder={
-                currentQuestion.hints && currentQuestion.hints[i]
-                  ? currentQuestion.hints[i]
-                  : "..."
-              }
-              onFocus={(e) => {
-                e.target.placeholder = "";
-              }}
-              onBlur={(e) => {
-                e.target.placeholder =
-                  currentQuestion.hints && currentQuestion.hints[i]
-                    ? currentQuestion.hints[i]
-                    : "...";
-              }}
+              placeholder={currentQuestion.hints?.[i] || "|"}
             />
           </span>,
         );
@@ -253,32 +261,41 @@ export default function TypingFillInBlankPage() {
         onExit={handleExit}
         onNext={handleSubmit}
         isSubmitEnabled={allFilled && !showFeedback}
-        showSubmitButton={!showFeedback}
+        showSubmitButton={true}
         timerValue={timerString}
       >
-        <div className="flex flex-col items-center w-full max-w-3xl mx-auto px-4 py-12">
-          <div className="w-full bg-white dark:bg-slate-800 rounded-3xl p-10 mb-8 shadow-2xl border-2 border-slate-100 dark:border-slate-700">
-            <p className="text-2xl leading-relaxed text-center font-medium text-slate-700 dark:text-slate-200">
+        <div className="flex flex-1 flex-col items-center justify-center w-full max-w-[1280px] mx-auto px-4 py-12 sm:px-6">
+          <div className="mb-12 sm:mb-14">
+            <AudioPlayer text={correctSentence} showTurtle={!showFeedback} />
+          </div>
+          <div className={cn("w-full py-4", showFeedback && "max-w-5xl rounded-3xl border border-slate-200 bg-white px-5 sm:px-8 dark:border-slate-700 dark:bg-slate-900")}>
+            <p className="practice-type-content !leading-[1.8] text-center font-medium text-slate-700 dark:text-slate-200">
               {renderSentence()}
             </p>
+            {showFeedback && correctSentence && (
+              <div className="mt-6 flex flex-wrap items-center justify-center gap-2 text-center text-xl text-slate-900 dark:text-slate-100">
+                <span lang={answerTranslation.showTranslation ? "en" : "fr"}>{answerTranslation.displayText}</span>
+                <TranslateButton
+                  aria-label={answerTranslation.showTranslation ? "Show French answer" : "Translate correct answer"}
+                  aria-pressed={answerTranslation.showTranslation}
+                  isLoading={answerTranslation.isTranslating}
+                  onClick={answerTranslation.toggle}
+                />
+              </div>
+            )}
+            {showFeedback && answerTranslation.error && (
+              <p role="status" className="mt-2 text-center text-sm text-red-700 dark:text-red-400">{answerTranslation.error}</p>
+            )}
           </div>
-          <button
-            onClick={handlePlayAudio}
-            disabled={isSpeaking}
-            className="flex items-center gap-3 px-6 py-3 rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all border-2 border-transparent hover:border-blue-200"
-          >
-            <Volume2 className={cn("w-5 h-5", isSpeaking && "animate-pulse")} />
-            Listen to full sentence
-          </button>
         </div>
       </PracticeGameLayout>
 
       {showFeedback && (
         <FeedbackBanner
+          compact
           isCorrect={isCorrect}
           onContinue={handleContinue}
           message={feedbackMessage}
-          correctAnswer={!isCorrect ? currentQuestion.blanks.join(", ") : null}
           continueLabel={
             currentIndex + 1 === questions.length ? "FINISH" : "CONTINUE"
           }

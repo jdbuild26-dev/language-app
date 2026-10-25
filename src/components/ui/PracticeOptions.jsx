@@ -2,6 +2,7 @@
 
 import { motion, AnimatePresence } from "framer-motion";
 import { CheckCircle2 } from "lucide-react";
+import PracticeOptionCard from "./PracticeOptionCard";
 import { cn } from "@/lib/utils";
 
 /**
@@ -25,6 +26,7 @@ const PRACTICE_OPTION_TEXT_CLASS =
  *  showCheckIcon  — show CheckCircle2 on correct option when feedback shown
  *  renderLabel    — (option, index) => ReactNode  — custom option content
  *  renderSuffix   — (option, index) => ReactNode  — appended after label
+ *  renderAction   — (option, index) => ReactNode  — separate action beside the option button
  */
 /**
  * @param {PracticeOptionsProps} props
@@ -33,6 +35,8 @@ export default function PracticeOptions({
   options = [],
   selectedOption,
   correctIndex,
+  selectedIndices,
+  correctIndices,
   showFeedback,
   onSelect,
   className = "",
@@ -40,21 +44,15 @@ export default function PracticeOptions({
   showCheckIcon = false,
   renderLabel,
   renderSuffix,
+  renderAction,
 }) {
   return (
     <div className={cn("flex flex-col gap-3", className)}>
       {options.map((option, index) => {
-        const isSelected = selectedOption === index;
-        const isCorrect = showFeedback && index === correctIndex;
-        const isWrong = showFeedback && isSelected && index !== correctIndex;
-        const isMuted = showFeedback && !isSelected && index !== correctIndex;
-        const optionStateClass = isCorrect
-          ? "border-emerald-500 bg-emerald-50 shadow-[0_0_0_3px_rgba(52,211,153,0.15)] dark:border-emerald-400 dark:bg-emerald-950/30"
-          : isWrong
-            ? "border-red-400 bg-red-50 shadow-[0_0_0_3px_rgba(248,113,113,0.15)] dark:border-red-400 dark:bg-red-950/30"
-            : isSelected
-              ? "border-blue-500 bg-sky-50 shadow-[0_0_0_3px_rgba(59,130,246,0.12)] dark:border-blue-400 dark:bg-blue-950/30"
-              : "border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800";
+        const isSelected = selectedIndices ? selectedIndices.includes(index) : selectedOption === index;
+        const isCorrectIndex = correctIndices ? correctIndices.includes(index) : index === correctIndex;
+        const isCorrect = showFeedback && isCorrectIndex;
+        const isWrong = showFeedback && isSelected && !isCorrectIndex;
         const dotClass = isCorrect
           ? "border-emerald-500 bg-emerald-500 dark:border-emerald-400 dark:bg-emerald-400"
           : isWrong
@@ -68,22 +66,16 @@ export default function PracticeOptions({
             ? "text-red-600 dark:text-red-300"
             : "text-slate-700 dark:text-slate-200";
 
-        return (
-          <motion.button
+        const optionButton = (
+          <PracticeOptionCard
             key={index}
-            onClick={() => !showFeedback && onSelect?.(index)}
-            disabled={showFeedback}
-            whileHover={!showFeedback && !isSelected ? { scale: 1.01 } : {}}
-            whileTap={!showFeedback ? { scale: 0.985 } : {}}
-            transition={{ duration: 0.22 }}
-            className={cn(
-              "w-full py-3.5 px-4 rounded-2xl text-left flex items-center gap-3 border-2 transition-[background-color,border-color,color,opacity,box-shadow]",
-              PRACTICE_OPTION_TEXT_CLASS,
-              isMuted && "opacity-40",
-              showFeedback && "cursor-default",
-              itemClassName,
-              optionStateClass,
-            )}
+            variant="row"
+            selected={isSelected}
+            correct={isCorrectIndex}
+            submitted={showFeedback}
+            onSelect={() => onSelect?.(index)}
+            className={itemClassName}
+            action={renderAction?.(option, index)}
           >
             {/* Radio dot / check icon */}
             {showCheckIcon && isCorrect ? (
@@ -122,8 +114,10 @@ export default function PracticeOptions({
 
             {/* Suffix (e.g. audio button) */}
             {renderSuffix && renderSuffix(option, index)}
-          </motion.button>
+          </PracticeOptionCard>
         );
+
+        return optionButton;
       })}
     </div>
   );

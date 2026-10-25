@@ -1,284 +1,292 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { useExerciseTimer } from "@/hooks/useExerciseTimer";
-import { CheckCircle, AlertCircle, Loader2 } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { Button } from "@/components/ui/button";
 import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
-import { cn } from "@/lib/utils";
+import { TranslateButton } from "@/components/ui/TranslateButton";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { useExerciseTimer } from "@/hooks/useExerciseTimer";
+import { useTextToSpeech } from "@/hooks/useTextToSpeech";
+import PracticeOptionCard from "@/components/ui/PracticeOptionCard";
 import { fetchPracticeQuestions } from "@/services/vocabularyApi";
+import { translateText } from "@/services/aiPracticeApi";
+import { loadGroupTranslationRows, parseGroupWords, withGroupTranslations } from "../lib/groupWordsTranslations";
 
-// Group Words (Pick 4)
+type GroupWord = { text: string; translation?: string; isAnswer: boolean };
+type GroupQuestion = {
+  id: string;
+  instructionFr: string;
+  instructionEn: string;
+  words: GroupWord[];
+  reason: string;
+};
+
+const GROUP_SIZE = 4;
+
+function shuffleWords(words: GroupWord[]): GroupWord[] {
+  const shuffled = [...words];
+  for (let index = shuffled.length - 1; index > 0; index -= 1) {
+    const randomIndex = Math.floor(Math.random() * (index + 1));
+    [shuffled[index], shuffled[randomIndex]] = [shuffled[randomIndex], shuffled[index]];
+  }
+  return shuffled;
+}
+
 export default function GroupWordsGamePage() {
   const router = useRouter();
-  const [questions, setQuestions] = useState([]);
+  const { learningLang, knownLang } = useLanguage();
+  const { speak, cancel } = useTextToSpeech();
+  const [questions, setQuestions] = useState<GroupQuestion[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState<string | null>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [selectedWords, setSelectedWords] = useState([]);
-  const [isSubmitted, setIsSubmitted] = useState(false);
-  const [score, setScore] = useState(0);
-  const [isGameOver, setIsGameOver] = useState(false);
+  const [selectedIndices, setSelectedIndices] = useState<number[]>([]);
+  const [translatedIndices, setTranslatedIndices] = useState<Set<number>>(new Set());
+  const [translationCache, setTranslationCache] = useState<Record<string, string>>({});
+  const [translationErrors, setTranslationErrors] = useState<Record<string, string>>({});
+  const pendingTranslations = useRef(new Map<string, AbortController>());
+  const translationGeneration = useRef(0);
   const [showFeedback, setShowFeedback] = useState(false);
   const [isCorrect, setIsCorrect] = useState(false);
+  const [score, setScore] = useState(0);
+  const [isGameOver, setIsGameOver] = useState(false);
   const [feedbackMessage, setFeedbackMessage] = useState("");
 
-  // Timer Hook
-  const { timerString, resetTimer, isPaused } = useExerciseTimer({
+  const { timerString, resetTimer } = useExerciseTimer({
     duration: 60,
     mode: "timer",
     onExpire: () => {
-      if (!isSubmitted && !showFeedback && !isGameOver) {
-        setIsSubmitted(true);
+      if (!showFeedback && !isGameOver) {
         setIsCorrect(false);
         setFeedbackMessage("Time's up!");
         setShowFeedback(true);
       }
     },
-    isPaused: isSubmitted || showFeedback || isGameOver,
+    isPaused: showFeedback || isGameOver,
   });
 
   useEffect(() => {
-    loadQuestions();
-  }, []);
+    let active = true;
+    fetchPracticeQuestions("group_words", { learningLang, knownLang })
+      .then(async (response) => {
+        const localRows = learningLang.toLowerCase() === "fr" && knownLang.toLowerCase() === "en"
+          ? await loadGroupTranslationRows().catch(() => [])
+          : [];
+        if (!active) return;
+        const normalized: GroupQuestion[] = withGroupTranslations(response?.data || [], localRows, learningLang, knownLang)
+          .map((item: Record<string, unknown>) => {
+            const answers = parseGroupWords(item.correctGroup ?? item.CorrectGroup ?? item.CorrectAnswer);
+            const distractors = parseGroupWords(item.otherWords ?? item.OtherWords ?? item.Options);
+            const answerTranslations = parseGroupWords(item.correctGroup_EN ?? item.CorrectGroup_EN, true);
+            const distractorTranslations = parseGroupWords(item.otherWords_EN ?? item.OtherWords_EN, true);
+            const answerWords: GroupWord[] = answers.map((word, index) => ({
+              text: word,
+              translation: answerTranslations[index],
+              isAnswer: true,
+            }));
+            const otherWords: GroupWord[] = distractors
+              .map((word, index) => ({
+                text: word,
+                translation: distractorTranslations[index],
+                isAnswer: false,
+              }))
+              .filter((word) => !answers.includes(word.text))
+              .slice(0, GROUP_SIZE);
+            if (
+              answerWords.length !== GROUP_SIZE ||
+              otherWords.length !== GROUP_SIZE ||
+              new Set([...answerWords, ...otherWords].map((word) => word.text)).size !== GROUP_SIZE * 2
+            ) return null;
+            return {
+              id: String(item.id ?? item.ExerciseID ?? ""),
+              instructionFr: String(item.Instruction_FR ?? item.instructionFr ?? "Sélectionnez les 4 mots liés"),
+              instructionEn: String(item.Instruction_EN ?? item.instructionEn ?? "Select the 4 related words"),
+              words: shuffleWords([...answerWords, ...otherWords]),
+              reason: String(item.explanation ?? item.Reason ?? item.Explanation ?? ""),
+            };
+          })
+          .filter((question: GroupQuestion | null): question is GroupQuestion => question !== null);
+        setQuestions(normalized);
+        setError(null);
+        setCurrentIndex(0);
+        setSelectedIndices([]);
+        setTranslatedIndices(new Set());
+        setShowFeedback(false);
+        setScore(0);
+        setIsGameOver(false);
+      })
+      .catch((cause) => {
+        if (!active) return;
+        console.error("Failed to load group words:", cause);
+        setError("Failed to load questions.");
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+    return () => { active = false; };
+  }, [learningLang, knownLang]);
 
   useEffect(() => {
     resetTimer();
   }, [currentIndex, resetTimer]);
 
-  const loadQuestions = async () => {
-    try {
-      setLoading(true);
+  useEffect(() => {
+    cancel();
+  }, [currentIndex, learningLang, knownLang, showFeedback, isGameOver, cancel]);
 
-      const response = await fetchPracticeQuestions("group_words");
-      if (response && response.data) {
-        const normalized = response.data.map((item) => {
-          // Helper to parse string or array
-          const parseList = (val) => {
-            if (Array.isArray(val)) return val;
-            if (typeof val === "string")
-              return val.split(/[|,]+/).map((s) => s.trim());
-            return [];
-          };
-
-          const correct = parseList(
-            item.correctGroup || item.CorrectGroup || item.CorrectAnswer,
-          );
-          const others = parseList(
-            item.otherWords || item.OtherWords || item.Options,
-          );
-
-          const correct_EN = parseList(
-            item.correctGroup_EN || item.CorrectGroup_EN || [],
-          );
-          const others_EN = parseList(
-            item.otherWords_EN || item.OtherWords_EN || [],
-          );
-
-          // Build translation map
-          const translationsMap = {};
-          correct.forEach((word, idx) => {
-            if (correct_EN[idx]) translationsMap[word] = correct_EN[idx];
-          });
-          others.forEach((word, idx) => {
-            if (others_EN[idx]) translationsMap[word] = others_EN[idx];
-          });
-
-          const all = [...correct, ...others].sort(() => Math.random() - 0.5);
-
-          return {
-            id: item.id || item.ExerciseID,
-            theme: item.theme || item.Topic || item.Theme || "",
-            instructionFr: item.Instruction_FR || "Triez les mots",
-            instructionEn:
-              item.Instruction_EN || "Select 4 words that are related",
-            allWords: all,
-            correctGroup: correct,
-            translationsMap,
-            reason:
-              item.Reason ||
-              item.Explanation ||
-              item.CorrectExplanation_EN ||
-              `These are all related to ${item.theme || "the topic"}.`,
-          };
-        });
-        setQuestions(normalized);
-      }
-    } catch (err) {
-      console.error("Failed to load group words:", err);
-      setError("Failed to load questions.");
-    } finally {
-      setLoading(false);
-    }
-  };
+  useEffect(() => {
+    const pending = pendingTranslations.current;
+    return () => {
+      translationGeneration.current += 1;
+      pending.forEach((controller) => controller.abort());
+      pending.clear();
+    };
+  }, [learningLang, knownLang]);
 
   const currentQuestion = questions[currentIndex];
   const totalQuestions = questions.length;
-  const progress = ((currentIndex + 1) / totalQuestions) * 100;
-  const targetCount = currentQuestion?.correctGroup?.length || 4;
 
-  const handleWordClick = (word) => {
-    if (isSubmitted) return;
+  function translationKey(word: GroupWord) {
+    return JSON.stringify([learningLang, knownLang, word.text]);
+  }
 
-    if (selectedWords.includes(word)) {
-      setSelectedWords((prev) => prev.filter((w) => w !== word));
-    } else {
-      if (selectedWords.length < targetCount) {
-        setSelectedWords((prev) => [...prev, word]);
-      }
+  async function toggleWordTranslation(word: GroupWord, index: number) {
+    if (!showFeedback) return;
+    const key = translationKey(word);
+    if (translatedIndices.has(index)) {
+      setTranslatedIndices((previous) => {
+        const next = new Set(previous);
+        next.delete(index);
+        return next;
+      });
+      return;
     }
-  };
+    if (word.translation || translationCache[key]) {
+      setTranslatedIndices((previous) => new Set(previous).add(index));
+      return;
+    }
+    if (pendingTranslations.current.has(key)) return;
+    const generation = translationGeneration.current;
+    const controller = new AbortController();
+    pendingTranslations.current.set(key, controller);
+    const timeout = setTimeout(() => controller.abort(), 12000);
+    setTranslationErrors((previous) => ({ ...previous, [key]: "" }));
+    try {
+      const result = await translateText(word.text, knownLang.toLowerCase() || "en", controller.signal);
+      if (generation !== translationGeneration.current) return;
+      const translation = result.translation?.trim();
+      if (!translation) throw new Error("Translation unavailable");
+      setTranslationCache((previous) => ({ ...previous, [key]: translation }));
+      setTranslatedIndices((previous) => new Set(previous).add(index));
+    } catch {
+      if (generation === translationGeneration.current) {
+        setTranslationErrors((previous) => ({ ...previous, [key]: "Translation unavailable. Try again." }));
+      }
+    } finally {
+      clearTimeout(timeout);
+      if (pendingTranslations.current.get(key) === controller) pendingTranslations.current.delete(key);
+    }
+  }
 
-  const handleSubmit = () => {
-    if (isSubmitted) {
-      // Next Logic
-      setShowFeedback(false);
-      if (currentIndex + 1 < totalQuestions) {
-        setCurrentIndex((prev) => prev + 1);
-        setSelectedWords([]);
-        setIsSubmitted(false);
-      } else {
+  function selectWord(index: number) {
+    if (showFeedback) return;
+    speak(currentQuestion.words[index].text, learningLang.toLowerCase() === "fr" ? "fr-FR" : learningLang, 1);
+    setSelectedIndices((previous) =>
+      previous.includes(index)
+        ? previous.filter((selected) => selected !== index)
+        : previous.length < GROUP_SIZE ? [...previous, index] : previous,
+    );
+  }
+
+  function submitOrContinue() {
+    if (showFeedback) {
+      translationGeneration.current += 1;
+      pendingTranslations.current.forEach((controller) => controller.abort());
+      pendingTranslations.current.clear();
+      setTranslationErrors({});
+      if (currentIndex + 1 === totalQuestions) {
         setIsGameOver(true);
+      } else {
+        setCurrentIndex((previous) => previous + 1);
+        setSelectedIndices([]);
+        setTranslatedIndices(new Set());
+        setShowFeedback(false);
       }
       return;
     }
-
-    // Submit Logic
-    if (selectedWords.length !== targetCount) return;
-    setIsSubmitted(true);
-
-    // Check if checks are correct
-    // Are all selected words in the correctGroup?
-    const allCorrect = selectedWords.every((w) =>
-      currentQuestion.correctGroup.includes(w),
-    );
-
-    setIsCorrect(allCorrect);
-    setFeedbackMessage(allCorrect ? "Great job!" : currentQuestion.reason);
+    if (selectedIndices.length !== GROUP_SIZE) return;
+    const correct = selectedIndices.every((index) => currentQuestion.words[index].isAnswer);
+    setIsCorrect(correct);
+    setFeedbackMessage(correct ? "Great job!" : "Some selected words do not belong in this group.");
     setShowFeedback(true);
+    if (correct) setScore((previous) => previous + 1);
+  }
 
-    if (allCorrect) {
-      setScore((prev) => prev + 1);
-    }
-  };
-
-  if (loading)
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="animate-spin text-blue-500 w-8 h-8" />
-      </div>
-    );
-  if (error || questions.length === 0)
-    return (
-      <div className="min-h-screen flex items-center justify-center text-red-500">
-        {error || "No questions found for this activity."}
-      </div>
-    );
-
-  let submitLabel = "Submit";
-  if (isSubmitted) {
-    submitLabel =
-      currentIndex + 1 === totalQuestions ? "Finish" : "Next Question";
+  if (loading) {
+    return <div className="flex min-h-dvh items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-blue-500" /></div>;
+  }
+  if (error || totalQuestions === 0) {
+    return <div className="flex min-h-dvh items-center justify-center px-4 text-center text-red-600">{error || "No questions found for this activity."}</div>;
   }
 
   return (
-    <>
-      <PracticeGameLayout
-        questionType="Pick 4"
-        instructionFr={currentQuestion.instructionFr || "Triez les mots"}
-        instructionEn={
-          currentQuestion.instructionEn || `Select ${targetCount} related words`
-        }
-        progress={progress}
-        isGameOver={isGameOver}
-        score={score}
-        totalQuestions={totalQuestions}
-        onExit={() => router.push("/vocabulary/practice")}
-        onNext={showFeedback ? handleSubmit : handleSubmit}
-        onRestart={() => window.location.reload()}
-        isSubmitEnabled={selectedWords.length === targetCount || showFeedback}
-        showSubmitButton={true}
-        submitLabel={
-          showFeedback
-            ? currentIndex + 1 === totalQuestions
-              ? "FINISH"
-              : "CONTINUE"
-            : "CHECK"
-        }
-        timerValue={timerString}
-        showFeedback={showFeedback}
-        isCorrect={isCorrect}
-        correctAnswer={!isCorrect ? currentQuestion.reason : null}
-        feedbackMessage={feedbackMessage}
-      >
-        <div className="flex-1 flex flex-col items-center justify-center -mt-10 w-full max-w-7xl">
-          <div className="mb-10 text-center">
-            <h2 className="text-3xl font-semibold text-gray-800 dark:text-gray-100">
-              {currentQuestion.theme
-                ? `Topic: ${currentQuestion.theme}`
-                : "Find the related words"}
-            </h2>
-            <p className="text-gray-500 dark:text-gray-400 mt-3 text-lg">
-              Select the {targetCount} words that belong together
-            </p>
-          </div>
-
-          {/* Grid: 6 columns for 12 items = 2 rows. Wide spacing. */}
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6 md:gap-12 w-full px-4 md:px-0">
-            {currentQuestion.allWords.map((word, idx) => {
-              const isSelected = selectedWords.includes(word);
-              const isTargetWord = currentQuestion.correctGroup.includes(word);
-
-              // Square cards: aspect-square, remove fixed height
-              let cardStyle =
-                "aspect-square rounded-2xl border-2 flex items-center justify-center text-lg md:text-xl font-medium transition-all duration-200 cursor-pointer relative shadow-sm";
-
-              if (showFeedback) {
-                if (isTargetWord) {
-                  // Always show correct words in green
-                  cardStyle +=
-                    " bg-green-100 border-green-500 text-green-800 dark:bg-green-900/30 dark:text-green-300";
-                } else if (isSelected && !isTargetWord) {
-                  // Wrong selection
-                  cardStyle +=
-                    " bg-red-100 border-red-500 text-red-800 dark:bg-red-900/30 dark:text-red-300 opacity-80";
-                } else {
-                  // Unrelated, unselected words
-                  cardStyle +=
-                    " bg-gray-50 border-gray-100 text-gray-400 opacity-30 dark:bg-gray-800/50 dark:border-gray-800";
-                }
-              } else {
-                if (isSelected) {
-                  cardStyle +=
-                    " bg-blue-50 border-blue-500 text-blue-700 ring-4 ring-blue-500/20 dark:bg-blue-900/20 dark:text-blue-300";
-                } else {
-                  cardStyle +=
-                    " bg-white border-gray-200 hover:border-blue-300 hover:shadow-lg hover:-translate-y-1 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200";
-                }
-              }
-
-              return (
-                <button
-                  key={idx}
-                  onClick={() => handleWordClick(word)}
-                  disabled={isSubmitted}
-                  className={cardStyle}
+    <PracticeGameLayout
+      questionType="Group Words"
+      instructionFr={currentQuestion.instructionFr}
+      instructionEn={currentQuestion.instructionEn}
+      progress={((currentIndex + 1) / totalQuestions) * 100}
+      isGameOver={isGameOver}
+      score={score}
+      totalQuestions={totalQuestions}
+      onExit={() => router.push("/vocabulary/practice")}
+      onNext={submitOrContinue}
+      onRestart={() => window.location.reload()}
+      isSubmitEnabled={selectedIndices.length === GROUP_SIZE || showFeedback}
+      submitLabel={showFeedback ? currentIndex + 1 === totalQuestions ? "FINISH" : "CONTINUE" : "CHECK"}
+      timerValue={timerString}
+      showFeedback={showFeedback}
+      isCorrect={isCorrect}
+      feedbackMessage={feedbackMessage}
+      correctAnswer={!isCorrect ? currentQuestion.words.filter((word) => word.isAnswer).map((word) => word.text).join(", ") : null}
+      feedbackChildren={currentQuestion.reason ? <p>{currentQuestion.reason}</p> : null}
+      compactFeedback
+      preserveFooterHeightOnFeedback
+    >
+      <div className="flex w-full flex-1 items-center justify-center px-4 py-6 sm:px-6">
+        <div className="grid w-full max-w-5xl grid-cols-2 gap-3 sm:gap-5 lg:grid-cols-4 lg:gap-8">
+          {currentQuestion.words.map((word, index) => {
+            const selected = selectedIndices.includes(index);
+            const translated = translatedIndices.has(index);
+            const key = translationKey(word);
+            const translation = word.translation || translationCache[key];
+            return (
+              <div key={`${currentQuestion.id}-${index}`} className="relative min-w-0">
+                <PracticeOptionCard
+                  selected={selected}
+                  correct={word.isAnswer}
+                  submitted={showFeedback}
+                  onSelect={() => selectWord(index)}
+                  className="aspect-square"
+                  action={showFeedback && (
+                    <TranslateButton
+                      iconVariant="option"
+                      aria-label={translated ? `Show ${word.text}` : `Translate ${word.text}`}
+                      aria-pressed={translated}
+                      onClick={() => void toggleWordTranslation(word, index)}
+                    />
+                  )}
                 >
-                  <div className="flex flex-col items-center justify-center space-y-1">
-                    <span>{word}</span>
-                    {showFeedback && currentQuestion.translationsMap[word] && (
-                      <span className="text-sm opacity-80 font-normal">
-                        {currentQuestion.translationsMap[word]}
-                      </span>
-                    )}
-                  </div>
-                </button>
-              );
-            })}
-          </div>
+                  <span className="break-words">{translated && translation ? translation : word.text}</span>
+                </PracticeOptionCard>
+                {showFeedback && translationErrors[key] && (
+                  <p role="status" className="mt-1 text-center text-sm text-slate-500 dark:text-slate-400">{translationErrors[key]}</p>
+                )}
+              </div>
+            );
+          })}
         </div>
-      </PracticeGameLayout>
-    </>
+      </div>
+    </PracticeGameLayout>
   );
 }

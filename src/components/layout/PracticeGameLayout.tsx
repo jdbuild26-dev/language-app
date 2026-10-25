@@ -28,6 +28,7 @@ type PracticeGameLayoutProps = {
   questionTypeEn?: string;
   instructionFr?: string;
   instructionEn?: string;
+  showInstructionTranslateButton?: boolean;
   localizedInstruction?: string;
   progress?: number;
   isGameOver?: boolean;
@@ -83,6 +84,7 @@ export default function PracticeGameLayout({
   questionType,
   instructionFr,
   instructionEn,
+  showInstructionTranslateButton = true,
   localizedInstruction,
   progress = 0,
   isGameOver = false,
@@ -121,6 +123,10 @@ export default function PracticeGameLayout({
   const [assignmentId, setAssignmentId] = useState<string | null>(null);
   const { getToken } = useAuth();
   const hasSubmitted = useRef(false);
+
+  useEffect(() => {
+    if (!showInstructionTranslateButton) setShowTranslation(false);
+  }, [showInstructionTranslateButton]);
 
   useEffect(() => {
     if (isGameOver && assignmentId && !hasSubmitted.current) {
@@ -269,7 +275,7 @@ export default function PracticeGameLayout({
   const translatedInstruction = originalInstruction === instructionEn
     ? instructionFr
     : instructionEn || instructionFr;
-  const instruction = showTranslation
+  const instruction = showInstructionTranslateButton && showTranslation
     ? translatedInstruction || originalInstruction
     : originalInstruction;
 
@@ -322,7 +328,7 @@ export default function PracticeGameLayout({
                 transition={{ duration: 0.18, ease: "easeInOut" }}
                 className="practice-type-exercise-heading min-w-0 max-w-4xl 2xl:max-w-none text-center tracking-[-0.01em] text-slate-800 dark:text-white"
               >
-                {hasTranslation ? (
+                {hasTranslation && showInstructionTranslateButton ? (
                   <>
                     {headingParts?.[1]}
                     <span className="whitespace-nowrap">

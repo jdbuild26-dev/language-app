@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 
 // Normalize curly/typographic apostrophes so comparisons are quote-agnostic
-const normalizeApostrophe = (str) =>
+const normalizeApostrophe = (str: string) =>
   str.replace(/[\u2018\u2019\u201A\u201B\u02BC\u02C8`]/g, "'");
 import { useExerciseTimer } from "@/hooks/useExerciseTimer";
 import { Loader2 } from "lucide-react";
@@ -11,18 +11,31 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
 import { fetchPracticeQuestions } from "@/services/vocabularyApi";
+import { useTextToSpeech } from "@/hooks/useTextToSpeech";
 import { getFeedbackMessage } from "@/utils/feedbackMessages";
+
+type HighlightQuestion = {
+  sentence: string;
+  correctWord: string;
+  correctWords: string[];
+  isMultiSelect: boolean;
+  prompt: string;
+  QuestionType?: string;
+  Instruction_FR?: string;
+  Instruction_EN?: string;
+};
 
 export default function HighlightWordGamePage() {
   const router = useRouter();
-  const [questions, setQuestions] = useState([]);
+  const { speak } = useTextToSpeech();
+  const [questions, setQuestions] = useState<HighlightQuestion[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
 
   // Single-select state
-  const [selectedWordIndex, setSelectedWordIndex] = useState(null);
+  const [selectedWordIndex, setSelectedWordIndex] = useState<number | null>(null);
 
   // Multi-select state
-  const [selectedWordIndices, setSelectedWordIndices] = useState(new Set());
+  const [selectedWordIndices, setSelectedWordIndices] = useState<Set<number>>(new Set());
 
   const [isAnswered, setIsAnswered] = useState(false);
   const [score, setScore] = useState(0);
@@ -33,67 +46,67 @@ export default function HighlightWordGamePage() {
   const [feedbackMessage, setFeedbackMessage] = useState("");
 
   useEffect(() => {
-    loadQuestions();
-  }, []);
+    let active = true;
+    const loadQuestions = async () => {
+      try {
+        const response = await fetchPracticeQuestions("highlight_word");
+        if (response && response.data && response.data.length > 0) {
+          const formattedQuestions = response.data
+            .filter(
+              (q) =>
+                (q.passage || q.sentence || q.Sentence) &&
+                (q.passage || q.sentence || q.Sentence) !== "None",
+            )
+            .map((q) => {
+              const rawAnswer =
+                q.correctWord ||
+                q.correctAnswer ||
+                q.CorrectAnswer ||
+                q.Answer ||
+                q.eval_correctWord ||
+                "";
 
-  const loadQuestions = async () => {
-    try {
-      setLoading(true);
-      const response = await fetchPracticeQuestions("highlight_word");
-      if (response && response.data && response.data.length > 0) {
-        const formattedQuestions = response.data
-          .filter(
-            (q) =>
-              (q.passage || q.sentence || q.Sentence) &&
-              (q.passage || q.sentence || q.Sentence) !== "None",
-          )
-          .map((q) => {
-            const rawAnswer =
-              q.correctWord ||
-              q.correctAnswer ||
-              q.CorrectAnswer ||
-              q.Answer ||
-              q.eval_correctWord ||
-              "";
+              // Support pipe-separated or space-separated multi-answers: "chat|chien" or "une pomme"
+              const correctWords = rawAnswer
+                .split(/[| ]+/)
+                .map((w) => normalizeApostrophe(w.trim().toLowerCase()))
+                .filter(Boolean);
 
-            // Support pipe-separated or space-separated multi-answers: "chat|chien" or "une pomme"
-            const correctWords = rawAnswer
-              .split(/[| ]+/)
-              .map((w) => normalizeApostrophe(w.trim().toLowerCase()))
-              .filter(Boolean);
-
-            return {
-              ...q,
-              sentence:
-                q.passage ||
-                q.sentence ||
-                q.Sentence ||
-                q["Complete sentence"] ||
-                "",
-              correctWord: correctWords[0] ?? "",
-              correctWords, // array, length > 1 means multi-select
-              isMultiSelect: correctWords.length > 1,
-              prompt: (
-                q.question ||
-                q.instructionEn ||
-                q.Instruction_EN ||
-                q.Question_EN ||
-                ""
-              )?.trim(),
-            };
-          });
-        setQuestions(formattedQuestions);
-      } else {
-        console.error("[HighlightWord] ❌ No valid questions received");
-        setQuestions([]);
+              return {
+                ...q,
+                sentence:
+                  q.passage ||
+                  q.sentence ||
+                  q.Sentence ||
+                  q["Complete sentence"] ||
+                  "",
+                correctWord: correctWords[0] ?? "",
+                correctWords, // array, length > 1 means multi-select
+                isMultiSelect: correctWords.length > 1,
+                prompt: (
+                  q.question ||
+                  q.instructionEn ||
+                  q.Instruction_EN ||
+                  q.Question_EN ||
+                  ""
+                )?.trim(),
+              };
+            });
+          if (active) setQuestions(formattedQuestions);
+        } else {
+          console.error("[HighlightWord] ❌ No valid questions received");
+          if (active) setQuestions([]);
+        }
+      } catch (error) {
+        console.error("[HighlightWord] ❌ Failed to load:", error);
+        if (active) setQuestions([]);
+      } finally {
+        if (active) setLoading(false);
       }
-    } catch (error) {
-      console.error("[HighlightWord] ❌ Failed to load:", error);
-      setQuestions([]);
-    } finally {
-      setLoading(false);
-    }
-  };
+    };
+    void loadQuestions();
+    return () => { active = false; };
+  }, []);
 
   const { timerString, resetTimer } = useExerciseTimer({
     duration: 30,
@@ -124,8 +137,9 @@ export default function HighlightWordGamePage() {
   const words = currentItem ? currentItem.sentence.split(" ") : [];
 
   // ── Single-select handler ──────────────────────────────────────────────
-  const handleWordClick = (index) => {
+  const handleWordClick = (index: number) => {
     if (isAnswered) return;
+    speak(words[index], "fr-FR");
     if (currentItem.isMultiSelect) {
       // Toggle in multi-select set
       setSelectedWordIndices((prev) => {
@@ -153,7 +167,7 @@ export default function HighlightWordGamePage() {
       setIsAnswered(true);
 
       // Collect the clean text of every selected word (normalize apostrophes + strip punctuation)
-      const cleanWord = (w) =>
+      const cleanWord = (w: string) =>
         normalizeApostrophe(w)
           .replace(/[.,!?;:]/g, "")
           .toLowerCase();
@@ -216,7 +230,6 @@ export default function HighlightWordGamePage() {
     ? selectedWordIndices.size > 0
     : selectedWordIndex !== null;
 
-  // ── Correct answer display string ──────────────────────────────────────
   const correctAnswerDisplay = !isCorrect
     ? currentItem?.isMultiSelect
       ? currentItem.correctWords.join(" • ")
@@ -277,9 +290,8 @@ export default function HighlightWordGamePage() {
         correctAnswer={correctAnswerDisplay}
         feedbackMessage={feedbackMessage}
       >
-        <div className="flex flex-col items-center justify-center w-full max-w-5xl">
-          {/* Prompt */}
-          <div className="mb-6 text-center w-full">
+        <div className="mx-auto flex w-full max-w-5xl flex-1 flex-col items-center justify-start gap-8 px-4 pb-6 pt-14 sm:gap-12 sm:pt-20 lg:gap-14 lg:pt-24">
+          <div className="w-full text-center">
             <h3 className="text-xl md:text-2xl font-bold text-gray-800 dark:text-gray-100 mb-2">
               {currentItem?.prompt}
             </h3>
@@ -295,56 +307,42 @@ export default function HighlightWordGamePage() {
             )}
           </div>
 
-          {/* Word tokens */}
-          <div className="flex flex-wrap justify-center gap-3 text-lg md:text-xl font-medium leading-relaxed max-w-4xl mx-auto">
+          <div className="flex flex-wrap justify-center gap-3 text-lg md:text-xl font-medium leading-relaxed max-w-4xl mx-auto" role="group" aria-label="Sentence words">
             {words.map((word, index) => {
               const cleanWord = normalizeApostrophe(word)
                 .replace(/[.,!?;:]/g, "")
                 .toLowerCase();
-
-              let styles =
-                "bg-transparent text-gray-800 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg px-2 py-1 cursor-pointer transition-all border border-transparent";
-
+              const isTarget = currentItem.isMultiSelect
+                ? currentItem.correctWords.includes(cleanWord)
+                : cleanWord === normalizeApostrophe(currentItem.correctWord).toLowerCase();
+              const wasSelected = currentItem.isMultiSelect
+                ? selectedWordIndices.has(index)
+                : selectedWordIndex === index;
+              const isWrongSelection = isAnswered && wasSelected && !isTarget;
+              let styles = "bg-transparent text-gray-800 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg px-2 py-1 cursor-pointer transition-all border border-transparent";
               if (isAnswered) {
-                const isTarget = currentItem.isMultiSelect
-                  ? currentItem.correctWords.includes(cleanWord)
-                  : cleanWord ===
-                    normalizeApostrophe(currentItem.correctWord).toLowerCase();
-
-                const wasSelected = currentItem.isMultiSelect
-                  ? selectedWordIndices.has(index)
-                  : selectedWordIndex === index;
-
-                if (isTarget) {
-                  styles =
-                    "bg-green-100 text-green-800 ring-2 ring-green-400 rounded-lg px-2 py-1 shadow-sm";
-                } else if (wasSelected) {
-                  styles =
-                    "bg-red-100 text-red-800 ring-2 ring-red-400 rounded-lg px-2 py-1 opacity-80";
-                } else {
-                  styles =
-                    "text-gray-400 dark:text-gray-600 rounded-lg px-2 py-1 opacity-50";
-                }
-              } else {
-                // Pre-answer selection highlights
-                const isSelected = currentItem?.isMultiSelect
-                  ? selectedWordIndices.has(index)
-                  : selectedWordIndex === index;
-
-                if (isSelected) {
-                  styles =
-                    "bg-blue-100 text-blue-800 ring-2 ring-blue-300 rounded-lg px-2 py-1 shadow-sm";
-                }
+                styles = isTarget
+                  ? "bg-green-100 text-green-800 ring-2 ring-green-400 rounded-lg px-2 py-1 shadow-sm"
+                  : wasSelected
+                    ? "bg-red-100 text-red-800 ring-2 ring-red-400 rounded-lg px-2 py-1 opacity-80"
+                    : "text-gray-400 dark:text-gray-600 rounded-lg px-2 py-1 opacity-50";
+              } else if (wasSelected) {
+                styles = "bg-blue-100 text-blue-800 ring-2 ring-blue-300 rounded-lg px-2 py-1 shadow-sm";
               }
 
               return (
-                <span
+                <button
                   key={index}
+                  type="button"
                   onClick={() => handleWordClick(index)}
-                  className={styles}
+                  disabled={isAnswered}
+                  aria-pressed={wasSelected}
+                  aria-invalid={isWrongSelection}
+                  aria-label={isAnswered && isTarget ? `${word}, correct answer` : isWrongSelection ? `${word}, incorrect selection` : word}
+                  className={`${styles} focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 disabled:cursor-default`}
                 >
                   {word}
-                </span>
+                </button>
               );
             })}
           </div>
