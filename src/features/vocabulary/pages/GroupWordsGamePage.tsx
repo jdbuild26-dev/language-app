@@ -11,7 +11,7 @@ import { useTextToSpeech } from "@/hooks/useTextToSpeech";
 import PracticeOptionCard from "@/components/ui/PracticeOptionCard";
 import { fetchPracticeQuestions } from "@/services/vocabularyApi";
 import { translateText } from "@/services/aiPracticeApi";
-import { loadGroupTranslationRows, withGroupTranslations } from "../lib/groupWordsTranslations";
+import { loadGroupTranslationRows, parseGroupWords, withGroupTranslations } from "../lib/groupWordsTranslations";
 
 type GroupWord = { text: string; translation?: string; isAnswer: boolean };
 type GroupQuestion = {
@@ -23,18 +23,6 @@ type GroupQuestion = {
 };
 
 const GROUP_SIZE = 4;
-
-function parseWords(value: unknown, preserveEmpty = false): string[] {
-  if (Array.isArray(value)) return value.map(String).map((word) => word.trim()).filter((word) => preserveEmpty || Boolean(word));
-  if (typeof value !== "string") return [];
-  try {
-    const parsed: unknown = JSON.parse(value);
-    if (Array.isArray(parsed)) return parseWords(parsed, preserveEmpty);
-  } catch {
-    // Older exercises can store words as a comma- or pipe-separated string.
-  }
-  return value.split(/[|,]/).map((word) => word.trim()).filter((word) => preserveEmpty || Boolean(word));
-}
 
 function shuffleWords(words: GroupWord[]): GroupWord[] {
   const shuffled = [...words];
@@ -88,10 +76,10 @@ export default function GroupWordsGamePage() {
         if (!active) return;
         const normalized: GroupQuestion[] = withGroupTranslations(response?.data || [], localRows, learningLang, knownLang)
           .map((item: Record<string, unknown>) => {
-            const answers = parseWords(item.correctGroup ?? item.CorrectGroup ?? item.CorrectAnswer);
-            const distractors = parseWords(item.otherWords ?? item.OtherWords ?? item.Options);
-            const answerTranslations = parseWords(item.correctGroup_EN ?? item.CorrectGroup_EN, true);
-            const distractorTranslations = parseWords(item.otherWords_EN ?? item.OtherWords_EN, true);
+            const answers = parseGroupWords(item.correctGroup ?? item.CorrectGroup ?? item.CorrectAnswer);
+            const distractors = parseGroupWords(item.otherWords ?? item.OtherWords ?? item.Options);
+            const answerTranslations = parseGroupWords(item.correctGroup_EN ?? item.CorrectGroup_EN, true);
+            const distractorTranslations = parseGroupWords(item.otherWords_EN ?? item.OtherWords_EN, true);
             const answerWords: GroupWord[] = answers.map((word, index) => ({
               text: word,
               translation: answerTranslations[index],

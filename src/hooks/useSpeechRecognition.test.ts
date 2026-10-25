@@ -1,17 +1,18 @@
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 
-const harness = vi.hoisted(() => ({ effects: [] as (() => void | (() => void))[], cleanup: [] as (() => void)[] }));
+const harness = vi.hoisted(() => ({ effects: [] as (() => void | (() => void))[], cleanup: [] as (() => void)[], learningLang: "fr" }));
 vi.mock("react", () => ({
   useState: (value: unknown) => [value, vi.fn()],
   useRef: (value: unknown) => ({ current: value }),
   useCallback: (value: unknown) => value,
   useEffect: (effect: () => void | (() => void)) => harness.effects.push(effect),
 }));
-vi.mock("@/contexts/LanguageContext", () => ({ useLanguage: () => ({ learningLang: "fr" }) }));
+vi.mock("@/contexts/LanguageContext", () => ({ useLanguage: () => ({ learningLang: harness.learningLang }) }));
 import useSpeechRecognition from "./useSpeechRecognition";
 
 class Recognition {
   static current: Recognition;
+  lang = "";
   onstart?: () => void; onend?: () => void;
   onerror?: (event: { error: string }) => void;
   onresult?: (event: { results: { 0: { transcript: string }; isFinal: boolean }[] }) => void;
@@ -26,7 +27,7 @@ function SpeechCaptureHarness() {
   hook.startListening();
   return { hook, recognition: Recognition.current };
 }
-beforeEach(() => { vi.useFakeTimers(); vi.stubGlobal("window", { SpeechRecognition: Recognition }); });
+beforeEach(() => { harness.learningLang = "fr"; vi.useFakeTimers(); vi.stubGlobal("window", { SpeechRecognition: Recognition }); });
 afterEach(() => { harness.cleanup.splice(0).forEach(cleanup => cleanup()); vi.useRealTimers(); vi.unstubAllGlobals(); vi.restoreAllMocks(); });
 
 it("waits for recognition end instead of submitting a truncated interim transcript", async () => {
@@ -103,4 +104,11 @@ it("rejects recognition startup failures instead of returning an empty answer", 
   const { hook } = SpeechCaptureHarness();
   await expect(hook.stopAndReadTranscript()).rejects.toThrow(/capture failed/i);
   start.mockRestore();
+});
+
+it("uses an exercise language override for French repetition", () => {
+  harness.learningLang = "en";
+  useSpeechRecognition("fr");
+  harness.effects.splice(0).forEach(effect => { const cleanup = effect(); if (cleanup) harness.cleanup.push(cleanup); });
+  expect(Recognition.current.lang).toBe("fr-FR");
 });

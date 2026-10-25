@@ -1,12 +1,17 @@
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 
-const h = vi.hoisted(() => ({ states: [] as any[], refs: [] as any[], effects: [] as any[], pending: [] as any[], s: 0, r: 0, e: 0 }));
+const h = vi.hoisted(() => ({ states: [] as any[], refs: [] as any[], effects: [] as any[], callbacks: [] as any[], pending: [] as any[], s: 0, r: 0, e: 0, c: 0 }));
 vi.mock("react", () => ({
   useState(initial: any) {
     const i = h.s++; if (!(i in h.states)) h.states[i] = initial;
     return [h.states[i], (value: any) => { h.states[i] = typeof value === "function" ? value(h.states[i]) : value; }];
   },
   useRef(initial: any) { return h.refs[h.r++] ??= { current: initial }; },
+  useCallback(callback: any, deps: any[]) {
+    const i = h.c++, previous = h.callbacks[i];
+    if (!previous || deps.some((value, j) => !Object.is(value, previous.deps[j]))) h.callbacks[i] = { callback, deps };
+    return h.callbacks[i].callback;
+  },
   useEffect(effect: any, deps: any[]) {
     const i = h.e++, previous = h.effects[i];
     if (!previous || deps.some((value, j) => !Object.is(value, previous.deps[j]))) h.pending.push(() => {
@@ -18,6 +23,7 @@ vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn() }) }));
 vi.mock("@/components/layout/PracticeGameLayout", () => ({ default: () => null }));
 vi.mock("@/components/ui/TranslateButton", () => ({ TranslateButton: () => null }));
 vi.mock("@/hooks/useTranslateText", () => ({ useTranslateText: (text: string) => ({ displayText: text, showTranslation: false, isTranslating: false, error: null, reset: vi.fn(), toggle: vi.fn() }) }));
+vi.mock("@/contexts/LanguageContext", () => ({ useLanguage: () => ({ learningLang: "fr" }) }));
 vi.mock("@/services/vocabularyApi", () => ({
   fetchVocabulary: vi.fn(async () => ({ words: [{ id: "1", english: "cat", forms: [{ word: "chat" }] }] })),
   fetchRepeatSentenceData: vi.fn(async () => [{ id: "1", completeSentence: "chat", completeSentenceEn: "cat" }]),
@@ -37,15 +43,15 @@ class Recorder {
 class Recognition {
   static current: Recognition;
   static failStart = false;
-  onend?: () => void; onerror?: (event: { error: string }) => void;
+  onstart?: () => void; onend?: () => void; onerror?: (event: { error: string }) => void;
   onresult?: (event: { results: any[] }) => void;
   constructor() { Recognition.current = this; }
-  start() { if (Recognition.failStart) throw new Error("unavailable"); }
+  start() { if (Recognition.failStart) throw new Error("unavailable"); this.onstart?.(); }
   stop() {}
   result(text: string, isFinal = true) { this.onresult?.({ results: [Object.assign([{ transcript: text }], { isFinal })] }); }
 }
 function render(mode: "word" | "sentence" = "word"): any {
-  h.s = h.r = h.e = 0;
+  h.s = h.r = h.e = h.c = 0;
   const tree = VocabularyRepeatPage({ mode });
   h.pending.splice(0).forEach(effect => effect());
   return tree;
@@ -69,7 +75,7 @@ function expectNotScored(mode: "word" | "sentence" = "word") {
   expect(find(tree, node => node.props?.role === "alert")).toBeDefined();
 }
 beforeEach(() => {
-  h.states = []; h.refs = []; h.effects = []; h.pending = [];
+  h.states = []; h.refs = []; h.effects = []; h.callbacks = []; h.pending = [];
   Recognition.failStart = false; vi.clearAllMocks(); vi.useFakeTimers();
   vi.stubGlobal("window", { SpeechRecognition: Recognition });
   vi.stubGlobal("navigator", { mediaDevices: { getUserMedia: vi.fn(async () => ({ getTracks: () => [{ stop: vi.fn() }] })) } });
@@ -102,10 +108,10 @@ it("does not score a recording with no recognized speech", async () => {
 });
 it("waits for final recognition before evaluating a stopped recording", async () => {
   await begin(); Recognition.current.result("ch", false); stop();
-  await render().props.onNext();
+  const submission = render().props.onNext();
   expect(render().props.showFeedback).toBe(false);
   Recognition.current.result("chat"); Recognition.current.onend?.();
-  await render().props.onNext();
+  await submission;
   expect(render().props).toMatchObject({ showFeedback: true, isCorrect: true, score: 1 });
 });
 it.each(["word", "sentence"] as const)("scores a finalized wrong %s answer normally", async mode => {

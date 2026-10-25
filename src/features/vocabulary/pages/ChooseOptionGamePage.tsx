@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import { useExerciseTimer } from "@/hooks/useExerciseTimer";
 import { Loader2, XCircle } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -11,7 +11,7 @@ import { useTextToSpeech } from "@/hooks/useTextToSpeech";
 import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
 import PracticeOptions from "@/components/ui/PracticeOptions";
 import { TranslateButton } from "@/components/ui/TranslateButton";
-import { translateText } from "@/services/aiPracticeApi";
+import { useTranslateText } from "@/hooks/useTranslateText";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { getFeedbackMessage } from "@/utils/feedbackMessages";
 import { cn } from "@/lib/utils";
@@ -43,12 +43,6 @@ export default function ChooseOptionGamePage() {
   const [showFeedback, setShowFeedback] = useState(false);
   const [isCorrect, setIsCorrect] = useState(false);
   const [feedbackMessage, setFeedbackMessage] = useState("");
-  const [showAnswerTranslation, setShowAnswerTranslation] = useState(false);
-  const [answerTranslation, setAnswerTranslation] = useState("");
-  const [isTranslatingAnswer, setIsTranslatingAnswer] = useState(false);
-  const [answerTranslationError, setAnswerTranslationError] = useState(false);
-  const translationGeneration = useRef(0);
-  const translationController = useRef<AbortController | null>(null);
   const [translatedOptions, setTranslatedOptions] = useState<Record<number, boolean>>({});
   const [score, setScore] = useState(0);
   const [isGameOver, setIsGameOver] = useState(false);
@@ -143,6 +137,12 @@ export default function ChooseOptionGamePage() {
   }, [learningLang, knownLang]);
 
   const currentQuestion = questions[currentIndex];
+  const answerTranslation = useTranslateText(
+    currentQuestion?.completeSentence || "",
+    learningLang.toLowerCase(),
+    knownLang.toLowerCase() === "en" ? currentQuestion?.completeSentenceEnglish : undefined,
+    knownLang.toLowerCase(),
+  );
   const { timerString, resetTimer } = useExerciseTimer({
     duration: 20,
     mode: "timer",
@@ -166,11 +166,6 @@ export default function ChooseOptionGamePage() {
   useEffect(() => {
     resetTimer();
   }, [currentIndex, resetTimer]);
-
-  useEffect(() => () => {
-    translationGeneration.current += 1;
-    translationController.current?.abort();
-  }, []);
 
   const progress =
     questions.length > 0 ? ((currentIndex + 1) / questions.length) * 100 : 0;
@@ -198,13 +193,7 @@ export default function ChooseOptionGamePage() {
   };
 
   const handleContinue = () => {
-    translationGeneration.current += 1;
-    translationController.current?.abort();
-    translationController.current = null;
-    setShowAnswerTranslation(false);
-    setAnswerTranslation("");
-    setIsTranslatingAnswer(false);
-    setAnswerTranslationError(false);
+    answerTranslation.reset();
     setTranslatedOptions({});
     setShowFeedback(false);
     setSelectedOptions([]);
@@ -213,37 +202,6 @@ export default function ChooseOptionGamePage() {
       setCurrentIndex((prev) => prev + 1);
     } else {
       setIsGameOver(true);
-    }
-  };
-
-  const handleTranslateAnswer = async () => {
-    if (!showFeedback) return;
-    if (showAnswerTranslation) {
-      setShowAnswerTranslation(false);
-      return;
-    }
-    if (answerTranslation || currentQuestion.completeSentenceEnglish) {
-      setShowAnswerTranslation(true);
-      return;
-    }
-
-    const generation = translationGeneration.current;
-    const controller = new AbortController();
-    translationController.current = controller;
-    const timeout = window.setTimeout(() => controller.abort(), 12000);
-    setAnswerTranslationError(false);
-    setIsTranslatingAnswer(true);
-    try {
-      const result = await translateText(currentQuestion.completeSentence, knownLang?.toLowerCase() || "en", controller.signal);
-      if (generation !== translationGeneration.current) return;
-      setAnswerTranslation(result.translation);
-      setShowAnswerTranslation(true);
-    } catch {
-      if (generation === translationGeneration.current) setAnswerTranslationError(true);
-    } finally {
-      window.clearTimeout(timeout);
-      if (translationController.current === controller) translationController.current = null;
-      if (generation === translationGeneration.current) setIsTranslatingAnswer(false);
     }
   };
 
@@ -349,18 +307,18 @@ export default function ChooseOptionGamePage() {
             </div>
             <div aria-hidden={!showFeedback} className={cn("mt-3 flex min-h-10 max-w-6xl items-center justify-center gap-2 text-center", !showFeedback && "invisible")}>
               <p className="practice-type-content font-medium text-emerald-700 dark:text-emerald-300">
-                {showAnswerTranslation ? answerTranslation || currentQuestion.completeSentenceEnglish : currentQuestion.completeSentence}
+                {answerTranslation.displayText}
               </p>
               <TranslateButton
-                aria-label={showAnswerTranslation ? "Show original correct sentence" : "Translate correct sentence"}
-                aria-pressed={showAnswerTranslation}
-                title={showAnswerTranslation ? "Show original sentence" : "Translate correct sentence"}
-                isLoading={isTranslatingAnswer}
+                aria-label={answerTranslation.showTranslation ? "Show original correct sentence" : "Translate correct sentence"}
+                aria-pressed={answerTranslation.showTranslation}
+                title={answerTranslation.showTranslation ? "Show original sentence" : "Translate correct sentence"}
+                isLoading={answerTranslation.isTranslating}
                 disabled={!showFeedback}
-                onClick={() => void handleTranslateAnswer()}
+                onClick={() => { if (showFeedback) void answerTranslation.toggle(); }}
               />
             </div>
-            {showFeedback && answerTranslationError && <p role="status" className="mt-1 text-sm text-slate-500">Translation unavailable. Try again.</p>}
+            {showFeedback && answerTranslation.error && <p role="status" className="mt-1 text-sm text-slate-500">{answerTranslation.error}</p>}
           </div>
 
           <div className="w-full max-w-5xl" role="group" aria-label="Answer options">

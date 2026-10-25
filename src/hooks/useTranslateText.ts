@@ -21,8 +21,9 @@ type Pending = { controller: AbortController; timer: ReturnType<typeof setTimeou
  *   <button onClick={toggle}>...</button>
  *   <span>{displayText}</span>
  */
-export function useTranslateText(sourceText: string, learningLang: string, storedTranslation?: string) {
-  const key = JSON.stringify([sourceText, learningLang, storedTranslation]);
+export function useTranslateText(sourceText: string, learningLang: string, storedTranslation?: string, targetLanguage?: string) {
+  const targetLang = targetLanguage || (learningLang === "fr" ? "en" : "fr");
+  const key = JSON.stringify([sourceText, learningLang, storedTranslation, targetLang]);
   const [state, setState] = useState(() => emptyState(key));
   const pending = useRef<Pending | null>(null);
   const cancel = useCallback(() => {
@@ -40,7 +41,6 @@ export function useTranslateText(sourceText: string, learningLang: string, store
   // Do not render another question's cache, even before its effect runs.
   const current = state.key === key ? state : emptyState(key);
   const reset = useCallback(() => { cancel(); setState(emptyState(key)); }, [cancel, key]);
-  const targetLang = learningLang === "fr" ? "en" : "fr";
 
   const toggle = async () => {
     if (!sourceText || pending.current) return;

@@ -30,12 +30,12 @@ vi.mock("react", () => ({
 import { useTranslateText } from "./useTranslateText";
 import { getStoredTranslation } from "../features/practice/lib/storedTranslation";
 
-function render(stored?: string, source = "Bonjour", language = "fr") {
+function render(stored?: string, source = "Bonjour", language = "fr", target?: string) {
   state.cursor = 0;
   state.refCursor = state.effectCursor = state.callbackCursor = 0;
   // The mocked React state above is a deterministic hook test harness.
   // eslint-disable-next-line react-hooks/rules-of-hooks
-  const result = useTranslateText(source, language, stored);
+  const result = useTranslateText(source, language, stored, target);
   state.pending.splice(0).forEach(effect => effect());
   return result;
 }
@@ -84,6 +84,15 @@ it("sends the displayed source language when requesting the missing translation"
   expect(fetch).toHaveBeenCalledWith("/api/translate", expect.objectContaining({
     body: JSON.stringify({ text: "Hello", source_lang: "en", target_lang: "fr" }),
   }));
+});
+
+it("uses the requested target language for vocabulary translations", async () => {
+  await render(undefined, "Bonjour", "fr", "de").toggle();
+  expect(fetch).toHaveBeenCalledWith("/api/translate", expect.objectContaining({
+    body: JSON.stringify({ text: "Bonjour", source_lang: "fr", target_lang: "de" }),
+  }));
+  expect(render(undefined, "Bonjour", "fr", "de").displayText).toBe("Hello");
+  expect(render(undefined, "Bonjour", "fr", "es").displayText).toBe("Bonjour");
 });
 
 it("times out even when the transport ignores abort, keeps the source and permits retry", async () => {

@@ -1,9 +1,14 @@
 import { readFileSync } from "node:fs";
 import Papa from "papaparse";
 import { expect, it } from "vitest";
-import { withGroupTranslations } from "./groupWordsTranslations";
+import { parseGroupWords, withGroupTranslations } from "./groupWordsTranslations";
 
 const local = Papa.parse(readFileSync(new URL("../../../../public/mock-data/csv/group_words.csv", import.meta.url), "utf8"), { header: true, skipEmptyLines: true }).data as Record<string, unknown>[];
+
+it("keeps translation slots aligned while discarding empty source words", () => {
+  expect(parseGroupWords('[" pomme ", "", " poire "]')).toEqual(["pomme", "poire"]);
+  expect(parseGroupWords('[" apple ", "", " pear "]', true)).toEqual(["apple", "", "pear"]);
+});
 
 it("recovers all eight translations from the actual dataset for legacy API rows", () => {
   const row = { content: { correctGroup: ["cerise", "pomme", "raisin", "banane"], otherWords: ["soleil", "livre", "voiture", "chaise"] } };
