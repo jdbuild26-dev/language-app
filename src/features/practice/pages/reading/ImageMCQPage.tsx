@@ -274,7 +274,7 @@ function ImageMCQContent() {
                   <span className="block break-words">{showOptionTranslation ? translation : option}</span>
                 );
                 const optionClasses = cn(
-                  "flex min-h-20 w-full min-w-0 items-center gap-3 rounded-xl border-2 px-4 py-2 text-left text-lg font-normal leading-normal transition-colors",
+                  "practice-type-content flex min-h-20 w-full min-w-0 items-center gap-3 rounded-xl border-2 px-4 py-2 text-left font-normal !leading-normal transition-colors",
                   isCorrectOption
                     ? "border-emerald-500 bg-emerald-50 text-emerald-800 dark:border-emerald-400 dark:bg-emerald-950/30 dark:text-emerald-200"
                     : isWrongOption

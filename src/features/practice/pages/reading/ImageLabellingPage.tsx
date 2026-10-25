@@ -8,7 +8,10 @@ import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
 import PracticeTwoPanel from "@/features/practice/components/PracticeTwoPanel";
 import { Button } from "@/components/ui/button";
 import { fetchPracticeData } from "@/utils/practiceFetcher";
-import { Check, ImageOff, Loader2, X } from "lucide-react";
+import { ImageOff, Loader2 } from "lucide-react";
+import { ReadingAnswerFeedback } from "@/features/practice/components/ReadingAnswerFeedback";
+import { findBilingualAnswer } from "@/features/practice/lib/answerPairTranslation";
+import { getReadingFeedbackTone } from "@/features/practice/lib/readingFeedback";
 import { TranslateButton } from "@/components/ui/TranslateButton";
 import { useQuestionLanguage } from "@/hooks/useQuestionLanguage";
 import { usePracticeComplete } from "@/hooks/usePracticeComplete";
@@ -29,6 +32,7 @@ type LabelItem = {
 type ImageLabellingExercise = {
   external_id?: string;
   level?: string;
+  sourceLang?: string;
   title?: string;
   title_fr?: string;
   title_en?: string;
@@ -93,7 +97,7 @@ function ImageLabellingContent() {
   const [totalScore, setTotalScore] = useState(0);
   const [feedbackMessage, setFeedbackMessage] = useState("");
   const [isCorrect, setIsCorrect] = useState(false);
-  const [revealedTranslations, setRevealedTranslations] = useState<Record<number, boolean>>({});
+  const [feedbackTone, setFeedbackTone] = useState<"success" | "partial" | "error">("error");
   const [showQuestionTranslation, setShowQuestionTranslation] = useState(false);
 
   // ── Load data ──────────────────────────────────────────────────────────────
@@ -117,8 +121,8 @@ function ImageLabellingContent() {
             return {
               id: Number(it.id),
               name: exerciseLearningLang === 'fr' ? firstText(it.name_fr, it.name) : firstText(it.name_en, it.name),
-              name_fr: firstText(it.name_fr, it.name),
-              name_en: firstText(it.name_en, it.name),
+              name_fr: firstText(it.name_fr, exerciseLearningLang === "fr" ? it.name : undefined),
+              name_en: firstText(it.name_en, exerciseLearningLang === "en" ? it.name : undefined),
               options: opts.length > 0 ? opts : []
             } as LabelItem;
           });
@@ -126,6 +130,7 @@ function ImageLabellingContent() {
           return {
             external_id:  firstText(item.external_id, item.ExerciseID),
             level:        firstText(item.Level, item.level),
+            sourceLang:   exerciseLearningLang,
             title:        firstText(c.title_en, item.title_en, item.title),
             title_fr:     firstText(c.title_fr, item.title_fr),
             title_en:     firstText(c.title_en, item.title_en, item.title),
@@ -149,7 +154,8 @@ function ImageLabellingContent() {
   }, [tag]);
 
   const ex = exercises[currentIndex];
-  const { pick, pickTranslation } = useQuestionLanguage(ex?.level);
+  const { pick, pickTranslation, learningLang } = useQuestionLanguage(ex?.level);
+  const sourceLang = ex?.sourceLang || learningLang;
   usePracticeComplete({ isGameOver: isCompleted, score: totalScore, totalQuestions: exercises.length, exerciseType: "image_labelling", level: ex?.level });
 
   const titleText    = pick(ex?.title_fr, ex?.title_en) || ex?.title || "Image Labelling";
@@ -165,7 +171,6 @@ function ImageLabellingContent() {
     setShowFeedback(false);
     setIsCorrect(false);
     setFeedbackMessage("");
-    setRevealedTranslations({});
     setShowQuestionTranslation(false);
   };
 
@@ -175,7 +180,7 @@ function ImageLabellingContent() {
       resetTimer();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentIndex, ex?.external_id]);
+  }, [currentIndex, ex?.external_id, tag]);
 
   // ── Timer ──────────────────────────────────────────────────────────────────
   const { timerString, resetTimer } = useExerciseTimer({
@@ -183,9 +188,7 @@ function ImageLabellingContent() {
     duration: ex?.timeLimitSeconds || 120,
     onExpire: () => {
       if (!isCompleted && !showFeedback) {
-        setIsCorrect(false);
-        setFeedbackMessage("Time's up!");
-        setShowFeedback(true);
+        handleCheck(true);
       }
     },
     isPaused: isCompleted || showFeedback || isLoading,
@@ -197,8 +200,8 @@ function ImageLabellingContent() {
     setUserAnswers(prev => ({ ...prev, [itemId]: value }));
   };
 
-  const handleCheck = () => {
-    if (!ex?.items.length) return;
+  const handleCheck = (timeExpired = false) => {
+    if (!ex?.items.length || showFeedback) return;
     
     let correct = 0;
     ex.items.forEach(item => {
@@ -207,17 +210,16 @@ function ImageLabellingContent() {
       }
     });
 
-    setTotalScore(prev => prev + (correct === ex.items.length ? 1 : 0)); // Score per exercise or per item?
-    // Let's stick to per-item score for totalScore if that's the app pattern, 
-    // but usually totalScore is total correct items.
+    if (!timeExpired) setTotalScore(prev => prev + (correct === ex.items.length ? 1 : 0));
     
     const total = ex.items.length;
+    setFeedbackTone(getReadingFeedbackTone(correct, total));
     if (correct === total) {
       setIsCorrect(true);
-      setFeedbackMessage(`Perfect! All ${total} correct!`);
+      setFeedbackMessage(`${timeExpired ? "Time's up! " : ""}Perfect! All ${total} correct!`);
     } else {
       setIsCorrect(false);
-      setFeedbackMessage(`${correct} out of ${total} correct. Try again!`);
+      setFeedbackMessage(`${timeExpired ? "Time's up! " : ""}${correct} out of ${total} correct. Try again!`);
     }
     setShowFeedback(true);
   };
@@ -267,7 +269,7 @@ function ImageLabellingContent() {
       timerValue={timerString}
       showSubmitButton={true}
       isSubmitEnabled={showFeedback || filledCount === totalCount}
-      onNext={showFeedback ? handleContinue : handleCheck}
+      onNext={showFeedback ? handleContinue : () => handleCheck()}
       submitLabel={
         showFeedback
           ? currentIndex < exercises.length - 1 ? "Continue" : "Finish"
@@ -277,7 +279,8 @@ function ImageLabellingContent() {
       animateFeedbackEntrance={false}
       showFeedback={showFeedback}
       isCorrect={isCorrect}
-      feedbackTone={isCorrect ? "success" : "error"}
+      feedbackTone={showFeedback ? feedbackTone : "neutral"}
+      feedbackAppearance="soft"
       feedbackMessage={feedbackMessage}
       score={totalScore}
       totalQuestions={exercises.length}
@@ -320,9 +323,7 @@ function ImageLabellingContent() {
               const hasSelection = Boolean(answer);
               const isWrong = showFeedback && hasSelection && answer !== item.name;
               const isRight = showFeedback && hasSelection && answer === item.name;
-              const translatedCorrect = item.name === item.name_fr ? item.name_en : item.name_fr;
-              const hasTranslation = Boolean(translatedCorrect && translatedCorrect !== item.name);
-              const displayedCorrect = revealedTranslations[item.id] && hasTranslation ? translatedCorrect : item.name;
+              const translatedCorrect = sourceLang === "fr" ? item.name_en : item.name_fr;
 
               return (
                 <div key={item.id} className="flex min-w-0 items-start gap-2">
@@ -339,25 +340,17 @@ function ImageLabellingContent() {
 
                   <div className="min-w-0 flex-1">
                     {showFeedback ? (
-                      <div className="flex min-w-0 items-center gap-2">
-                        <div className="flex min-w-0 flex-1 flex-wrap items-stretch gap-2" role="status" aria-label={`Answer ${idx + 1}: ${isRight ? "correct" : isWrong ? "incorrect" : "unanswered"}`}>
-                          {isWrong && (
-                            <div className="practice-answer-wrong image-feedback-answer flex min-h-11 min-w-0 basis-32 grow shrink items-center gap-1 rounded-xl border border-red-200 bg-red-50 px-2 py-2 font-normal text-red-800 dark:border-red-700 dark:bg-red-950/40 dark:text-red-300">
-                              <X className="h-4 w-4 shrink-0" strokeWidth={2.5} aria-hidden="true" />
-                              <span className="min-w-0 break-words">{answer}</span>
-                            </div>
-                          )}
-                          <div className="practice-answer-correct image-feedback-answer flex min-h-11 min-w-0 basis-32 grow shrink items-center gap-1 rounded-xl border border-green-200 bg-green-50 px-2 py-2 font-normal text-green-800 dark:border-green-700 dark:bg-green-950/40 dark:text-green-300">
-                            <Check className="h-4 w-4 shrink-0 text-green-700 dark:text-inherit" strokeWidth={2.5} aria-hidden="true" />
-                            <span className="min-w-0 break-words">{displayedCorrect}</span>
-                          </div>
-                        </div>
-                        <div className="h-8 w-8 shrink-0">
-                          {hasTranslation && (
-                            <TranslateButton iconVariant="option" onClick={() => setRevealedTranslations(previous => ({ ...previous, [item.id]: !previous[item.id] }))} aria-label={`${revealedTranslations[item.id] ? "Show original" : "Translate"} answer ${idx + 1}`} title={revealedTranslations[item.id] ? "Show original answer" : "Translate answer"} aria-pressed={Boolean(revealedTranslations[item.id])} />
-                          )}
-                        </div>
-                      </div>
+                      <ReadingAnswerFeedback
+                        key={`${tag}:${currentIndex}:${item.id}:${sourceLang}`}
+                        answerNumber={idx + 1}
+                        answerClassName="image-feedback-answer"
+                        isCorrect={isRight}
+                        wrong={isWrong ? answer : undefined}
+                        correct={item.name}
+                        wrongTranslation={findBilingualAnswer(answer, ex.items.map(label => ({ fr: label.name_fr, en: label.name_en })), sourceLang)}
+                        correctTranslation={translatedCorrect}
+                        targetLang={sourceLang === "fr" ? "en" : "fr"}
+                      />
                     ) : (
                       <CustomSelect
                         options={item.options || []}

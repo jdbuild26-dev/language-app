@@ -110,7 +110,6 @@ function HighlightTextContent() {
   const [score, setScore] = useState(0);
   const [translatedQuestion, setTranslatedQuestion] = useState("");
   const [showTranslation, setShowTranslation] = useState(false);
-  const [isTranslating, setIsTranslating] = useState(false);
 
   const getFeedbackMessage = (correct: boolean) => {
     if (correct) {
@@ -236,7 +235,7 @@ function HighlightTextContent() {
     }
   };
 
-  const handleTranslateQuestion = async () => {
+  const handleTranslateQuestion = () => {
     if (!questionTranslationSource) return;
 
     if (showTranslation) {
@@ -249,30 +248,8 @@ function HighlightTextContent() {
       return;
     }
 
-    // Always translate to the opposite of the learning language
-    const targetLang = learningLang === "fr" ? "en" : "fr";
-
-    try {
-      setIsTranslating(true);
-      const res = await fetch("/api/translate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          text: questionTranslationSource,
-          target_lang: targetLang,
-        }),
-      });
-
-      if (!res.ok) throw new Error("Translation failed");
-      const data = (await res.json()) as { translation?: string };
-      setTranslatedQuestion(data.translation || "");
-      setShowTranslation(true);
-    } catch {
-      setTranslatedQuestion("");
-      setShowTranslation(false);
-    } finally {
-      setIsTranslating(false);
-    }
+    setTranslatedQuestion(questionTranslationSource);
+    setShowTranslation(true);
   };
 
   if (loading) {
@@ -348,7 +325,7 @@ function HighlightTextContent() {
           {/* Left Column: Passage*/}
           <div className="w-full md:min-h-0 bg-white dark:bg-slate-800 rounded-xl p-4 sm:p-4 md:p-4 shadow-sm border border-slate-200 dark:border-slate-700 flex flex-col overflow-hidden min-h-[200px]">
             <div className="flex flex-col gap-1.5 border-b border-slate-200 pb-2 mb-3 dark:border-slate-700 sm:flex-row sm:items-center sm:justify-between">
-              <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wide">
+              <h3 className="text-xs !font-medium text-slate-500 uppercase tracking-wide">
                 {titleText}
               </h3>
               <div className="text-sm text-slate-400 italic flex items-center gap-2 sm:justify-end">
@@ -370,7 +347,6 @@ function HighlightTextContent() {
                 <TranslateButton
                   type="button"
                   onClick={handleTranslateQuestion}
-                  isLoading={isTranslating}
                   aria-label={
                     showTranslation ? "Show original text" : "Translate text"
                   }

@@ -140,6 +140,9 @@ function CompletePassageContent() {
   usePracticeComplete({ isGameOver: isCompleted, score, totalQuestions: questions.length, exerciseType: "sentence_completion", level: currentQuestion?.level });
 
   // Passage always in learning language
+  const passageTitle = learningLang === "fr"
+    ? currentQuestion?.passage_title_fr || currentQuestion?.passage_title_en || "Passage"
+    : currentQuestion?.passage_title_en || currentQuestion?.passage_title_fr || "Passage";
   const passageBefore = learningLang === "fr"
     ? currentQuestion?.passage_before_fr || currentQuestion?.passage_before_en || currentQuestion?.passageBefore || ""
     : currentQuestion?.passage_before_en || currentQuestion?.passage_before_fr || currentQuestion?.passageBefore || "";
@@ -148,6 +151,7 @@ function CompletePassageContent() {
     : currentQuestion?.passage_after_en || currentQuestion?.passage_after_fr || currentQuestion?.passageAfter || "";
   const translatedPassageBefore = learningLang === "fr" ? currentQuestion?.passage_before_en : currentQuestion?.passage_before_fr;
   const translatedPassageAfter = learningLang === "fr" ? currentQuestion?.passage_after_en : currentQuestion?.passage_after_fr;
+  const translatedPassageTitle = (learningLang === "fr" ? currentQuestion?.passage_title_en : currentQuestion?.passage_title_fr) || "Passage";
   const canTranslatePassage = Boolean(
     translatedPassageBefore && translatedPassageAfter
     && (translatedPassageBefore !== passageBefore || translatedPassageAfter !== passageAfter)
@@ -276,17 +280,19 @@ function CompletePassageContent() {
       isCorrect={isCorrect}
       feedbackTone={feedbackTone}
       feedbackMessage={feedbackMessage}
-      correctAnswer={!isCorrect && showFeedback ? displayOptions[currentQuestion.correctIndex] : undefined}
       compactFeedback={!isCorrect}
     >
       <PracticeTwoPanel>
         {/* Left — Passage (always in learning language) */}
         <section className="practice-comprehension-scroll flex-1 min-h-0 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 p-4 md:p-6 overflow-y-auto" aria-label="Passage">
-          {showFeedback && canTranslatePassage && (
-            <div className="mb-2 flex justify-end">
+          <div className="mb-4 flex items-start justify-between gap-3 border-b border-slate-200 pb-3 dark:border-slate-700">
+            <h2 className="practice-type-content-heading min-w-0 text-slate-900 dark:text-slate-100 !font-medium">
+              {passageTitle}
+            </h2>
+            {showFeedback && canTranslatePassage && (
               <TranslateButton onClick={() => setShowPassageTranslation(value => !value)} aria-label={showPassageTranslation ? "Hide passage translation" : "Translate passage"} title={showPassageTranslation ? "Hide passage translation" : "Translate passage"} aria-expanded={showPassageTranslation} />
-            </div>
-          )}
+            )}
+          </div>
           <div className={BODY_TEXT_CLASS}>
             <p>{passageBefore}</p>
             <div className={cn(
@@ -303,6 +309,7 @@ function CompletePassageContent() {
           </div>
           {showFeedback && showPassageTranslation && canTranslatePassage && (
             <div className={cn(BODY_TEXT_CLASS, "mt-6 border-t border-slate-200 pt-5 dark:border-slate-700")}>
+              <h2 className="practice-type-content-heading mb-3 !font-medium text-slate-900 dark:text-slate-100">{translatedPassageTitle}</h2>
               <p>{translatedPassageBefore}</p>
               {translatedSelectedSentence && <p className="my-4">{translatedSelectedSentence}</p>}
               <p>{translatedPassageAfter}</p>
@@ -311,13 +318,13 @@ function CompletePassageContent() {
         </section>
 
         {/* Right — Options */}
-        <section className="practice-comprehension-scroll flex flex-1 min-h-0 flex-col bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 p-4 md:p-5 overflow-y-auto" aria-label="Answer options">
+        <section className="practice-comprehension-scroll flex flex-1 min-h-0 flex-col justify-start gap-4 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 p-4 md:p-5 overflow-y-auto" aria-label="Answer options">
           <div className="flex shrink-0 items-start gap-2 border-b border-slate-200 pb-3 dark:border-slate-700">
             <TranslateButton onClick={() => setShowHeadingTranslation(value => !value)} aria-label={showHeadingTranslation ? "Show original heading" : "Translate heading"} title={showHeadingTranslation ? "Show original heading" : "Translate heading"} aria-pressed={showHeadingTranslation} className="h-10 w-10" />
-            <h3 className="practice-reading-heading min-w-0 flex-1 !font-bold">{showHeadingTranslation ? translatedHeading : selectHeading}</h3>
+            <h3 className="practice-reading-heading min-w-0 flex-1 !font-medium">{showHeadingTranslation ? translatedHeading : selectHeading}</h3>
           </div>
 
-          <div className="my-auto grid shrink-0 auto-rows-fr gap-3 py-4">
+          <div className="m-0 grid shrink-0 auto-rows-fr content-start gap-3 p-0">
             {displayOptions.map((option, index) => {
               const isSelected = selectedOption === index;
               const isOptionCorrect = showFeedback && index === currentQuestion.correctIndex;
@@ -332,7 +339,6 @@ function CompletePassageContent() {
                 isSelected && !showFeedback && "border-blue-500 bg-sky-50 shadow-[0_0_0_3px_rgba(59,130,246,0.12)] dark:border-blue-400 dark:bg-blue-950/30",
                 isOptionCorrect && "border-emerald-500 bg-emerald-50 shadow-[0_0_0_3px_rgba(52,211,153,0.15)] dark:border-emerald-400 dark:bg-emerald-950/30",
                 isOptionWrong && "border-red-400 bg-red-50 shadow-[0_0_0_3px_rgba(248,113,113,0.15)] dark:bg-red-950/30",
-                isOptionMuted && "opacity-40",
               );
               const optionContent = (
                 <>
@@ -342,6 +348,7 @@ function CompletePassageContent() {
                     isSelected && !showFeedback && "border-blue-500 bg-blue-500",
                     isOptionCorrect && "border-emerald-500 bg-emerald-500",
                     isOptionWrong && "border-red-400 bg-red-400",
+                    isOptionMuted && "opacity-40",
                   )} aria-hidden="true">
                     {(isSelected || isOptionCorrect || isOptionWrong) && (
                       <span className={cn(
@@ -353,6 +360,7 @@ function CompletePassageContent() {
                   <span className={cn(
                     BODY_TEXT_CLASS,
                     "min-w-0 flex-1 break-words",
+                    isOptionMuted && "opacity-40",
                     isOptionCorrect ? "text-emerald-700 dark:text-emerald-300" :
                       isOptionWrong ? "text-red-600 dark:text-red-300" :
                         "text-slate-700 dark:text-slate-200",
@@ -360,7 +368,7 @@ function CompletePassageContent() {
                     {showFeedback && revealedOptionTranslations[index] && canTranslateOption ? translatedOption : option}
                   </span>
                   {showFeedback && canTranslateOption && (
-                    <TranslateButton iconVariant="option" onClick={() => setRevealedOptionTranslations(previous => ({ ...previous, [index]: !previous[index] }))} aria-label={`${revealedOptionTranslations[index] ? "Show original" : "Translate"} option ${index + 1}`} title={revealedOptionTranslations[index] ? "Show original option" : "Translate option"} aria-pressed={Boolean(revealedOptionTranslations[index])} />
+                    <TranslateButton iconVariant="option" className="!text-sky-700 hover:!text-sky-800 dark:!text-sky-400 dark:hover:!text-sky-300" onClick={() => setRevealedOptionTranslations(previous => ({ ...previous, [index]: !previous[index] }))} aria-label={`${revealedOptionTranslations[index] ? "Show original" : "Translate"} option ${index + 1}`} title={revealedOptionTranslations[index] ? "Show original option" : "Translate option"} aria-pressed={Boolean(revealedOptionTranslations[index])} />
                   )}
                 </>
               );

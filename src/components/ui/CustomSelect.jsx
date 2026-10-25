@@ -29,6 +29,7 @@ export default function CustomSelect({
   onChange,
   placeholder = "Select…",
   ariaLabel,
+  menuLabel,
   disabled = false,
   isCorrect = false,
   isWrong = false,
@@ -145,6 +146,8 @@ export default function CustomSelect({
           <motion.ul
             ref={listRef}
             role="listbox"
+            aria-label={menuLabel || ariaLabel}
+            data-menu-label={menuLabel}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}

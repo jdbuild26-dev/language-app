@@ -319,7 +319,7 @@ function GenericSpeakingContent({
                         {currentQuestion.Image && (
                             <img src={currentQuestion.Image} alt="Task" className="w-full max-h-64 object-contain rounded-xl mb-4 shadow-sm" />
                         )}
-                        <h2 className="text-2xl md:text-3xl font-bold text-slate-800 dark:text-slate-100 leading-relaxed">
+                        <h2 className="text-2xl md:text-3xl !font-medium text-slate-800 dark:text-slate-100 leading-relaxed">
                             {currentQuestion.Question || currentQuestion.Prompt || currentQuestion.Topic || currentQuestion.Sentence}
                         </h2>
                         <div className="flex justify-center mt-2">

@@ -132,15 +132,95 @@ textarea[placeholder="|"]:focus::placeholder {
   .practice-game-typography .practice-select-text [role="option"] {
     font-size: var(--practice-font-content);
     font-family: var(--practice-font-content-family);
+    font-weight: 400;
     line-height: 1.4;
   }
 
   .practice-game-typography .diagram-feedback-answer,
-  .practice-game-typography .image-feedback-answer,
-  .practice-game-typography .fill-feedback-answer {
+  .practice-game-typography .image-feedback-answer {
     font-size: 1rem;
     font-family: var(--practice-font-content-family);
     line-height: 1.4;
+  }
+
+  .practice-game-typography .fill-feedback-answer {
+    font-size: var(--practice-font-content);
+    font-family: var(--practice-font-content-family);
+    line-height: 1.4;
+  }
+
+  .practice-game-typography .diagram-answer-select [role="listbox"] {
+    background-color: theme("colors.white");
+    border: 1px solid theme("colors.blue.300");
+    border-radius: 0.625rem;
+    padding-block: 0.375rem;
+    box-shadow: 0 8px 20px rgb(15 23 42 / 0.12);
+    scrollbar-width: thin;
+    scrollbar-color: theme("colors.slate.400") transparent;
+  }
+
+  .practice-game-typography .diagram-answer-select [role="option"] {
+    min-height: 2.75rem;
+    margin-inline: 0.375rem;
+    border-radius: 0.375rem;
+  }
+
+  .practice-game-typography .diagram-answer-select [role="listbox"][data-menu-label]::before {
+    content: attr(data-menu-label);
+    display: block;
+    position: sticky;
+    top: -0.375rem;
+    z-index: 20;
+    margin-top: -0.375rem;
+    padding: 0.5rem 0.875rem;
+    border-bottom: 1px solid theme("colors.blue.200");
+    background-color: theme("colors.blue.50");
+    color: theme("colors.blue.800");
+    font-size: 0.875rem;
+    font-weight: 500;
+    line-height: 1.5;
+  }
+
+  .practice-game-typography .diagram-answer-row:has([aria-expanded="true"]) > div:first-child {
+    border-color: theme("colors.blue.600");
+    background-color: theme("colors.blue.600");
+    color: theme("colors.white");
+  }
+
+  .dark .practice-game-typography .diagram-answer-select [role="listbox"][data-menu-label]::before {
+    background-color: theme("colors.slate.800");
+    border-color: theme("colors.blue.700");
+    color: theme("colors.blue.200");
+  }
+
+  .practice-game-typography .diagram-answer-select [role="option"] > span.absolute {
+    background-color: theme("colors.blue.50");
+    border-radius: 0.375rem;
+  }
+
+  .practice-game-typography .diagram-answer-select [role="option"][aria-selected="true"] > span.absolute {
+    background-color: theme("colors.blue.100");
+  }
+
+  .dark .practice-game-typography .diagram-answer-select [role="listbox"] {
+    background-color: theme("colors.slate.900");
+    border-color: theme("colors.blue.400");
+  }
+
+  .dark .practice-game-typography .diagram-answer-select [role="option"] > span.absolute {
+    background-color: theme("colors.slate.800");
+  }
+
+  .dark .practice-game-typography .diagram-answer-select [role="option"][aria-selected="true"] > span.absolute {
+    background-color: theme("colors.blue.900");
+  }
+
+  @media (min-width: 64rem) {
+    .practice-game-typography .diagram-feedback-answer,
+    .practice-game-typography .image-feedback-answer,
+    .practice-game-typography .fill-feedback-answer {
+      font-size: var(--practice-font-content);
+    }
   }
 
   .practice-game-typography .practice-fill-passage {
@@ -185,6 +265,11 @@ textarea[placeholder="|"]:focus::placeholder {
   }
 
   .practice-comprehension-scroll {
+    scrollbar-gutter: stable;
+  }
+
+  .practice-game-typography .custom-scrollbar,
+  .practice-game-typography .practice-game-scroll {
     scrollbar-gutter: stable;
   }
 

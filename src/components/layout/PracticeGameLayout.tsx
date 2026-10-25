@@ -23,6 +23,8 @@ import { completeAssignment } from "@/services/assignmentsApi";
 type FeedbackTone = "neutral" | "success" | "error" | "partial";
 
 type PracticeGameLayoutProps = {
+  capExerciseHeight?: boolean;
+  headerFontWeight?: 500 | 700;
   questionType?: string;
   questionTypeFr?: string;
   questionTypeEn?: string;
@@ -54,6 +56,7 @@ type PracticeGameLayoutProps = {
   showFeedback?: boolean;
   isCorrect?: boolean;
   feedbackTone?: FeedbackTone;
+  feedbackAppearance?: "solid" | "soft";
   feedbackMessage?: string;
   correctAnswer?: React.ReactNode;
   correctAnswerLabel?: string;
@@ -80,6 +83,8 @@ function AssignmentIdSync({
  * Standard Layout for Practice Games — Premium Design
  */
 export default function PracticeGameLayout({
+  capExerciseHeight = false,
+  headerFontWeight = 700,
   questionType,
   instructionFr,
   instructionEn,
@@ -109,6 +114,7 @@ export default function PracticeGameLayout({
   showFeedback = false,
   isCorrect = false,
   feedbackTone,
+  feedbackAppearance = "solid",
   feedbackMessage = "",
   correctAnswer = "",
   correctAnswerLabel,
@@ -294,7 +300,10 @@ export default function PracticeGameLayout({
   );
 
   return (
-    <div className="practice-game-typography practice-dark-shell flex flex-col h-dvh max-h-dvh dark:bg-slate-950 overflow-hidden">
+    <div className={cn(
+      "practice-game-typography practice-dark-shell flex flex-col h-dvh max-h-dvh dark:bg-slate-950 overflow-hidden",
+      capExerciseHeight && "md:max-h-[50rem]",
+    )}>
       <Suspense fallback={null}>
         <AssignmentIdSync onChange={setAssignmentId} />
       </Suspense>
@@ -320,7 +329,7 @@ export default function PracticeGameLayout({
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: 6 }}
                 transition={{ duration: 0.18, ease: "easeInOut" }}
-                className="practice-type-exercise-heading min-w-0 max-w-4xl 2xl:max-w-none text-center tracking-[-0.01em] text-slate-800 dark:text-white"
+                className={cn("practice-type-exercise-heading min-w-0 max-w-4xl 2xl:max-w-none text-center tracking-[-0.01em] text-slate-800 dark:text-white", headerFontWeight === 500 && "!font-medium")}
               >
                 {hasTranslation ? (
                   <>
@@ -429,6 +438,7 @@ export default function PracticeGameLayout({
         <FeedbackBanner
           isCorrect={isCorrect}
           feedbackTone={feedbackTone}
+          feedbackAppearance={feedbackAppearance}
           correctAnswer={correctAnswer}
           correctAnswerLabel={correctAnswerLabel}
           message={feedbackMessage}

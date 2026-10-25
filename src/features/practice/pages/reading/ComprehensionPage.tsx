@@ -14,6 +14,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { useQuestionLanguage } from "@/hooks/useQuestionLanguage";
 import { usePracticeComplete } from "@/hooks/usePracticeComplete";
 import { useSearchParams } from "next/navigation";
+import { getComprehensionQuestionView } from "@/features/practice/lib/comprehensionLanguage";
 
 type ComprehensionQuestion = {
   passage?: string;
@@ -187,7 +188,7 @@ function ComprehensionContent() {
     }
   }, [passageIndex, currentPassage]);
 
-  const { pick, pickTranslation, showQuestionInKnown } = useQuestionLanguage(currentPassage?.level);
+  const { showQuestionInKnown } = useQuestionLanguage(currentPassage?.level);
 
   // Progress: based on passages
   const progress = passages.length > 0 ? ((passageIndex + 1) / passages.length) * 100 : 0;
@@ -309,6 +310,9 @@ function ComprehensionContent() {
   const translatedPassageText = learningLang === "fr"
     ? currentPassage?.passage_en || ""
     : currentPassage?.passage_fr || "";
+  const translatedPassageTitle = learningLang === "fr"
+    ? currentPassage?.passage_title_en || "Passage"
+    : currentPassage?.passage_title_fr || "Passage";
 
   const allAnswered = selectedOptions.length > 0 && selectedOptions.every(o => o !== null);
 
@@ -355,41 +359,39 @@ function ComprehensionContent() {
           {/* Left Column — Passage */}
           <section className="practice-comprehension-scroll min-h-[18rem] min-w-0 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-800 md:min-h-0 md:overflow-y-auto md:p-6" aria-label="Passage">
             <div className="mb-4 flex items-start justify-between gap-3 border-b border-slate-200 pb-3 dark:border-slate-700">
-              <h2 className="practice-type-content-heading text-slate-900 dark:text-slate-100">
+              <h2 className="practice-type-content-heading !font-medium text-slate-900 dark:text-slate-100">
                 {passageTitle || "Passage"}
               </h2>
               {submitted && translatedPassageText && translatedPassageText !== passageText && (
                 <TranslateButton onClick={() => setShowPassageTranslation(value => !value)} aria-label={showPassageTranslation ? "Hide passage translation" : "Translate passage"} title={showPassageTranslation ? "Hide passage translation" : "Translate passage"} aria-expanded={showPassageTranslation} />
               )}
             </div>
-            <p className="practice-type-content whitespace-pre-line font-sans text-slate-700 dark:text-slate-200">
+            <p className="practice-type-content whitespace-pre-line text-justify font-sans text-slate-700 dark:text-slate-200">
                 {passageText}
             </p>
             {submitted && showPassageTranslation && translatedPassageText && (
-              <p className="practice-type-content mt-6 whitespace-pre-line border-t border-slate-200 pt-5 font-sans text-slate-700 dark:border-slate-700 dark:text-slate-200">
-                {translatedPassageText}
-              </p>
+              <div className="mt-6 border-t border-slate-200 pt-5 dark:border-slate-700">
+                {translatedPassageTitle && (
+                  <h2 className="practice-type-content-heading mb-3 !font-medium text-slate-900 dark:text-slate-100">
+                    {translatedPassageTitle}
+                  </h2>
+                )}
+                <p className="practice-type-content whitespace-pre-line text-justify font-sans text-slate-700 dark:text-slate-200">
+                  {translatedPassageText}
+                </p>
+              </div>
             )}
           </section>
 
           {/* Right Column — All questions for this passage */}
           <section className="practice-comprehension-scroll flex min-h-0 min-w-0 flex-col gap-6 overflow-y-auto rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900 md:p-5" aria-label="Questions">
             {currentPassage?.questions.map((q, qIdx) => {
-              const questionText = pick(q.question_fr, q.question_en) || q.question || "";
-              const translatedQuestionText = pickTranslation(q.question_fr, q.question_en);
-              const displayOptions = learningLang === "fr"
-                ? q.options_fr?.length ? q.options_fr : q.options ?? []
-                : q.options_en?.length ? q.options_en : q.options ?? [];
-              const translationOptions = learningLang === "fr" ? q.options_en ?? [] : q.options_fr ?? [];
-              const canTranslateQuestion = Boolean(translatedQuestionText && translatedQuestionText !== questionText);
-              const canTranslateOptions = translationOptions.length === displayOptions.length
-                && translationOptions.some((option, index) => Boolean(option && option !== displayOptions[index]));
-              const canTranslate = submitted ? canTranslateQuestion || canTranslateOptions : canTranslateQuestion;
-              const isTranslated = Boolean(translatedQuestions[qIdx] && canTranslate);
-              const shownQuestion = isTranslated && canTranslateQuestion ? translatedQuestionText : questionText;
-              const shownOptions = submitted && isTranslated && canTranslateOptions
-                ? displayOptions.map((option, index) => translationOptions[index] || option)
-                : displayOptions;
+              const { question: shownQuestion, options: shownOptions, canTranslate, translated: isTranslated } = getComprehensionQuestionView(q, {
+                learningLang,
+                showQuestionInKnown,
+                submitted,
+                translated: Boolean(translatedQuestions[qIdx]),
+              });
               const translateButton = canTranslate && (
                 <TranslateButton
                   iconVariant="option"
@@ -404,7 +406,7 @@ function ComprehensionContent() {
               return (
                 <div key={qIdx} className="flex flex-col gap-3">
                   {/* Question number + text */}
-                  <h3 className="practice-type-question-heading flex min-w-0 items-start gap-3 border-b border-slate-200 pb-3 text-slate-900 dark:border-slate-700 dark:text-slate-100">
+                  <h3 className="practice-type-content font-normal !leading-relaxed flex min-w-0 items-start gap-3 border-b border-slate-200 pb-3 text-slate-900 dark:border-slate-700 dark:text-slate-100">
                     <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-blue-200 bg-blue-50 text-sm font-bold text-blue-700 dark:border-blue-800 dark:bg-blue-900/30 dark:text-blue-300">
                       {qIdx + 1}
                     </span>
