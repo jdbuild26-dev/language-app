@@ -2,7 +2,7 @@
 import type { TopicSummary } from "../hooks/useTopicEvaluation";
 import { stripReportHeading } from "../lib/reportHeading";
 
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { 
   Star, 
   MessageCircle, 
@@ -25,6 +25,9 @@ import { useTextToSpeech } from "@/hooks/useTextToSpeech";
 import { jsPDF } from "jspdf";
 import type { WriteImageCorrection, WriteImageSegment } from "@/features/practice/hooks/useWriteImageEvaluation";
 import { downloadWriteImagePdf } from "./writeImagePdf";
+import { DocumentCorrectionTable } from "./DocumentCorrectionTable";
+import type { WriteDocumentsEvaluation } from "../hooks/useWriteDocumentsEvaluation";
+import type { DataEvaluation } from "../hooks/useWriteAnalysisEvaluation";
 
 interface FeedbackTweak {
   original: string;
@@ -48,7 +51,7 @@ type ImageReportSummary = {
 };
 
 export interface EnhancedAnalysisData {
-  report_kind?: "write_topic" | "speak_topic" | "speak_image";
+  report_kind?: "write_topic" | "speak_topic" | "write_image" | "speak_image" | "write_documents" | "write_analysis";
   learning_language?: string;
   topic_session_summary?: TopicSummary;
   overall_score: number;
@@ -63,11 +66,14 @@ export interface EnhancedAnalysisData {
   intent_prediction?: string;
   message_success?: boolean;
   pronunciation_tip?: string;
-  parameters?: { name: string; tooltip: string; score: number }[];
+  parameters?: { name: string; tooltip: string; score: number; justification?: string }[];
   overall_session_summary?: ImageReportSummary;
   grammar_language_feedback?: string;
   corrected_response_segments?: WriteImageSegment[];
   grammar_correction_table?: WriteImageCorrection[];
+  document_grammar?: WriteDocumentsEvaluation["grammar_analysis"];
+  data_session_summary?: Omit<DataEvaluation["overall_session_analysis"], "ratings">;
+  data_suggestions?: DataEvaluation["grammar_analysis"]["data_suggestions"];
   overall_content_score?: number;
   sample_descriptions?: string[];
 }
@@ -142,6 +148,11 @@ export default function EnhancedFeedbackView({
   const [activeTab, setActiveTab] = useState<"overview" | "tweaks" | "sample">("overview");
   const [downloadError, setDownloadError] = useState<string | null>(null);
   const { speak, isSpeaking } = useTextToSpeech();
+  const reportRef = useRef<HTMLDivElement>(null);
+  const isDataReport = data?.report_kind === "write_analysis";
+  useEffect(() => {
+    if (isOpen && isDataReport) reportRef.current?.focus();
+  }, [isOpen, isDataReport]);
 
   if (!data) return null;
   const isStructuredReport = Boolean(data.corrected_response_segments);
@@ -288,6 +299,9 @@ export default function EnhancedFeedbackView({
     <AnimatePresence>
       {isOpen && (
         <motion.div
+           ref={reportRef}
+           tabIndex={isDataReport ? -1 : undefined}
+           aria-label={isDataReport ? "Write About Data feedback" : undefined}
            initial={{ opacity: 0, y: 10 }}
            animate={{ opacity: 1, y: 0 }}
            exit={{ opacity: 0, y: 10 }}
@@ -301,10 +315,14 @@ export default function EnhancedFeedbackView({
               isStructuredReport && "flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
             )}>
                <div className={cn("flex gap-8", isStructuredReport && "min-w-0 flex-1 gap-5 overflow-x-auto sm:gap-7")}>
-                  {tabs.map((tab) => (
+                  {tabs.filter(tab => !isDataReport || tab.id !== "sample").map((tab) => (
                     <button
                       key={tab.id}
-                      onClick={() => setActiveTab(tab.id)}
+                      aria-pressed={isDataReport ? activeTab === tab.id : undefined}
+                      onClick={() => {
+                        if (isDataReport) reportRef.current?.scrollTo({ top: 0 });
+                        setActiveTab(tab.id);
+                      }}
                       className={cn(
                         "pb-4 px-1 text-sm font-black uppercase tracking-tighter transition-all relative",
                         isStructuredReport && "shrink-0 whitespace-nowrap text-sm font-semibold normal-case tracking-normal sm:text-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2",
@@ -487,11 +505,15 @@ export default function EnhancedFeedbackView({
                   >
                     {!isStructuredReport && <h3 className="text-2xl font-black text-slate-900 dark:text-white uppercase tracking-tight mb-6">Grammar & Vocabulary Tweaks</h3>}
 
-                    {data.grammar_language_feedback && data.corrected_response_segments && data.grammar_correction_table ? (
+                    {data.grammar_language_feedback && data.corrected_response_segments && (data.grammar_correction_table || data.document_grammar) ? (
                       <V2GrammarReport
                         feedback={data.grammar_language_feedback}
                         segments={data.corrected_response_segments}
-                        corrections={data.grammar_correction_table}
+                        corrections={data.grammar_correction_table ?? []}
+                        documentGrammar={data.document_grammar}
+                        showAlternatives={data.report_kind === "write_image" || data.report_kind === "speak_image" ||
+                          data.report_kind === "write_topic" || data.report_kind === "speak_topic" || isDataReport}
+                        dataSuggestions={data.data_suggestions}
                       />
                     ) : !data.detailed_tweaks || data.detailed_tweaks.filter(t => (t.original ?? "").trim() !== (t.corrected ?? "").trim()).length === 0 ? (
                       <div className="bg-white dark:bg-slate-900 rounded-2xl p-12 border border-slate-100 dark:border-slate-800 text-center">
@@ -600,7 +622,7 @@ export default function EnhancedFeedbackView({
                     className={isStructuredReport ? "w-full pt-4" : "max-w-4xl mx-auto space-y-8 text-center pt-10"}
                   >
                     {isStructuredReport ? (
-                      <ImageSampleAnswers samples={data.sample_descriptions || []} onListen={handlePlaySample} topic={data.report_kind === "write_topic" || data.report_kind === "speak_topic"} language={data.learning_language || "French"} />
+                      <ImageSampleAnswers samples={data.sample_descriptions || []} onListen={handlePlaySample} topic={Boolean(data.topic_session_summary)} language={data.learning_language || "French"} />
                     ) : (
                     <div className={cn("bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 shadow-xl space-y-10", data.sample_descriptions?.length ? "rounded-3xl sm:rounded-[3rem] p-6 sm:p-10 lg:p-12" : "rounded-[3rem] p-12")}>
                         <Star className="w-12 h-12 text-amber-400 mx-auto" />
@@ -613,7 +635,7 @@ export default function EnhancedFeedbackView({
                             {data.sample_descriptions.map((sample, index) => (
                               <div key={index} className="border-t border-slate-100 dark:border-slate-800 pt-6">
                                 <h4 className="text-sm font-black text-blue-600 dark:text-blue-400 mb-3">Sample {index + 1}</h4>
-                                <p className="text-base sm:text-lg font-medium text-slate-900 dark:text-white leading-relaxed whitespace-pre-wrap">{sample}</p>
+                                <p className="practice-passage-content text-base sm:text-lg font-medium text-slate-900 dark:text-white leading-relaxed whitespace-pre-wrap">{sample}</p>
                               </div>
                             ))}
                           </div>
@@ -685,7 +707,7 @@ function ImageSampleAnswers({ samples, onListen, topic = false, language = "Fren
 
 function CorrectedResponse({ segments }: { segments: WriteImageSegment[] }) {
   return (
-    <p className="whitespace-pre-wrap break-words text-base leading-8 text-slate-800 dark:text-slate-200">
+    <p className="practice-passage-content whitespace-pre-wrap break-words text-base leading-8 text-slate-800 dark:text-slate-200">
       {segments.map((part, index) => part.type === "unchanged" ? (
         <React.Fragment key={index}>{part.text}</React.Fragment>
       ) : (
@@ -700,11 +722,22 @@ function CorrectedResponse({ segments }: { segments: WriteImageSegment[] }) {
   );
 }
 
-function V2GrammarReport({ feedback, segments, corrections }: {
+function CorrectionAlternatives({ alternatives }: { alternatives: WriteImageCorrection["alternatives"] }) {
+  if (!alternatives?.length) return <span>No additional alternative needed.</span>;
+  return <ul className="space-y-2">{alternatives.map(({ text, translation }, index) => (
+    <li key={index}>{text} ({translation})</li>
+  ))}</ul>;
+}
+
+function V2GrammarReport({ feedback, segments, corrections, documentGrammar, showAlternatives, dataSuggestions = [] }: {
   feedback: string;
   segments: WriteImageSegment[];
   corrections: WriteImageCorrection[];
+  documentGrammar?: EnhancedAnalysisData["document_grammar"];
+  showAlternatives: boolean;
+  dataSuggestions?: EnhancedAnalysisData["data_suggestions"];
 }) {
+  const dataRows = dataSuggestions.map((row, index) => ({ ...row, label: `D${index + 1}` }));
   return (
     <div className="space-y-10 py-4">
       <section className="min-w-0 border-b border-slate-200 pb-8 dark:border-slate-800">
@@ -722,7 +755,8 @@ function V2GrammarReport({ feedback, segments, corrections }: {
       <section className="min-w-0">
         <p className="text-xs font-semibold uppercase tracking-wide text-sky-700 dark:text-sky-300">Part 3</p>
         <h3 className="mt-3 text-2xl font-semibold tracking-tight text-slate-900 dark:text-white">Correction table</h3>
-        {corrections.length ? (
+        {!corrections.length && dataRows.length > 0 && <p className="mt-5 text-emerald-700 dark:text-emerald-300">No language corrections needed.</p>}
+        {documentGrammar ? <DocumentCorrectionTable grammar={documentGrammar} /> : corrections.length || dataRows.length ? (
           <>
           <div className="mt-5 md:hidden">
             {corrections.map((row) => (
@@ -730,29 +764,48 @@ function V2GrammarReport({ feedback, segments, corrections }: {
                 <span className="text-xs font-bold tabular-nums text-sky-700 dark:text-sky-300">Correction {row.number}</span>
                 <dl className="mt-4 space-y-4 text-base leading-7">
                   <div><dt className="text-sm font-semibold text-slate-700 dark:text-slate-300">Your Sentence</dt><dd className="mt-1 break-words text-red-600 dark:text-red-400">{row.original || "Insertion"}</dd></div>
-                  <div><dt className="text-sm font-semibold text-slate-700 dark:text-slate-300">Correction</dt><dd className="mt-1 break-words font-medium text-emerald-700 dark:text-emerald-400">{row.corrected || "Remove"}<sup className="ml-1 font-bold text-blue-600 dark:text-blue-400">{row.number}</sup></dd></div>
+                  <div><dt className="text-sm font-semibold text-slate-700 dark:text-slate-300">Correction</dt><dd className="mt-1 break-words font-medium text-emerald-700 dark:text-emerald-400">{row.corrected || "Remove"}{!showAlternatives && <sup className="ml-1 font-bold text-blue-600 dark:text-blue-400">{row.number}</sup>}</dd></div>
                   <div><dt className="text-sm font-semibold text-slate-700 dark:text-slate-300">Explanation</dt><dd className="mt-1 text-slate-800 dark:text-slate-200">{row.explanation}</dd></div>
+                  {showAlternatives && <div><dt className="text-sm font-semibold text-slate-700 dark:text-slate-300">Alternate Suggestions</dt><dd className="mt-1 break-words text-slate-800 dark:text-slate-200"><CorrectionAlternatives alternatives={row.alternatives} /></dd></div>}
                 </dl>
               </div>
             ))}
+            {dataRows.map(row => <section key={row.label} className="space-y-2 border-b border-slate-200 py-5 dark:border-slate-800">
+              <h4 className="font-semibold">{row.label} · Data accuracy</h4>
+              <p>{row.original}</p>
+              <p>No language correction required</p>
+              <p>{row.explanation}</p>
+              <CorrectionAlternatives alternatives={row.alternatives} />
+            </section>)}
           </div>
           <div className="mt-5 hidden overflow-x-auto border-y border-slate-200 dark:border-slate-700 md:block">
             <table className="w-full table-fixed text-base leading-7">
               <thead className="bg-slate-50 dark:bg-slate-800 text-left text-sm text-slate-700 dark:text-slate-300">
                 <tr>
-                  <th scope="col" className="px-5 py-3 w-[30%]">Your Sentence</th>
-                  <th scope="col" className="px-5 py-3 w-[30%]">Correction</th>
+                  {showAlternatives && <th scope="col" className="w-12 px-3 py-3">#</th>}
+                  <th scope="col" className={cn("px-5 py-3", showAlternatives ? "w-[19%]" : "w-[30%]")}>Your Sentence</th>
+                  <th scope="col" className={cn("px-5 py-3", showAlternatives ? "w-[19%]" : "w-[30%]")}>Correction</th>
                   <th scope="col" className="px-5 py-3">Explanation</th>
+                  {showAlternatives && <th scope="col" className="w-[27%] px-5 py-3">Alternate Suggestions</th>}
                 </tr>
               </thead>
               <tbody>
                 {corrections.map((row) => (
                   <tr key={row.number} className="border-t border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 align-top">
-                    <td className="break-words px-5 py-5 text-red-600 dark:text-red-400"><sup className="mr-2 font-bold text-blue-600 dark:text-blue-400">{row.number}</sup>{row.original || <span className="text-slate-600 dark:text-slate-400">Insertion</span>}</td>
-                    <td className="break-words px-5 py-5 font-semibold text-emerald-700 dark:text-emerald-400">{row.corrected || <span className="text-slate-600 dark:text-slate-400 font-normal">Remove</span>}<sup className="ml-1 font-bold text-blue-600 dark:text-blue-400">{row.number}</sup></td>
+                    {showAlternatives && <td className="px-3 py-5 font-semibold text-blue-600 dark:text-blue-400">{row.number}</td>}
+                    <td className="break-words px-5 py-5 text-red-600 dark:text-red-400">{!showAlternatives && <sup className="mr-2 font-bold text-blue-600 dark:text-blue-400">{row.number}</sup>}{row.original || <span className="text-slate-600 dark:text-slate-400">Insertion</span>}</td>
+                    <td className="break-words px-5 py-5 font-semibold text-emerald-700 dark:text-emerald-400">{row.corrected || <span className="text-slate-600 dark:text-slate-400 font-normal">Remove</span>}{!showAlternatives && <sup className="ml-1 font-bold text-blue-600 dark:text-blue-400">{row.number}</sup>}</td>
                     <td className="break-words px-5 py-5 text-slate-800 dark:text-slate-200">{row.explanation}</td>
+                    {showAlternatives && <td className="break-words px-5 py-5 text-slate-800 dark:text-slate-200"><CorrectionAlternatives alternatives={row.alternatives} /></td>}
                   </tr>
                 ))}
+                {dataRows.map(row => <tr key={row.label} className="border-t border-slate-100 bg-white align-top dark:border-slate-800 dark:bg-slate-900">
+                  <th scope="row" className="px-3 py-5 text-left text-blue-600 dark:text-blue-400">{row.label}</th>
+                  <td className="break-words px-5 py-5">{row.original}</td>
+                  <td className="px-5 py-5">No language correction required</td>
+                  <td className="break-words px-5 py-5"><strong className="block">Data accuracy</strong>{row.explanation}</td>
+                  <td className="break-words px-5 py-5"><CorrectionAlternatives alternatives={row.alternatives} /></td>
+                </tr>)}
               </tbody>
             </table>
           </div>
@@ -772,45 +825,45 @@ function ImageSessionSummary({
   userText: string;
   onContinue: () => void;
 }) {
-  const isWriteTopic = data.report_kind === "write_topic";
+  const useWritingLayout = data.report_kind === "write_topic" || data.report_kind === "write_documents" || data.report_kind === "write_analysis";
   return (
     <div className="grid grid-cols-1 gap-x-6 gap-y-10 lg:grid-cols-[minmax(0,1fr)_190px] lg:items-start">
-      <div className={isWriteTopic
+      <div className={useWritingLayout
         ? "grid min-w-0 grid-cols-1 gap-6 border-b border-slate-200 pb-8 pt-2 dark:border-slate-800 lg:col-span-2 lg:grid-cols-[minmax(0,1fr)_200px] lg:gap-8"
         : "contents"}>
-      <section className={cn("min-w-0", !isWriteTopic && "px-6 py-7 sm:px-8 sm:py-8")}>
+      <section className={cn("min-w-0", !useWritingLayout && "px-6 py-7 sm:px-8 sm:py-8")}>
             <h3 className="flex items-center gap-3 text-2xl font-semibold tracking-tight text-slate-900 dark:text-white">
-              <PencilLine aria-hidden="true" className={cn("h-5 w-5 shrink-0 text-blue-600", isWriteTopic && "!text-slate-500 dark:!text-slate-400")} />
-              {isWriteTopic ? "Original submission" : "Original Submission"}
+              <PencilLine aria-hidden="true" className={cn("h-5 w-5 shrink-0 text-blue-600", useWritingLayout && "!text-slate-500 dark:!text-slate-400")} />
+              {useWritingLayout ? "Original submission" : "Original Submission"}
             </h3>
-            <p className="mt-5 whitespace-pre-wrap break-words text-base leading-8 text-slate-800 dark:text-slate-200 sm:text-lg">
+            <p className="practice-passage-content mt-5 whitespace-pre-wrap break-words text-base leading-8 text-slate-800 dark:text-slate-200 sm:text-lg">
               {userText || <span className="italic text-slate-500">No original text provided.</span>}
             </p>
       </section>
-          <aside aria-label="Session results" className={isWriteTopic
+          <aside aria-label="Session results" className={useWritingLayout
             ? "border-t border-slate-200 pt-6 dark:border-slate-700 lg:border-t-0 lg:border-l lg:pl-7 lg:pt-0"
             : "py-2 lg:py-8"}>
             <dl className="grid grid-cols-2 gap-6 lg:grid-cols-1 lg:gap-7">
               <div>
                 <dt className="flex items-center gap-2 text-sm font-medium text-slate-600 dark:text-slate-400">
-                  {!isWriteTopic && <BarChart3 aria-hidden="true" className="h-4 w-4 text-blue-600" />}
+                  {!useWritingLayout && <BarChart3 aria-hidden="true" className="h-4 w-4 text-blue-600" />}
                   Overall score
                 </dt>
                 <dd className="mt-3 flex items-baseline gap-2">
                   <span className={cn(
                     "text-5xl font-semibold tabular-nums tracking-tight",
-                    isWriteTopic && "sm:text-6xl",
+                    useWritingLayout && "sm:text-6xl",
                     data.overall_score >= 70 ? "text-emerald-600 dark:text-emerald-400" : data.overall_score >= 40 ? "text-amber-600 dark:text-amber-400" : "text-red-600 dark:text-red-400"
                   )}>{data.overall_score}</span>
                   <span className="text-base text-slate-500 dark:text-slate-400">/ 100</span>
                 </dd>
               </div>
-              <div className={cn("lg:border-t lg:border-slate-200 lg:pt-6 dark:lg:border-slate-700", isWriteTopic && "lg:!border-t-0 lg:!pt-0")}>
+              <div className={cn("lg:border-t lg:border-slate-200 lg:pt-6 dark:lg:border-slate-700", useWritingLayout && "lg:!border-t-0 lg:!pt-0")}>
                 <dt className="flex items-center gap-2 text-sm font-medium text-slate-600 dark:text-slate-400">
-                  {!isWriteTopic && <BookOpen aria-hidden="true" className="h-4 w-4 text-blue-600" />}
+                  {!useWritingLayout && <BookOpen aria-hidden="true" className="h-4 w-4 text-blue-600" />}
                   CEFR level
                 </dt>
-                <dd className={cn("mt-3 text-4xl font-semibold tracking-tight text-slate-900 dark:text-white", isWriteTopic && "!text-2xl")}>{data.cefr_level}</dd>
+                <dd className={cn("mt-3 text-4xl font-semibold tracking-tight text-slate-900 dark:text-white", useWritingLayout && "!text-2xl")}>{data.cefr_level}</dd>
               </div>
             </dl>
           </aside>
@@ -819,9 +872,11 @@ function ImageSessionSummary({
       <section className="min-w-0 lg:col-span-2">
         <div className="mb-8">
           <h3 className="text-2xl font-semibold tracking-tight text-slate-900 dark:text-white">{data.topic_session_summary ? "Session feedback" : "Content feedback"}</h3>
-          <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">{data.topic_session_summary ? "How your response addresses the instruction and topics to cover." : "How your description relates to the image."}</p>
+          <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">{data.data_session_summary ? "How your response interprets the chart and addresses the task." : data.topic_session_summary ? "How your response addresses the instruction and topics to cover." : "How your description relates to the image."}</p>
         </div>
-        {data.topic_session_summary ? (
+        {data.data_session_summary ? (
+          <DataReportSummary summary={data.data_session_summary} />
+        ) : data.topic_session_summary ? (
           <TopicReportSummary summary={data.topic_session_summary} speech={data.report_kind === "speak_topic"} />
         ) : data.overall_session_summary ? (
           <ReportSummary summary={data.overall_session_summary} className="text-slate-700 dark:text-slate-200" />
@@ -834,20 +889,22 @@ function ImageSessionSummary({
               <div>
                 <h3 className="flex items-center gap-3 text-2xl font-semibold text-slate-900 dark:text-white">
                   <BarChart3 aria-hidden="true" className="h-5 w-5 text-blue-600" />
-                  {data.topic_session_summary ? "Parameter ratings" : "Content ratings"}
+                  {data.topic_session_summary || data.data_session_summary ? "Parameter ratings" : "Content ratings"}
                 </h3>
               </div>
               <p className="text-sm text-slate-600 dark:text-slate-400">Each area is rated out of 10</p>
             </div>
             <div className="grid grid-cols-1 gap-x-10 gap-y-6 md:grid-cols-2">
               {data.parameters.map((parameter) => (
-                <AnalysisRow
-                  key={parameter.name}
-                  label={parameter.name}
-                  value={parameter.score}
-                  tooltip={parameter.tooltip}
-                  ratingOutOfTen
-                />
+                <div key={parameter.name} className="min-w-0 space-y-2">
+                  <AnalysisRow
+                    label={parameter.name}
+                    value={parameter.score}
+                    tooltip={parameter.tooltip}
+                    ratingOutOfTen
+                  />
+                  {parameter.justification && <p className="pl-11 text-sm leading-relaxed text-slate-700 dark:text-slate-200">{parameter.justification}</p>}
+                </div>
               ))}
             </div>
           </section>
@@ -864,6 +921,26 @@ function ImageSessionSummary({
       </div>
     </div>
   );
+}
+
+function DataReportSummary({ summary }: { summary: NonNullable<EnhancedAnalysisData["data_session_summary"]> }) {
+  return <div className="space-y-10">
+    <FeedbackSection title="Overall Content Assessment" text={summary.overall_content_assessment} icon={Eye} color="text-blue-600" />
+    <FeedbackSection title="What the Learner Did Well" text={summary.what_the_learner_did_well.join("\n") || "No specific strengths were identified in this response."} icon={CircleCheck} color="text-emerald-600" />
+    <section className="space-y-4 border-y border-slate-200 py-7 dark:border-slate-700">
+      <h4 className="flex items-center gap-3 text-xl font-semibold"><CircleAlert aria-hidden="true" className="h-5 w-5 text-amber-600" />Data Inaccuracies & Incorrect Interpretations</h4>
+      {summary.data_inaccuracies.length ? summary.data_inaccuracies.map((issue, index) => <div className="space-y-2 border-l-2 border-amber-500 pl-4" key={index}>
+        <p><strong>Learner statement</strong> {issue.learner_statement}</p>
+        <p><strong>Issue</strong> {issue.issue}</p>
+        <p><strong>Correct interpretation</strong> {issue.correct_interpretation}</p>
+      </div>) : <p>No meaningful data inaccuracies were identified.</p>}
+    </section>
+    <FeedbackSection title="Missing or Underdeveloped Analysis" text={summary.missing_or_underdeveloped_analysis} icon={BookOpen} color="text-blue-600" />
+    <section>
+      <h4 className="flex items-center gap-3 text-xl font-semibold"><Lightbulb aria-hidden="true" className="h-5 w-5 text-blue-600" />How the Learner Can Improve</h4>
+      <ol className="mt-4 list-decimal space-y-2 pl-8">{summary.how_the_learner_can_improve.map((point, index) => <li key={index}>{point}</li>)}</ol>
+    </section>
+  </div>;
 }
 
 function TopicReportSummary({ summary, speech }: { summary: TopicSummary; speech: boolean }) {
@@ -922,7 +999,7 @@ function FeedbackSection({ title, text, icon: Icon, color, className }: { title:
         <Icon aria-hidden="true" className={cn("mt-0.5 h-5 w-5 shrink-0", color)} />
         {title}
       </h4>
-      <p className="mt-4 w-full text-base leading-8 text-slate-800 dark:text-slate-200">{stripReportHeading(text, [title])}</p>
+      <p className="mt-4 w-full whitespace-pre-line text-base leading-8 text-slate-800 dark:text-slate-200">{stripReportHeading(text, [title])}</p>
     </section>
   );
 }

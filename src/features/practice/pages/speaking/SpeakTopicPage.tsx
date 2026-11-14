@@ -7,6 +7,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { usePracticeComplete } from "@/hooks/usePracticeComplete";
 import { usePracticeRecording } from "@/hooks/usePracticeRecording";
 import PracticeTwoPanel from "@/features/practice/components/PracticeTwoPanel";
+import { AnswerInstruction, TopicPromptPanel } from "@/features/practice/components/PracticePromptPanels";
 import SpeakingRecordingControls from "@/features/practice/components/SpeakingRecordingControls";
 import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
 import { normalizeTopicExercises, topicAvailability, type TopicQuestion } from "@/features/practice/lib/topicExercise";
@@ -106,22 +107,31 @@ export default function SpeakTopicPage() {
 
   // ── Submit ─────────────────────────────────────────────────────────────────
   const finalizing = useRef(false);
+  const [submissionError, setSubmissionError] = useState<string | null>(null);
+  const hasResponse = Boolean(transcript.trim() || recording.audioUrl);
   const handleSubmit = async () => {
-    if (showFeedback || busy || finalizing.current || !currentQ || !transcript.trim() || topicAvailability(currentQ)) return;
+    if (showFeedback || busy || finalizing.current || !currentQ || !hasResponse || topicAvailability(currentQ)) return;
+    setSubmissionError(null);
     const context = activeContext.current;
     finalizing.current = true;
     setIsFinalizingTranscript(true);
     try {
       const [, captured] = await Promise.all([recording.stop(), stopAndReadTranscript()]);
       if (activeContext.current !== context) return;
+      if (!captured.trim()) {
+        setSubmissionError("No speech was recognized. Please record your answer again.");
+        return;
+      }
       setSubmittedText(captured);
       const result = await evaluate({ mode: "speak", exercise_id: currentQ.id, learner_response: captured });
       if (result && activeContext.current === context) {
         setShowFeedback(true);
         if (result.overall_score >= 70) setScore(value => value + 1);
       }
-    } catch {
-      // The capture hook displays the recording error; never evaluate unfinished speech.
+    } catch (cause) {
+      if (activeContext.current === context) {
+        setSubmissionError(cause instanceof Error ? cause.message : "Speech capture failed. Please record your answer again.");
+      }
     } finally {
       finalizing.current = false;
       setIsFinalizingTranscript(false);
@@ -152,16 +162,13 @@ export default function SpeakTopicPage() {
 
   const missingContent = topicAvailability(currentQ);
   const progress = ((currentIndex + 1) / questions.length) * 100;
-  const mainInstruction = currentQ.main_instruction_fr || currentQ.main_instruction_en || "";
-  const bullets = currentQ.topic_bullets_fr.length > 0 ? currentQ.topic_bullets_fr : currentQ.topic_bullets_en;
-
   return (
     <>
       <PracticeGameLayout
         questionType="Speak About Topic"
-        instructionFr="Parlez du sujet"
-        instructionEn="Speak About Topic"
-        localizedInstruction="Parlez du sujet"
+        instructionFr={currentQ.heading_fr || "Parlez du sujet"}
+        instructionEn={currentQ.heading_en || "Speak About Topic"}
+        localizedInstruction={currentQ.heading_fr || "Parlez du sujet"}
         progress={progress}
         isGameOver={isCompleted}
         score={score}
@@ -169,28 +176,29 @@ export default function SpeakTopicPage() {
         onExit={handleExit}
         onNext={handleSubmit}
         onRestart={() => window.location.reload()}
-        isSubmitEnabled={transcript.trim().length > 5 && !showFeedback && !busy && !evaluation && !missingContent}
+        isSubmitEnabled={hasResponse && !showFeedback && !busy && !evaluation && !missingContent}
         showSubmitButton={!showFeedback && !evaluation}
         submitLabel={busy ? "Evaluating…" : "Submit Answer"}
         timerValue={timerString}
         currentQuestionIndex={currentIndex}
+        disableContentScroll
       >
-        <PracticeTwoPanel className="bg-neutral-50 dark:bg-slate-950 md:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] md:gap-4 md:p-4">
-          <section className="min-h-[420px] rounded-3xl border-2 border-neutral-300 bg-white px-6 py-5 dark:border-slate-700 dark:bg-slate-900 lg:min-h-[520px]">
-            <h2 className="text-[22px] font-medium lg:text-2xl">OBJECTIVE</h2>
-            <hr className="mb-5 mt-3 border-neutral-300 dark:border-slate-700" />
-            <p className="text-xl font-normal leading-relaxed text-slate-600 dark:text-slate-300 lg:text-[21px]">{mainInstruction}</p>
-            {bullets.length > 0 && <ul className="mt-8 list-disc space-y-3 pl-5 text-xl font-normal leading-relaxed text-slate-600 marker:text-slate-400 dark:text-slate-300 lg:text-[21px]">
-              {bullets.map((bullet, index) => <li key={index}>{bullet}</li>)}
-            </ul>}
+        <PracticeTwoPanel className="flex-1 overflow-y-auto md:overflow-hidden md:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] md:gap-4 md:p-4">
+          <TopicPromptPanel key={currentQ.id || currentIndex} task={currentQ} />
+          <section aria-labelledby="speak-topic-instruction"
+            className="flex min-h-[260px] min-w-0 flex-col rounded-2xl border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-900 md:min-h-0">
+            <AnswerInstruction key={currentQ.id || currentIndex} id="speak-topic-instruction"
+              original={currentQ.instruction_box_fr || "Parlez du sujet"}
+              translation={currentQ.instruction_box_en} />
+            <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-6 py-8">
+              {!evaluation ? <>
+                <SpeakingRecordingControls recording={recording} startListening={startListening} stopListening={stopListening}
+                  resetTranscript={() => { setSubmissionError(null); resetTranscript(); }}
+                  disabled={showFeedback || busy || Boolean(missingContent) || (isExpired && !recording.isRecording)} />
+                {(missingContent || error || submissionError || recordingError) && <p role="alert" className="text-base text-red-600">{missingContent || error || submissionError || recordingError}</p>}
+              </> : <TopicFeedbackResult evaluation={evaluation} userText={submittedText} onContinue={handleContinue} />}
+            </div>
           </section>
-          <div className="flex min-h-[260px] flex-col items-center justify-center gap-6 py-8">
-            {!evaluation ? <>
-              <SpeakingRecordingControls recording={recording} startListening={startListening} resetTranscript={resetTranscript}
-                disabled={showFeedback || busy || Boolean(missingContent) || (isExpired && !recording.isRecording)} />
-              {(missingContent || error || recordingError) && <p role="alert" className="text-base text-red-600">{missingContent || error || recordingError}</p>}
-            </> : <TopicFeedbackResult evaluation={evaluation} userText={submittedText} onContinue={handleContinue} />}
-          </div>
         </PracticeTwoPanel>
       </PracticeGameLayout>
     </>
