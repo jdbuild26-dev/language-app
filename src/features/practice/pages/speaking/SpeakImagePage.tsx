@@ -167,10 +167,10 @@ export default function SpeakImagePage() {
         currentQuestionIndex={currentIndex}
         disableContentScroll
       >
-        <PracticeTwoPanel className="flex-1 overflow-y-auto bg-neutral-50 dark:bg-slate-950 md:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] md:gap-4 md:overflow-hidden md:p-4">
-          <div className="flex min-h-[320px] min-w-0 items-center justify-center p-4 md:min-h-0">
-            {currentQ.image_url ? <div className="relative aspect-square w-full max-w-[min(100%,calc(100dvh-15rem))] shrink-0 overflow-hidden rounded-xl">
-              <Image src={currentQ.image_url} alt="Image to describe" fill unoptimized sizes="(min-width: 768px) 40vw, 90vw" className="object-cover" />
+        <PracticeTwoPanel ratio="three-two" className="flex-1 overflow-y-auto bg-neutral-50 dark:bg-slate-950 md:gap-4 md:overflow-hidden md:p-4">
+          <div className="flex min-h-0 min-w-0 items-center justify-center overflow-hidden rounded-2xl border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-900">
+            {currentQ.image_url ? <div className="relative aspect-video w-full overflow-hidden rounded-xl md:aspect-auto md:self-stretch">
+              <Image src={currentQ.image_url} alt="Image to describe" fill unoptimized sizes="(min-width: 768px) 60vw, 90vw" className="object-cover" />
             </div> : <div className="flex flex-col items-center gap-3 text-slate-400"><ImageIcon className="h-20 w-20" /><p>Image not yet uploaded</p></div>}
           </div>
           <div className="flex min-h-[260px] flex-col items-center justify-center gap-6 py-8">
