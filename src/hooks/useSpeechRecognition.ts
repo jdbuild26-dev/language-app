@@ -140,6 +140,7 @@ export default function useSpeechRecognition(languageOverride?: string) {
       captureError.current = null;
       hasInterim.current = false;
       setTranscript("");
+      setError(null);
       try {
         recognition.start();
       } catch (err) {

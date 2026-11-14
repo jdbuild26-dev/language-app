@@ -20,7 +20,8 @@ async function loadFont(name: string): Promise<string> {
 }
 
 export async function createWriteImagePdf(data: EnhancedAnalysisData, userText: string): Promise<jsPDF> {
-  if ((!data.overall_session_summary && !data.topic_session_summary) || !data.grammar_language_feedback || !data.corrected_response_segments) {
+  const dataSummary = data.data_session_summary;
+  if ((!data.overall_session_summary && !data.topic_session_summary && !dataSummary) || !data.grammar_language_feedback || !data.corrected_response_segments) {
     throw new Error("Report is incomplete");
   }
 
@@ -68,7 +69,7 @@ export async function createWriteImagePdf(data: EnhancedAnalysisData, userText: 
   doc.setFont("NotoSans", "bold");
   doc.setFontSize(19);
   doc.setTextColor(37, 86, 196);
-  const reportTitle = data.report_kind === "write_topic" ? "Write About Topic" : data.report_kind === "speak_topic" ? "Speak About Topic" : data.report_kind === "speak_image" ? "Speak About Image" : "Write About Image";
+  const reportTitle = data.report_kind === "write_analysis" ? "Write About Data" : data.report_kind === "write_documents" ? "Write Documents" : data.report_kind === "write_topic" ? "Write About Topic" : data.report_kind === "speak_topic" ? "Speak About Topic" : data.report_kind === "speak_image" ? "Speak About Image" : "Write About Image";
   doc.text(`${reportTitle} · Analysis Report`, margin, y);
   y += 11;
   paragraph(`CEFR ${data.cefr_level}    ${data.topic_session_summary ? "Overall score" : "Overall content score"} ${data.overall_score}/100`, 10);
@@ -77,7 +78,16 @@ export async function createWriteImagePdf(data: EnhancedAnalysisData, userText: 
   paragraph(userText);
 
   heading("Session Summary");
-  if (data.topic_session_summary) {
+  if (dataSummary) {
+    for (const [label, value] of [
+      ["Overall Content Assessment", dataSummary.overall_content_assessment],
+      ["What the Learner Did Well", dataSummary.what_the_learner_did_well.join("\n") || "No specific strengths were identified in this response."],
+      ["Data Inaccuracies & Incorrect Interpretations", dataSummary.data_inaccuracies.map(issue =>
+        `Learner statement: ${issue.learner_statement}\nIssue: ${issue.issue}\nCorrect interpretation: ${issue.correct_interpretation}`).join("\n\n") || "No meaningful data inaccuracies were identified."],
+      ["Missing or Underdeveloped Analysis", dataSummary.missing_or_underdeveloped_analysis],
+      ["How the Learner Can Improve", dataSummary.how_the_learner_can_improve.map((item, index) => `${index + 1}. ${item}`).join("\n")],
+    ]) { heading(label, 11); paragraph(value); }
+  } else if (data.topic_session_summary) {
     const summary = data.topic_session_summary;
     for (const [label, value] of [
       ["Task & Objective Achievement", summary.task_objective_achievement],
@@ -95,8 +105,10 @@ export async function createWriteImagePdf(data: EnhancedAnalysisData, userText: 
       ["How the Learner Can Improve", summary.how_the_learner_can_improve.map((item, index) => `${index + 1}. ${item}`).join("\n")],
     ]) { heading(label, 11); paragraph(stripReportHeading(value, [label])); }
   }
-  heading(data.topic_session_summary ? "Parameter Ratings" : "Content Ratings");
-  for (const rating of data.parameters ?? []) paragraph(`${rating.name}: ${rating.score / 10}/10`);
+  heading(data.topic_session_summary || dataSummary ? "Parameter Ratings" : "Content Ratings");
+  for (const rating of data.parameters ?? []) {
+    paragraph(`${rating.name}: ${rating.score / 10}/10${rating.justification ? `\n${rating.justification}` : ""}`);
+  }
   doc.addPage();
   y = 22;
   heading("Suggested Corrections");
@@ -154,9 +166,41 @@ export async function createWriteImagePdf(data: EnhancedAnalysisData, userText: 
   y += 9;
 
   heading("Part 3 · Correction Table");
-  if (data.grammar_correction_table?.length) {
-    const columns = [49, 49, 76];
-    const starts = [margin, margin + columns[0], margin + columns[0] + columns[1]];
+  const documentGrammar = data.document_grammar;
+  const showAlternatives = data.report_kind === "write_image" || data.report_kind === "write_analysis" ||
+    data.report_kind === "write_topic" || data.report_kind === "speak_topic" || data.report_kind === "speak_image";
+  const correctionRows: { marker: string; cells: string[]; dataOnly?: boolean }[] = documentGrammar
+    ? [
+        ...documentGrammar.correction_table.map(row => ({
+          marker: `${row.number}.`,
+          cells: [String(row.number), row.original || "[insertion]", `${row.corrected || "[remove]"}\n${row.explanation}`,
+            row.alternatives.map(item => `${item.text} (${item.translation})`).join("\n")],
+        })),
+        ...documentGrammar.register_suggestions.map(row => ({
+          marker: "",
+          cells: ["", row.original, `Register suggestion\n${row.explanation}`,
+            row.alternatives.map(item => `${item.text} (${item.translation})`).join("\n")],
+        })),
+      ]
+    : (data.grammar_correction_table ?? []).map(row => ({
+        marker: `${row.number}.`,
+        cells: showAlternatives
+          ? [String(row.number), row.original || "[insertion]", row.corrected || "[remove]", row.explanation,
+            row.alternatives?.map(item => `${item.text} (${item.translation})`).join("\n") || "No additional alternative needed."]
+          : [`${row.number}. ${row.original || "[insertion]"}`, row.corrected || "[remove]", row.explanation],
+      }));
+  for (const [index, row] of (data.data_suggestions ?? []).entries()) {
+    const label = `D${index + 1}`;
+    correctionRows.push({ marker: label, dataOnly: true, cells: [label, row.original, "No language correction required",
+      `Data accuracy\n${row.explanation}`, row.alternatives?.map(item => `${item.text} (${item.translation})`).join("\n") || "No additional alternative needed."] });
+  }
+  if (correctionRows.length) {
+    const columns = documentGrammar ? [12, 41, 61, 60] : showAlternatives ? [10, 31, 31, 55, 47] : [49, 49, 76];
+    const labels = documentGrammar
+      ? ["NO.", "LEARNER WORDING", "CORRECTION & EXPLANATION", "ALTERNATIVE SUGGESTIONS"]
+      : showAlternatives ? ["#", "YOUR SENTENCE", "CORRECTION", "EXPLANATION", "ALTERNATE SUGGESTIONS"]
+        : ["YOUR SENTENCE", "CORRECTION", "EXPLANATION"];
+    const starts = columns.map((_, index) => columns.slice(0, index).reduce((start, width) => start + width, margin));
     const tableHeader = () => {
       newPageIfNeeded(12);
       doc.setFillColor(239, 244, 250);
@@ -164,18 +208,13 @@ export async function createWriteImagePdf(data: EnhancedAnalysisData, userText: 
       doc.setFont("NotoSans", "bold");
       doc.setFontSize(8.5);
       doc.setTextColor(45, 60, 85);
-      ["YOUR SENTENCE", "CORRECTION", "EXPLANATION"].forEach((label, index) => doc.text(label, starts[index] + 2, y + 2));
+      labels.forEach((label, index) => doc.text(label, starts[index] + 2, y + 2));
       y += 9;
     };
     tableHeader();
-    for (const correction of data.grammar_correction_table) {
+    for (const { cells, marker, dataOnly } of correctionRows) {
       doc.setFont("NotoSans", "normal");
       doc.setFontSize(8.5);
-      const cells = [
-        `${correction.number}. ${correction.original || "[insertion]"}`,
-        correction.corrected || "[remove]",
-        correction.explanation,
-      ];
       const lines = cells.map((cell, index) => doc.splitTextToSize(cell, columns[index] - 5) as string[]);
       const rowHeight = Math.max(...lines.map((cellLines) => cellLines.length)) * 5 + 5;
       // Keep ordinary rows together. Oversized rows continue across pages.
@@ -202,7 +241,12 @@ export async function createWriteImagePdf(data: EnhancedAnalysisData, userText: 
         doc.rect(margin, y - 2, contentWidth, height);
         lines.forEach((cellLines, index) => {
           const part = cellLines.slice(offset, offset + count);
-          if (offset > 0 && index === 0 && !part.length) part.push(`${correction.number}. (continued)`);
+          if (offset > 0 && index === 0 && !part.length && marker) part.push(documentGrammar || showAlternatives ? marker : `${marker} (continued)`);
+          if (showAlternatives) {
+            if (!dataOnly && index === 1 && cells[index] !== "[insertion]") doc.setTextColor(185, 28, 28);
+            else if (!dataOnly && index === 2 && cells[index] !== "[remove]") doc.setTextColor(4, 120, 87);
+            else doc.setTextColor(45, 60, 85);
+          }
           if (part.length) doc.text(part, starts[index] + 2, y + 3, { lineHeightFactor: 5 * 72 / 25.4 / 8.5 });
         });
         y += height;
@@ -210,20 +254,22 @@ export async function createWriteImagePdf(data: EnhancedAnalysisData, userText: 
       }
     }
   } else {
-    paragraph("No language corrections needed.");
+    paragraph(documentGrammar ? "No language corrections or register suggestions." : "No language corrections needed.");
   }
 
-  const samples = data.sample_descriptions ?? [];
-  doc.setFont("NotoSans", "normal");
-  doc.setFontSize(10.5);
-  doc.addPage();
-  y = 22;
-  heading("Sample Answers");
-  if (!samples.length) paragraph("No saved sample answers are available for this exercise.");
-  samples.forEach((sample, index) => {
-    heading(`Sample ${index + 1}`, 11);
-    paragraph(sample);
-  });
+  if (data.report_kind !== "write_analysis") {
+    const samples = data.sample_descriptions ?? [];
+    doc.setFont("NotoSans", "normal");
+    doc.setFontSize(10.5);
+    doc.addPage();
+    y = 22;
+    heading("Sample Answers");
+    if (!samples.length) paragraph("No saved sample answers are available for this exercise.");
+    samples.forEach((sample, index) => {
+      heading(`Sample ${index + 1}`, 11);
+      paragraph(sample);
+    });
+  }
 
   const pages = doc.getNumberOfPages();
   for (let page = 1; page <= pages; page++) {
@@ -238,6 +284,6 @@ export async function createWriteImagePdf(data: EnhancedAnalysisData, userText: 
 
 export async function downloadWriteImagePdf(data: EnhancedAnalysisData, userText: string) {
   const doc = await createWriteImagePdf(data, userText);
-  const name = data.report_kind === "write_topic" ? "Write-About-Topic" : data.report_kind === "speak_topic" ? "Speak-About-Topic" : data.report_kind === "speak_image" ? "Speak-About-Image" : "Write-About-Image";
+  const name = data.report_kind === "write_analysis" ? "Write-About-Data" : data.report_kind === "write_documents" ? "Write-Documents" : data.report_kind === "write_topic" ? "Write-About-Topic" : data.report_kind === "speak_topic" ? "Speak-About-Topic" : data.report_kind === "speak_image" ? "Speak-About-Image" : "Write-About-Image";
   doc.save(`${name}-Report-${Date.now()}.pdf`);
 }

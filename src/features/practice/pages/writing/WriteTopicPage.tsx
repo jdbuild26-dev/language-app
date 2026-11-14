@@ -8,6 +8,7 @@ import { usePracticeComplete } from "@/hooks/usePracticeComplete";
 import { cn } from "@/lib/utils";
 import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
 import PracticeTwoPanel from "@/features/practice/components/PracticeTwoPanel";
+import { AnswerInstruction, TopicPromptPanel } from "@/features/practice/components/PracticePromptPanels";
 import { normalizeTopicExercises, topicAvailability, type TopicQuestion } from "@/features/practice/lib/topicExercise";
 import { insertImageAccent } from "@/features/practice/lib/writeImageInput";
 import { useTopicEvaluation } from "@/features/practice/hooks/useTopicEvaluation";
@@ -16,8 +17,7 @@ import { fetchPracticeData } from "@/utils/practiceFetcher";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useSearchParams } from "next/navigation";
-
-const ACCENT_KEYS = ["é", "è", "ê", "à", "ç", "â", "î", "ô", "û", "ë", "ï", "ü"];
+import SpecialCharacterKeyboard from "@/features/practice/components/SpecialCharacterKeyboard";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -138,13 +138,6 @@ export default function WriteTopicPage() {
   const charCount = userAnswer.length;
   const charLimit = currentQ?.charLimit || 1000;
 
-  // Legacy *_fr fields hold the selected learning-language content.
-  const mainInstruction = currentQ.main_instruction_fr || currentQ.main_instruction_en || "";
-  const bullets = currentQ.topic_bullets_fr.length > 0
-    ? currentQ.topic_bullets_fr
-    : currentQ.topic_bullets_en;
-  const instructionBox = currentQ.instruction_box_en || currentQ.instruction_box_fr || "Write about the topic";
-
   const insertAccent = (char: string) => {
     const el = textareaRef.current;
     if (!el || busy || showFeedback || evaluation) return;
@@ -163,9 +156,9 @@ export default function WriteTopicPage() {
     <>
       <PracticeGameLayout
         questionType="Write About Topic"
-        instructionFr="Écrivez sur le sujet"
-        instructionEn="Write About Topic"
-        localizedInstruction="Écrivez sur le sujet"
+        instructionFr={currentQ.heading_fr || "Écrivez sur le sujet"}
+        instructionEn={currentQ.heading_en || "Write About Topic"}
+        localizedInstruction={currentQ.heading_fr || "Écrivez sur le sujet"}
         progress={progress}
         isGameOver={isCompleted}
         score={score}
@@ -181,27 +174,10 @@ export default function WriteTopicPage() {
         disableContentScroll
       >
         <PracticeTwoPanel className="flex-1 overflow-y-auto md:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] md:gap-4 md:overflow-hidden md:p-4">
-          <section className="flex min-h-[320px] min-w-0 flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900 md:min-h-0" aria-labelledby="topic-objective-heading">
-            <h2 id="topic-objective-heading" className="practice-type-passage-heading !font-medium shrink-0 px-5 py-3 text-slate-900 dark:text-slate-100">OBJECTIVE</h2>
-            <hr className="mx-5 shrink-0 border-slate-200 dark:border-slate-700" />
-            <div className="practice-comprehension-scroll min-h-0 flex-1 overflow-y-auto px-5 py-5">
-              <p className="practice-type-content text-slate-700 dark:text-slate-200">
-                {mainInstruction}
-              </p>
-              {bullets.length > 0 && (
-                <ul className="mt-8 flex flex-col gap-2">
-                  {bullets.map((b, i) => (
-                    <li key={i} className="practice-type-content flex items-start gap-3 text-slate-700 dark:text-slate-300">
-                      <span aria-hidden="true" className="mt-3 h-1.5 w-1.5 shrink-0 rounded-full bg-slate-400 dark:bg-slate-500" />
-                      <span>{b}</span>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-          </section>
-          <section className="flex min-h-[460px] min-w-0 flex-col gap-4 md:min-h-0" aria-label="Topic answer">
-            <label className="sr-only" htmlFor="write-topic-answer">{instructionBox}</label>
+          <TopicPromptPanel key={currentQ.id || currentIndex} task={currentQ} />
+          <section className="flex min-h-[460px] min-w-0 flex-col gap-3 rounded-2xl border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-900 md:min-h-0" aria-label="Topic answer">
+            <AnswerInstruction key={currentQ.id || currentIndex} htmlFor="write-topic-answer"
+              original={currentQ.instruction_box_fr} translation={currentQ.instruction_box_en} />
             <textarea
               id="write-topic-answer"
               ref={textareaRef}
@@ -225,21 +201,7 @@ export default function WriteTopicPage() {
             />
             <div className="flex shrink-0 flex-wrap items-center justify-end gap-3">
               {!showFeedback && !evaluation && (
-                <div className="flex min-w-0 flex-1 flex-wrap justify-center gap-2" aria-label="French accent keyboard">
-                  {ACCENT_KEYS.map(char => (
-                    <button
-                      key={char}
-                      type="button"
-                      disabled={busy || !!missingContent || charCount >= charLimit}
-                      aria-label={`Insert ${char}`}
-                      onMouseDown={e => e.preventDefault()}
-                      onClick={() => insertAccent(char)}
-                      className="flex h-[50px] w-[50px] items-center justify-center rounded-2xl border border-slate-200 bg-white text-base font-semibold text-slate-900 shadow-[0_1px_2px_rgba(15,23,42,0.03)] transition-[background-color,border-color,box-shadow,transform] duration-150 hover:border-sky-300 hover:bg-sky-50 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 motion-safe:active:scale-[0.94] motion-reduce:transition-none disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800"
-                    >
-                      {char}
-                    </button>
-                  ))}
-                </div>
+                <SpecialCharacterKeyboard key={learningLang} learningLanguage={learningLang} onInsert={insertAccent} disabled={busy || !!missingContent || charCount >= charLimit} className="min-w-0 flex-1" />
               )}
               <span aria-label={`${charCount} of ${charLimit} characters`} className={cn("text-base font-semibold tabular-nums", charCount >= charLimit * 0.9 ? "text-red-500" : "text-slate-500 dark:text-slate-400")}>{charCount}/{charLimit}</span>
             </div>

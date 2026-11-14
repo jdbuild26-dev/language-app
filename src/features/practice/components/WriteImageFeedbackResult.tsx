@@ -23,7 +23,7 @@ const ratingLabels: { key: keyof WriteImageEvaluation["overall_session_analysis"
 
 export default function WriteImageFeedbackResult({ evaluation, userText, onContinue, mode = "writing" }: Props) {
   const analysis: EnhancedAnalysisData = useMemo(() => ({
-    report_kind: evaluation.report_type,
+    report_kind: evaluation.report_type ?? (mode === "writing" ? "write_image" : "speak_image"),
     learning_language: evaluation.learning_language,
     overall_score: evaluation.overall_score,
     cefr_level: evaluation.cefr_level,
@@ -43,7 +43,7 @@ export default function WriteImageFeedbackResult({ evaluation, userText, onConti
       score: evaluation.overall_session_analysis.ratings[key] * 10,
       tooltip: `${evaluation.overall_session_analysis.ratings[key]} out of 10`,
     })),
-  }), [evaluation]);
+  }), [evaluation, mode]);
 
   return (
     <EnhancedFeedbackView

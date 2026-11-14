@@ -19,6 +19,8 @@ import { Badge } from "@/components/ui/badge";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
+type PracticeTag = { id: string | number; slug: string; name_en: string };
+
 export default function TagTopicSelectionPage() {
     return (
         <Suspense fallback={
@@ -39,12 +41,19 @@ function TagTopicSelectionContent() {
     const levelFromUrl = searchParams.get("level") || "A1";
 
     const [loading, setLoading] = useState(true);
-    const [tags, setTags] = useState<any[]>([]);
+    const [tags, setTags] = useState<PracticeTag[]>([]);
+
+    const practiceTarget = (tagSlug?: string) => {
+        if (!nextTarget) return "/practice";
+        const url = new URL(nextTarget, "http://placeholder");
+        if (type === "write_analysis") url.searchParams.set("level", levelFromUrl);
+        if (tagSlug) url.searchParams.set("tag", tagSlug);
+        return url.pathname + url.search;
+    };
 
     // Redirect straight to the exercise (no tag filter)
     const goDirectly = () => {
-        if (nextTarget) router.push(nextTarget);
-        else router.push("/practice");
+        router.push(type === "write_analysis" ? practiceTarget() : nextTarget || "/practice");
     };
 
     useEffect(() => {
@@ -84,11 +93,9 @@ function TagTopicSelectionContent() {
         return () => { cancelled = true; };
     }, [type, levelFromUrl]); // eslint-disable-line react-hooks/exhaustive-deps
 
-    const handleTopicSelect = (tag: any) => {
+    const handleTopicSelect = (tag: PracticeTag) => {
         try {
-            const url = new URL(nextTarget!, "http://placeholder");
-            url.searchParams.set("tag", tag.slug);
-            router.push(url.pathname + url.search);
+            router.push(practiceTarget(tag.slug));
         } catch {
             router.push(nextTarget!);
         }
