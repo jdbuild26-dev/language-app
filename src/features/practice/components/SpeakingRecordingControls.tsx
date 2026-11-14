@@ -8,14 +8,18 @@ import RecordingActivity from "./RecordingActivity";
 type Props = {
   recording: ReturnType<typeof usePracticeRecording>;
   startListening: () => void;
+  stopListening: () => void;
   resetTranscript: () => void;
   disabled: boolean;
 };
-export default function SpeakingRecordingControls({ recording, startListening, resetTranscript, disabled }: Props) {
+export default function SpeakingRecordingControls({ recording, startListening, stopListening, resetTranscript, disabled }: Props) {
   const audio = useRef<HTMLAudioElement | null>(null);
   const [playing, setPlaying] = useState(false);
   const [error, setError] = useState<string | null>(null);
   useEffect(() => { const player = audio.current; return () => { player?.pause(); }; }, [recording.audioUrl]);
+  useEffect(() => {
+    if (recording.audioUrl && !recording.isRecording) stopListening();
+  }, [recording.audioUrl, recording.isRecording, stopListening]);
   async function toggle() {
     setError(null);
     if (recording.isRecording) { await recording.stop(); return; }

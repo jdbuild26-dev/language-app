@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import React, { useState, useEffect, useRef } from "react";
 import { usePracticeExit } from "@/hooks/usePracticeExit";
 import { useExerciseTimer } from "@/hooks/useExerciseTimer";
@@ -8,13 +7,14 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { usePracticeComplete } from "@/hooks/usePracticeComplete";
 import { usePracticeRecording } from "@/hooks/usePracticeRecording";
 import PracticeTwoPanel from "@/features/practice/components/PracticeTwoPanel";
+import { AnswerInstruction, ImagePromptPanel } from "@/features/practice/components/PracticePromptPanels";
 import SpeakingRecordingControls from "@/features/practice/components/SpeakingRecordingControls";
 import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
 import { useSpeakImageEvaluation } from "@/features/practice/hooks/useSpeakImageEvaluation";
 import { normalizeSpeakImageExercises, speakImageAvailability, type SpeakImageQuestion } from "@/features/practice/lib/speakImageExercise";
 import WriteImageFeedbackResult from "@/features/practice/components/WriteImageFeedbackResult";
 import { fetchPracticeData } from "@/utils/practiceFetcher";
-import { Loader2, ImageIcon } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import useSpeechRecognition from "@/hooks/useSpeechRecognition";
 import { useSearchParams } from "next/navigation";
@@ -44,6 +44,8 @@ export default function SpeakImagePage() {
   const [submittedText, setSubmittedText] = useState("");
   const [isFinalizingTranscript, setIsFinalizingTranscript] = useState(false);
   const finalizing = useRef(false);
+  const [submissionError, setSubmissionError] = useState<string | null>(null);
+  const hasResponse = Boolean(transcript.trim() || recording.audioUrl);
   const busy = isSubmitting || isFinalizingTranscript;
   const contextKey = JSON.stringify([learningLang, knownLang, levelParam, tag, currentIndex, currentQ?.id]);
   const activeContext = useRef(contextKey);
@@ -100,21 +102,28 @@ export default function SpeakImagePage() {
 
   // ── Submit ─────────────────────────────────────────────────────────────────
   const handleSubmit = async () => {
-    if (showFeedback || busy || finalizing.current || !currentQ || !transcript.trim() || speakImageAvailability(currentQ)) return;
+    if (showFeedback || busy || finalizing.current || !currentQ || !hasResponse || speakImageAvailability(currentQ)) return;
+    setSubmissionError(null);
     const context = activeContext.current;
     finalizing.current = true;
     setIsFinalizingTranscript(true);
     try {
       const [, captured] = await Promise.all([recording.stop(), stopAndReadTranscript()]);
       if (activeContext.current !== context) return;
+      if (!captured.trim()) {
+        setSubmissionError("No speech was recognized. Please record your answer again.");
+        return;
+      }
       setSubmittedText(captured);
       const result = await evaluate({ exercise_id: currentQ.id, transcript: captured });
       if (result && activeContext.current === context) {
         setShowFeedback(true);
         if (result.overall_score >= 70) setScore(value => value + 1);
       }
-    } catch {
-      // The capture hook displays the recording error; never evaluate unfinished speech.
+    } catch (cause) {
+      if (activeContext.current === context) {
+        setSubmissionError(cause instanceof Error ? cause.message : "Speech capture failed. Please record your answer again.");
+      }
     } finally {
       finalizing.current = false;
       setIsFinalizingTranscript(false);
@@ -150,9 +159,9 @@ export default function SpeakImagePage() {
     <>
       <PracticeGameLayout
         questionType="Speak About Image"
-        instructionFr="Décrivez l'image"
-        instructionEn="Speak About Image"
-        localizedInstruction="Décrivez l'image"
+        instructionFr={currentQ.heading_fr || "Décrivez l'image"}
+        instructionEn={currentQ.heading_en || "Speak About Image"}
+        localizedInstruction={currentQ.heading_fr || "Décrivez l'image"}
         progress={progress}
         isGameOver={isCompleted}
         score={score}
@@ -160,7 +169,7 @@ export default function SpeakImagePage() {
         onExit={handleExit}
         onNext={handleSubmit}
         onRestart={() => window.location.reload()}
-        isSubmitEnabled={transcript.trim().length > 5 && !showFeedback && !busy && !evaluation && !missingContent}
+        isSubmitEnabled={hasResponse && !showFeedback && !busy && !evaluation && !missingContent}
         showSubmitButton={!showFeedback && !evaluation}
         submitLabel={busy ? "Evaluating…" : "Submit Answer"}
         timerValue={timerString}
@@ -168,18 +177,20 @@ export default function SpeakImagePage() {
         disableContentScroll
       >
         <PracticeTwoPanel ratio="three-two" className="flex-1 overflow-y-auto bg-neutral-50 dark:bg-slate-950 md:gap-4 md:overflow-hidden md:p-4">
-          <div className="flex min-h-0 min-w-0 items-center justify-center overflow-hidden rounded-2xl border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-900">
-            {currentQ.image_url ? <div className="relative aspect-video w-full overflow-hidden rounded-xl md:aspect-auto md:self-stretch">
-              <Image src={currentQ.image_url} alt="Image to describe" fill unoptimized sizes="(min-width: 768px) 60vw, 90vw" className="object-cover" />
-            </div> : <div className="flex flex-col items-center gap-3 text-slate-400"><ImageIcon className="h-20 w-20" /><p>Image not yet uploaded</p></div>}
-          </div>
-          <div className="flex min-h-[260px] flex-col items-center justify-center gap-6 py-8">
-            {!evaluation ? <>
-              <SpeakingRecordingControls recording={recording} startListening={startListening} resetTranscript={resetTranscript}
-                disabled={showFeedback || busy || Boolean(missingContent) || (isExpired && !recording.isRecording)} />
-              {(missingContent || error || recordingError) && <p role="alert" className="text-base text-red-600">{missingContent || error || recordingError}</p>}
-            </> : <WriteImageFeedbackResult evaluation={evaluation} mode="speaking" userText={submittedText} onContinue={handleContinue} />}
-          </div>
+          <ImagePromptPanel src={currentQ.image_url} fillPanel />
+          <section aria-labelledby="speak-image-instruction"
+            className="flex min-h-[260px] min-w-0 flex-col rounded-2xl border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-900 md:min-h-0">
+            <AnswerInstruction key={currentQ.id || currentIndex} id="speak-image-instruction"
+              original={currentQ.instruction_box_fr} translation={currentQ.instruction_box_en} />
+            <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-6 py-8">
+              {!evaluation ? <>
+                <SpeakingRecordingControls recording={recording} startListening={startListening} stopListening={stopListening}
+                  resetTranscript={() => { setSubmissionError(null); resetTranscript(); }}
+                  disabled={showFeedback || busy || Boolean(missingContent) || (isExpired && !recording.isRecording)} />
+                {(missingContent || error || submissionError || recordingError) && <p role="alert" className="text-base text-red-600">{missingContent || error || submissionError || recordingError}</p>}
+              </> : <WriteImageFeedbackResult evaluation={evaluation} mode="speaking" userText={submittedText} onContinue={handleContinue} />}
+            </div>
+          </section>
         </PracticeTwoPanel>
       </PracticeGameLayout>
     </>

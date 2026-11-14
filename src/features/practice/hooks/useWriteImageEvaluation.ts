@@ -27,6 +27,7 @@ export type WriteImageCorrection = {
   original: string;
   corrected: string;
   explanation: string;
+  alternatives?: { text: string; translation: string }[];
 };
 
 export type WriteImageSegment =
@@ -81,7 +82,7 @@ export function useWriteImageEvaluation() {
       });
       if (!response.ok) {
         const body = await response.json().catch(() => null);
-        throw new Error(response.status === 422 && typeof body?.detail === "string"
+        throw new Error([404, 409, 422].includes(response.status) && typeof body?.detail === "string"
           ? body.detail : "Image feedback is unavailable. Please try again.");
       }
       const result: WriteImageEvaluation = await response.json();

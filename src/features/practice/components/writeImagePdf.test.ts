@@ -36,7 +36,7 @@ it("exports older combined summaries without repeating section headings", async 
   }
 });
 
-it.each(["write_image", "speak_image", "write_topic", "speak_topic"] as const)("does not repeat model-provided headings in %s PDFs", async kind => {
+it.each(["write_image", "speak_image", "write_topic", "speak_topic", "write_documents", "write_analysis"] as const)("renders the feedback fields for %s PDFs", async kind => {
   vi.stubGlobal("fetch", vi.fn(async (url: string) => ({ ok: true,
     blob: async () => readFileSync(`public${url}`).toString("base64") })));
   vi.stubGlobal("FileReader", class {
@@ -44,7 +44,9 @@ it.each(["write_image", "speak_image", "write_topic", "speak_topic"] as const)("
     readAsDataURL(value: string) { this.result = `data:font/ttf;base64,${value}`; this.onload?.(); }
   });
   const calls: string[] = [];
-  const event: [string, (args: { text: unknown }) => void] = ["preProcessText", args => { calls.push(JSON.stringify(args.text)); }];
+  const event: [string, (args: { text: unknown }) => void] = ["preProcessText", args => {
+    calls.push(Array.isArray(args.text) ? args.text.join(" ") : String(args.text));
+  }];
   jsPDF.API.events.push(event);
   const imageSummary = { overall_description: "Overall Description: Une pièce.",
     what_the_learner_did_well: "What the Learner Did Well: Des objets.",
@@ -55,18 +57,58 @@ it.each(["write_image", "speak_image", "write_topic", "speak_topic"] as const)("
     what_the_learner_did_well: imageSummary.what_the_learner_did_well,
     what_could_have_been_better: "What Could Have Been Better: Des détails.",
     how_the_learner_can_improve: imageSummary.how_the_learner_can_improve };
+  const documentGrammar = {
+    overall_language_feedback: "Check spelling.",
+    corrected_response_segments: [{ type: "unchanged", text: "Bonjour,\n\n" },
+      { type: "correction", number: 1, original: "mercie", corrected: "merci" }],
+    correction_table: [{ number: 1, original: "mercie", corrected: "merci", explanation: "Merci ends in i.",
+      alternatives: [{ text: "Merci beaucoup", translation: "Thank you very much" }] }],
+    register_suggestions: [{ original: "Bonjour", explanation: "Address the recipient by name.",
+      alternatives: [{ text: "Bonjour Madame", translation: "Hello Madam" }] }],
+  } satisfies NonNullable<EnhancedAnalysisData["document_grammar"]>;
   try {
-    await createWriteImagePdf({ report_kind: kind === "write_image" ? undefined : kind, overall_score: 70, cefr_level: "A1",
-      ...(kind.endsWith("topic") ? { topic_session_summary: topicSummary } : { overall_session_summary: imageSummary }),
+    await createWriteImagePdf({ report_kind: kind, overall_score: 70, cefr_level: "A1",
+      ...(kind === "write_analysis" ? {
+        data_session_summary: {
+          overall_content_assessment: "Compare both periods.",
+          what_the_learner_did_well: ["Identified the category."],
+          data_inaccuracies: [{ learner_statement: "The rate was 42%.", issue: "Incorrect rate.", correct_interpretation: "The rate was 45%." }],
+          missing_or_underdeveloped_analysis: "Explain the trend.",
+          how_the_learner_can_improve: ["Check the values."],
+        },
+        data_suggestions: [{ original: "The rate was 42%.", explanation: "Use the chart value.", alternatives: [{ text: "45 %", translation: "45 percent" }] }],
+        parameters: [{ name: "Data Accuracy", score: 40, tooltip: "4 out of 10", justification: "One value was incorrect." }],
+      } : kind.endsWith("topic") || kind === "write_documents" ? { topic_session_summary: topicSummary } : { overall_session_summary: imageSummary }),
       grammar_language_feedback: "**Overall Language Feedback:** Accord du verbe.",
-      corrected_response_segments: [{ type: "unchanged", text: "Une pièce." }],
-      grammar_correction_table: [], sample_descriptions: ["Première description.", "Deuxième description."]
+      ...(kind === "write_documents" ? { document_grammar: documentGrammar, corrected_response_segments: documentGrammar.corrected_response_segments }
+        : { corrected_response_segments: [{ type: "unchanged", text: "Une pièce." }] }),
+      grammar_correction_table: kind.endsWith("_image") || kind.endsWith("_topic") ? documentGrammar.correction_table : [],
+      sample_descriptions: ["Première description.", "Deuxième description."]
     } as unknown as EnhancedAnalysisData, "Une pièce.");
     const rendered = calls.join(" ");
     expect(rendered.match(/What the Learner Did Well/g)).toHaveLength(1);
     expect(rendered.match(/Overall Language Feedback/g)).toHaveLength(1);
     expect(rendered).toContain("Accord du verbe.");
-    expect(rendered).toContain("Première description.");
+    if (kind === "write_analysis") {
+      expect(rendered).toContain("Write About Data");
+      expect(rendered).toContain("The rate was 45%.");
+      expect(rendered).toContain("One value was incorrect.");
+      expect(rendered).toContain("D1");
+      expect(rendered).toContain("45 percent");
+      expect(rendered).not.toContain("Sample Answers");
+    } else {
+      expect(rendered).toContain("Première description.");
+    }
+    if (kind.endsWith("_image") || kind.endsWith("_topic")) {
+      expect(rendered).toContain("ALTERNATE SUGGESTIONS");
+      expect(rendered).toContain("Thank you very much");
+    }
+    if (kind === "write_documents") {
+      expect(rendered).toContain("Write Documents");
+      expect(rendered).toContain("Thank you very much");
+      expect(rendered).toContain("Register suggestion");
+      expect(rendered).toContain("Hello Madam");
+    }
   } finally { jsPDF.API.events.splice(jsPDF.API.events.indexOf(event), 1); }
 });
 
