@@ -360,7 +360,7 @@ export default function ProfilePage() {
                       type="text"
                       value={username}
                       onChange={handleUsernameChange}
-                      placeholder="choose_a_username"
+                      placeholder="|"
                       className={`block w-full pl-10 pr-10 py-2 sm:text-sm border rounded-lg bg-white dark:bg-card-dark focus:ring-brand-blue-1 focus:border-brand-blue-1 ${usernameStatus === "taken"
                           ? "border-red-300"
                           : usernameStatus === "available"

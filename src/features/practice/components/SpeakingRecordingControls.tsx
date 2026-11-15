@@ -14,8 +14,10 @@ type Props = {
 };
 export default function SpeakingRecordingControls({ recording, startListening, stopListening, resetTranscript, disabled }: Props) {
   const audio = useRef<HTMLAudioElement | null>(null);
-  const [playing, setPlaying] = useState(false);
+  const [playingUrl, setPlayingUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const canReplay = Boolean(recording.audioUrl) && !recording.isRecording && !recording.isStarting && !disabled;
+  const playing = canReplay && playingUrl === recording.audioUrl;
   useEffect(() => { const player = audio.current; return () => { player?.pause(); }; }, [recording.audioUrl]);
   useEffect(() => {
     if (recording.audioUrl && !recording.isRecording) stopListening();
@@ -23,15 +25,16 @@ export default function SpeakingRecordingControls({ recording, startListening, s
   async function toggle() {
     setError(null);
     if (recording.isRecording) { await recording.stop(); return; }
-    audio.current?.pause(); setPlaying(false); resetTranscript();
+    audio.current?.pause(); setPlayingUrl(null); resetTranscript();
     if (await recording.start()) startListening();
   }
   async function replay() {
+    if (!canReplay) return;
     const player = audio.current;
     if (!player) return;
-    if (playing) { player.pause(); setPlaying(false); return; }
+    if (playing) { player.pause(); setPlayingUrl(null); return; }
     player.currentTime = 0;
-    try { await player.play(); setPlaying(true); }
+    try { await player.play(); setPlayingUrl(recording.audioUrl); }
     catch { setError("Unable to play this recording. Please try again."); }
   }
   return <div className="relative flex flex-col items-center gap-5">
@@ -43,9 +46,11 @@ export default function SpeakingRecordingControls({ recording, startListening, s
         {recording.isStarting ? <Loader2 className="h-10 w-10 animate-spin" /> : recording.isRecording ? <Square className="h-10 w-10" fill="currentColor" /> : <Mic className="h-12 w-12" />}
       </button>
       <div className="relative flex items-center justify-center">
-      <button type="button" onClick={replay} disabled={disabled || !recording.audioUrl || recording.isRecording || recording.isStarting}
+      <button type="button" onClick={replay} disabled={!canReplay}
         aria-label={playing ? "Stop replay" : "Replay your recording"}
-        className="flex h-16 w-16 items-center justify-center rounded-full bg-blue-500 text-white transition-colors hover:bg-blue-600 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-200 disabled:cursor-not-allowed disabled:bg-neutral-300">
+        aria-pressed={playing}
+        title={canReplay ? "Replay your recording" : "Finish recording to enable replay"}
+        className={`flex h-16 w-16 items-center justify-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-200 ${canReplay ? "bg-blue-500 text-white hover:bg-blue-600" : "cursor-not-allowed bg-neutral-300 text-neutral-500 dark:bg-slate-700 dark:text-slate-400"}`}>
         {playing ? <Square className="h-7 w-7" fill="currentColor" /> : <Volume2 className="h-8 w-8" />}
       </button>
       </div>
@@ -55,6 +60,6 @@ export default function SpeakingRecordingControls({ recording, startListening, s
       {recording.isRecording && <p className="text-base text-slate-500" aria-live="polite">{recording.remainingSeconds}s remaining</p>}
     </div>
     {(error || recording.error) && <p role="alert" className="absolute top-full mt-3 text-center text-base text-red-600">{error || recording.error}</p>}
-    {recording.audioUrl && <audio ref={audio} src={recording.audioUrl} onEnded={() => setPlaying(false)} onError={() => { setPlaying(false); setError("Unable to play this recording."); }} />}
+    {recording.audioUrl && <audio ref={audio} src={recording.audioUrl} onEnded={() => setPlayingUrl(null)} onError={() => { setPlayingUrl(null); setError("Unable to play this recording."); }} />}
   </div>;
 }

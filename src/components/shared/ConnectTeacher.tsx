@@ -156,7 +156,7 @@ export default function ConnectTeacher() {
           >
             <div className="flex-1">
               <Input
-                placeholder="Enter Teacher ID (e.g. T-123456)"
+                placeholder="|"
                 value={teacherId}
                 onChange={(e) => setTeacherId(e.target.value)}
                 disabled={status === "loading" || status === "success"}

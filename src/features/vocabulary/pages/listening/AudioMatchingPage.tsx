@@ -10,14 +10,18 @@ import { motion, AnimatePresence } from "framer-motion";
 import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
 import { getFeedbackMessage } from "@/utils/feedbackMessages";
 
+type Pair = { id: string; French: string; English: string };
+type Option = { id: string; text: string; audioText: string; isCorrect: boolean };
+type Question = { id: number; promptAudio: string; correctAnswer: Pair; options: Option[] };
+
 export default function AudioMatchingPage() {
   const { speak, isSpeaking } = useTextToSpeech();
 
   // State
   const [loading, setLoading] = useState(true);
-  const [questions, setQuestions] = useState([]);
+  const [questions, setQuestions] = useState<Question[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [selectedOption, setSelectedOption] = useState(null);
+  const [selectedOption, setSelectedOption] = useState<{ id: string; isCorrect: boolean } | null>(null);
   const [showFeedback, setShowFeedback] = useState(false);
   const [isCorrect, setIsCorrect] = useState(false);
   const [feedbackMessage, setFeedbackMessage] = useState("");
@@ -25,7 +29,7 @@ export default function AudioMatchingPage() {
   const [score, setScore] = useState(0);
 
   // Timer Hook
-  const { timerString, resetTimer, isPaused } = useExerciseTimer({
+  const { timerString, resetTimer } = useExerciseTimer({
     duration: 30,
     mode: "timer",
     onExpire: () => {
@@ -61,8 +65,8 @@ export default function AudioMatchingPage() {
     }
   };
 
-  const generateQuestions = (data) => {
-    const questionsList = [];
+  const generateQuestions = (data: Pair[]) => {
+    const questionsList: Question[] = [];
     const totalQuestions = 5;
 
     // Shuffle data
@@ -96,6 +100,7 @@ export default function AudioMatchingPage() {
 
   const handleOptionClick = (option) => {
     if (showFeedback) return;
+    speak(option.text, "en-US");
 
     const correct = option.isCorrect;
     setSelectedOption({ id: option.id, isCorrect: correct });

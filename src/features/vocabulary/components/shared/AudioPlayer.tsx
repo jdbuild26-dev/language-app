@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { useTextToSpeech } from "@/hooks/useTextToSpeech";
-import { Volume2, Turtle } from "lucide-react";
+import { Volume2, Turtle, Pause, Play } from "lucide-react";
 import ListeningPlaybackButton from "@/components/ui/ListeningPlaybackButton";
 import { cn } from "@/lib/utils";
 
@@ -21,13 +21,23 @@ export default function AudioPlayer({
   appearance = "vocabulary",
   controlSize = "default" as "default" | "large",
   externalPlaying = false,
+  pausable = false,
 }) {
-  const { speak, isSpeaking } = useTextToSpeech();
+  const { speak, pause, resume, isSpeaking, isPaused } = useTextToSpeech();
   const [playbackMode, setPlaybackMode] = useState<"normal" | "slow" | null>(null);
-  const normalPlaying = (isSpeaking && playbackMode === "normal") || (externalPlaying && playbackMode === null);
-  const slowPlaying = isSpeaking && playbackMode === "slow";
+  const normalPlaying = (isSpeaking && !isPaused && playbackMode === "normal") || (externalPlaying && playbackMode === null);
+  const slowPlaying = isSpeaking && !isPaused && playbackMode === "slow";
+
+  const playbackState = pausable && isSpeaking ? (isPaused ? "paused" : "playing") : undefined;
+  const normalLabel = playbackState === "paused" ? "Resume audio" : playbackState === "playing" ? "Pause audio" : "Play audio";
+  const NormalIcon = playbackState === "paused" ? Play : playbackState === "playing" ? Pause : Volume2;
 
   const handlePlayNormal = () => {
+    if (pausable && isSpeaking) {
+      if (isPaused) resume();
+      else pause();
+      return;
+    }
     setPlaybackMode("normal");
     speak(text, lang, 1.0);
   };
@@ -40,8 +50,8 @@ export default function AudioPlayer({
   if (appearance === "main-practice") {
     return (
       <div className={`flex items-center gap-4 ${className}`}>
-        <ListeningPlaybackButton mode="normal" size={controlSize} label="Play audio at normal speed" onClick={handlePlayNormal} active={isSpeaking && playbackMode === "normal"} />
-        {showTurtle && <ListeningPlaybackButton mode="slow" size={controlSize} label="Play audio slowly" onClick={handlePlaySlow} active={isSpeaking && playbackMode === "slow"} />}
+        <ListeningPlaybackButton mode="normal" size={controlSize} label={pausable ? normalLabel : "Play audio at normal speed"} playbackState={playbackState} onClick={handlePlayNormal} active={normalPlaying} />
+        {showTurtle && <ListeningPlaybackButton mode="slow" size={controlSize} label="Play audio slowly" onClick={handlePlaySlow} active={slowPlaying} />}
       </div>
     );
   }
@@ -51,7 +61,7 @@ export default function AudioPlayer({
         <button
           type="button"
           onClick={handlePlayNormal}
-          aria-label="Play audio"
+          aria-label={normalLabel}
           aria-pressed={normalPlaying}
           className={cn(
             "flex h-24 w-24 shrink-0 items-center justify-center rounded-full shadow-sm transition-[transform,box-shadow,background-color] hover:scale-[1.03] active:scale-[0.97] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-rose-300",
@@ -60,7 +70,7 @@ export default function AudioPlayer({
               : "bg-gradient-to-br from-rose-300 to-rose-400 text-white",
           )}
         >
-          <Volume2 className={cn("h-11 w-11", normalPlaying && "motion-safe:animate-pulse")} aria-hidden="true" />
+          <NormalIcon className={cn("h-11 w-11", normalPlaying && "motion-safe:animate-pulse")} aria-hidden="true" />
         </button>
         {showTurtle && (
           <button

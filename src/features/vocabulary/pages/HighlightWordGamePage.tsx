@@ -1,10 +1,6 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-
-// Normalize curly/typographic apostrophes so comparisons are quote-agnostic
-const normalizeApostrophe = (str: string) =>
-  str.replace(/[\u2018\u2019\u201A\u201B\u02BC\u02C8`]/g, "'");
 import { useExerciseTimer } from "@/hooks/useExerciseTimer";
 import { Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -13,13 +9,17 @@ import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
 import { fetchPracticeQuestions } from "@/services/vocabularyApi";
 import { useTextToSpeech } from "@/hooks/useTextToSpeech";
 import { getFeedbackMessage } from "@/utils/feedbackMessages";
+import { gradeHighlightSelection, parseHighlightAnswers } from "@/features/vocabulary/lib/highlightWordAnswers";
+import { TranslateButton } from "@/components/ui/TranslateButton";
+import { useTranslateText } from "@/hooks/useTranslateText";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 type HighlightQuestion = {
   sentence: string;
-  correctWord: string;
   correctWords: string[];
-  isMultiSelect: boolean;
   prompt: string;
+  promptTranslation: string;
+  sentenceTranslation: string;
   QuestionType?: string;
   Instruction_FR?: string;
   Instruction_EN?: string;
@@ -28,13 +28,10 @@ type HighlightQuestion = {
 export default function HighlightWordGamePage() {
   const router = useRouter();
   const { speak } = useTextToSpeech();
+  const { learningLang, knownLang } = useLanguage();
   const [questions, setQuestions] = useState<HighlightQuestion[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
 
-  // Single-select state
-  const [selectedWordIndex, setSelectedWordIndex] = useState<number | null>(null);
-
-  // Multi-select state
   const [selectedWordIndices, setSelectedWordIndices] = useState<Set<number>>(new Set());
 
   const [isAnswered, setIsAnswered] = useState(false);
@@ -66,11 +63,7 @@ export default function HighlightWordGamePage() {
                 q.eval_correctWord ||
                 "";
 
-              // Support pipe-separated or space-separated multi-answers: "chat|chien" or "une pomme"
-              const correctWords = rawAnswer
-                .split(/[| ]+/)
-                .map((w) => normalizeApostrophe(w.trim().toLowerCase()))
-                .filter(Boolean);
+              const correctWords = parseHighlightAnswers(rawAnswer);
 
               return {
                 ...q,
@@ -80,9 +73,7 @@ export default function HighlightWordGamePage() {
                   q.Sentence ||
                   q["Complete sentence"] ||
                   "",
-                correctWord: correctWords[0] ?? "",
-                correctWords, // array, length > 1 means multi-select
-                isMultiSelect: correctWords.length > 1,
+                correctWords,
                 prompt: (
                   q.question ||
                   q.instructionEn ||
@@ -90,6 +81,8 @@ export default function HighlightWordGamePage() {
                   q.Question_EN ||
                   ""
                 )?.trim(),
+                promptTranslation: q.question_fr || q.Question_FR || q.prompt_fr || "",
+                sentenceTranslation: q.passage_en || q.Passage_EN || q.sentence_en || q.Sentence_EN || "",
               };
             });
           if (active) setQuestions(formattedQuestions);
@@ -113,10 +106,7 @@ export default function HighlightWordGamePage() {
     mode: "timer",
     onExpire: () => {
       if (!isAnswered && !isGameOver && !showFeedback) {
-        const hasSelection = currentItem?.isMultiSelect
-          ? selectedWordIndices.size > 0
-          : selectedWordIndex !== null;
-        if (!hasSelection) {
+        if (selectedWordIndices.size === 0) {
           setIsAnswered(true);
           setIsCorrect(false);
           setFeedbackMessage("Time's up!");
@@ -135,74 +125,40 @@ export default function HighlightWordGamePage() {
 
   const currentItem = questions[currentIndex];
   const words = currentItem ? currentItem.sentence.split(" ") : [];
+  const promptTranslation = useTranslateText(
+    currentItem?.prompt || "",
+    knownLang.toLowerCase(),
+    currentItem?.promptTranslation,
+    learningLang.toLowerCase(),
+  );
+  const sentenceTranslation = useTranslateText(
+    currentItem?.sentence || "",
+    learningLang.toLowerCase(),
+    currentItem?.sentenceTranslation,
+    knownLang.toLowerCase(),
+  );
 
   // ── Single-select handler ──────────────────────────────────────────────
   const handleWordClick = (index: number) => {
     if (isAnswered) return;
     speak(words[index], "fr-FR");
-    if (currentItem.isMultiSelect) {
-      // Toggle in multi-select set
-      setSelectedWordIndices((prev) => {
-        const next = new Set(prev);
-        if (next.has(index)) {
-          next.delete(index);
-        } else {
-          // Restrict to max number of correct words
-          if (next.size < currentItem.correctWords.length) {
-            next.add(index);
-          }
-        }
-        return next;
-      });
-    } else {
-      setSelectedWordIndex(index);
-    }
+    setSelectedWordIndices((previous) => {
+      const next = new Set(previous);
+      if (next.has(index)) next.delete(index);
+      else next.add(index);
+      return next;
+    });
   };
 
   // ── Check answer ───────────────────────────────────────────────────────
   const handleCheck = () => {
-    if (currentItem.isMultiSelect) {
-      if (selectedWordIndices.size === 0) return;
-
-      setIsAnswered(true);
-
-      // Collect the clean text of every selected word (normalize apostrophes + strip punctuation)
-      const cleanWord = (w: string) =>
-        normalizeApostrophe(w)
-          .replace(/[.,!?;:]/g, "")
-          .toLowerCase();
-      const selectedClean = [...selectedWordIndices].map((i) =>
-        cleanWord(words[i]),
-      );
-
-      // Every correct word must be selected, and no extra words
-      const targets = currentItem.correctWords; // already normalized during load
-      const allFound = targets.every((t) => selectedClean.includes(t));
-      const noExtras = selectedClean.every((s) => targets.includes(s));
-      const correct = allFound && noExtras;
-
-      setIsCorrect(correct);
-      setFeedbackMessage(getFeedbackMessage(correct));
-      setShowFeedback(true);
-      if (correct) setScore((prev) => prev + 1);
-    } else {
-      if (selectedWordIndex === null) return;
-      setIsAnswered(true);
-
-      const selectedWord = words[selectedWordIndex];
-      const cleanWord = normalizeApostrophe(selectedWord)
-        .replace(/[.,!?;:]/g, "")
-        .toLowerCase();
-      const cleanTarget = normalizeApostrophe(
-        currentItem.correctWord,
-      ).toLowerCase();
-
-      const correct = cleanWord === cleanTarget;
-      setIsCorrect(correct);
-      setFeedbackMessage(getFeedbackMessage(correct));
-      setShowFeedback(true);
-      if (correct) setScore((prev) => prev + 1);
-    }
+    if (selectedWordIndices.size === 0) return;
+    const { isCorrect: correct } = gradeHighlightSelection(words, currentItem.correctWords, selectedWordIndices);
+    setIsAnswered(true);
+    setIsCorrect(correct);
+    setFeedbackMessage(getFeedbackMessage(correct));
+    setShowFeedback(true);
+    if (correct) setScore((prev) => prev + 1);
   };
 
   const handleNext = () => {
@@ -212,8 +168,9 @@ export default function HighlightWordGamePage() {
     }
     setShowFeedback(false);
     if (currentIndex < questions.length - 1) {
+      promptTranslation.reset();
+      sentenceTranslation.reset();
       setCurrentIndex((prev) => prev + 1);
-      setSelectedWordIndex(null);
       setSelectedWordIndices(new Set());
       setIsAnswered(false);
       resetTimer();
@@ -226,15 +183,9 @@ export default function HighlightWordGamePage() {
     questions.length > 0 ? ((currentIndex + 1) / questions.length) * 100 : 0;
 
   // ── Submit enabled guard ───────────────────────────────────────────────
-  const isSubmitEnabled = currentItem?.isMultiSelect
-    ? selectedWordIndices.size > 0
-    : selectedWordIndex !== null;
+  const isSubmitEnabled = selectedWordIndices.size > 0;
 
-  const correctAnswerDisplay = !isCorrect
-    ? currentItem?.isMultiSelect
-      ? currentItem.correctWords.join(" • ")
-      : currentItem?.correctWord
-    : null;
+  const correctAnswerDisplay = !isCorrect ? currentItem?.correctWords.join(" • ") : null;
 
   if (loading) {
     return (
@@ -258,6 +209,8 @@ export default function HighlightWordGamePage() {
       </div>
     );
   }
+
+  const correctIndices = gradeHighlightSelection(words, currentItem.correctWords, selectedWordIndices).correctIndices;
 
   return (
     <>
@@ -292,59 +245,68 @@ export default function HighlightWordGamePage() {
       >
         <div className="mx-auto flex w-full max-w-5xl flex-1 flex-col items-center justify-start gap-8 px-4 pb-6 pt-14 sm:gap-12 sm:pt-20 lg:gap-14 lg:pt-24">
           <div className="w-full text-center">
-            <h3 className="text-xl md:text-2xl font-bold text-gray-800 dark:text-gray-100 mb-2">
-              {currentItem?.prompt}
-            </h3>
-            {currentItem?.isMultiSelect && (
-              <p className="text-sm text-gray-500 dark:text-gray-400">
-                Select all {currentItem.correctWords.length} correct words
-                {selectedWordIndices.size > 0 && (
-                  <span className="ml-2 font-semibold text-blue-500">
-                    ({selectedWordIndices.size} selected)
-                  </span>
-                )}
-              </p>
-            )}
+            <div className="flex items-start justify-center gap-1">
+              <TranslateButton
+                aria-label={promptTranslation.showTranslation ? "Show original question" : "Translate question"}
+                aria-pressed={promptTranslation.showTranslation}
+                isLoading={promptTranslation.isTranslating}
+                onClick={() => { void promptTranslation.toggle(); }}
+              />
+              <h3 lang={promptTranslation.showTranslation ? learningLang.toLowerCase() : knownLang.toLowerCase()} className="mb-2 text-xl font-bold text-gray-800 dark:text-gray-100 md:text-2xl">
+                {promptTranslation.displayText}
+              </h3>
+            </div>
+            {promptTranslation.error && <p role="status" className="text-sm text-red-700 dark:text-red-400">{promptTranslation.error}</p>}
           </div>
 
-          <div className="flex flex-wrap justify-center gap-3 text-lg md:text-xl font-medium leading-relaxed max-w-4xl mx-auto" role="group" aria-label="Sentence words">
-            {words.map((word, index) => {
-              const cleanWord = normalizeApostrophe(word)
-                .replace(/[.,!?;:]/g, "")
-                .toLowerCase();
-              const isTarget = currentItem.isMultiSelect
-                ? currentItem.correctWords.includes(cleanWord)
-                : cleanWord === normalizeApostrophe(currentItem.correctWord).toLowerCase();
-              const wasSelected = currentItem.isMultiSelect
-                ? selectedWordIndices.has(index)
-                : selectedWordIndex === index;
-              const isWrongSelection = isAnswered && wasSelected && !isTarget;
-              let styles = "bg-transparent text-gray-800 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg px-2 py-1 cursor-pointer transition-all border border-transparent";
-              if (isAnswered) {
-                styles = isTarget
-                  ? "bg-green-100 text-green-800 ring-2 ring-green-400 rounded-lg px-2 py-1 shadow-sm"
-                  : wasSelected
-                    ? "bg-red-100 text-red-800 ring-2 ring-red-400 rounded-lg px-2 py-1 opacity-80"
-                    : "text-gray-400 dark:text-gray-600 rounded-lg px-2 py-1 opacity-50";
-              } else if (wasSelected) {
-                styles = "bg-blue-100 text-blue-800 ring-2 ring-blue-300 rounded-lg px-2 py-1 shadow-sm";
-              }
+          <div className="relative w-full max-w-4xl">
+            {showFeedback && (
+              <TranslateButton
+                className="absolute left-0 top-0"
+                aria-label={sentenceTranslation.showTranslation ? "Hide sentence translation" : "Translate sentence"}
+                aria-pressed={sentenceTranslation.showTranslation}
+                isLoading={sentenceTranslation.isTranslating}
+                onClick={() => { void sentenceTranslation.toggle(); }}
+              />
+            )}
+            <div className={`mx-auto flex flex-wrap justify-center gap-3 text-lg font-medium leading-relaxed md:text-xl ${showFeedback ? "px-9" : ""}`} role="group" aria-label="Sentence words" lang={learningLang.toLowerCase()}>
+              {words.map((word, index) => {
+                const isTarget = correctIndices.has(index);
+                const wasSelected = selectedWordIndices.has(index);
+                const isWrongSelection = isAnswered && wasSelected && !isTarget;
+                let styles = "bg-transparent text-gray-800 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg px-2 py-1 cursor-pointer transition-all border border-transparent";
+                if (isAnswered) {
+                  styles = isTarget
+                    ? "bg-green-100 text-green-800 ring-2 ring-green-400 rounded-lg px-2 py-1 shadow-sm"
+                    : wasSelected
+                      ? "bg-red-100 text-red-800 ring-2 ring-red-400 rounded-lg px-2 py-1 opacity-80"
+                      : "text-gray-400 dark:text-gray-600 rounded-lg px-2 py-1 opacity-50";
+                } else if (wasSelected) {
+                  styles = "bg-blue-100 text-blue-800 ring-2 ring-blue-300 rounded-lg px-2 py-1 shadow-sm";
+                }
 
-              return (
-                <button
-                  key={index}
-                  type="button"
-                  onClick={() => handleWordClick(index)}
-                  disabled={isAnswered}
-                  aria-pressed={wasSelected}
-                  aria-invalid={isWrongSelection}
-                  aria-label={isAnswered && isTarget ? `${word}, correct answer` : isWrongSelection ? `${word}, incorrect selection` : word}
-                  className={`${styles} focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 disabled:cursor-default`}
-                >
-                  {word}
-                </button>
-              );
-            })}
+                return (
+                  <button
+                    key={index}
+                    type="button"
+                    onClick={() => handleWordClick(index)}
+                    disabled={isAnswered}
+                    aria-pressed={wasSelected}
+                    aria-invalid={isWrongSelection}
+                    aria-label={isAnswered && isTarget ? `${word}, correct answer` : isWrongSelection ? `${word}, incorrect selection` : word}
+                    className={`${styles} focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 disabled:cursor-default`}
+                  >
+                    {word}
+                  </button>
+                );
+              })}
+            </div>
+            {showFeedback && sentenceTranslation.showTranslation && (
+              <p lang={knownLang.toLowerCase()} className="mt-5 text-center text-lg text-slate-700 dark:text-slate-200">
+                {sentenceTranslation.displayText}
+              </p>
+            )}
+            {showFeedback && sentenceTranslation.error && <p role="status" className="mt-2 text-center text-sm text-red-700 dark:text-red-400">{sentenceTranslation.error}</p>}
           </div>
         </div>
       </PracticeGameLayout>

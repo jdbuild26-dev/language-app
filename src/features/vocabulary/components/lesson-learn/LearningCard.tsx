@@ -21,7 +21,7 @@ import {
 const PLACEHOLDER_IMAGE =
   "https://images.unsplash.com/photo-1546410531-bb4caa6b424d?auto=format&fit=crop&q=80&w=500";
 
-export default function LearningCard({ word, sessionId }) {
+export default function LearningCard({ word }: { word: any; sessionId?: string; showBookmark?: boolean }) {
   const { user } = useUser();
   const { getToken } = useAuth();
   const [isBookmarked, setIsBookmarked] = useState(false);

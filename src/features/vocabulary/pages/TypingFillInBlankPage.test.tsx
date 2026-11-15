@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- This test's existing React harness represents rendered nodes and hook state dynamically. */
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 
 const h = vi.hoisted(() => ({ states: [] as any[], refs: [] as any[], effects: [] as any[], pending: [] as any[], s: 0, r: 0, e: 0, resetTimer: vi.fn() }));
@@ -26,6 +27,7 @@ vi.mock("@/components/ui/FeedbackBanner", () => ({ default: () => null }));
 import TypingFillInBlankPage from "./TypingFillInBlankPage";
 import { fetchPracticeQuestions } from "@/services/vocabularyApi";
 import AudioPlayer from "@/features/vocabulary/components/shared/AudioPlayer";
+import SpecialCharacterKeyboard from "@/features/practice/components/SpecialCharacterKeyboard";
 import { TranslateButton } from "@/components/ui/TranslateButton";
 
 function render(): any {
@@ -40,9 +42,10 @@ function all(node: any, predicate: (node: any) => boolean): any[] {
 async function mount() { for (let i = 0; i < 8; i++) { render(); await Promise.resolve(); } }
 beforeEach(() => {
   h.states = []; h.refs = []; h.effects = []; h.pending = []; vi.useFakeTimers();
+  vi.stubGlobal("requestAnimationFrame", (callback: FrameRequestCallback) => { callback(0); return 1; });
   vi.mocked(fetchPracticeQuestions).mockResolvedValue({ data: [{ ExerciseID: "W1", hints: ["bakery", "bread"], blanks: ["boulangerie", "pain"], displayParts: ["Je vais à la ", " pour acheter du ", "."], fullText: "Je vais à la boulangerie pour acheter du pain." }] });
 });
-afterEach(() => { h.effects.forEach(effect => effect.cleanup?.()); vi.clearAllTimers(); vi.useRealTimers(); });
+afterEach(() => { h.effects.forEach(effect => effect.cleanup?.()); vi.clearAllTimers(); vi.useRealTimers(); vi.unstubAllGlobals(); });
 
 it("associates English hints with inputs and locks answers after submission", async () => {
   await mount();
@@ -52,7 +55,8 @@ it("associates English hints with inputs and locks answers after submission", as
   expect(clues()[0].props.htmlFor).toBe(fields()[0].props.id);
   expect(fields()[0].props["aria-describedby"]).toBe(clues()[0].props.id);
   expect(fields()[0].props.placeholder).toBe("bakery");
-  expect(all(render(), node => node.type === AudioPlayer)[0].props.showTurtle).toBe(true);
+  expect(all(render(), node => node.type === SpecialCharacterKeyboard)).toHaveLength(1);
+  expect(all(render(), node => node.type === AudioPlayer)).toHaveLength(0);
   expect(all(render(), node => node.type === TranslateButton)).toHaveLength(0);
   fields()[0].props.onChange({ target: { value: "boulangerie" } });
   expect(fields()[0].props.value).toBe("boulangerie");
@@ -62,9 +66,22 @@ it("associates English hints with inputs and locks answers after submission", as
   expect(all(render(), node => typeof node.props?.onNext === "function")[0].props.showSubmitButton).toBe(true);
   expect(fields().every(field => field.props.disabled)).toBe(true);
   expect(clues()).toHaveLength(2);
-  expect(all(render(), node => node.type === AudioPlayer)[0].props.showTurtle).toBe(false);
+  expect(all(render(), node => node.type === SpecialCharacterKeyboard)).toHaveLength(0);
   expect(all(render(), node => node.type === TranslateButton)).toHaveLength(1);
   expect(all(render(), node => node.props?.lang === "fr").map(node => node.props.children)).toContain(
-    all(render(), node => node.type === AudioPlayer)[0].props.text,
+    "Je vais à la boulangerie pour acheter du pain.",
   );
+});
+
+it("inserts a special character at the cursor in the focused blank", async () => {
+  await mount();
+  const fields = all(render(), node => node.type === "input");
+  const field = { value: "pain", selectionStart: 1, selectionEnd: 2, focus: vi.fn(), setSelectionRange: vi.fn() };
+  fields[1].props.ref(field);
+  fields[1].props.onFocus();
+  const keyboard = all(render(), node => node.type === SpecialCharacterKeyboard)[0];
+  keyboard.props.onInsert("é");
+  expect(all(render(), node => node.type === "input")[1].props.value).toBe("péin");
+  expect(field.focus).toHaveBeenCalled();
+  expect(field.setSelectionRange).toHaveBeenCalledWith(2, 2);
 });

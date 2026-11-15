@@ -1,6 +1,7 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- The existing hook harness stores dynamic React state and element trees. */
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 
-const h = vi.hoisted(() => ({ states: [] as any[], refs: [] as any[], effects: [] as any[], callbacks: [] as any[], pending: [] as any[], s: 0, r: 0, e: 0, c: 0 }));
+const h = vi.hoisted(() => ({ states: [] as any[], refs: [] as any[], effects: [] as any[], callbacks: [] as any[], pending: [] as any[], s: 0, r: 0, e: 0, c: 0, speak: vi.fn(), cancel: vi.fn() }));
 vi.mock("react", () => ({
   useState(initial: any) {
     const i = h.s++; if (!(i in h.states)) h.states[i] = initial;
@@ -23,6 +24,7 @@ vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn() }) }));
 vi.mock("@/components/layout/PracticeGameLayout", () => ({ default: () => null }));
 vi.mock("@/components/ui/TranslateButton", () => ({ TranslateButton: () => null }));
 vi.mock("@/hooks/useTranslateText", () => ({ useTranslateText: (text: string) => ({ displayText: text, showTranslation: false, isTranslating: false, error: null, reset: vi.fn(), toggle: vi.fn() }) }));
+vi.mock("@/hooks/useTextToSpeech", () => ({ useTextToSpeech: () => ({ speak: h.speak, cancel: h.cancel }) }));
 vi.mock("@/contexts/LanguageContext", () => ({ useLanguage: () => ({ learningLang: "fr" }) }));
 vi.mock("@/services/vocabularyApi", () => ({
   fetchVocabulary: vi.fn(async () => ({ words: [{ id: "1", english: "cat", forms: [{ word: "chat" }] }] })),
@@ -63,16 +65,25 @@ function find(node: any, match: (node: any) => boolean): any {
 }
 async function begin(mode: "word" | "sentence" = "word") {
   render(mode); await Promise.resolve(); await Promise.resolve();
-  await find(render(mode), node => node.props?.["aria-label"] === "Start recording").props.onClick();
+  for (let attempt = 0; attempt < 5; attempt++) {
+    const startControl = find(render(mode), node => node.props?.["aria-label"] === "Start recording");
+    if (startControl) {
+      await startControl.props.onClick();
+      return;
+    }
+    await Promise.resolve();
+  }
+  throw new Error("Start recording control did not appear");
 }
 function stop(mode: "word" | "sentence" = "word") {
   find(render(mode), node => node.props?.["aria-label"] === "Stop recording").props.onClick();
 }
 function expectNotScored(mode: "word" | "sentence" = "word") {
   const tree = render(mode);
-  expect(tree.props.showFeedback).toBe(false);
+  expect(tree.props.showFeedback).toBe(true);
   expect(tree.props.score).toBe(0);
-  expect(find(tree, node => node.props?.role === "alert")).toBeDefined();
+  expect(tree.props.feedbackMessage).toBe("Speech could not be evaluated");
+  expect(tree.props.submitLabel).toBe("Finish");
 }
 beforeEach(() => {
   h.states = []; h.refs = []; h.effects = []; h.callbacks = []; h.pending = [];
@@ -88,7 +99,7 @@ afterEach(() => { h.effects.forEach(effect => effect?.cleanup?.()); vi.useRealTi
 it("does not score unavailable recognition as an incorrect answer and keeps replay", async () => {
   vi.stubGlobal("window", {}); await begin(); stop();
   await render().props.onNext(); expectNotScored();
-  expect(find(render(), node => node.props?.["aria-label"] === "Replay your recording").props.disabled).toBe(false);
+  expect(find(render(), node => node.props?.["aria-label"] === "Play your recording").props.disabled).toBe(false);
 });
 it("does not score recognition startup failures", async () => {
   Recognition.failStart = true; await begin(); stop();
@@ -105,6 +116,18 @@ it("does not score empty or unfinished recognition as incorrect", async () => {
 it("does not score a recording with no recognized speech", async () => {
   await begin(); stop(); Recognition.current.onend?.();
   await render().props.onNext(); expectNotScored();
+});
+it.each(["word", "sentence"] as const)("lets an unscored %s recording continue", async mode => {
+  vi.stubGlobal("window", {});
+  await begin(mode);
+  stop(mode);
+  await render(mode).props.onNext();
+  const after = render(mode);
+  expect(after.props.score).toBe(0);
+  expect(after.props.showFeedback).toBe(true);
+  expect(after.props.submitLabel).toBe("Finish");
+  after.props.onNext();
+  expect(render(mode).props.isGameOver).toBe(true);
 });
 it("waits for final recognition before evaluating a stopped recording", async () => {
   await begin(); Recognition.current.result("ch", false); stop();
@@ -136,9 +159,73 @@ it("does not allow a stale Submit handler to score an answer twice", async () =>
   expect(render().props.score).toBe(1);
 });
 
+it.each(["word", "sentence"] as const)("waits for the %s microphone button and offers replay after recording", async mode => {
+  render(mode);
+  let startControl;
+  for (let attempt = 0; attempt < 8; attempt++) {
+    await Promise.resolve();
+    startControl = find(render(mode), node => node.props?.["aria-label"] === "Start recording");
+    if (startControl) break;
+  }
+  expect(startControl).toBeDefined();
+  expect(navigator.mediaDevices.getUserMedia).not.toHaveBeenCalled();
+  expect(render(mode).props.isSubmitEnabled).toBe(false);
+  await startControl.props.onClick();
+  expect(find(render(mode), node => node.props?.["aria-label"] === "Stop recording")).toBeDefined();
+  stop(mode);
+  const tree = render(mode);
+  expect(find(tree, node => node.props?.["aria-label"] === "Replay your recording").props.disabled).toBe(false);
+  expect(find(tree, node => node.type === "audio").props.src).toBe("blob:recording");
+});
+
+it.each(["word", "sentence"] as const)("offers correct and recorded audio after %s Submit and retries the same question", async mode => {
+  await begin(mode); Recognition.current.result("chien"); stop(mode); Recognition.current.onend?.();
+  await render(mode).props.onNext();
+  const result = render(mode);
+  expect(find(result, node => node.props?.["aria-label"] === "Play your recording")).toBeDefined();
+  expect(find(result, node => node.props?.["aria-label"] === "Show English")).toBeDefined();
+  expect(find(result, node => typeof node.props?.children === "string" && node.props.children.startsWith("You said:"))).toBeUndefined();
+  find(result, node => node.props?.["aria-label"] === "Play correct pronunciation").props.onClick();
+  expect(h.speak).toHaveBeenCalledWith("chat", "fr-FR");
+  find(result, node => node.props?.["aria-label"] === "Retry this question").props.onClick();
+  await Promise.resolve(); await Promise.resolve();
+  expect(render(mode).props.showFeedback).toBe(false);
+  expect(render(mode).props.score).toBe(0);
+  expect(render(mode).props.progress).toBe(100);
+  expect(find(render(mode), node => node.props?.["aria-label"] === "Stop recording")).toBeDefined();
+});
+
+it("retries a correct word without counting the same question twice", async () => {
+  await begin(); Recognition.current.result("chat"); stop(); Recognition.current.onend?.();
+  await render().props.onNext();
+  expect(render().props.score).toBe(1);
+  find(render(), node => node.props?.["aria-label"] === "Retry this question").props.onClick();
+  await Promise.resolve(); await Promise.resolve();
+  expect(render().props.score).toBe(0);
+  Recognition.current.result("chat"); stop(); Recognition.current.onend?.();
+  await render().props.onNext();
+  expect(render().props.score).toBe(1);
+});
+
+it("allows skipping when microphone access fails before a recording exists", async () => {
+  vi.stubGlobal("navigator", { mediaDevices: { getUserMedia: vi.fn(async () => { throw new Error("Microphone unavailable"); }) } });
+  await begin();
+  let skip;
+  for (let attempt = 0; attempt < 8; attempt++) {
+    await Promise.resolve();
+    skip = find(render(), node => node.props?.children === "Skip this question");
+    if (skip) break;
+  }
+  expect(skip).toBeDefined();
+  skip.props.onClick();
+  expect(render().props.showFeedback).toBe(true);
+  render().props.onNext();
+  expect(render().props.isGameOver).toBe(true);
+});
+
 it.each(["word", "sentence"] as const)("makes %s translation available only after submission", async mode => {
   await begin(mode);
-  expect(render(mode).props.preserveFooterHeightOnFeedback).toBe(true);
+  expect(render(mode).props.feedbackInFlow).toBe(true);
   expect(render(mode).props.showInstructionTranslateButton).toBe(false);
   expect(find(render(mode), node => node.props?.["aria-label"] === "Show English")).toBeUndefined();
   Recognition.current.result("chat"); stop(mode); Recognition.current.onend?.();

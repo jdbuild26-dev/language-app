@@ -105,7 +105,7 @@ function TeacherOnboardingContent() {
                                 value={name}
                                 onChange={(e) => setName(e.target.value)}
                                 className="bg-slate-800/50 border-slate-700 text-white"
-                                placeholder="Your full name"
+                                placeholder="|"
                             />
                         </div>
                         <div className="space-y-2">
@@ -121,7 +121,7 @@ function TeacherOnboardingContent() {
                                   setExperience(String(val));
                                 }}
                                 className="bg-slate-800/50 border-slate-700 text-white"
-                                placeholder="e.g. 5"
+                                placeholder="|"
                             />
                         </div>
                         <p className="text-xs text-slate-500 italic">

@@ -134,7 +134,7 @@ export default function ActionsGroup({
               </h3>
               <div className="flex gap-2">
                 <Input
-                  placeholder="Username or #code"
+                  placeholder="|"
                   className="h-9 text-sm border-gray-200 dark:border-subtle-dark bg-transparent dark:text-primary-dark focus-visible:ring-brand-blue-2"
                 />
                 <Button size="sm" className="h-9 bg-brand-blue-1 hover:bg-brand-blue-2 text-white">

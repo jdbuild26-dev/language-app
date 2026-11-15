@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import type { Transition, Variants } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { Sparkles, X, Check } from "lucide-react";
 
@@ -115,13 +116,13 @@ export default function GenderIdentifierGame({ initialWords, onComplete }) {
   };
 
   // Spring animations for a snappy, tactile feel
-  const sharedSpring = {
+  const sharedSpring: Transition = {
     type: "spring",
     stiffness: 300,
     damping: 20,
   };
 
-  const variants = {
+  const variants: Variants = {
     idle: { x: 0, y: 0, rotate: 0, scale: 1, opacity: 1 },
     wrong: {
       x: [0, -15, 15, -10, 10, -5, 5, 0],

@@ -118,7 +118,7 @@ export function NewClassModal({ isOpen, onClose, onSave, defaultDate }: Props) {
               id="title"
               value={form.title}
               onChange={e => set("title", e.target.value)}
-              placeholder="e.g. French Grammar – Group A"
+              placeholder="|"
               className={errors.title ? "border-red-500 focus-visible:ring-red-500" : ""}
               autoFocus
             />
@@ -190,7 +190,7 @@ export function NewClassModal({ isOpen, onClose, onSave, defaultDate }: Props) {
               id="description"
               value={form.description}
               onChange={e => set("description", e.target.value)}
-              placeholder="Add notes about this class..."
+              placeholder="|"
               rows={2}
               className="w-full px-3 py-2 text-sm rounded-md border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
             />

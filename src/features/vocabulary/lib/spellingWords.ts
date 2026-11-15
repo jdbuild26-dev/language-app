@@ -1,6 +1,8 @@
 export type SpellingWord = {
   id?: string;
   english: string;
+  exampleNative?: string;
+  exampleTarget?: string;
   forms?: Array<{ word?: string; gender?: string }>;
   wrongSpelling?: string | null;
 };

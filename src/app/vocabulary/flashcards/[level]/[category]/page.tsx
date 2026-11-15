@@ -7,7 +7,11 @@ import { fetchVocabulary } from "@/services/vocabularyApi";
 import FlashcardGame from "@/features/vocabulary/components/flashcards/FlashcardGame";
 
 export default function FlashcardsPage() {
-  const { level, category } = useParams();
+  const params = useParams();
+  const levelParam = params?.level;
+  const categoryParam = params?.category;
+  const level = Array.isArray(levelParam) ? levelParam[0] : levelParam;
+  const category = Array.isArray(categoryParam) ? categoryParam[0] : categoryParam;
   const router = useRouter();
 
   const [words, setWords] = useState([]);

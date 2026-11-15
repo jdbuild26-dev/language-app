@@ -119,7 +119,7 @@ export default function TeacherReferralPage() {
                 Invite by Email
               </label>
               <div className="flex gap-2">
-                <Input placeholder="colleague@example.com" />
+                <Input placeholder="|" />
                 <Button variant="outline">
                   <EnvelopeIcon className="w-4 h-4 mr-2" /> Send
                 </Button>

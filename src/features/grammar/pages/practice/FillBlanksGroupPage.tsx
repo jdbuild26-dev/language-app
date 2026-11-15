@@ -43,8 +43,6 @@ export default function FillBlanksGroupPage({ type = "simple" }) {
   const [feedbackMessage, setFeedbackMessage] = useState("");
   const [score, setScore] = useState(0);
 
-  // We need to store focus state to hide hints when input is focused
-  const [focusedInput, setFocusedInput] = useState(null);
 
   const currentQuestion = questions[currentIndex];
   // Default to 60 seconds if not specified
@@ -240,9 +238,7 @@ export default function FillBlanksGroupPage({ type = "simple" }) {
 
       if (index < parts.length - 1) {
         // Render input
-        const hint = currentQuestion.hints[index] || "";
         const val = inputs[index] || "";
-        const isFocused = focusedInput === index;
 
         const isWrong =
           showFeedback &&
@@ -260,34 +256,18 @@ export default function FillBlanksGroupPage({ type = "simple" }) {
               type="text"
               value={val}
               onChange={(e) => handleInputChange(index, e.target.value)}
-              onFocus={() => setFocusedInput(index)}
-              onBlur={() => setFocusedInput(null)}
               disabled={showFeedback}
               className={cn(
                 "w-36 border-0 border-b-2 bg-transparent px-1 pb-1 text-center text-[1em] leading-none font-medium outline-none transition-all",
                 "border-slate-300 dark:border-slate-600 focus:border-indigo-500 dark:focus:border-indigo-400",
-                // Placeholder styling simulation mechanism if we want hint to disappear on CLICK/FOCUS
-                // Native placeholder disappears on type usually, but user asked: "Word will be given in English... when they click on it... the English word goes"
-                // Standard placeholder behavior is: shows if empty. Disappears if typed.
-                // BUT user said "when they click on it". So on FOCUS.
-                // We can use actual placeholder prop but manage visibility via focus state/value?
-                // Actually, standard placeholder stays until type.
-                // To make it vanish on focus, we iterate:
-                val === "" && !isFocused
-                  ? "text-transparent"
-                  : "text-slate-900 dark:text-white", // Hide value if empty+not focused? No, value is empty.
+                "text-slate-900 dark:text-white",
 
                 isWrong && "border-red-500 text-red-600",
                 isRight && "border-green-500 text-green-600",
               )}
               autoComplete="off"
+              placeholder="|"
             />
-            {/* Custom Placeholder Overlay that disappears on Focus */}
-            {val === "" && !isFocused && (
-              <span className="pointer-events-none absolute inset-x-1 bottom-1 flex items-baseline justify-center text-[1em] leading-none text-slate-400 italic">
-                {hint}
-              </span>
-            )}
           </span>,
         );
       }

@@ -105,7 +105,7 @@ export default function ReferralPage() {
             <form onSubmit={handleSubmitCode} className="space-y-4">
               <div className="flex gap-2">
                 <Input
-                  placeholder="Paste code here (e.g. LNG-XXXX)"
+                  placeholder="|"
                   value={referralCode}
                   onChange={(e) => setReferralCode(e.target.value)}
                   className="font-mono uppercase placeholder:normal-case"

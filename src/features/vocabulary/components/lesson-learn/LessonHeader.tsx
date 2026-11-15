@@ -13,8 +13,12 @@ export default function LessonHeader({
   onSaveAndExit,
   isSaving = false,
   words,
-}) {
-  const { level, category } = useParams();
+}: { currentIndex: number; total: number; onExit: () => void; onSaveAndExit?: () => void; isSaving?: boolean; words: any[] }) {
+  const params = useParams();
+  const levelParam = params?.level;
+  const categoryParam = params?.category;
+  const level = Array.isArray(levelParam) ? levelParam[0] : levelParam;
+  const category = Array.isArray(categoryParam) ? categoryParam[0] : categoryParam;
 
   // Format category name for display
   const formatCategoryName = (name) => {

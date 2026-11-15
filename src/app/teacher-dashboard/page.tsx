@@ -160,7 +160,7 @@ export default function OverviewPage() {
             type="text"
             value={value || ""}
             onChange={(e) => handleInputChange(q.id, e.target.value)}
-            placeholder="Type your answer here..."
+            placeholder="|"
             className={inputBase}
           />
         );
@@ -170,7 +170,7 @@ export default function OverviewPage() {
             type="email"
             value={value || ""}
             onChange={(e) => handleInputChange(q.id, e.target.value)}
-            placeholder="your@email.com"
+            placeholder="|"
             className={inputBase}
           />
         );
@@ -188,7 +188,7 @@ export default function OverviewPage() {
               if (q.id === 5 && num > 100) num = 100;
               handleInputChange(q.id, num);
             }}
-            placeholder="Enter a number..."
+            placeholder="|"
             className={inputBase}
           />
         );
@@ -197,7 +197,7 @@ export default function OverviewPage() {
           <Textarea
             value={value || ""}
             onChange={(e) => handleInputChange(q.id, e.target.value)}
-            placeholder="Share your thoughts..."
+            placeholder="|"
             className={cn(inputBase, "min-h-[100px]")}
           />
         );

@@ -13,6 +13,8 @@ import FlashcardGame from "@/features/vocabulary/components/flashcards/Flashcard
 import { useUser, useAuth } from "@clerk/nextjs";
 import { AnimatePresence, motion } from "framer-motion";
 
+type FlashcardWord = { id: string; level?: string; category?: string; forms?: Array<{ word: string }> };
+
 export default function FlashcardsActivityGamePage() {
   return (
     <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-sky-500" /></div>}>
@@ -28,15 +30,15 @@ function FlashcardsActivityGameContent() {
   const { getToken } = useAuth();
 
   // Get params
-  const level = searchParams.get("level");
-  const category = searchParams.get("category");
-  const subCategories = searchParams.getAll("sub_category");
-  const mode = searchParams.get("mode") || "All";
-  const count = searchParams.get("count");
-  const urlFront = searchParams.get("front"); // Optional front face from setup
+  const level = searchParams?.get("level") ?? undefined;
+  const category = searchParams?.get("category") ?? undefined;
+  const subCategories = searchParams?.getAll("sub_category") ?? [];
+  const mode = searchParams?.get("mode") || "All";
+  const count = searchParams?.get("count");
+  const urlFront = searchParams?.get("front"); // Optional front face from setup
 
-  const [words, setWords] = useState([]);
-  const [queue, setQueue] = useState([]);
+  const [words, setWords] = useState<FlashcardWord[]>([]);
+  const [queue, setQueue] = useState<FlashcardWord[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
 
@@ -86,7 +88,7 @@ function FlashcardsActivityGameContent() {
           // 2. Fetch SRS due IDs and sort due cards to the front
           try {
             const token = await getToken();
-            const dueIds = await fetchSrsDue({ category, level }, token);
+            const dueIds = await fetchSrsDue({ category, level }, token ?? undefined);
             if (dueIds && dueIds.length > 0) {
               const dueSet = new Set(dueIds);
               const dueCards = loadedWords.filter((w) => dueSet.has(w.id));
@@ -465,7 +467,6 @@ function FlashcardsActivityGameContent() {
             words={displayedQueue}
             onUpdateStats={handleUpdateStats}
             total={stats.total}
-            user={user}
             settings={settings}
           />
         )}

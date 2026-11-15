@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import type { ElementType, MouseEventHandler } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import {
@@ -14,7 +15,7 @@ import { fetchVocabulary } from "@/services/vocabularyApi";
 import { useLanguage } from "@/contexts/LanguageContext";
 
 // Action button component
-function ActionButton({ icon: Icon, label, onClick }) {
+function ActionButton({ icon: Icon, label, onClick }: { icon: ElementType; label: string; onClick?: MouseEventHandler<HTMLButtonElement> }) {
   return (
     <button
       onClick={onClick}
@@ -106,11 +107,13 @@ function VocabularyCard({ word, topic }) {
 }
 
 export default function TopicCategoryPage() {
-  const { topic } = useParams();
+  const params = useParams();
+  const topicParam = params?.topic;
+  const topic = Array.isArray(topicParam) ? topicParam[0] : topicParam;
   const { learningLang, knownLang } = useLanguage();
-  const [words, setWords] = useState([]);
+  const [words, setWords] = useState<Array<{ id: string; forms?: Array<{ word: string }>; level?: string; subCategory?: string; category?: string }>>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState<string | null>(null);
 
   // Format topic name for display (convert slug to title case)
   const topicDisplayName = topic

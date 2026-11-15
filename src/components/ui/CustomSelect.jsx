@@ -93,7 +93,7 @@ export default function CustomSelect({
   const showDashPlaceholder = !value && /^-+$/.test(placeholder);
 
   return (
-    <div ref={ref} className={cn("relative w-full", className)}>
+    <div ref={ref} data-custom-select className={cn("relative w-full", className)}>
       {/* Trigger */}
       <motion.button
         type="button"

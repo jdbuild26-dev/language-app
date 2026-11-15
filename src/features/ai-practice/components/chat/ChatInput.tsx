@@ -3,8 +3,6 @@
 import { useState } from "react";
 import { Send } from "lucide-react";
 import AudioRecorder from "@/features/ai-practice/components/AudioRecorder";
-import { useLanguage } from "@/contexts/LanguageContext";
-import { getLangName } from "@/utils/languages";
 
 interface ChatInputProps {
   onSend: (text: string) => void;
@@ -17,7 +15,6 @@ export default function ChatInput({
   disabled = false,
 }: ChatInputProps) {
   const [message, setMessage] = useState("");
-  const { learningLang } = useLanguage();
   const [isMicActive, setIsMicActive] = useState(false);
   const [shouldStopMic, setShouldStopMic] = useState(false);
 
@@ -55,7 +52,7 @@ export default function ChatInput({
               type="text"
               value={message}
               onChange={handleManualTyping}
-              placeholder={disabled ? "AI is thinking..." : `Type your message in ${getLangName(learningLang)}...`}
+              placeholder="|"
               disabled={disabled}
               className={`flex-1 px-4 py-2.5 bg-gray-100 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-500 transition-all ${
                 disabled ? "opacity-50 cursor-not-allowed" : ""

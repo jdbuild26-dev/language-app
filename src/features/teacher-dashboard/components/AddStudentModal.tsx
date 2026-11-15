@@ -108,7 +108,7 @@ export function AddStudentModal({ isOpen, onClose, onSuccess }: AddStudentModalP
                   id="studentId"
                   value={studentId}
                   onChange={(e) => setStudentId(e.target.value)}
-                  placeholder="e.g. S-123456"
+                  placeholder="|"
                   disabled={mutation.isPending}
                   className="font-mono"
                   autoFocus

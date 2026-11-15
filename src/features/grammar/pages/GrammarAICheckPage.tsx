@@ -81,7 +81,7 @@ const GrammarAICheckPage = () => {
           <textarea
             value={text}
             onChange={(e) => setText(e.target.value)}
-            placeholder="Type your sentences here..."
+            placeholder="|"
             className="w-full h-64 p-6 resize-none focus:outline-none bg-transparent text-lg text-slate-800 dark:text-slate-200 placeholder:text-slate-400"
           />
           <div className="px-6 py-4 bg-slate-50 dark:bg-slate-950/50 border-t border-slate-200 dark:border-slate-800 flex justify-end items-center gap-4">

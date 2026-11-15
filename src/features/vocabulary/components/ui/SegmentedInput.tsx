@@ -101,6 +101,7 @@ export default function SegmentedInput({
               textClass,
               isHint ? "cursor-default select-none" : "cursor-text",
             )}
+            placeholder="|"
           />
         );
       })}

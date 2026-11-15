@@ -40,7 +40,7 @@ const WelcomeNameStep = ({ formData, setFormData, onContinue }) => {
           onChange={(e) =>
             setFormData((prev) => ({ ...prev, name: e.target.value }))
           }
-          placeholder="Enter your name"
+          placeholder="|"
           className="text-center text-lg"
           autoFocus
         />

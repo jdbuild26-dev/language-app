@@ -8,12 +8,9 @@ import LearningCard from "@/features/vocabulary/components/lesson-learn/Learning
 
 export default function FlashcardGame({
   words,
-  onComplete,
   onUpdateStats,
-  currentIndex,
   total,
-  user,
-  settings,
+  settings = { autoPlayAudio: false, frontSide: "French" },
 }) {
   const [isFlipped, setIsFlipped] = useState(false);
   // Generate a transient session ID for this game instance
