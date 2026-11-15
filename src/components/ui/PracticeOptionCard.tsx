@@ -11,6 +11,8 @@ type PracticeOptionCardProps = {
   correct?: boolean;
   submitted?: boolean;
   onSelect?: () => void;
+  onSubmittedPlay?: () => void;
+  submittedPlayLabel?: string;
   className?: string;
   leading?: ReactNode;
   suffix?: ReactNode;
@@ -20,7 +22,7 @@ type PracticeOptionCardProps = {
 /** Shared presentation only; exercises own selection, audio and translation state. */
 export default function PracticeOptionCard({
   children, variant = "word", selected = false, correct = false,
-  submitted = false, onSelect, className, leading, suffix, action,
+  submitted = false, onSelect, onSubmittedPlay, submittedPlayLabel, className, leading, suffix, action,
 }: PracticeOptionCardProps) {
   const state = submitted ? correct ? "correct" : selected ? "incorrect" : "muted" : selected ? "selected" : "idle";
   const stateClasses = {
@@ -28,16 +30,17 @@ export default function PracticeOptionCard({
     selected: "border-blue-500 bg-sky-50 text-slate-700 dark:border-blue-400 dark:bg-blue-950/30 dark:text-slate-200",
     correct: "border-emerald-500 bg-emerald-50 text-emerald-700 dark:border-emerald-400 dark:bg-emerald-950/30 dark:text-emerald-300",
     incorrect: "border-red-400 bg-red-50 text-red-600 dark:border-red-400 dark:bg-red-950/30 dark:text-red-300",
-    muted: "border-slate-200 bg-white text-slate-700 opacity-40 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200",
+    muted: "border-slate-200 bg-white text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200",
   };
   const button = (
     <motion.button
       type="button"
       data-practice-option
       data-state={state}
-      aria-pressed={selected}
-      disabled={submitted}
-      onClick={() => { if (!submitted) onSelect?.(); }}
+      aria-pressed={submitted && onSubmittedPlay ? undefined : selected}
+      aria-label={submitted && onSubmittedPlay ? submittedPlayLabel : undefined}
+      disabled={submitted && !onSubmittedPlay}
+      onClick={() => { if (submitted) onSubmittedPlay?.(); else onSelect?.(); }}
       whileHover={!submitted && !selected ? { scale: 1.01 } : {}}
       whileTap={!submitted ? { scale: 0.985 } : {}}
       transition={{ duration: 0.22 }}
@@ -45,7 +48,7 @@ export default function PracticeOptionCard({
         "practice-type-content flex w-full items-center rounded-2xl border-2 px-4 font-medium shadow-sm transition-[background-color,border-color,color,opacity,box-shadow] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2",
         variant === "word" ? "flex-col justify-center py-8 text-center" : "gap-3 py-3.5 text-left",
         action && (variant === "word" ? "pt-12" : "pr-14"),
-        submitted && "cursor-default",
+        submitted && (onSubmittedPlay ? "cursor-pointer" : "cursor-default"),
         className,
         stateClasses[state],
       )}

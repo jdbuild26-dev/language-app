@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useExerciseTimer } from "@/hooks/useExerciseTimer";
 import { useRouter } from "next/navigation";
 import { Check, X, Loader2 } from "lucide-react";
@@ -28,11 +28,7 @@ export default function IsThisFrenchWordPage() {
 
   // Timer
 
-  useEffect(() => {
-    loadQuestions();
-  }, []);
-
-  const loadQuestions = async () => {
+  const loadQuestions = useCallback(async () => {
     try {
       setLoading(true);
 
@@ -69,7 +65,13 @@ export default function IsThisFrenchWordPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    // Fetch the vocabulary questions when this exercise mounts.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    void loadQuestions();
+  }, [loadQuestions]);
 
   // Timer Hook
   const { timerString, resetTimer } = useExerciseTimer({
@@ -160,7 +162,7 @@ export default function IsThisFrenchWordPage() {
         onNext={showFeedback ? handleContinue : undefined}
         onRestart={() => window.location.reload()}
         isSubmitEnabled={showFeedback}
-        showSubmitButton={false}
+        showSubmitButton={showFeedback}
         submitLabel={
           showFeedback
             ? currentIndex + 1 === questions.length
@@ -169,11 +171,15 @@ export default function IsThisFrenchWordPage() {
             : "CHECK"
         }
         timerValue={timerString}
+        showFeedback={showFeedback}
+        isCorrect={isCorrect}
+        feedbackMessage={feedbackMessage}
+        feedbackInFlow
+        feedbackChildren={showFeedback && (
+          <span>{currentQ.explanation?.trim() || (currentQ.isFrench ? "This is a French word." : "This is not a French word.")}</span>
+        )}
       >
-        <div className="mx-auto flex w-full max-w-3xl flex-col items-center gap-10 px-4 py-10 sm:gap-12 sm:py-12">
-          <h2 className="practice-type-question-heading !font-medium text-center text-slate-900 dark:text-slate-100">
-            Est-ce un mot français ?
-          </h2>
+        <div className="mx-auto flex w-full max-w-3xl flex-col items-center justify-center gap-10 px-4 py-10 sm:gap-12 sm:py-12">
           {/* Word Display */}
           <div className="text-center">
             <p className="practice-type-content-large !text-[clamp(2rem,3vw,2.5rem)] !leading-tight font-semibold tracking-normal text-slate-800 dark:text-slate-100 break-words">
@@ -192,9 +198,9 @@ export default function IsThisFrenchWordPage() {
               disabled={showFeedback}
               className={cn(
                 "flex flex-col items-center justify-center w-28 h-28 md:w-36 md:h-36 rounded-2xl border-2 transition-colors duration-200 shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2",
-                showFeedback && selectedAnswer === true && isCorrect
+                showFeedback && currentQ.isFrench
                   ? "bg-green-100 border-green-500 text-green-700"
-                  : showFeedback && selectedAnswer === true && !isCorrect
+                  : showFeedback && selectedAnswer === true
                     ? "bg-red-100 border-red-500 text-red-700"
                     : "bg-white text-sky-500 dark:bg-slate-800 border-gray-200 dark:border-slate-700 hover:border-sky-400",
               )}
@@ -202,10 +208,8 @@ export default function IsThisFrenchWordPage() {
               <Check
                 className="w-12 h-12 md:w-16 md:h-16"
                 strokeWidth={2.5}
+                aria-hidden="true"
               />
-              <span className="mt-2 text-base font-semibold text-slate-600 dark:text-slate-300">
-                Yes
-              </span>
             </button>
 
             {/* No Button */}
@@ -217,9 +221,9 @@ export default function IsThisFrenchWordPage() {
               disabled={showFeedback}
               className={cn(
                 "flex flex-col items-center justify-center w-28 h-28 md:w-36 md:h-36 rounded-2xl border-2 transition-colors duration-200 shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2",
-                showFeedback && selectedAnswer === false && isCorrect
+                showFeedback && !currentQ.isFrench
                   ? "bg-green-100 border-green-500 text-green-700"
-                  : showFeedback && selectedAnswer === false && !isCorrect
+                  : showFeedback && selectedAnswer === false
                     ? "bg-red-100 border-red-500 text-red-700"
                     : "bg-white text-sky-500 dark:bg-slate-800 border-gray-200 dark:border-slate-700 hover:border-sky-400",
               )}
@@ -227,17 +231,10 @@ export default function IsThisFrenchWordPage() {
               <X
                 className="w-12 h-12 md:w-16 md:h-16"
                 strokeWidth={2.5}
+                aria-hidden="true"
               />
-              <span className="mt-2 text-base font-semibold text-slate-600 dark:text-slate-300">
-                No
-              </span>
             </button>
           </div>
-          {showFeedback && <div className="w-full text-center" role="status">
-            <p className={cn("practice-type-content font-semibold", isCorrect ? "text-green-700 dark:text-green-400" : "text-red-700 dark:text-red-400")}>{feedbackMessage} {currentQ.isFrench ? "This is a French word." : "This is not a French word."}</p>
-            {currentQ.explanation && <p className="practice-type-content mt-2 text-slate-700 dark:text-slate-200">{currentQ.explanation}</p>}
-            <button type="button" onClick={handleContinue} className="mt-4 rounded-lg bg-sky-600 px-5 py-2 font-semibold text-white hover:bg-sky-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500">{currentIndex + 1 === questions.length ? "Finish" : "Continue"}</button>
-          </div>}
         </div>
       </PracticeGameLayout>
     </>

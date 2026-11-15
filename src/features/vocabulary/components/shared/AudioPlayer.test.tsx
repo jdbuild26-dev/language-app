@@ -1,15 +1,15 @@
 import { beforeEach, expect, it, vi } from "vitest";
 
-const state = vi.hoisted(() => ({ mode: null as unknown, speaking: false, speak: vi.fn() }));
+const state = vi.hoisted(() => ({ mode: null as unknown, speaking: false, paused: false, speak: vi.fn(), pause: vi.fn(), resume: vi.fn() }));
 vi.mock("react", () => ({ useState: () => [state.mode, (value: unknown) => { state.mode = value; }] }));
-vi.mock("@/hooks/useTextToSpeech", () => ({ useTextToSpeech: () => ({ speak: state.speak, isSpeaking: state.speaking }) }));
+vi.mock("@/hooks/useTextToSpeech", () => ({ useTextToSpeech: () => ({ speak: state.speak, pause: state.pause, resume: state.resume, isSpeaking: state.speaking, isPaused: state.paused }) }));
 import AudioPlayer from "./AudioPlayer";
 import ListeningPlaybackButton from "@/components/ui/ListeningPlaybackButton";
 
 function controls(showTurtle = true) {
   return AudioPlayer({ text: "Bonjour", appearance: "main-practice", showTurtle }).props.children.filter(Boolean);
 }
-beforeEach(() => { state.mode = null; state.speaking = false; state.speak.mockReset(); });
+beforeEach(() => { state.mode = null; state.speaking = false; state.paused = false; state.speak.mockReset(); state.pause.mockReset(); state.resume.mockReset(); });
 
 it("highlights only the playing control and preserves both playback rates", () => {
   for (const control of controls()) {
@@ -48,4 +48,24 @@ it("marks the pink speaker active during the fill-in-blank page's automatic play
   const buttons = AudioPlayer({ text: "Bonjour", externalPlaying: true }).props.children.filter(Boolean);
   expect(buttons[0].props["aria-pressed"]).toBe(true);
   expect(buttons[1].props["aria-pressed"]).toBe(false);
+});
+
+it("uses the speaker control to play, pause and resume without a separate button", () => {
+  const buttons = () => AudioPlayer({ text: "Bonjour", pausable: true }).props.children.filter(Boolean);
+  expect(buttons()).toHaveLength(2);
+  expect(buttons()[0].props["aria-label"]).toBe("Play audio");
+  buttons()[0].props.onClick();
+  state.speaking = true;
+  expect(buttons()[0].props["aria-label"]).toBe("Pause audio");
+  buttons()[0].props.onClick();
+  expect(state.pause).toHaveBeenCalledOnce();
+  state.paused = true;
+  expect(buttons()[0].props["aria-pressed"]).toBe(false);
+  expect(buttons()[0].props["aria-label"]).toBe("Resume audio");
+  buttons()[0].props.onClick();
+  expect(state.resume).toHaveBeenCalledOnce();
+  expect(state.speak).toHaveBeenCalledOnce();
+  state.speaking = false;
+  state.paused = false;
+  expect(buttons()[0].props["aria-label"]).toBe("Play audio");
 });

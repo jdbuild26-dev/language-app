@@ -1,14 +1,13 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import { usePracticeExit } from "@/hooks/usePracticeExit";
 import { useExerciseTimer } from "@/hooks/useExerciseTimer";
 import { Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
 import FeedbackBanner from "@/components/ui/FeedbackBanner";
 import { getFeedbackMessage } from "@/utils/feedbackMessages";
-import AudioPlayer from "@/features/vocabulary/components/shared/AudioPlayer";
+import SpecialCharacterKeyboard from "@/features/practice/components/SpecialCharacterKeyboard";
 import { TranslateButton } from "@/components/ui/TranslateButton";
 import { useTranslateText } from "@/hooks/useTranslateText";
 import { useRouter } from "next/navigation";
@@ -20,6 +19,7 @@ export default function TypingFillInBlankPage() {
   const router = useRouter();
   const handleExit = () => router.push("/vocabulary/practice");
   const inputRefs = useRef<Array<HTMLInputElement | null>>([]);
+  const activeInputIndex = useRef(0);
 
   const [questions, setQuestions] = useState<Question[]>([]);
   const [loading, setLoading] = useState(true);
@@ -121,6 +121,8 @@ export default function TypingFillInBlankPage() {
 
   useEffect(() => {
     if (currentQuestion && !isCompleted) {
+      // Reset the input state when the question changes.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setUserInputs(new Array(currentQuestion.blanks.length).fill(""));
       setBlankResults([]);
       resetTimer();
@@ -131,6 +133,22 @@ export default function TypingFillInBlankPage() {
     const newInputs = [...userInputs];
     newInputs[index] = value;
     setUserInputs(newInputs);
+  };
+
+  const insertCharacter = (character: string) => {
+    if (showFeedback) return;
+    const index = activeInputIndex.current;
+    const input = inputRefs.current[index];
+    if (!input) return;
+    const start = input.selectionStart ?? input.value.length;
+    const end = input.selectionEnd ?? start;
+    const nextInputs = [...userInputs];
+    nextInputs[index] = input.value.slice(0, start) + character + input.value.slice(end);
+    setUserInputs(nextInputs);
+    requestAnimationFrame(() => {
+      input.focus({ preventScroll: true });
+      input.setSelectionRange(start + character.length, start + character.length);
+    });
   };
 
   const handleKeyDown = (e, index) => {
@@ -225,6 +243,7 @@ export default function TypingFillInBlankPage() {
               type="text"
               value={userInputs[i] || ""}
               onChange={(e) => handleInputChange(i, e.target.value)}
+              onFocus={() => { activeInputIndex.current = i; }}
               onKeyDown={(e) => handleKeyDown(e, i)}
               disabled={showFeedback}
               style={{
@@ -264,10 +283,7 @@ export default function TypingFillInBlankPage() {
         showSubmitButton={true}
         timerValue={timerString}
       >
-        <div className="flex flex-1 flex-col items-center justify-center w-full max-w-[1280px] mx-auto px-4 py-12 sm:px-6">
-          <div className="mb-12 sm:mb-14">
-            <AudioPlayer text={correctSentence} showTurtle={!showFeedback} />
-          </div>
+        <div className="flex flex-1 flex-col items-center justify-center gap-6 w-full max-w-[1280px] mx-auto px-4 py-12 sm:px-6">
           <div className={cn("w-full py-4", showFeedback && "max-w-5xl rounded-3xl border border-slate-200 bg-white px-5 sm:px-8 dark:border-slate-700 dark:bg-slate-900")}>
             <p className="practice-type-content !leading-[1.8] text-center font-medium text-slate-700 dark:text-slate-200">
               {renderSentence()}
@@ -287,6 +303,13 @@ export default function TypingFillInBlankPage() {
               <p role="status" className="mt-2 text-center text-sm text-red-700 dark:text-red-400">{answerTranslation.error}</p>
             )}
           </div>
+          {!showFeedback && (
+            <SpecialCharacterKeyboard
+              learningLanguage="fr"
+              onInsert={insertCharacter}
+              className="justify-center [&_button]:h-11 [&_button]:w-11"
+            />
+          )}
         </div>
       </PracticeGameLayout>
 

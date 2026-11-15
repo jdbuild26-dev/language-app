@@ -133,7 +133,7 @@ export default function GroupWordsGamePage() {
 
   useEffect(() => {
     cancel();
-  }, [currentIndex, learningLang, knownLang, showFeedback, isGameOver, cancel]);
+  }, [currentIndex, learningLang, knownLang, isGameOver, cancel]);
 
   useEffect(() => {
     const pending = pendingTranslations.current;
@@ -248,8 +248,7 @@ export default function GroupWordsGamePage() {
       showFeedback={showFeedback}
       isCorrect={isCorrect}
       feedbackMessage={feedbackMessage}
-      correctAnswer={!isCorrect ? currentQuestion.words.filter((word) => word.isAnswer).map((word) => word.text).join(", ") : null}
-      feedbackChildren={currentQuestion.reason ? <p>{currentQuestion.reason}</p> : null}
+      feedbackChildren={<p>{currentQuestion.reason || `${currentQuestion.words.filter((word) => word.isAnswer).map((word) => word.text).join(", ")} belong in this group.`}</p>}
       compactFeedback
       preserveFooterHeightOnFeedback
     >
@@ -267,6 +266,8 @@ export default function GroupWordsGamePage() {
                   correct={word.isAnswer}
                   submitted={showFeedback}
                   onSelect={() => selectWord(index)}
+                  onSubmittedPlay={() => speak(word.text, learningLang.toLowerCase() === "fr" ? "fr-FR" : learningLang, 1)}
+                  submittedPlayLabel={`Play ${word.text}${word.isAnswer ? ", correct answer" : selected ? ", incorrect selection" : ""}`}
                   className="aspect-square"
                   action={showFeedback && (
                     <TranslateButton

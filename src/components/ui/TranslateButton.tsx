@@ -31,7 +31,7 @@ export function TranslateButton({
         "inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-transparent transition-[color,transform] duration-150 ease-out active:scale-[0.9] hover:bg-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 disabled:opacity-60",
         className,
         iconVariant === "option"
-          ? "text-sky-500 hover:text-sky-500/65 dark:text-slate-400 dark:hover:text-slate-300"
+          ? "text-sky-600 hover:text-sky-700 dark:text-sky-400 dark:hover:text-sky-300"
           : "text-sky-500 hover:text-sky-500/65 dark:text-sky-400 dark:hover:text-sky-400/65",
       )}
       disabled={disabled || isLoading}

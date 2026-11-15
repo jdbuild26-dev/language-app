@@ -6,6 +6,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 // This is a known bug in Chrome/browsers where the utterance is GC'd while speaking
 // causing the onend event to never fire and audio to cut off.
 const activeUtterances: SpeechSynthesisUtterance[] = [];
+let activeSpeaker: symbol | null = null;
 
 // Chrome has a bug where speechSynthesis stops after ~15s.
 // Keep-alive: pause+resume every 10s while speaking.
@@ -29,6 +30,7 @@ function stopKeepAlive() {
 }
 
 export const useTextToSpeech = () => {
+  const speakerId = useRef(Symbol("speech speaker"));
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
@@ -41,6 +43,19 @@ export const useTextToSpeech = () => {
       progressIntervalRef.current = null;
     }
   }, []);
+
+  const cancel = useCallback(() => {
+    requestIdRef.current += 1;
+    clearProgress();
+    if (syntaxRef.current && activeSpeaker === speakerId.current) {
+      syntaxRef.current.cancel();
+      activeSpeaker = null;
+      stopKeepAlive();
+      activeUtterances.length = 0;
+    }
+    setIsSpeaking(false);
+    setIsPaused(false);
+  }, [clearProgress]);
 
   useEffect(() => {
     if (!syntaxRef.current) return;
@@ -73,18 +88,6 @@ export const useTextToSpeech = () => {
     };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const cancel = useCallback(() => {
-    requestIdRef.current += 1;
-    clearProgress();
-    if (syntaxRef.current) {
-      syntaxRef.current.cancel();
-    }
-    stopKeepAlive();
-    activeUtterances.length = 0;
-    setIsSpeaking(false);
-    setIsPaused(false);
-  }, [clearProgress]);
-
   const speak = useCallback(
     (text: string, lang = "fr-FR", rate = 0.9, options: {
       onStart?: () => void;
@@ -105,6 +108,7 @@ export const useTextToSpeech = () => {
       activeUtterances.length = 0;
 
       if (!text) return;
+      activeSpeaker = speakerId.current;
 
       // Chrome bug: long text with accented chars can cut off.
       // Workaround: split on sentence boundaries and queue utterances.
@@ -119,9 +123,10 @@ export const useTextToSpeech = () => {
         currentVoices.find((v) => v.lang.startsWith(lang.split("-")[0]));
 
       const speakChunk = (idx: number) => {
-        if (requestIdRef.current !== requestId) return;
+        if (requestIdRef.current !== requestId || activeSpeaker !== speakerId.current) return;
         if (idx >= chunks.length) {
           stopKeepAlive();
+          activeSpeaker = null;
           setIsSpeaking(false);
           setIsPaused(false);
           if (options.onEnd) options.onEnd();
@@ -185,6 +190,7 @@ export const useTextToSpeech = () => {
           if (silentErrors.includes(event.error)) {
             // If interrupted/canceled, don't continue the chain
             stopKeepAlive();
+            if (activeSpeaker === speakerId.current) activeSpeaker = null;
             setIsSpeaking(false);
             if (options.onError) options.onError(event);
             return;
@@ -193,6 +199,7 @@ export const useTextToSpeech = () => {
           setIsSpeaking(false);
           setIsPaused(false);
           stopKeepAlive();
+          if (activeSpeaker === speakerId.current) activeSpeaker = null;
           if (options.onError) options.onError(event);
         };
 
@@ -201,7 +208,7 @@ export const useTextToSpeech = () => {
 
       // Small delay to ensure browser is ready
       setTimeout(() => {
-        if (!syntaxRef.current || requestIdRef.current !== requestId) return;
+        if (!syntaxRef.current || requestIdRef.current !== requestId || activeSpeaker !== speakerId.current) return;
         speakChunk(0);
         startKeepAlive(syntaxRef.current);
       }, 50);

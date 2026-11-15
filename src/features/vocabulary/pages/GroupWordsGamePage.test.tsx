@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { beforeEach, expect, it, vi } from "vitest";
 
-const harness = vi.hoisted(() => ({ states: [] as any[], refs: [] as any[], stateIndex: 0, refIndex: 0 }));
+const harness = vi.hoisted(() => ({ states: [] as any[], refs: [] as any[], stateIndex: 0, refIndex: 0, speak: vi.fn() }));
 vi.mock("react", () => ({
   useState(initial: any) {
     const index = harness.stateIndex++;
@@ -21,12 +21,13 @@ vi.mock("@/components/layout/PracticeGameLayout", () => ({ default: () => null }
 vi.mock("@/components/ui/TranslateButton", () => ({ TranslateButton: () => null }));
 vi.mock("@/contexts/LanguageContext", () => ({ useLanguage: () => ({ learningLang: "fr", knownLang: "en" }) }));
 vi.mock("@/hooks/useExerciseTimer", () => ({ useExerciseTimer: () => ({ timerString: "0:45", resetTimer: vi.fn() }) }));
-vi.mock("@/hooks/useTextToSpeech", () => ({ useTextToSpeech: () => ({ speak: vi.fn(), cancel: vi.fn() }) }));
+vi.mock("@/hooks/useTextToSpeech", () => ({ useTextToSpeech: () => ({ speak: harness.speak, cancel: vi.fn() }) }));
 vi.mock("@/services/vocabularyApi", () => ({ fetchPracticeQuestions: vi.fn() }));
 vi.mock("@/services/aiPracticeApi", () => ({ translateText: vi.fn() }));
 import GroupWordsGamePage from "./GroupWordsGamePage";
 import { TranslateButton } from "@/components/ui/TranslateButton";
 import { translateText } from "@/services/aiPracticeApi";
+import PracticeOptionCard from "@/components/ui/PracticeOptionCard";
 
 function render(): any {
   harness.stateIndex = 0;
@@ -65,6 +66,18 @@ it("shows a translation control for words without saved translations only after 
   expect(translationButton()).toBeDefined();
   harness.states[8] = false;
   expect(translationButton()).toBeUndefined();
+});
+
+it("replays a submitted card without changing the selection and shows only the explanation", () => {
+  const tree = render();
+  const card = find(tree, (node) => node.type === PracticeOptionCard);
+  const button = PracticeOptionCard(card.props).props.children[0];
+  expect(button.props.disabled).toBe(false);
+  button.props.onClick();
+  expect(harness.speak).toHaveBeenCalledWith("cerise", "fr-FR", 1);
+  expect(harness.states[4]).toEqual([]);
+  expect(tree.props.correctAnswer).toBeUndefined();
+  expect(tree.props.feedbackChildren.type).toBe("p");
 });
 
 it("uses the same backend service as Choose Options, displays the result, and caches toggles", async () => {
