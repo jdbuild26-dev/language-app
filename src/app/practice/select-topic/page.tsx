@@ -36,9 +36,9 @@ export default function TagTopicSelectionPage() {
 function TagTopicSelectionContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
-    const type = searchParams.get("type");
-    const nextTarget = searchParams.get("next");
-    const levelFromUrl = searchParams.get("level") || "A1";
+    const type = searchParams?.get("type");
+    const nextTarget = searchParams?.get("next");
+    const levelFromUrl = searchParams?.get("level") || "A1";
 
     const [loading, setLoading] = useState(true);
     const [tags, setTags] = useState<PracticeTag[]>([]);

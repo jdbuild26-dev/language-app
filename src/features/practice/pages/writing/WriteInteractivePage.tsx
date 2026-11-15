@@ -503,7 +503,7 @@ export default function WriteInteractivePage() {
                           {turn.speakerText}
                         </span>
                         <button
-                          onClick={() => speak(turn.speakerText, "fr-FR")}
+                          onClick={() => { if (turn.speakerText) speak(turn.speakerText, "fr-FR"); }}
                           className="absolute top-2 right-2 p-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-full transition-colors text-emerald-500"
                           title="Replay audio"
                           type="button"
@@ -521,7 +521,7 @@ export default function WriteInteractivePage() {
                           {turn.userText}
                         </p>
                         <button
-                          onClick={() => speak(turn.userText, "fr-FR")}
+                          onClick={() => { if (turn.userText) speak(turn.userText, "fr-FR"); }}
                           className="absolute top-2 right-2 p-1.5 hover:bg-white/20 rounded-full transition-colors text-white/90"
                           title="Replay audio"
                           type="button"

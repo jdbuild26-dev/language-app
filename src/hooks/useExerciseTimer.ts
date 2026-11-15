@@ -17,7 +17,7 @@ export const useExerciseTimer = ({
   mode = "timer",
   onExpire,
   isPaused = false,
-}) => {
+}: { duration?: number; mode?: string; onExpire?: () => void; isPaused?: boolean }) => {
   const [timeLeft, setTimeLeft] = useState(mode === "timer" ? duration : 0);
   const [isExpired, setIsExpired] = useState(false);
 
@@ -61,7 +61,7 @@ export const useExerciseTimer = ({
   }, [duration, mode]);
 
   // Format time as MM:SS
-  const formatTime = (seconds) => {
+  const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${mins}:${secs.toString().padStart(2, "0")}`;

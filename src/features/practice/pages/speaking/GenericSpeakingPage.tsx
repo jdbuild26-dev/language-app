@@ -37,6 +37,17 @@ interface Question {
   correct_answer?: string;
 }
 
+type SpeakingPageProps = {
+  title: string;
+  taskType: string;
+  sheetName: string;
+  instructionEn: string;
+  instructionFr: string;
+  icon?: typeof Mic;
+  mockData?: Question[];
+  csvName?: string | null;
+};
+
 export default function GenericSpeakingPage({
     title,
     taskType,
@@ -46,7 +57,7 @@ export default function GenericSpeakingPage({
     icon: Icon = Mic,
     mockData,
     csvName = null
-}) {
+}: SpeakingPageProps) {
   return (
     <Suspense fallback={<div className="flex items-center justify-center min-h-screen"><Loader2 className="w-8 h-8 animate-spin text-blue-500" /></div>}>
       <GenericSpeakingContent
@@ -61,7 +72,7 @@ export default function GenericSpeakingPage({
 function GenericSpeakingContent({
     title, taskType, sheetName, instructionEn, instructionFr,
     icon: Icon = Mic, mockData, csvName = null
-}) {
+}: SpeakingPageProps) {
     const router = useRouter();
     const searchParams = useSearchParams();
     const tag = searchParams?.get("tag") ?? undefined;

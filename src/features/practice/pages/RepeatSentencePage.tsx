@@ -1,5 +1,6 @@
 "use client";
 
+import { getSpeechRecognitionAPI, type SpeechRecognitionInstance } from "@/hooks/useSpeechRecognition";
 import React, { useState, useEffect, useRef } from "react";
 import { useExerciseTimer } from "@/hooks/useExerciseTimer";
 import { Mic, Loader2, Volume2 } from "lucide-react";
@@ -17,7 +18,7 @@ export default function RepeatSentencePage() {
   const router = useRouter();
 
   // Game State
-  const [questions, setQuestions] = useState([]);
+  const [questions, setQuestions] = useState<{ correctAnswer: string; Sentence?: string; sentence?: string; completeSentence?: string; sentenceWithBlank?: string }[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [score, setScore] = useState(0);
   const [isGameOver, setIsGameOver] = useState(false);
@@ -31,30 +32,30 @@ export default function RepeatSentencePage() {
   const [feedbackMessage, setFeedbackMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const recognitionRef = useRef(null);
+  const recognitionRef = useRef<SpeechRecognitionInstance | null>(null);
 
   // Initialize Speech Recognition
   useEffect(() => {
-    if (window.SpeechRecognition || window.webkitSpeechRecognition) {
-      const SpeechRecognition =
-        window.SpeechRecognition || window.webkitSpeechRecognition;
-      recognitionRef.current = new SpeechRecognition();
-      recognitionRef.current.continuous = false;
-      recognitionRef.current.lang = "fr-FR";
-      recognitionRef.current.interimResults = true;
+    const SpeechRecognition = getSpeechRecognitionAPI();
+    if (SpeechRecognition) {
+      const recognition = new SpeechRecognition();
+      recognitionRef.current = recognition;
+      recognition.continuous = false;
+      recognition.lang = "fr-FR";
+      recognition.interimResults = true;
 
-      recognitionRef.current.onresult = (event) => {
+      recognition.onresult = (event) => {
         const transcript = Array.from(event.results)
           .map((result) => result[0].transcript)
           .join("");
         setSpokenText(transcript);
       };
 
-      recognitionRef.current.onend = () => {
+      recognition.onend = () => {
         setIsListening(false);
       };
 
-      recognitionRef.current.onerror = (event) => {
+      recognition.onerror = (event) => {
         console.error("Speech recognition error", event.error);
         setIsListening(false);
       };
@@ -85,7 +86,7 @@ export default function RepeatSentencePage() {
   }, []);
 
   // Timer (Stopwatch mode)
-  const { timerString, resetTimer, isPaused } = useExerciseTimer({
+  const { timerString, resetTimer } = useExerciseTimer({
     mode: "stopwatch",
     isPaused: isLoading || isGameOver,
   });
@@ -210,7 +211,6 @@ export default function RepeatSentencePage() {
 
   return (
     <PracticeGameLayout
-      title="Repeat Sentence"
       questionType="Listen and repeat the full sentence"
       instructionFr="Répétez la phrase complète"
       instructionEn="Repeat the full sentence"

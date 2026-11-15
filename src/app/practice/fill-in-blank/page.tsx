@@ -9,15 +9,17 @@ import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
 import { getFeedbackMessage } from "@/utils/feedbackMessages";
 import { cn } from "@/lib/utils";
 
+type SentencePart = { type: "text"; content: string } | { type: "blank"; hint: string; index: number };
+
 export default function FillInBlankGamePage() {
   const router = useRouter();
-  const [questions, setQuestions] = useState([]);
+  const [questions, setQuestions] = useState<{ SentenceWithBlank: string; CorrectAnswer: string; Instruction_FR: string; Instruction_EN: string; TimeLimitSeconds: string | number }[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState<string | null>(null);
 
   // Game State
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [userInputs, setUserInputs] = useState([]); // Array of typed words
+  const [userInputs, setUserInputs] = useState<string[]>([]); // Array of typed words
   const [isCompleted, setIsCompleted] = useState(false);
   const [showFeedback, setShowFeedback] = useState(false);
   const [isCorrect, setIsCorrect] = useState(false);
@@ -25,12 +27,12 @@ export default function FillInBlankGamePage() {
   const [score, setScore] = useState(0);
 
   // Focus management
-  const inputRefs = useRef([]);
+  const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   // Timer Hook
   const currentQuestion = questions[currentIndex];
   // Calculate duration securely
-  const timerDuration = parseInt(currentQuestion?.TimeLimitSeconds) || 60;
+  const timerDuration = parseInt(String(currentQuestion?.TimeLimitSeconds ?? "")) || 60;
 
   // Load questions on mount
   useEffect(() => {
@@ -58,8 +60,8 @@ export default function FillInBlankGamePage() {
     const sentence = currentQuestion.SentenceWithBlank;
     // Regex to match [hint]
     const regex = /\[(.*?)\]/g;
-    const parts = [];
-    const hints = [];
+    const parts: SentencePart[] = [];
+    const hints: string[] = [];
     let lastIndex = 0;
     let match;
 
@@ -82,7 +84,7 @@ export default function FillInBlankGamePage() {
     // Fallback for old format "______" if no brackets found
     if (hints.length === 0 && sentence.includes("______")) {
       const splitParts = sentence.split("______");
-      const newParts = [];
+      const newParts: SentencePart[] = [];
       splitParts.forEach((part, i) => {
         newParts.push({ type: "text", content: part });
         if (i < splitParts.length - 1) {
@@ -291,7 +293,7 @@ export default function FillInBlankGamePage() {
                     className="relative inline-block mx-2 align-middle"
                   >
                     <input
-                      ref={(el) => (inputRefs.current[part.index] = el)}
+                      ref={(el) => { inputRefs.current[part.index] = el; }}
                       type="text"
                       value={userInputs[part.index] || ""}
                       onChange={(e) =>

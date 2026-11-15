@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useLanguage } from "@/contexts/LanguageContext";
 
 // Minimal type definition for the Web Speech API (not always present in TS DOM lib)
-type SpeechRecognitionInstance = {
+export type SpeechRecognitionInstance = {
   continuous: boolean;
   interimResults: boolean;
   lang: string;
@@ -16,7 +16,7 @@ type SpeechRecognitionInstance = {
   stop: () => void;
 };
 
-function getSpeechRecognitionAPI(): (new () => SpeechRecognitionInstance) | null {
+export function getSpeechRecognitionAPI(): (new () => SpeechRecognitionInstance) | null {
   if (typeof window === "undefined") return null;
   const w = window as unknown as { SpeechRecognition?: new () => SpeechRecognitionInstance; webkitSpeechRecognition?: new () => SpeechRecognitionInstance };
   return w.SpeechRecognition || w.webkitSpeechRecognition || null;

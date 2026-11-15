@@ -481,13 +481,13 @@ function PracticeContent() {
   const searchParams = useSearchParams();
 
   // Derive active tab from URL or default to "all"
-  const tabFromUrl = searchParams.get("tab");
+  const tabFromUrl = searchParams?.get("tab");
   const activeTab =
     tabFromUrl && tabs.some((t) => t.id === tabFromUrl) ? tabFromUrl : "all";
 
   // Level filter state + backend-driven slug availability
   const [activeLevel, setActiveLevel] = useState("all");
-  const [availableSlugs, setAvailableSlugs] = useState(null); // null = show all
+  const [availableSlugs, setAvailableSlugs] = useState<string[] | null>(null); // null = show all
   const [loadingSlugs, setLoadingSlugs] = useState(false);
   const { learningLang } = useLanguage();
 
