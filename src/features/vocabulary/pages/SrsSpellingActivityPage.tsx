@@ -52,7 +52,7 @@ const resetSrsProgress = (word) => {
 // level 2: Third time (e.g. B _ _ _ _ _ e or B _ _ _ _ _ _ _ _)
 const generateHints = (word, srsLevel) => {
   const chars = word.split("");
-  const hintIndices = [];
+  const hintIndices: number[] = [];
 
   if (srsLevel === 0) {
     // Show first, last, and ~30% of middle characters
@@ -90,12 +90,13 @@ const generateHints = (word, srsLevel) => {
 
 export default function SrsSpellingActivityPage() {
   const router = useRouter();
-  const [questions, setQuestions] = useState([]);
+  type Question = { id: number; correctAnswer: string; instructionFr: string; instructionEn: string; wordMeaningEn: string; imageUrl: string; timeLimit: number };
+  const [questions, setQuestions] = useState<Question[]>([]);
   const [loading, setLoading] = useState(true);
 
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [userInputs, setUserInputs] = useState([]);
-  const [currentHints, setCurrentHints] = useState([]);
+  const [userInputs, setUserInputs] = useState<string[]>([]);
+  const [currentHints, setCurrentHints] = useState<number[]>([]);
   const [isCompleted, setIsCompleted] = useState(false);
   const [showFeedback, setShowFeedback] = useState(false);
   const [isCorrect, setIsCorrect] = useState(false);
@@ -103,22 +104,22 @@ export default function SrsSpellingActivityPage() {
   const [score, setScore] = useState(0);
 
   // Accent keyboard focus tracking
-  const [focusedIndex, setFocusedIndex] = useState(null);
+  const [focusedIndex, setFocusedIndex] = useState<number | null>(null);
 
   // Timer Hook
   const currentQuestion = questions[currentIndex];
   // Giving slightly more time for spelling from memory
-  const timerDuration = parseInt(currentQuestion?.timeLimit) || 120;
+  const timerDuration = currentQuestion?.timeLimit || 120;
 
   // Ref for input fields
-  const inputsRef = useRef([]);
+  const inputsRef = useRef<Array<HTMLInputElement | null>>([]);
 
   // Load questions on mount
   useEffect(() => {
     loadQuestions();
   }, []);
 
-  const { timerString, resetTimer, isPaused } = useExerciseTimer({
+  const { timerString, resetTimer } = useExerciseTimer({
     duration: timerDuration,
     mode: "timer",
     onExpire: () => {
@@ -234,32 +235,14 @@ export default function SrsSpellingActivityPage() {
       const response = { data: mockData };
 
       if (response && response.data && response.data.length > 0) {
-        const normalized = response.data.map((item) => ({
-          id: item.ExerciseID || Math.random(),
-          correctAnswer:
-            item.correctText ||
-            item.correct ||
-            item.CorrectAnswer_FR ||
-            item["Correct Answer"] ||
-            item.Answer ||
-            item.Correct ||
-            item["Correct Word"] ||
-            item.correctAnswer ||
-            "",
-          instructionFr: item.Instruction_FR || "Épelez le mot",
-          instructionEn: item.Instruction_EN || "Spell the word",
-          timeLimit: item.TimeLimitSeconds || item["Time Limit"] || 120,
-          wordMeaningEn:
-            item.englishTranslation ||
-            item.wordMeaning ||
-            item["Word Meaning_EN"] ||
-            item["Word Meaning"] ||
-            item.Question_EN ||
-            item.Prompt ||
-            item.Meaning ||
-            item.Translation ||
-            "",
-          imageUrl: item.Image || item.imageUrl || "/placeholder-image.png",
+        const normalized: Question[] = response.data.map((item) => ({
+          id: item.id,
+          correctAnswer: item.correctAnswer,
+          instructionFr: "Épelez le mot",
+          instructionEn: item.instructionEn,
+          timeLimit: item.timeLimit,
+          wordMeaningEn: item.wordMeaningEn,
+          imageUrl: item.imageUrl,
         }));
 
         // Filter out items without a valid answer
@@ -309,7 +292,7 @@ export default function SrsSpellingActivityPage() {
     }
 
     if (nextIndex < newInputs.length && inputsRef.current[nextIndex]) {
-      inputsRef.current[nextIndex].focus();
+      inputsRef.current[nextIndex]?.focus();
     }
   };
 
@@ -324,7 +307,7 @@ export default function SrsSpellingActivityPage() {
           prevIndex--;
         }
         if (prevIndex >= 0 && inputsRef.current[prevIndex]) {
-          inputsRef.current[prevIndex].focus();
+          inputsRef.current[prevIndex]?.focus();
         }
       }
     } else if (e.key === "ArrowLeft" && index > 0) {
@@ -333,7 +316,7 @@ export default function SrsSpellingActivityPage() {
         prevIndex--;
       }
       if (prevIndex >= 0 && inputsRef.current[prevIndex]) {
-        inputsRef.current[prevIndex].focus();
+        inputsRef.current[prevIndex]?.focus();
       }
     } else if (e.key === "ArrowRight" && index < userInputs.length - 1) {
       let nextIndex = index + 1;
@@ -344,7 +327,7 @@ export default function SrsSpellingActivityPage() {
         nextIndex++;
       }
       if (nextIndex < userInputs.length && inputsRef.current[nextIndex]) {
-        inputsRef.current[nextIndex].focus();
+        inputsRef.current[nextIndex]?.focus();
       }
     } else if (e.key === "Enter") {
       if (userInputs.every((i) => i !== "")) {
@@ -383,9 +366,9 @@ export default function SrsSpellingActivityPage() {
     }
 
     if (nextIndex < newInputs.length && inputsRef.current[nextIndex]) {
-      inputsRef.current[nextIndex].focus();
+      inputsRef.current[nextIndex]?.focus();
     } else if (inputsRef.current[filledCount]) {
-      inputsRef.current[filledCount].focus();
+      inputsRef.current[filledCount]?.focus();
     }
   };
 
@@ -499,8 +482,8 @@ export default function SrsSpellingActivityPage() {
                     alt={currentQuestion.wordMeaningEn || "Vocabulary image"}
                     className="w-full h-full object-cover"
                     onError={(e) => {
-                      e.target.style.display = "none";
-                      e.target.parentElement.innerHTML =
+                      e.currentTarget.style.display = "none";
+                      if (e.currentTarget.parentElement) e.currentTarget.parentElement.innerHTML =
                         '<div class="w-full h-full flex items-center justify-center text-slate-400">No Image</div>';
                     }}
                   />

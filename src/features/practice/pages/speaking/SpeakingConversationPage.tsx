@@ -13,6 +13,7 @@ import { fetchPracticeData } from "@/utils/practiceFetcher";
 import { useSearchParams } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { useTranslateText } from "@/hooks/useTranslateText";
+import { getStoredTranslation } from "@/features/practice/lib/storedTranslation";
 import { Button } from "@/components/ui/button";
 import WritingFeedbackResult from "@/components/WritingFeedbackResult";
 
@@ -57,9 +58,11 @@ function SpeakingConversationContent() {
   const totalConversations = allConversations.length;
 
   // Translate prompt per exchange
-  const { displayText: promptDisplayText, isTranslating: isTranslatingP, toggle: toggleTranslate, reset: resetTranslate } = useTranslateText(currentExchange?.prompt || "", "fr");
+  const promptSource = currentExchange?.prompt || "";
+  const storedPrompt = getStoredTranslation(promptSource, currentExchange);
+  const { displayText: promptDisplayText, isTranslating: isTranslatingP, toggle: toggleTranslate, reset: resetTranslate } = useTranslateText(promptSource, storedPrompt.sourceLang, storedPrompt.translation);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  React.useEffect(() => { resetTranslate(); }, [currentTurnIndex]);
+  React.useEffect(() => { resetTranslate(); }, [currentTurnIndex, convIndex]);
 
   const { timerString, resetTimer } = useExerciseTimer({
     duration: conversation?.timeLimitSeconds || 300,

@@ -184,8 +184,8 @@ export default function OddOneOutGamePage() {
   const progress = ((currentIndex + 1) / totalQuestions) * 100;
 
   const handleWordClick = (wordObj: OddOneOutWord) => {
-    if (isSubmitted) return;
     speak(wordObj.text, "fr-FR");
+    if (isSubmitted) return;
     setSelectedWord(wordObj);
   };
 
@@ -220,7 +220,7 @@ export default function OddOneOutGamePage() {
 
   const getWordStyle = (wordObj: OddOneOutWord) => {
     const baseStyle =
-      "relative flex h-32 w-full min-w-0 flex-col items-center justify-center overflow-hidden rounded-2xl border-2 border-solid px-11 transition-all duration-200 md:h-40";
+      "relative flex h-32 w-full min-w-0 cursor-pointer flex-col items-center justify-center overflow-hidden rounded-2xl border-2 border-solid px-11 transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 md:h-40";
 
     if (!isSubmitted) {
       // Normal Selection
@@ -289,14 +289,10 @@ export default function OddOneOutGamePage() {
         timerValue={timerString}
         showFeedback={showFeedback}
         isCorrect={isCorrect}
-        correctAnswer={!isCorrect ? currentQuestion.correctAnswer : null}
         feedbackMessage={feedbackMessage}
         feedbackInFlow
         feedbackChildren={
-          <div className="w-full rounded-xl bg-white/15 px-4 py-3 text-white sm:px-5">
-            <p className="font-semibold">Explanation</p>
-            <p className="mt-1">{currentQuestion.reason || `${currentQuestion.correctAnswer} is the odd one out.`}</p>
-          </div>
+          <p>{currentQuestion.reason || `${currentQuestion.correctAnswer} is the odd one out.`}</p>
         }
       >
         <div className="flex-1 flex flex-col items-center justify-center -mt-10">
@@ -307,8 +303,8 @@ export default function OddOneOutGamePage() {
                 <button
                   type="button"
                   onClick={() => handleWordClick(wordObj)}
-                  disabled={isSubmitted}
-                  aria-pressed={selectedWord === wordObj}
+                  aria-pressed={isSubmitted ? undefined : selectedWord === wordObj}
+                  aria-label={isSubmitted ? `Play ${wordObj.text}${wordObj.text === currentQuestion.correctAnswer ? ", correct answer" : selectedWord === wordObj ? ", incorrect answer" : ""}` : undefined}
                   className={getWordStyle(wordObj)}
                 >
                   <span className="practice-type-content break-words text-center font-medium">

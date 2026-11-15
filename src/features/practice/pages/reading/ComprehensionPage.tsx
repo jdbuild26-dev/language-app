@@ -16,6 +16,9 @@ import { usePracticeComplete } from "@/hooks/usePracticeComplete";
 import { useSearchParams } from "next/navigation";
 import { getComprehensionQuestionView } from "@/features/practice/lib/comprehensionLanguage";
 
+import { cn } from "@/lib/utils";
+import styles from "./ComprehensionPage.module.css";
+
 type ComprehensionQuestion = {
   passage?: string;
   passage_fr?: string;
@@ -119,6 +122,30 @@ function ComprehensionContent() {
   const [allQuestions, setAllQuestions] = useState<ComprehensionQuestion[]>([]);
   const [passageIndex, setPassageIndex] = useState(0);
   const [isCompleted, setIsCompleted] = useState(false);
+  const [showExerciseFrame, setShowExerciseFrame] = useState(false);
+
+  useEffect(() => {
+    const updateFrame = () => {
+      // Desktop browsers expose viewport dimensions in zoomed CSS pixels.
+      // Estimate page zoom without depending on OS display scaling / pixel ratio.
+      // Allow for rounding at 90%; narrow screens and pinch zoom stay unframed.
+      const estimatedZoom = window.outerWidth / window.innerWidth;
+      setShowExerciseFrame(
+        window.innerWidth >= 1024
+        && estimatedZoom > 0
+        && estimatedZoom < 0.895
+        && Math.abs((window.visualViewport?.scale ?? 1) - 1) < 0.01,
+      );
+    };
+    updateFrame();
+    window.addEventListener("resize", updateFrame);
+    window.visualViewport?.addEventListener("resize", updateFrame);
+    return () => {
+      window.removeEventListener("resize", updateFrame);
+      window.visualViewport?.removeEventListener("resize", updateFrame);
+    };
+  }, []);
+
   const [isLoading, setIsLoading] = useState(true);
 
   // Per-question state for the current passage
@@ -319,7 +346,7 @@ function ComprehensionContent() {
   const isLastPassage = passageIndex === passages.length - 1;
 
   return (
-    <>
+    <div className={cn(styles.exerciseViewport, showExerciseFrame && !isCompleted && styles.framedViewport)}>
       <PracticeGameLayout
         questionType="Reading Comprehension"
         questionTypeFr="Compréhension de lecture"
@@ -351,7 +378,8 @@ function ComprehensionContent() {
         showFeedback={showFeedback}
         isCorrect={isCorrect}
         feedbackMessage={feedbackMessage}
-        preserveFooterHeightOnFeedback
+        preserveFooterHeightOnFeedback={!showExerciseFrame}
+        feedbackInFlow={showExerciseFrame}
         animateFeedbackEntrance={false}
         feedbackTone={showFeedback ? (isCorrect ? "success" : "error") : "neutral"}
       >
@@ -366,7 +394,7 @@ function ComprehensionContent() {
                 <TranslateButton onClick={() => setShowPassageTranslation(value => !value)} aria-label={showPassageTranslation ? "Hide passage translation" : "Translate passage"} title={showPassageTranslation ? "Hide passage translation" : "Translate passage"} aria-expanded={showPassageTranslation} />
               )}
             </div>
-            <p className="practice-type-content whitespace-pre-line text-justify font-sans text-slate-700 dark:text-slate-200">
+            <p className="practice-passage-content practice-type-content whitespace-pre-line font-sans text-slate-700 dark:text-slate-200">
                 {passageText}
             </p>
             {submitted && showPassageTranslation && translatedPassageText && (
@@ -376,7 +404,7 @@ function ComprehensionContent() {
                     {translatedPassageTitle}
                   </h2>
                 )}
-                <p className="practice-type-content whitespace-pre-line text-justify font-sans text-slate-700 dark:text-slate-200">
+                <p className="practice-passage-content practice-type-content whitespace-pre-line font-sans text-slate-700 dark:text-slate-200">
                   {translatedPassageText}
                 </p>
               </div>
@@ -437,6 +465,6 @@ function ComprehensionContent() {
           </section>
         </PracticeTwoPanel>
       </PracticeGameLayout>
-    </>
+    </div>
   );
 }

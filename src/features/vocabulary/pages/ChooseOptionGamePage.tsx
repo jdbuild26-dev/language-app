@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
+import Papa from "papaparse";
 import { useExerciseTimer } from "@/hooks/useExerciseTimer";
 import { Loader2, XCircle } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -15,9 +16,12 @@ import { useTranslateText } from "@/hooks/useTranslateText";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { getFeedbackMessage } from "@/utils/feedbackMessages";
 import { cn } from "@/lib/utils";
+import { choiceSentence } from "@/features/vocabulary/lib/choiceSentence";
+import { selectChoice } from "@/features/vocabulary/lib/choiceSelection";
+import { translateText } from "@/services/aiPracticeApi";
 
 type ChoiceOption = { text: string; en?: string };
-type RawChoiceRow = Record<string, string | string[] | undefined>;
+type RawChoiceRow = Record<string, unknown>;
 type ChoiceQuestion = {
   id: string;
   question: string;
@@ -33,6 +37,16 @@ type ChoiceQuestion = {
   image?: string;
 };
 
+function choiceAnswers(value: unknown): string[] {
+  if (Array.isArray(value)) return value.map(String).map(answer => answer.trim()).filter(Boolean);
+  if (typeof value !== "string") return [];
+  const text = value.trim();
+  if (text.startsWith("[")) {
+    try { return choiceAnswers(JSON.parse(text)); } catch { return []; }
+  }
+  return text.split("|").map(answer => answer.trim()).filter(Boolean);
+}
+
 export default function ChooseOptionGamePage() {
   const router = useRouter();
   const { speak } = useTextToSpeech();
@@ -44,6 +58,11 @@ export default function ChooseOptionGamePage() {
   const [isCorrect, setIsCorrect] = useState(false);
   const [feedbackMessage, setFeedbackMessage] = useState("");
   const [translatedOptions, setTranslatedOptions] = useState<Record<number, boolean>>({});
+  const [translationCache, setTranslationCache] = useState<Record<number, string>>({});
+  const [translationErrors, setTranslationErrors] = useState<Record<number, string>>({});
+  const [translationLoading, setTranslationLoading] = useState<Record<number, boolean>>({});
+  const pendingTranslations = useRef(new Map<number, AbortController>());
+  const translationGeneration = useRef(0);
   const [score, setScore] = useState(0);
   const [isGameOver, setIsGameOver] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -77,52 +96,85 @@ export default function ChooseOptionGamePage() {
 
         // Shuffle and pick a subset
         const gameQuestionsRaw = shuffleArray(practiceData).slice(0, 10);
+        let storedRows: RawChoiceRow[] = [];
+        if (learningLang.toLowerCase() === "fr" && knownLang.toLowerCase() === "en" && gameQuestionsRaw.some(item => {
+          const content = (item.content || item) as RawChoiceRow;
+          return [1, 2, 3, 4].some(index => content[`Option${index}`] && !(content[`Option${index}_EN`] || item[`Option${index}_EN`]));
+        })) {
+          const controller = new AbortController();
+          const timeout = setTimeout(() => controller.abort(), 10000);
+          try {
+            const stored = await fetch("/mock-data/csv/choose_options.csv", { signal: controller.signal });
+            if (stored.ok) storedRows = Papa.parse<RawChoiceRow>(await stored.text(), { header: true, skipEmptyLines: true }).data;
+          } catch {
+            // Keep the API exercise usable when the stored reference cannot be loaded.
+          } finally { clearTimeout(timeout); }
+        }
 
-        const generatedQuestions = gameQuestionsRaw.map((item) => {
+        const generatedQuestions = gameQuestionsRaw.map((item): ChoiceQuestion | null => {
+          const content = item.content && typeof item.content === "object" && !Array.isArray(item.content)
+            ? item.content as RawChoiceRow : item;
+          const evaluation = item.evaluation && typeof item.evaluation === "object" && !Array.isArray(item.evaluation)
+            ? item.evaluation as RawChoiceRow : {};
           const options = [
-            { text: String(item.Option1 || ""), en: String(item.Option1_EN || "") },
-            { text: String(item.Option2 || ""), en: String(item.Option2_EN || "") },
-            { text: String(item.Option3 || ""), en: String(item.Option3_EN || "") },
-            { text: String(item.Option4 || ""), en: String(item.Option4_EN || "") },
+            { text: String(content.Option1 || ""), en: String(content.Option1_EN || item.Option1_EN || "") },
+            { text: String(content.Option2 || ""), en: String(content.Option2_EN || item.Option2_EN || "") },
+            { text: String(content.Option3 || ""), en: String(content.Option3_EN || item.Option3_EN || "") },
+            { text: String(content.Option4 || ""), en: String(content.Option4_EN || item.Option4_EN || "") },
           ].filter((o) => o.text);
+          const sourceQuestion = String(content.Question || content.question || content.Sentence || "");
+          const storedRow = storedRows.find(row => String(row.Question || row.question || "") === sourceQuestion &&
+            options.every(option => [1, 2, 3, 4].some(index => row[`Option${index}`] === option.text)));
+          if (storedRow) options.forEach(option => {
+            const index = [1, 2, 3, 4].find(index => storedRow[`Option${index}`] === option.text);
+            if (!option.en && index) option.en = String(storedRow[`Option${index}_EN`] || "");
+          });
 
           const shuffledOptions = shuffleArray(options);
 
-          const answerValue = item.CorrectAnswers || item.CorrectAnswer || item.correctAnswer || item.Answer || "";
-          const correctAnswers = Array.isArray(answerValue) ? answerValue.map(String) : String(answerValue).split("|").map((answer) => answer.trim()).filter(Boolean);
-          const question = String(item.Question || item.question || item.Sentence || "");
+          const answerValue = content.CorrectAnswers || item.CorrectAnswers || content.CorrectAnswer || item.CorrectAnswer ||
+            content.correctAnswer || item.correctAnswer || content.eval_CorrectAnswer || item.eval_CorrectAnswer ||
+            content.eval_correctAnswer || item.eval_correctAnswer || evaluation.CorrectAnswer || evaluation.correctAnswer ||
+            content.Answer || item.Answer;
+          const correctAnswers = choiceAnswers(answerValue);
+          if (!correctAnswers.length) {
+            const answerIndex = Number(content.CorrectOptionIndex || item.CorrectOptionIndex || evaluation.CorrectOptionIndex);
+            if (Number.isInteger(answerIndex) && answerIndex >= 1 && answerIndex <= options.length) {
+              correctAnswers.push(options[answerIndex - 1].text);
+            }
+          }
+          if (!correctAnswers.length || correctAnswers.some(answer => !options.some(option => option.text === answer))) return null;
+          const question = String(content.Question || content.question || content.Sentence || item.Question || item.question || item.Sentence || "");
           let blankIndex = 0;
-          const completeSentence = String(item["Complete sentence"] || item.CompleteSentence ||
-            item.completeSentence || question.replace(/_{2,}/g, () => correctAnswers[blankIndex++] || correctAnswers[0] || ""));
+          const completeSentence = String(content["Complete sentence"] || content.CompleteSentence ||
+            content.completeSentence || item["Complete sentence"] || item.CompleteSentence || item.completeSentence ||
+            question.replace(/_{2,}/g, () => correctAnswers[blankIndex++] || correctAnswers[0] || ""));
           return {
-            id: String(item.ExerciseID || Math.random().toString()),
+            id: String(item.ExerciseID || item.external_id || Math.random().toString()),
             question,
             completeSentence,
-            completeSentenceEnglish: String(item["Complete sentence_EN"] || item.CompleteSentence_EN || item.completeSentenceEnglish || ""),
+            completeSentenceEnglish: String(content["Complete sentence_EN"] || content.CompleteSentence_EN || content.completeSentenceEnglish || item["Complete sentence_EN"] || item.CompleteSentence_EN || item.completeSentenceEnglish || ""),
             correctAnswer: correctAnswers.join(" • "),
             correctAnswers,
             options: shuffledOptions,
             questionType: String(
-              item.TypeName || item.QuestionType || "Choose from Options",
+              content.TypeName || content.QuestionType || item.TypeName || item.QuestionType || "Choose from Options",
             ),
             instructionFr: String(
-              item.Instruction_FR ||
-              item.instructionFr ||
+              item.Instruction_FR || item.instruction_fr || item.instructionFr ||
               "Complétez la phrase avec le mot correct",
             ),
             instructionEn: String(
-              item.Instruction_EN ||
-              item.instructionEn ||
+              item.Instruction_EN || item.instruction_en || item.instructionEn ||
               "Complete the sentence with the correct word",
             ),
             localizedInstruction: String(
-              item.localizedInstruction ||
-              item.Instruction_EN ||
+              item.localizedInstruction || item.Instruction_EN || item.instruction_en ||
               "Complete the sentence with the correct word",
             ),
-            image: String(item.ImageURL || item.imageUrl || ""),
+            image: String(content.ImageURL || content.imageUrl || item.ImageURL || item.imageUrl || ""),
           };
-        });
+        }).filter((question): question is ChoiceQuestion => question !== null);
 
         setQuestions(generatedQuestions);
         setLoading(false);
@@ -167,15 +219,60 @@ export default function ChooseOptionGamePage() {
     resetTimer();
   }, [currentIndex, resetTimer]);
 
+  useEffect(() => {
+    const pending = pendingTranslations.current;
+    return () => {
+      translationGeneration.current += 1;
+      pending.forEach((controller) => controller.abort());
+      pending.clear();
+    };
+  }, []);
+
   const progress =
     questions.length > 0 ? ((currentIndex + 1) / questions.length) * 100 : 0;
 
   const handleOptionClick = (option: ChoiceOption) => {
     if (showFeedback) return;
     speak(option.text, "fr-FR");
-    setSelectedOptions((current) => current.some((item) => item.text === option.text)
-      ? current.filter((item) => item.text !== option.text)
-      : current.length < currentQuestion.correctAnswers.length ? [...current, option] : current);
+    setSelectedOptions((current) => selectChoice(current, option, currentQuestion.correctAnswers.length));
+  };
+
+  const toggleOptionTranslation = async (index: number) => {
+    if (!showFeedback) return;
+    if (translatedOptions[index]) {
+      setTranslatedOptions((previous) => ({ ...previous, [index]: false }));
+      return;
+    }
+    const option = currentQuestion.options[index];
+    if (option.en || translationCache[index]) {
+      setTranslatedOptions((previous) => ({ ...previous, [index]: true }));
+      return;
+    }
+    if (pendingTranslations.current.has(index)) return;
+    const generation = translationGeneration.current;
+    const controller = new AbortController();
+    pendingTranslations.current.set(index, controller);
+    const timeout = setTimeout(() => controller.abort(), 12000);
+    setTranslationLoading((previous) => ({ ...previous, [index]: true }));
+    setTranslationErrors((previous) => ({ ...previous, [index]: "" }));
+    try {
+      const result = await translateText(option.text, knownLang.toLowerCase(), controller.signal);
+      if (generation !== translationGeneration.current) return;
+      const translation = result.translation?.trim();
+      if (!translation) throw new Error("Translation unavailable");
+      setTranslationCache((previous) => ({ ...previous, [index]: translation }));
+      setTranslatedOptions((previous) => ({ ...previous, [index]: true }));
+    } catch {
+      if (generation === translationGeneration.current) {
+        setTranslationErrors((previous) => ({ ...previous, [index]: "Translation unavailable. Try again." }));
+      }
+    } finally {
+      clearTimeout(timeout);
+      if (pendingTranslations.current.get(index) === controller) pendingTranslations.current.delete(index);
+      if (generation === translationGeneration.current) {
+        setTranslationLoading((previous) => ({ ...previous, [index]: false }));
+      }
+    }
   };
 
   const handleSubmit = () => {
@@ -193,8 +290,14 @@ export default function ChooseOptionGamePage() {
   };
 
   const handleContinue = () => {
+    translationGeneration.current += 1;
+    pendingTranslations.current.forEach((controller) => controller.abort());
+    pendingTranslations.current.clear();
     answerTranslation.reset();
     setTranslatedOptions({});
+    setTranslationCache({});
+    setTranslationErrors({});
+    setTranslationLoading({});
     setShowFeedback(false);
     setSelectedOptions([]);
 
@@ -246,6 +349,7 @@ export default function ChooseOptionGamePage() {
   const correctOptionIndices = currentQuestion.options
     .map((option, index) => currentQuestion.correctAnswers.includes(option.text) ? index : -1)
     .filter((index) => index >= 0);
+  const sentence = choiceSentence(currentQuestion.question, currentQuestion.correctAnswers, currentQuestion.options);
 
   return (
     <>
@@ -281,9 +385,8 @@ export default function ChooseOptionGamePage() {
             <div className="w-full max-w-6xl px-4 py-2">
               <h2 className="practice-type-question-heading text-center text-gray-800 dark:text-gray-100">
                 {(() => {
-                  if (/_{2,}/.test(currentQuestion.question)) {
-                    return currentQuestion.question
-                      .split(/_{2,}/)
+                  if (sentence.hints.length) {
+                    return sentence.parts
                       .map((part, i, arr) => (
                         <React.Fragment key={i}>
                           {part}
@@ -295,7 +398,7 @@ export default function ChooseOptionGamePage() {
                                   ? "border-green-500 bg-green-50 text-green-700 dark:bg-green-950/30 dark:text-green-300"
                                   : "border-red-500 bg-red-50 text-red-700 dark:bg-red-950/30 dark:text-red-300"
                                 : "border-slate-300 bg-white text-slate-700 dark:bg-slate-900 dark:text-slate-100",
-                            )}>{selectedOptions[i]?.text || "\u00a0"}</span>
+                            )}>{selectedOptions[i]?.text || <span className="font-normal text-slate-400 dark:text-slate-500">{sentence.hints[i] || "\u00a0"}</span>}</span>
                           )}
                         </React.Fragment>
                       ));
@@ -334,22 +437,21 @@ export default function ChooseOptionGamePage() {
               renderLabel={(text, index) => (
                 <>
                   <span>{text}</span>
-                  {currentQuestion.options[index].en && showFeedback && translatedOptions[index] && (
+                  {showFeedback && translatedOptions[index] && (currentQuestion.options[index].en || translationCache[index]) && (
                     <span className="mt-1 text-sm font-normal">
-                      {currentQuestion.options[index].en}
+                      {currentQuestion.options[index].en || translationCache[index]}
                     </span>
                   )}
+                  {showFeedback && translationErrors[index] && <span role="status" className="mt-1 text-sm font-normal">{translationErrors[index]}</span>}
                 </>
               )}
-              renderAction={(_, index) => showFeedback && currentQuestion.options[index].en && (
+              renderAction={(_, index) => showFeedback && (
                 <TranslateButton
                   iconVariant="option"
                   aria-label={translatedOptions[index] ? `Hide translation for ${currentQuestion.options[index].text}` : `Translate ${currentQuestion.options[index].text}`}
                   aria-pressed={Boolean(translatedOptions[index])}
-                  onClick={() => setTranslatedOptions((previous) => ({
-                    ...previous,
-                    [index]: !previous[index],
-                  }))}
+                  isLoading={Boolean(translationLoading[index])}
+                  onClick={() => { void toggleOptionTranslation(index); }}
                 />
               )}
             />

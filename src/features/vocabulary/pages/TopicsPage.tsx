@@ -65,9 +65,9 @@ function TopicCard({ name, slug, wordCount, subcategories }) {
 }
 
 export default function TopicsPage() {
-  const [topics, setTopics] = useState([]);
+  const [topics, setTopics] = useState<Array<{ name: string; slug: string; wordCount: number; subcategories: string[] }>>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     async function loadTopics() {

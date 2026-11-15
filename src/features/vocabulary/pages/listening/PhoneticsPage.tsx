@@ -1,22 +1,19 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useExerciseTimer } from "@/hooks/useExerciseTimer";
-import { useTextToSpeech } from "@/hooks/useTextToSpeech";
 import { fetchPracticeQuestions } from "@/services/vocabularyApi";
-import { Loader2, CheckCircle2, XCircle } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import AudioPlayer from "@/features/vocabulary/components/shared/AudioPlayer";
 import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
+import PracticeOptions from "@/components/ui/PracticeOptions";
 import { TranslateButton } from "@/components/ui/TranslateButton";
 import { translateText } from "@/services/aiPracticeApi";
-import { cn } from "@/lib/utils";
 import { getFeedbackMessage } from "@/utils/feedbackMessages";
 
 type Question = { id: string; prompt: string; instruction: string; explanation?: string; options: Array<{ text: string; en?: string }>; correctIndex: number };
 
 export default function PhoneticsPage() {
-  const { speak } = useTextToSpeech();
-
   // State
   const [loading, setLoading] = useState(true);
   const [questions, setQuestions] = useState<Question[]>([]);
@@ -51,11 +48,7 @@ export default function PhoneticsPage() {
     resetTimer();
   }, [currentIndex, resetTimer]);
 
-  useEffect(() => {
-    loadData();
-  }, []);
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     try {
       setLoading(true);
 
@@ -93,11 +86,16 @@ export default function PhoneticsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    // Fetch the phonetics questions when this exercise mounts.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    void loadData();
+  }, [loadData]);
 
   const handleOptionClick = (index) => {
     if (showFeedback) return;
-    speak(questions[currentIndex].options[index].text, "fr-FR");
     setSelectedOptionIndex(index);
   };
 
@@ -172,10 +170,9 @@ export default function PhoneticsPage() {
       <PracticeGameLayout
         questionTypeFr="Exercice de phonétique"
         questionTypeEn="Phonetics Practice"
-        instructionFr="Choisissez la bonne transcription"
-        instructionEn={
-          currentQ?.instruction || "Choose the correct transcription"
-        }
+        instructionFr="Choisissez parmi les options"
+        instructionEn="Choose from Options"
+        localizedInstruction="Choose from Options"
         progress={progress}
         isGameOver={isCompleted}
         score={score}
@@ -197,80 +194,43 @@ export default function PhoneticsPage() {
         timerValue={timerString}
         showFeedback={showFeedback}
         isCorrect={isCorrect}
-        correctAnswer={
-          !isCorrect ? currentQ.options[currentQ.correctIndex]?.text : null
-        }
         feedbackMessage={feedbackMessage}
+        feedbackInFlow
+        feedbackChildren={showFeedback && currentQ && (
+          <span>{currentQ.explanation?.trim() || `The answer is ${currentQ.options[currentQ.correctIndex]?.text || "the green option"}.`}</span>
+        )}
       >
-        <div className="flex flex-col md:flex-row items-center justify-center w-full max-w-5xl gap-8 md:gap-16 px-4">
-          {/* Left Side: Large Audio Button */}
-          <div className="flex-shrink-0">
-            <AudioPlayer text={currentQ?.prompt || ""} />
-          </div>
-
-          {/* Right Side: Question & Options */}
-          <div className="flex flex-col w-full max-w-lg gap-6">
-            {/* Question Text */}
-            <h2 className="text-lg md:text-xl font-bold text-slate-700 dark:text-slate-200">
-              {currentQ?.instruction || "Which word do you hear?"}
-            </h2>
-
-            {/* Options List */}
-            <div className="grid grid-cols-1 gap-3 w-full">
-              {currentQ?.options.map((opt, idx) => {
-                const isSelected = selectedOptionIndex === idx;
-
-                return (
-                  <div key={idx} className="relative">
-                  <button
-                    onClick={() => handleOptionClick(idx)}
-                    disabled={showFeedback}
-                    className={cn(
-                      "group relative p-4 pr-14 rounded-2xl border-[3px] text-left font-medium text-lg md:text-xl transition-all flex items-center gap-4 bg-white dark:bg-slate-800 shadow-sm",
-                      // Default
-                      "border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700",
-                      // Selected
-                      isSelected &&
-                        "border-sky-400 bg-sky-50 dark:bg-sky-900/20 text-sky-600 dark:text-sky-300",
-                    )}
-                  >
-                    {/* Fake Radio/Checkbox Circle */}
-                    <div
-                      className={cn(
-                        "w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors",
-                        isSelected
-                          ? "border-sky-500 bg-sky-500 text-white"
-                          : "border-slate-300 dark:border-slate-500 text-transparent",
-                      )}
-                    >
-                      <span className="text-[10px] font-bold">✓</span>
-                    </div>
-
-                    <div className="flex-1 flex flex-col text-left">
-                      <span>{opt.text}</span>
-                      {translatedOptions.includes(idx) && (opt.en || optionTranslations[idx]) && (
-                        <span className="text-sm font-normal text-slate-500 dark:text-slate-400">
-                          {opt.en || optionTranslations[idx]}
-                        </span>
-                      )}
-                    </div>
-                  </button>
-                  {showFeedback && (
-                    <TranslateButton
-                      iconVariant="option"
-                      className="absolute right-3 top-1/2 z-10 -translate-y-1/2"
-                      aria-label={translatedOptions.includes(idx) ? `Hide translation for ${opt.text}` : `Translate ${opt.text}`}
-                      aria-pressed={translatedOptions.includes(idx)}
-                      isLoading={translatingOptions.includes(idx)}
-                      title={translationErrors.includes(idx) ? "Translation unavailable. Try again." : "Toggle translation"}
-                      onClick={() => void toggleOptionTranslation(idx, opt)}
-                    />
-                  )}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
+        <div className="flex w-full flex-1 flex-col items-center justify-start gap-8 px-4 pb-8 pt-8 sm:gap-10 sm:pt-12">
+          <AudioPlayer key={currentIndex} text={currentQ?.prompt || ""} pausable />
+          <PracticeOptions
+            options={currentQ?.options.map(option => option.text) || []}
+            selectedOption={selectedOptionIndex}
+            correctIndex={currentQ?.correctIndex}
+            showFeedback={showFeedback}
+            onSelect={handleOptionClick}
+            className="grid w-full max-w-4xl grid-cols-1 gap-3 sm:grid-cols-2"
+            itemClassName="min-h-16"
+            renderLabel={(text, index) => (
+              <>
+                <span>{text}</span>
+                {showFeedback && translatedOptions.includes(index) && (currentQ.options[index].en || optionTranslations[index]) && (
+                  <span lang="en" className="text-sm font-normal">
+                    {currentQ.options[index].en || optionTranslations[index]}
+                  </span>
+                )}
+              </>
+            )}
+            renderAction={(_, index) => showFeedback && (
+              <TranslateButton
+                iconVariant="option"
+                aria-label={translatedOptions.includes(index) ? `Hide translation for ${currentQ.options[index].text}` : `Translate ${currentQ.options[index].text}`}
+                aria-pressed={translatedOptions.includes(index)}
+                isLoading={translatingOptions.includes(index)}
+                title={translationErrors.includes(index) ? "Translation unavailable. Try again." : "Toggle translation"}
+                onClick={() => void toggleOptionTranslation(index, currentQ.options[index])}
+              />
+            )}
+          />
         </div>
       </PracticeGameLayout>
     </>

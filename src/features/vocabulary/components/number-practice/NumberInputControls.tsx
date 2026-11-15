@@ -76,7 +76,7 @@ export default function NumberInputControls({ onNumberChange }) {
             <Input
               value={fromVal}
               onChange={(e) => setFromVal(sanitizeInput(e.target.value))}
-              placeholder="0"
+              placeholder="|"
               className="w-full sm:w-20 md:w-24 h-9 font-mono text-center border-slate-200 focus-visible:ring-sky-500"
               maxLength={8}
             />
@@ -88,7 +88,7 @@ export default function NumberInputControls({ onNumberChange }) {
             <Input
               value={toVal}
               onChange={(e) => setToVal(sanitizeInput(e.target.value))}
-              placeholder="9999"
+              placeholder="|"
               className="w-full sm:w-20 md:w-24 h-9 font-mono text-center border-slate-200 focus-visible:ring-sky-500"
               maxLength={8}
             />
@@ -108,7 +108,7 @@ export default function NumberInputControls({ onNumberChange }) {
           <Input
             value={exactVal}
             onChange={handleExactChange}
-            placeholder="Type exact number..."
+            placeholder="|"
             className="w-full sm:w-48 h-9 font-mono border-slate-200 focus-visible:ring-sky-500"
             maxLength={8}
           />

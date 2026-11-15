@@ -5,7 +5,8 @@ import { usePracticeExit } from "@/hooks/usePracticeExit";
 import { useExerciseTimer } from "@/hooks/useExerciseTimer";
 import { usePracticeComplete } from "@/hooks/usePracticeComplete";
 import { useTextToSpeech } from "@/hooks/useTextToSpeech";
-import { Loader2, Volume2 } from "lucide-react";
+import { Loader2, Volume2, Turtle } from "lucide-react";
+import { TranslateButton } from "@/components/ui/TranslateButton";
 import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
 import WordTileBuilder from "@/features/practice/components/WordTileBuilder";
 import { getFeedbackMessage } from "@/utils/feedbackMessages";
@@ -16,6 +17,7 @@ import TranslationExplainButton from "@/components/ui/TranslationExplainButton";
 import AudioWaveform from "@/components/ui/AudioWaveform";
 import speakerStyles from "@/components/ui/AudioSpeaker.module.css";
 import { motion } from "framer-motion";
+import { cn } from "@/lib/utils";
 
 // Fisher-Yates shuffle algorithm
 function shuffleArray(array: string[]): string[] {
@@ -35,6 +37,7 @@ type ListenBubbleQuestion = {
   sentence: string;
   audioText: string;
   translation: string;
+  englishBubbles: string[];
   wordBubbles: string[];
   timeLimitSeconds: number;
   level: string;
@@ -50,7 +53,7 @@ export default function ListenBubblePage() {
 
 function ListenBubbleContent() {
   const handleExit = usePracticeExit();
-  const { speak, isSpeaking } = useTextToSpeech();
+  const { speak, isSpeaking, cancel } = useTextToSpeech();
   const searchParams = useSearchParams();
   const tag = searchParams?.get("tag") ?? undefined;
 
@@ -66,6 +69,8 @@ function ListenBubbleContent() {
   const [feedbackMessage, setFeedbackMessage] = useState("");
   const [score, setScore] = useState(0);
   const [submittedAnswer, setSubmittedAnswer] = useState("");
+  const [showTranslation, setShowTranslation] = useState(false);
+  const [playbackMode, setPlaybackMode] = useState<"normal" | "slow" | null>(null);
 
   const currentQuestion = questions[currentIndex];
   const timerDuration = currentQuestion?.timeLimitSeconds || 60;
@@ -85,6 +90,7 @@ function ListenBubbleContent() {
       if (!isCompleted && !showFeedback) {
         setIsCorrect(false);
         setFeedbackMessage("Time's up!");
+        setSubmittedAnswer(selectedWords.join(" "));
         setShowFeedback(true);
       }
     },
@@ -106,6 +112,12 @@ function ListenBubbleContent() {
           const audioText = firstText(c.audioText, item.audioText, sentence);
           // translation: EN equivalent
           const translation = firstText(c.translation, item.translation, item["Complete Sentence_EN"], item["Complete Sentence _EN"]);
+          const englishTokens = c.bubbleTokensEn ?? item.bubbleTokensEn ?? c.bubbleTokens_en ?? item["BubbleTokens_EN"];
+          const englishBubbles = Array.isArray(englishTokens)
+            ? englishTokens.map(String).map(token => token.trim()).filter(Boolean)
+            : typeof englishTokens === "string" && englishTokens.trim()
+              ? englishTokens.split("+").map(token => token.trim()).filter(Boolean)
+              : translation.trim().split(/\s+/).filter(Boolean);
           // wordBubbles: pre-built token list, or split from sentence
           const suppliedTokens = Array.isArray(c.bubbleTokens) ? c.bubbleTokens : Array.isArray(item.wordBubbles) ? item.wordBubbles : [];
           const wordBubbles = suppliedTokens.length > 0
@@ -120,6 +132,7 @@ function ListenBubbleContent() {
             sentence,
             audioText,
             translation,
+            englishBubbles,
             wordBubbles: [...wordBubbles, ...distractors],
             timeLimitSeconds: Number(c.timeLimitSeconds || item.timeLimitSeconds || item.TimeLimitSeconds || item["Time Limit"] || 60),
             level: firstText(item.Level, item.level) || "A1",
@@ -128,6 +141,7 @@ function ListenBubbleContent() {
         setQuestions(mapped);
         setCurrentIndex(0);
         setSelectedWords([]);
+        setShowTranslation(false);
         setWordBankSlots(mapped.length > 0 ? shuffleArray(mapped[0].wordBubbles) : []);
       } catch (error) {
         console.error("Error loading listen bubble data:", error);
@@ -145,15 +159,17 @@ function ListenBubbleContent() {
     }
   }, [currentIndex, currentQuestion, resetTimer]);
 
-  const handlePlayAudio = () => {
+  const handlePlayAudio = (mode: "normal" | "slow" = "normal") => {
     if (!currentQuestion) return;
-    speak(currentQuestion.audioText, "fr-FR");
+    setPlaybackMode(mode);
+    speak(currentQuestion.audioText, "fr-FR", mode === "slow" ? 0.75 : 0.9);
   };
 
   const handleWordSelect = (word: string, index: number) => {
     if (showFeedback || wordBankSlots[index] !== word) return;
 
     // Play audio for the selected word
+    setPlaybackMode(null);
     speak(word, "fr-FR");
 
     // Leave a placeholder in the bank, matching Reading's tile flow.
@@ -167,6 +183,7 @@ function ListenBubbleContent() {
     if (showFeedback) return;
 
     // Play audio for the removed word
+    setPlaybackMode(null);
     speak(word, "fr-FR");
 
     // Remove word from the answer and return it to the bank.
@@ -205,7 +222,10 @@ function ListenBubbleContent() {
   };
 
   const handleContinue = () => {
+    cancel();
     setShowFeedback(false);
+    setShowTranslation(false);
+    setPlaybackMode(null);
     setSelectedWords([]);
 
     if (currentIndex < questions.length - 1) {
@@ -276,28 +296,51 @@ function ListenBubbleContent() {
       >
         <div className="practice-reading-page-shell mx-auto flex w-full max-w-7xl flex-col items-center px-4 pb-8 pt-8 sm:px-6 md:pt-10 xl:pt-24">
           <div className="mb-8 flex w-full justify-center xl:mb-12">
+            <div className="flex min-h-[84px] w-full max-w-[600px] items-center gap-4 rounded-[22px] border border-slate-200 bg-white px-4 shadow-[0_2px_10px_rgba(15,23,42,0.04)] dark:border-slate-700 dark:bg-slate-900">
             <button
               type="button"
-              onClick={handlePlayAudio}
-              aria-label={isSpeaking ? "Replay the spoken sentence" : "Play the spoken sentence"}
-              className="group flex min-h-[84px] w-full max-w-[600px] items-center gap-4 rounded-[22px] border border-slate-200 bg-white px-4 shadow-[0_2px_10px_rgba(15,23,42,0.04)] transition-[border-color,box-shadow] duration-200 hover:border-sky-300 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 motion-reduce:transition-none dark:border-slate-700 dark:bg-slate-900"
+              onClick={() => handlePlayAudio("slow")}
+              aria-label="Play audio slowly"
+              aria-pressed={isSpeaking && playbackMode === "slow"}
+              className={cn("flex h-[52px] w-[52px] shrink-0 items-center justify-center rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2", isSpeaking && playbackMode === "slow" ? "bg-sky-500 text-white hover:bg-sky-600" : "bg-sky-100 text-sky-700 hover:bg-sky-200 dark:bg-sky-900/40 dark:text-sky-300")}
             >
-              <span className={`${speakerStyles.speakerButton} ${isSpeaking ? speakerStyles.playing : ""} flex h-[52px] w-[52px] shrink-0 items-center justify-center rounded-2xl bg-sky-100 text-sky-600 transition-colors group-hover:bg-sky-200 dark:bg-slate-800 dark:text-sky-400 dark:group-hover:bg-slate-700`}>
+              <Turtle className="h-6 w-6" aria-hidden="true" />
+            </button>
+            <button
+              type="button"
+              onClick={() => handlePlayAudio("normal")}
+              aria-label={isSpeaking ? "Replay the spoken sentence" : "Play the spoken sentence"}
+              aria-pressed={isSpeaking && playbackMode === "normal"}
+              className="group rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2"
+            >
+              <span className={cn(speakerStyles.speakerButton, isSpeaking && playbackMode === "normal" && speakerStyles.playing, "flex h-[52px] w-[52px] shrink-0 items-center justify-center rounded-2xl transition-colors", isSpeaking && playbackMode === "normal" ? "bg-sky-500 text-white group-hover:bg-sky-600" : "bg-sky-100 text-sky-700 group-hover:bg-sky-200 dark:bg-sky-900/40 dark:text-sky-300")}>
                 <Volume2 className={`h-7 w-7 ${speakerStyles.speakerIcon}`} aria-hidden="true" />
               </span>
-              <AudioWaveform isPlaying={isSpeaking} decorative className="flex-1" />
             </button>
+              <AudioWaveform isPlaying={isSpeaking} decorative className="min-w-0 flex-1" />
+            </div>
           </div>
 
-          {showFeedback && !isCorrect && (
+          {showFeedback && (
             <motion.div
               initial={{ opacity: 0, y: -12 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3, ease: "easeOut" }}
               className="w-full border-t border-slate-200 pb-8 pt-6 dark:border-slate-700"
             >
-              <div className="flex flex-wrap justify-center gap-3" role="group" aria-label={`Correct answer: ${currentQuestion.sentence}`}>
-                {currentQuestion.sentence.trim().split(/\s+/).map((word, index) => (
+              <div className="relative min-h-8 px-11">
+              <TranslateButton
+                className="absolute left-0 top-0"
+                iconVariant="option"
+                disabled={currentQuestion.englishBubbles.length === 0}
+                onClick={() => setShowTranslation(visible => !visible)}
+                aria-label={showTranslation ? "Show French bubbles" : "Show English bubbles"}
+                title={currentQuestion.englishBubbles.length === 0 ? "English bubbles unavailable" : showTranslation ? "Show French bubbles" : "Show English bubbles"}
+                aria-pressed={showTranslation}
+              />
+
+              <div className="flex min-w-0 flex-1 flex-wrap justify-center gap-3" role="group" aria-label={showTranslation ? "Correct answer in English" : `Correct answer: ${currentQuestion.sentence}`} lang={showTranslation ? "en" : "fr"}>
+                {(showTranslation ? currentQuestion.englishBubbles : currentQuestion.sentence.trim().split(/\s+/)).map((word, index) => (
                   <span
                     key={`correct-${index}`}
                     className="practice-type-content rounded-2xl border border-emerald-400 bg-emerald-50 px-4 py-2.5 font-sans font-semibold text-emerald-900 dark:border-emerald-600 dark:bg-emerald-950/50 dark:text-emerald-100 xl:px-6 xl:py-3.5"
@@ -305,6 +348,8 @@ function ListenBubbleContent() {
                     {word}
                   </span>
                 ))}
+              </div>
+
               </div>
             </motion.div>
           )}

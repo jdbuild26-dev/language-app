@@ -13,8 +13,8 @@ import { numberToFrenchTokens, numberToFrench } from "@/features/vocabulary/util
 
 export default function NumberPracticePage() {
   const router = useRouter();
-  const [currentNumber, setCurrentNumber] = useState(null);
-  const [constructedAnswer, setConstructedAnswer] = useState([]);
+  const [currentNumber, setCurrentNumber] = useState<number | null>(null);
+  const [constructedAnswer, setConstructedAnswer] = useState<string[]>([]);
 
   // Feedback state
   const [showFeedback, setShowFeedback] = useState(false);

@@ -55,7 +55,7 @@ export default function GeneralModeContent() {
                             type="text"
                             value={topic}
                             onChange={(e) => setTopic(e.target.value)}
-                            placeholder="e.g., Travelling, Cooking, My weekend..."
+                            placeholder="|"
                             className="w-full px-4 py-3 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all dark:text-white"
                             autoFocus
                         />

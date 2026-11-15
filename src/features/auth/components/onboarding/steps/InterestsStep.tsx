@@ -76,7 +76,7 @@ const InterestsStep = ({ formData, setFormData, onBack, onContinue }) => {
           value={customInput}
           onChange={(e) => setCustomInput(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder="Interest not listed? Add it here."
+          placeholder="|"
           className="text-sm"
         />
         <Button

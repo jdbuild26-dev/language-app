@@ -1,20 +1,21 @@
 "use client";
 
-import React, { useState, useEffect, useRef, Suspense } from "react";
-import { usePracticeExit } from "@/hooks/usePracticeExit";
-import { useExerciseTimer } from "@/hooks/useExerciseTimer";
-import { CheckCircle2, Loader2, Volume2, XCircle } from "lucide-react";
-import { cn } from "@/lib/utils";
-import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
-import FeedbackBanner from "@/components/ui/FeedbackBanner";
-import { getFeedbackMessage } from "@/utils/feedbackMessages";
-import { useTextToSpeech } from "@/hooks/useTextToSpeech";
-import { useSearchParams } from "next/navigation";
-import { fetchPracticeData } from "@/utils/practiceFetcher";
-import { Button } from "@/components/ui/button";
-import { TranslateButton } from "@/components/ui/TranslateButton";
-import AudioWaveform from "@/components/ui/AudioWaveform";
-import speakerStyles from "@/components/ui/AudioSpeaker.module.css";
+import React, { useState, useEffect, useRef, Suspense } from"react";
+import { usePracticeExit } from"@/hooks/usePracticeExit";
+import { useExerciseTimer } from"@/hooks/useExerciseTimer";
+import { CheckCircle2, Loader2, Volume2, XCircle } from"lucide-react";
+import { cn } from"@/lib/utils";
+import PracticeGameLayout from"@/components/layout/PracticeGameLayout";
+import FeedbackBanner from"@/components/ui/FeedbackBanner";
+import { getFeedbackMessage } from"@/utils/feedbackMessages";
+import { useTextToSpeech } from"@/hooks/useTextToSpeech";
+import { useSearchParams } from"next/navigation";
+import { fetchPracticeData } from"@/utils/practiceFetcher";
+import { Button } from"@/components/ui/button";
+import { TranslateButton } from"@/components/ui/TranslateButton";
+import AudioWaveform from"@/components/ui/AudioWaveform";
+import speakerStyles from"@/components/ui/AudioSpeaker.module.css";
+import styles from"./ListenSelectPage.module.css";
 
 const LISTEN_SELECT_PROMPT_CLASS =
   "practice-type-content-large font-sans font-semibold";
@@ -130,11 +131,11 @@ function ListenSelectContent() {
           }
           // Format B: Correct answer_FR + Wrong answer_N_FR columns
           else if (item["Correct answer_FR"] || item["correct_answer_fr"]) {
-            const cFr = item["Correct answer_FR"] || item["correct_answer_fr"] || "";
+            const cFr = item["Correct answer_FR"] || item["correct_answer_fr"] ||"";
             const cEn = item["Correct answer_EN"] || item["correct_answer_en"] || cFr;
             const pairs: Array<{ french: string; english: string }> = [{ french: cFr, english: cEn }];
             for (let i = 1; i <= 4; i++) {
-              const wFr = item[`Wrong answer_${i}_FR`] || item[`wrong_answer_${i}_fr`] || "";
+              const wFr = item[`Wrong answer_${i}_FR`] || item[`wrong_answer_${i}_fr`] ||"";
               const wEn = item[`Wrong answer_${i}_EN`] || item[`wrong_answer_${i}_en`] || wFr;
               if (wFr) pairs.push({ french: wFr, english: wEn });
             }
@@ -172,8 +173,8 @@ function ListenSelectContent() {
                 .sort(() => Math.random() - 0.5)
                 .slice(0, 3);
               const distractors = others.map(o => ({
-                french: o.audioText || o["Audio_FR"] || "",
-                english: o.question || o["Question_EN"] || "",
+                french: o.audioText || o["Audio_FR"] ||"",
+                english: o.question || o["Question_EN"] ||"",
               }));
               const allOpts = [{ french: audioFr, english: questionText }, ...distractors];
               const shuffled = allOpts.map(v => ({ v, s: Math.random() })).sort((a, b) => a.s - b.s).map(x => x.v);
@@ -194,7 +195,7 @@ function ListenSelectContent() {
 
         setQuestions(transformed);
       } catch (error) {
-        console.error("Error loading listen select data:", error);
+        console.error("Error loading listen select data: ", error);
         setQuestions([]);
       } finally {
         setIsLoading(false);
@@ -326,35 +327,47 @@ function ListenSelectContent() {
                   return (
                     <div
                       key={index}
-                      role="status"
                       className={cn(
-                        "flex min-h-[68px] items-center gap-3 rounded-xl border-2 bg-white px-4 py-3 shadow-sm md:min-h-[76px] dark:bg-slate-800",
+                        styles.optionCard,
+                        "relative flex min-h-[68px] items-center gap-3 rounded-xl border-2 border-slate-200 bg-white p-3 dark:border-slate-700 md:min-h-[76px] dark:bg-slate-800",
                         isCorrectOption &&
-                          "border-green-500 bg-green-50 dark:bg-green-900/20",
+                          "border-green-500 bg-green-50 dark:border-green-500 dark:bg-green-900/20",
                         isWrongSelection &&
-                          "border-red-500 bg-red-50 dark:bg-red-900/20",
-                        !isCorrectOption && !isWrongSelection &&
-                          "border-slate-200 dark:border-slate-700",
-                        isWrongSelection &&
-                          "ring-1 ring-red-500",
+                          "border-red-500 bg-red-50 dark:border-red-500 dark:bg-red-900/20",
                       )}
                     >
+                      <button
+                        type="button"
+                        onClick={() => handlePlayOption(index, optionObj.french)}
+                        aria-label={`Replay audio option ${index + 1}`}
+                        className="absolute inset-0 rounded-[10px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-950"
+                      />
                       <span
-                        className="flex h-7 w-7 flex-shrink-0 items-center justify-center"
+                        className="pointer-events-none flex h-6 w-6 flex-shrink-0 items-center justify-center"
                         aria-hidden="true"
                       >
                         {isCorrectOption ? (
-                          <CheckCircle2 className="h-7 w-7 text-green-600 dark:text-green-400" />
+                          <CheckCircle2 className="h-6 w-6 text-green-600 dark:text-green-400" />
                         ) : isWrongSelection ? (
-                          <XCircle className="h-7 w-7 text-red-600 dark:text-red-400" />
+                          <XCircle className="h-6 w-6 text-red-600 dark:text-red-400" />
                         ) : (
                           <span className="h-6 w-6 rounded-full border-2 border-slate-300 dark:border-slate-600" />
                         )}
                       </span>
+                      <span
+                        aria-hidden="true"
+                        className={cn(
+                          speakerStyles.speakerButton,
+                          "pointer-events-none flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-slate-100 text-indigo-500 dark:bg-slate-700",
+                          playingOption === index && speakerStyles.playing,
+                        )}
+                      >
+                        <Volume2 className={cn(speakerStyles.speakerIcon, "h-5 w-5")} />
+                      </span>
 
                       <p
                         className={cn(
-                          "practice-type-content min-w-0 flex-1 !text-[20px] font-normal lg:!text-[21px]",
+                          "pointer-events-none practice-type-content min-w-0 flex-1 !text-[20px] font-normal lg:!text-[21px]",
                           isCorrectOption
                             ? "text-green-800 dark:text-green-200"
                             : isWrongSelection
@@ -367,6 +380,7 @@ function ListenSelectContent() {
 
                       {hasTranslation && (
                         <TranslateButton
+                          className="relative z-10"
                           iconVariant="option"
                           onClick={() =>
                             setTranslatedOptions((previous) => ({
@@ -387,16 +401,20 @@ function ListenSelectContent() {
                   <div
                     key={index}
                     className={cn(
-                      "group relative flex min-h-[68px] cursor-pointer items-center gap-3 rounded-xl border-2 bg-white p-3 text-left shadow-sm transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 motion-reduce:transition-none md:min-h-[76px] dark:bg-slate-800 dark:focus-visible:ring-offset-slate-950",
-                      "border-slate-200 hover:border-indigo-300 hover:shadow-md dark:border-slate-700 dark:hover:border-indigo-700",
-                      isSelected &&
-                        "border-indigo-500 bg-indigo-50 ring-1 ring-indigo-500 dark:bg-indigo-900/10",
+                      styles.optionCard,
+
+
+                      "group relative flex min-h-[68px] cursor-pointer items-center gap-3 rounded-xl border-2 border-slate-200 bg-white p-3 dark:border-slate-700 text-left  transition-[background-color,box-shadow] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 motion-reduce:transition-none md:min-h-[76px] dark:bg-slate-800  dark:focus-visible:ring-offset-slate-950",                      isSelected &&
+                        "border-indigo-500 bg-indigo-50 dark:border-indigo-400 dark:bg-indigo-900/20",
                     )}
                   >
                   <button
                     type="button"
-                    onClick={() => setSelectedOption(index)}
-                    aria-label={`Select audio option ${index + 1}`}
+                    onClick={() => {
+                      setSelectedOption(index);
+                      handlePlayOption(index, optionObj.french);
+                    }}
+                    aria-label={`Play and select audio option ${index + 1}`}
                     aria-pressed={isSelected}
                     className="absolute inset-0 z-0 rounded-[10px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-950"
                   />
@@ -425,13 +443,11 @@ function ListenSelectContent() {
                   {/* Audio Visualizer & Content */}
                   <div className="pointer-events-none relative z-10 flex w-0 min-w-0 flex-1 flex-col justify-center">
                     <div className="flex w-full min-w-0 items-center gap-3">
-                      <button
-                        type="button"
-                        onClick={() => handlePlayOption(index, optionObj.french)}
-                        aria-label={`Play audio option ${index + 1}`}
+                      <span
+                        aria-hidden="true"
                         className={cn(
                           speakerStyles.speakerButton,
-                          "pointer-events-auto relative z-20 flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-slate-100 text-indigo-500 transition-colors hover:bg-indigo-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 dark:bg-slate-700 dark:hover:bg-indigo-900/30 dark:focus-visible:ring-offset-slate-800",
+                          "flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-slate-100 text-indigo-500 transition-colors group-hover:bg-indigo-100 dark:bg-slate-700 dark:group-hover:bg-indigo-900/30",
                           playingOption === index && speakerStyles.playing,
                           (isSelected || isCorrectHighlight) &&
                             "bg-indigo-100 dark:bg-indigo-900/50",
@@ -446,7 +462,7 @@ function ListenSelectContent() {
                               "text-indigo-600 dark:text-indigo-400",
                           )}
                         />
-                      </button>
+                      </span>
 
                       <AudioWaveform
                         isPlaying={playingOption === index}
@@ -469,7 +485,7 @@ function ListenSelectContent() {
       {showFeedback && (
         <FeedbackBanner
           isCorrect={isCorrect}
-          correctAnswer={currentQuestion?.audioOptions?.[currentQuestion.correctIndex]?.french || ""}
+          compact
           onContinue={handleContinue}
           message={feedbackMessage}
           continueLabel={

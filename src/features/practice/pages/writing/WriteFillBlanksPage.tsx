@@ -14,6 +14,8 @@ import { TranslateButton } from "@/components/ui/TranslateButton";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useSearchParams } from "next/navigation";
+import { getWritingCompletedPassage } from "@/features/practice/lib/writingCompletedPassage";
+import styles from "./WriteFillBlanksPage.module.css";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -30,6 +32,7 @@ type FillBlanksQuestion = {
   heading_fr: string;
   heading_en: string;
   complete_passage_en: string;
+  fill_paragraph_en: string;
   fill_paragraph_fr: string;
   blanksData: Record<string, BlankEntry>;
   timeLimitSeconds: number;
@@ -42,7 +45,7 @@ type PassageSegment = { type: "text"; text: string } | { type: "blank"; blankId:
 
 function parsePassage(paragraph: string): PassageSegment[] {
   const segments: PassageSegment[] = [];
-  const marker = /\[(\d+)\]\s*_{2,}\s*/g;
+  const marker = /\[(\d+)\][ \t]*_{2,}/g;
   let lastIndex = 0;
   let match: RegExpExecArray | null;
 
@@ -92,7 +95,7 @@ function convertOldFormat(passage: string, targetWordsRaw: any): {
       const actualWord = match[0]; // preserve original casing
       blanksData[String(blankId)] = {
         correct_fr: actualWord,
-        correct_en: actualWord,
+        correct_en: "",
         masked_fr: buildMask(actualWord),
         masked_en: buildMask(actualWord),
       };
@@ -194,7 +197,7 @@ export default function WriteFillBlanksPage() {
               correctFr.forEach((word, index) => {
                 blanksData[String(index + 1)] = {
                   correct_fr: word,
-                  correct_en: correctEn[index] || word,
+                  correct_en: correctEn[index] || "",
                   masked_fr: maskedFr[index] || buildMask(word),
                   masked_en: maskedEn[index] || buildMask(correctEn[index] || word),
                 };
@@ -207,6 +210,7 @@ export default function WriteFillBlanksPage() {
               heading_fr: item.heading_fr || "",
               heading_en: item.heading_en || "",
               complete_passage_en: item.complete_passage_en || item.englishTranslation || item["Complete Passage_EN"] || "",
+              fill_paragraph_en: item.fill_paragraph_en || item["Fill Paragraph_EN"] || "",
               fill_paragraph_fr,
               blanksData,
               timeLimitSeconds: item.timeLimitSeconds || item.TimeLimitSeconds || 360,
@@ -225,6 +229,7 @@ export default function WriteFillBlanksPage() {
   useEffect(() => {
     if (currentQ && !isCompleted) {
       setUserInputs({});
+      setFocusedKey(null);
       setShowFeedback(false);
       setShowPassageTranslation(false);
       inputRefs.current = {};
@@ -313,17 +318,15 @@ export default function WriteFillBlanksPage() {
 
     return (
       <span
-        className="inline-flex max-w-full items-center overflow-hidden rounded-md border border-slate-200 bg-white shadow-[0_2px_0_rgba(203,213,225,0.5)] dark:border-slate-600 dark:bg-slate-800"
+        className={cn(styles.word, chars.length <= 4 && styles.shortWord)}
       >
         {chars.map((ch, i) => {
-          const isFirst = i === 0;
 
           if (ch === "_") {
             const si = slotIdx++;
             const key = `${blankId}_${si}`;
             const userChar = userInputs[key] || "";
             const correctChar = getCorrectCharForSlot(mask, entry.correct_fr, si);
-            const isFocused = focusedKey === key;
             const isWrong = showFeedback && userChar.toLowerCase() !== correctChar.toLowerCase();
             const isRight = showFeedback && userChar.toLowerCase() === correctChar.toLowerCase();
 
@@ -331,31 +334,24 @@ export default function WriteFillBlanksPage() {
               <span
                 key={i}
                 className={cn(
-                  "relative flex items-center justify-center",
-                  "h-[30px] w-7 shrink-0",
-                  !isFirst && "border-l border-slate-200 dark:border-slate-600",
-                  isFocused && !showFeedback && "bg-blue-50 dark:bg-blue-900/30 ring-2 ring-inset ring-blue-500 z-10",
-                  isWrong && "bg-red-50 dark:bg-red-900/20",
-                  isRight && "bg-emerald-50 dark:bg-emerald-900/20",
+                  styles.cell,
+                  isWrong && styles.incorrect,
+                  isRight && styles.correct,
                 )}
               >
                 <input
                   ref={el => { inputRefs.current[key] = el; }}
                   type="text"
+                  data-practice-answer
                   maxLength={1}
                   value={userChar}
                   onChange={e => handleCharInput(blankId, si, e.target.value.slice(-1))}
                   onKeyDown={e => handleKeyDown(e, blankId, si)}
-                  onFocus={() => setFocusedKey(key)}
+                  onFocus={event => { setFocusedKey(key); event.currentTarget.select(); }}
                   onBlur={() => setFocusedKey(prev => prev === key ? null : prev)}
                   disabled={showFeedback}
                   aria-label={`Word ${blankId}, missing letter ${si + 1}`}
-                  className={cn(
-                    "practice-type-content absolute inset-0 h-full w-full bg-transparent text-center !leading-none font-medium outline-none",
-                    isWrong ? "text-red-600 dark:text-red-400" :
-                    isRight ? "text-emerald-700 dark:text-emerald-400" :
-                    "text-slate-800 dark:text-white",
-                  )}
+                  className={styles.input}
                 />
               </span>
             );
@@ -365,10 +361,7 @@ export default function WriteFillBlanksPage() {
           return (
             <span
               key={i}
-              className={cn(
-                "practice-type-content flex h-[30px] w-7 shrink-0 select-none items-center justify-center !leading-none font-medium text-slate-700 dark:text-slate-300",
-                !isFirst && "border-l border-slate-200 dark:border-slate-600",
-              )}
+              className={cn(styles.cell, styles.supplied)}
             >
               {ch}
             </span>
@@ -383,7 +376,7 @@ export default function WriteFillBlanksPage() {
     const entry = currentQ.blanksData[String(segment.blankId)];
     if (!entry) return null;
     return (
-      <span key={index} className="mx-1 inline-flex align-middle whitespace-nowrap">
+      <span key={index} className="mx-[3px] inline-flex max-w-full overflow-x-auto align-middle whitespace-nowrap px-[3px] py-[3px]">
         {renderBlankWord(segment.blankId, entry)}
       </span>
     );
@@ -404,6 +397,14 @@ export default function WriteFillBlanksPage() {
   );
 
   const progress = ((currentIndex + 1) / questions.length) * 100;
+  const completedEnglish = /\[\d+\]/.test(currentQ.fill_paragraph_en)
+    ? currentQ.fill_paragraph_en
+    : currentQ.complete_passage_en || currentQ.fill_paragraph_en;
+  const completedParts = showFeedback ? getWritingCompletedPassage(
+    showPassageTranslation ? completedEnglish : currentQ.fill_paragraph_fr,
+    currentQ.blanksData,
+    showPassageTranslation ? "en" : "fr",
+  ) : null;
 
   return (
     <PracticeGameLayout
@@ -424,12 +425,6 @@ export default function WriteFillBlanksPage() {
         isCorrect={isCorrect}
         feedbackTone={isCorrect ? "success" : "error"}
         feedbackMessage={getFeedbackMessage(isCorrect)}
-        correctAnswer={!isCorrect
-          ? Object.entries(currentQ.blanksData)
-              .sort(([a], [b]) => Number(a) - Number(b))
-              .map(([id, entry]) => `${id}. ${entry.correct_fr}`)
-              .join("  •  ")
-          : undefined}
         feedbackInFlow
         compactFeedback
         submitLabel={showFeedback ? (currentIndex + 1 === questions.length ? "Finish" : "Continue") : "Submit Answer"}
@@ -437,27 +432,26 @@ export default function WriteFillBlanksPage() {
         currentQuestionIndex={currentIndex}
       >
         <div className="mx-auto flex w-full max-w-[1280px] shrink-0 flex-col px-4 pb-6 pt-6 sm:px-6 sm:pt-8">
-          <div className="flex flex-col justify-center border-b border-slate-200 pb-6 dark:border-slate-700">
+          <div className="grid grid-cols-[44px_minmax(0,1fr)_44px] items-start border-b border-slate-200 pb-6 dark:border-slate-700">
 
             {/* Title */}
-            <div className="text-center">
+            <div className="col-start-2 text-center">
               <div className="flex min-h-11 items-center justify-center gap-2">
                 <h2 className="practice-type-question-heading text-center !font-medium text-slate-900 dark:text-slate-100">
-                  {currentQ.title_en || currentQ.complete_passage_en || currentQ.title_fr}
+                  {(showPassageTranslation ? currentQ.title_en : currentQ.title_fr) || "Passage"}
                 </h2>
-                {showFeedback && currentQ.complete_passage_en && (
-                  <TranslateButton
-                    onClick={() => setShowPassageTranslation(visible => !visible)}
-                    aria-label={showPassageTranslation ? "Hide English translation" : "Show English translation"}
-                    aria-pressed={showPassageTranslation}
-                    aria-expanded={showPassageTranslation}
-                    aria-controls="fitb-english-translation"
-                    title={showPassageTranslation ? "Hide English translation" : "Show English translation"}
-                    className="h-11 w-11"
-                  />
-                )}
               </div>
             </div>
+            {showFeedback && completedEnglish && (
+              <TranslateButton
+                onClick={() => setShowPassageTranslation(visible => !visible)}
+                aria-label={showPassageTranslation ? "Show completed French passage" : "Show completed English passage"}
+                aria-pressed={showPassageTranslation}
+                aria-controls="fitb-completed-passage"
+                title={showPassageTranslation ? "Show French" : "Translate to English"}
+                className="col-start-3 h-11 w-11 justify-self-end"
+              />
+            )}
 
           </div>
 
@@ -466,15 +460,25 @@ export default function WriteFillBlanksPage() {
             className="px-3 py-6 sm:px-4 dark:bg-slate-900"
             style={{ backgroundImage: "radial-gradient(circle, rgba(148,163,184,0.13) 1px, transparent 1px)", backgroundSize: "24px 24px" }}
           >
-            <div className="practice-type-content font-normal !leading-[44px] text-slate-700 dark:text-slate-200">
+            <div className="practice-passage-content practice-type-content font-normal !leading-[44px] text-slate-700 dark:text-slate-200">
               {renderPassage()}
             </div>
           </section>
 
-          {showFeedback && showPassageTranslation && currentQ.complete_passage_en && (
-            <section id="fitb-english-translation" aria-label="English translation" className="practice-type-content border-t border-slate-200 px-3 py-6 font-normal text-slate-700 sm:px-4 dark:border-slate-700 dark:text-slate-200">
-              <h3 className="mb-3 text-base font-semibold text-slate-500 dark:text-slate-400">English translation</h3>
-              <p>{currentQ.complete_passage_en}</p>
+          {showFeedback && (
+            <section id="fitb-completed-passage" aria-label={showPassageTranslation ? "Completed English passage" : "Completed French passage"} lang={showPassageTranslation ? "en" : "fr"} className="practice-type-content border-t border-slate-200 px-3 py-6 font-normal text-slate-700 sm:px-4 dark:border-slate-700 dark:text-slate-200">
+              {completedParts ? (
+                <p className="practice-passage-content">{completedParts.map((part, index) => (
+                  <span key={index} className={part.answer ? "text-green-700 dark:text-green-400" : undefined}>{part.text}</span>
+                ))}</p>
+              ) : showPassageTranslation && !/\[\d+\]/.test(completedEnglish) ? (
+                <>
+                  <p className="practice-passage-content">{completedEnglish}</p>
+                  <p className="mt-3 text-sm text-slate-500 dark:text-slate-400" role="status">Answer highlighting is unavailable for this translation.</p>
+                </>
+              ) : (
+                <p role="status">The completed passage is unavailable.</p>
+              )}
             </section>
           )}
 

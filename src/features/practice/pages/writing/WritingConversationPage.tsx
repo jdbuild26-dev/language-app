@@ -12,6 +12,7 @@ import { useWritingEvaluation } from "@/hooks/useWritingEvaluation";
 import { fetchPracticeData } from "@/utils/practiceFetcher";
 import { Loader2 } from "lucide-react";
 import { useTranslateText } from "@/hooks/useTranslateText";
+import { getStoredTranslation } from "@/features/practice/lib/storedTranslation";
 import { Button } from "@/components/ui/button";
 import WritingFeedbackResult from "@/components/WritingFeedbackResult";
 
@@ -48,12 +49,14 @@ export default function WritingConversationPage() {
   const totalConversations = allConversations.length;
 
   // Translate the current prompt text on demand
+  const promptSource = currentExchange?.prompt || currentExchange?.speakerText || "";
+  const storedPrompt = getStoredTranslation(promptSource, currentExchange);
   const {
     displayText: promptDisplayText,
     isTranslating: isTranslatingP,
     toggle: toggleTranslate,
     reset: resetTranslate,
-  } = useTranslateText(currentExchange?.prompt || currentExchange?.speakerText || "", "fr");
+  } = useTranslateText(promptSource, storedPrompt.sourceLang, storedPrompt.translation);
 
   const { timerString, resetTimer } = useExerciseTimer({
     duration: conversation?.timeLimitSeconds || 300,
@@ -484,6 +487,8 @@ export default function WritingConversationPage() {
                   <div className="space-y-3">
                     {shuffledOptions.map((opt, i) => (
                       <button
+                        data-practice-option
+                        aria-pressed={userInput === opt.text}
                         key={i}
                         type="button"
                         onClick={() => setUserInput(opt.text)}

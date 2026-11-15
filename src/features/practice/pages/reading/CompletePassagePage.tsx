@@ -294,25 +294,25 @@ function CompletePassageContent() {
             )}
           </div>
           <div className={BODY_TEXT_CLASS}>
-            <p>{passageBefore}</p>
+            <p className="practice-passage-content">{passageBefore}</p>
             <div className={cn(
               "my-4 rounded-lg bg-slate-100 dark:bg-slate-800/70 px-4 py-3 border-l-4",
               !showFeedback && "border-cyan-500",
               showFeedback && isCorrect && "border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20",
               showFeedback && !isCorrect && "border-red-500 bg-red-50 dark:bg-red-900/20",
             )}>
-              <span className={cn("italic", selectedSentence ? "not-italic text-slate-900 dark:text-slate-50" : "text-slate-400 dark:text-slate-500")}>
+              <span className={cn("practice-passage-content block italic", selectedSentence ? "not-italic text-slate-900 dark:text-slate-50" : "text-slate-400 dark:text-slate-500")}>
                 {selectedSentence || passagePlaceholder}
               </span>
             </div>
-            <p>{passageAfter}</p>
+            <p className="practice-passage-content">{passageAfter}</p>
           </div>
           {showFeedback && showPassageTranslation && canTranslatePassage && (
             <div className={cn(BODY_TEXT_CLASS, "mt-6 border-t border-slate-200 pt-5 dark:border-slate-700")}>
               <h2 className="practice-type-content-heading mb-3 !font-medium text-slate-900 dark:text-slate-100">{translatedPassageTitle}</h2>
-              <p>{translatedPassageBefore}</p>
-              {translatedSelectedSentence && <p className="my-4">{translatedSelectedSentence}</p>}
-              <p>{translatedPassageAfter}</p>
+              <p className="practice-passage-content">{translatedPassageBefore}</p>
+              {translatedSelectedSentence && <p className="practice-passage-content my-4">{translatedSelectedSentence}</p>}
+              <p className="practice-passage-content">{translatedPassageAfter}</p>
             </div>
           )}
         </section>
@@ -374,11 +374,11 @@ function CompletePassageContent() {
               );
 
               return showFeedback ? (
-                <div key={`${index}-${option}`} className={optionClasses} role="status">
+                <div key={`${index}-${option}`} data-practice-option data-option-selected={isSelected} className={optionClasses} role="status">
                   {optionContent}
                 </div>
               ) : (
-                <button key={`${index}-${option}`} type="button" onClick={() => handleOptionSelect(index)} aria-pressed={isSelected} className={optionClasses}>
+                <button key={`${index}-${option}`} data-practice-option type="button" onClick={() => handleOptionSelect(index)} aria-pressed={isSelected} className={optionClasses}>
                   {optionContent}
                 </button>
               );

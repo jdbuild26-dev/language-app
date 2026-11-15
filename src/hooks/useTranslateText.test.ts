@@ -28,6 +28,7 @@ vi.mock("react", () => ({
   },
 }));
 import { useTranslateText } from "./useTranslateText";
+import { getStoredTranslation } from "../features/practice/lib/storedTranslation";
 
 function render(stored?: string, source = "Bonjour", language = "fr", target?: string) {
   state.cursor = 0;
@@ -59,6 +60,14 @@ it("uses the supplied translation without a request or loading state and toggles
 it("accepts an unchanged stored translation without unnecessarily requesting it", async () => {
   await render("Bonjour").toggle();
   expect(fetch).not.toHaveBeenCalled();
+});
+
+it.each(["prompt", "questionText", "question", "speakerText", "text"])("switches stored exchange %s text without entering loading", async field => {
+  const stored = getStoredTranslation("Bonjour", { [field]: "Bonjour", [`${field}_en`]: "Hello" });
+  const pending = render(stored.translation, "Bonjour", stored.sourceLang).toggle();
+  expect(render(stored.translation, "Bonjour", stored.sourceLang)).toMatchObject({ displayText: "Hello", isTranslating: false });
+  expect(fetch).not.toHaveBeenCalled();
+  await pending;
 });
 
 it("fetches only when stored text is missing and reuses the fetched translation", async () => {

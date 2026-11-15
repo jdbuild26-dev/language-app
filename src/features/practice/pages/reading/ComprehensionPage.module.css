@@ -1,0 +1,33 @@
+.exerciseViewport {
+  display: contents;
+}
+
+/* One-exercise trial: keep header, scrolling content and in-flow feedback together. */
+.framedViewport {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100dvh;
+  padding: 32px;
+  background: #eef2f6;
+}
+
+.framedViewport > :global(.practice-game-typography) {
+  width: 100%;
+  max-width: 1560px;
+  height: min(800px, calc(100dvh - 64px));
+  max-height: calc(100dvh - 64px);
+  border: 1px solid #dbe2ea;
+  border-radius: 24px;
+  overflow: hidden;
+  box-shadow: 0 12px 40px rgb(15 23 42 / 8%);
+}
+
+:global(.dark) .framedViewport {
+  background: #020617;
+}
+
+:global(.dark) .framedViewport > :global(.practice-game-typography) {
+  border-color: #334155;
+}

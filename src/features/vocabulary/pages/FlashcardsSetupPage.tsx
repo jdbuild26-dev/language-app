@@ -12,22 +12,22 @@ export default function FlashcardsSetupPage() {
   const [loading, setLoading] = useState(false);
 
   // Selection State
-  const [selectedCategory, setSelectedCategory] = useState(null);
-  const [selectedSubCategories, setSelectedSubCategories] = useState([]);
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [selectedSubCategories, setSelectedSubCategories] = useState<string[]>([]);
 
   // Dropdown options
   const [cardCount, setCardCount] = useState("20");
 
   // Data State
-  const [availableCategories, setAvailableCategories] = useState([]);
-  const [availableSubCategories, setAvailableSubCategories] = useState([]);
+  const [availableCategories, setAvailableCategories] = useState<Array<{ name: string; subcategories: string[] }>>([]);
+  const [availableSubCategories, setAvailableSubCategories] = useState<string[]>([]);
 
   // Fetch Categories on mount
   useEffect(() => {
     async function loadCategories() {
       setLoading(true);
       try {
-        const data = await fetchCategoriesByLevel();
+        const data = await fetchCategoriesByLevel(undefined);
         if (data && data.categories) {
           setAvailableCategories(data.categories);
         }

@@ -147,7 +147,7 @@ export function AssignTaskModal({ isOpen, onClose, studentId, studentName }) {
             </Label>
             <Input
               id="title"
-              placeholder="e.g., Week 1 Vocabulary Practice"
+              placeholder="|"
               value={formData.title}
               onChange={(e) =>
                 setFormData({ ...formData, title: e.target.value })

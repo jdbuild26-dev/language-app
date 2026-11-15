@@ -298,7 +298,7 @@ export default function MobileMenu({
                           </h3>
                           <div className="flex gap-2">
                             <Input
-                              placeholder="Username"
+                              placeholder="|"
                               className="h-10 text-sm bg-transparent dark:text-white border-gray-200 dark:border-slate-600"
                             />
                             <Button className="h-10 bg-brand-blue-1 text-white">

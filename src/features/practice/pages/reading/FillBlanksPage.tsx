@@ -364,7 +364,7 @@ function FillBlanksContent() {
                   aria-expanded={showPassageTranslation} />
               )}
             </div>
-            <div className="practice-reading-passage-text !leading-[2] text-justify">
+            <div className="practice-reading-passage-text !leading-[2]">
               {ex.passageSegments.map((segment, index) => {
                 if (segment.type === "text") {
                   return <span key={index}>{segment.text}</span>;
@@ -407,7 +407,7 @@ function FillBlanksContent() {
             {showFeedback && showPassageTranslation && canTranslatePassage && (
               <div className="mt-6 border-t border-slate-200 pt-5 dark:border-slate-700">
                 <h2 className="practice-type-content-heading mb-3 !font-medium text-slate-900 dark:text-slate-100">{translatedPassageTitle}</h2>
-                <p className="practice-type-content whitespace-pre-line text-justify font-normal text-slate-700 dark:text-slate-200">
+                <p className="practice-passage-content practice-type-content whitespace-pre-line font-normal text-slate-700 dark:text-slate-200">
                   {correctedTranslation ? correctedTranslation.map((part, index) => part.answer ? (
                     <span key={index} className="rounded bg-green-50 px-1 text-green-700 underline decoration-2 underline-offset-4 dark:bg-green-950/40 dark:text-green-300">{part.text}</span>
                   ) : <React.Fragment key={index}>{part.text}</React.Fragment>) : (

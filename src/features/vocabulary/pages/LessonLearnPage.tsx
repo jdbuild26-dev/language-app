@@ -31,13 +31,17 @@ function LessonLearnPageContent() {
   const { user } = useUser();
   const { getToken } = useAuth();
   const { learningLang } = useLanguage();
-  const { level, category, topic } = useParams();
-  const [words, setWords] = useState([]);
+  const params = useParams();
+  const routeValue = (value: string | string[] | undefined) => Array.isArray(value) ? value[0] : value;
+  const level = routeValue(params?.level);
+  const category = routeValue(params?.category);
+  const topic = routeValue(params?.topic);
+  const [words, setWords] = useState<any[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isCompleted, setIsCompleted] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState<string | null>(null);
 
   // Determine the category to use (from level/category route or topic route)
   const categoryToUse = category || topic;

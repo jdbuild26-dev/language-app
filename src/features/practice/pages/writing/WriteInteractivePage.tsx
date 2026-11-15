@@ -12,6 +12,7 @@ import { useWritingEvaluation } from "@/hooks/useWritingEvaluation";
 import { fetchPracticeData } from "@/utils/practiceFetcher";
 import { Loader2 } from "lucide-react";
 import { useTranslateText } from "@/hooks/useTranslateText";
+import { getStoredTranslation } from "@/features/practice/lib/storedTranslation";
 import { Button } from "@/components/ui/button";
 import WritingFeedbackResult from "@/components/WritingFeedbackResult";
 
@@ -62,6 +63,7 @@ function normalizeExchanges(raw: any[]): InteractiveExchange[] {
         ?? ex.options[ex.correctOptionId]
         ?? ex.options[0];
       return {
+        ...ex,
         isQuestion: true,
         speakerText: ex.speakerText || ex.speakerText_en || '',
         speakerAudio: ex.speakerText || ex.speakerText_en || '',
@@ -72,6 +74,7 @@ function normalizeExchanges(raw: any[]): InteractiveExchange[] {
     }
     // Dialogue-only exchange → speaker turn (auto-advance)
     return {
+      ...ex,
       isQuestion: false,
       speakerText: ex.speakerText || ex.speakerText_en || '',
       speakerAudio: ex.speakerText || ex.speakerText_en || '',
@@ -127,9 +130,11 @@ export default function WriteInteractivePage() {
   const currentExchange = conversation?.exchanges[currentTurnIndex];
 
   // Translate prompt per exchange
-  const { displayText: promptDisplayText, isTranslating: isTranslatingP, toggle: toggleTranslate, reset: resetTranslate } = useTranslateText(currentExchange?.prompt || currentExchange?.speakerText || "", "fr");
+  const promptSource = currentExchange?.prompt || currentExchange?.speakerText || "";
+  const storedPrompt = getStoredTranslation(promptSource, currentExchange);
+  const { displayText: promptDisplayText, isTranslating: isTranslatingP, toggle: toggleTranslate, reset: resetTranslate } = useTranslateText(promptSource, storedPrompt.sourceLang, storedPrompt.translation);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  React.useEffect(() => { resetTranslate(); }, [currentTurnIndex]);
+  React.useEffect(() => { resetTranslate(); }, [currentTurnIndex, convIndex]);
   const totalExchanges = conversation?.exchanges.length || 0;
 
   const timerDuration =

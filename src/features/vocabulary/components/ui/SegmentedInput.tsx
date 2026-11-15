@@ -3,6 +3,20 @@
 import React from "react";
 import { cn } from "@/lib/utils";
 
+type SegmentedInputProps = {
+  values: string[];
+  onChange: (index: number, value: string) => void;
+  onKeyDown: (index: number, event: React.KeyboardEvent<HTMLInputElement>) => void;
+  onPaste?: (index: number, event: React.ClipboardEvent<HTMLInputElement>) => void;
+  onFocus?: (index: number) => void;
+  disabled?: boolean;
+  hints?: number[];
+  showFeedback?: boolean;
+  isCorrect?: boolean;
+  inputRefs: React.RefObject<Array<HTMLInputElement | null>>;
+  className?: string;
+};
+
 /**
  * Reusable segmented input component for character-by-character entry.
  * Displays inputs as a joined group with a single outer border.
@@ -30,7 +44,7 @@ export default function SegmentedInput({
   isCorrect = false,
   inputRefs,
   className,
-}) {
+}: SegmentedInputProps) {
   return (
     <span
       className={cn(
@@ -87,6 +101,7 @@ export default function SegmentedInput({
               textClass,
               isHint ? "cursor-default select-none" : "cursor-text",
             )}
+            placeholder="|"
           />
         );
       })}

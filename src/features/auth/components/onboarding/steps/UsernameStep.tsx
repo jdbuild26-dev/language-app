@@ -79,7 +79,7 @@ export default function UsernameStep({ formData, setFormData, onBack, onContinue
             type="text"
             value={username}
             onChange={handleChange}
-            placeholder="e.g. coollearner42"
+            placeholder="|"
             className="pl-7 text-center text-lg"
             autoFocus
             maxLength={30}

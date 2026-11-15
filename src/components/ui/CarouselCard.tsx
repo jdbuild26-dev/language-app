@@ -12,7 +12,7 @@ export default function CarouselCard({
   className = "",
   assignable = false,
   exerciseType = "vocabulary",
-  exerciseSlug,
+  exerciseSlug = undefined,
 }) {
   const CardContent = (
     <div

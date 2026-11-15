@@ -822,6 +822,8 @@ const CSV_TRANSFORMERS = {
           ? JSON.parse(row["question"])
           : row["question"]
         : "",
+      question_fr: row["question_fr"] || row["Question_FR"] || "",
+      passage_en: row["passage_en"] || row["Passage_EN"] || "",
     },
     evaluation: {
       correctWord: row["eval_correctWord"]

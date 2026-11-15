@@ -297,7 +297,7 @@ function ImageLabellingContent() {
                   <Image src={ex.image} alt="Image to label" fill unoptimized sizes="(min-width: 768px) 70vw, 100vw" className="object-contain" />
                 </button>
               </DialogTrigger>
-              <DialogContent className="h-[85dvh] w-[95vw] max-w-[95vw] gap-0 border-0 bg-transparent p-0 shadow-none sm:rounded-none [&>button]:right-2 [&>button]:top-2 [&>button]:rounded-full [&>button]:bg-slate-900/75 [&>button]:p-2 [&>button]:text-white">
+              <DialogContent data-main-practice-scroll className="h-[85dvh] w-[95vw] max-w-[95vw] gap-0 border-0 bg-transparent p-0 shadow-none sm:rounded-none [&>button]:right-2 [&>button]:top-2 [&>button]:rounded-full [&>button]:bg-slate-900/75 [&>button]:p-2 [&>button]:text-white">
                 <DialogTitle className="sr-only">Image to label</DialogTitle>
                 <Image src={ex.image} alt="Image to label" fill unoptimized sizes="95vw" className="object-contain" />
               </DialogContent>

@@ -218,7 +218,7 @@ export default function HighlightPage() {
                 ref={passageRef}
                 onMouseUp={handleMouseUp}
                 onTouchEnd={handleMouseUp}
-                className="practice-type-content text-slate-800 dark:text-slate-200 selection:bg-blue-200 selection:text-blue-900 cursor-text whitespace-pre-wrap select-text"
+                className="practice-passage-content practice-type-content text-slate-800 dark:text-slate-200 selection:bg-blue-200 selection:text-blue-900 cursor-text whitespace-pre-wrap select-text"
              >
                 {passage}
              </div>

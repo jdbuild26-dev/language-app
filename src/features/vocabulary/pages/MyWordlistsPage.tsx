@@ -26,9 +26,9 @@ export default function MyWordlistsPage() {
   const { user, isLoaded } = useUser();
   const { getToken } = useAuth();
   const { learningLang } = useLanguage();
-  const [cards, setCards] = useState([]);
+  const [cards, setCards] = useState<Array<{ id: string; cardId: string; cardData: any }>>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState<string | null>(null);
   const [nextCursor, setNextCursor] = useState(null);
   const [hasMore, setHasMore] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -106,8 +106,8 @@ export default function MyWordlistsPage() {
     const isBookmarked = bookmarkedIds.has(cardId);
 
     try {
+      const token = await getToken();
       if (isBookmarked) {
-        const token = await getToken();
         await removeFromReview(token, cardId);
         setBookmarkedIds((prev) => {
           const newSet = new Set(prev);

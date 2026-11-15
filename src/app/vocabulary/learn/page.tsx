@@ -42,16 +42,20 @@ function SrsLearnPageContent() {
   const { getToken } = useAuth();
   const { learningLang, knownLang } = useLanguage();
 
-  const { level, category, topic } = useParams();
+  const params = useParams();
+  const routeValue = (value: string | string[] | undefined) => Array.isArray(value) ? value[0] : value;
+  const level = routeValue(params?.level);
+  const category = routeValue(params?.category);
+  const topic = routeValue(params?.topic);
 
   const categoryToUse = category || topic;
 
-  const [queue, setQueue] = useState([]);
+  const [queue, setQueue] = useState<any[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isCompleted, setIsCompleted] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isProcessing, setIsProcessing] = useState(false); // Processing a grade
-  const [error, setError] = useState(null);
+  const [error, setError] = useState<string | null>(null);
 
   const loadQueue = useCallback(async () => {
     if (!user) return;

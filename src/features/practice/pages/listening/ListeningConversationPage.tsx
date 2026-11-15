@@ -17,6 +17,7 @@ import { Button } from "@/components/ui/button";
 import AudioWaveform from "@/components/ui/AudioWaveform";
 import speakerStyles from "@/components/ui/AudioSpeaker.module.css";
 import { useTranslateText } from "@/hooks/useTranslateText";
+import { getStoredTranslation } from "@/features/practice/lib/storedTranslation";
 
 export default function ListeningConversationPage() {
   return (
@@ -113,6 +114,7 @@ const normalizeConversation = (rawConversation: any) => {
     })
     .sort((a, b) => a.order - b.order)
     .map((exchange) => ({
+      ...exchange,
       speakerText: exchange.speakerText,
       speakerAudio: exchange.speakerAudio,
       speaker: exchange.speaker,
@@ -176,8 +178,10 @@ function ListeningConversationContent() {
   const totalConversations = allConversations.length;
 
   // Translate question text per exchange
-  const { displayText: questionDisplayText, isTranslating: isTranslatingQ, toggle: toggleTranslate, reset: resetTranslate } = useTranslateText(currentExchange?.questionText || "", "fr");
-  useEffect(() => { resetTranslate(); }, [currentTurnIndex]); // eslint-disable-line react-hooks/exhaustive-deps
+  const questionSource = currentExchange?.questionText || "";
+  const storedQuestion = getStoredTranslation(questionSource, currentExchange);
+  const { displayText: questionDisplayText, isTranslating: isTranslatingQ, toggle: toggleTranslate, reset: resetTranslate } = useTranslateText(questionSource, storedQuestion.sourceLang, storedQuestion.translation);
+  useEffect(() => { resetTranslate(); }, [currentTurnIndex, convIndex]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const timerDuration = 45; // Increased for conversation context
 

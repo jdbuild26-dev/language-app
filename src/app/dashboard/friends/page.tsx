@@ -201,7 +201,7 @@ export default function FriendsPage() {
                     <div className="relative flex-1">
                         <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-500" />
                         <Input
-                            placeholder="Search by username (e.g., coolboy54)..."
+                            placeholder="|"
                             className="pl-10 bg-[#0f172a] border-slate-800 text-white h-12 rounded-xl focus:ring-brand-blue-1"
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}

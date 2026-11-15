@@ -3,6 +3,20 @@ import { createAnswerPairTranslation, findBilingualAnswer } from "./answerPairTr
 
 describe("answer pair translation", () => {
   afterEach(() => { vi.unstubAllGlobals(); vi.useRealTimers(); });
+  it("switches stored translations synchronously without loading or a network request", async () => {
+    const fetch = vi.fn();
+    vi.stubGlobal("fetch", fetch);
+    const pair = createAnswerPairTranslation({ wrong: "orange", correct: "carotte", wrongTranslation: "orange", correctTranslation: "carrot", targetLang: "en" });
+    const snapshots: boolean[] = [];
+    pair.subscribe(() => snapshots.push(pair.getSnapshot().loading));
+    const pending = pair.toggle();
+    expect(pair.getSnapshot()).toMatchObject({ wrong: "orange", correct: "carrot", translated: true, loading: false });
+    expect(snapshots).toEqual([false]);
+    expect(fetch).not.toHaveBeenCalled();
+    await pending;
+    await pair.toggle();
+    expect(pair.getSnapshot()).toMatchObject({ wrong: "orange", correct: "carotte", translated: false, loading: false });
+  });
   it("toggles supplied wrong and correct translations together and restores originals", async () => {
     const pair = createAnswerPairTranslation({
       wrong: "lampe", correct: "bac", wrongTranslation: "lamp", correctTranslation: "bin", targetLang: "en",
@@ -69,5 +83,10 @@ describe("answer pair translation", () => {
     expect(findBilingualAnswer("lampe", pairs, "fr")).toBe("lamp");
     expect(findBilingualAnswer("bin", pairs, "en")).toBe("bac");
     expect(findBilingualAnswer("papier", pairs, "fr")).toBeUndefined();
+  });
+  it("uses a complete stored pair despite casing, whitespace or an earlier incomplete entry", () => {
+    expect(findBilingualAnswer(" Carotte ", [{ fr: "carotte" }, { fr: "carotte", en: "carrot" }], "fr")).toBe("carrot");
+    expect(findBilingualAnswer("CARROT", [{ fr: "carotte", en: "carrot" }], "en")).toBe("carotte");
+    expect(findBilingualAnswer("livre", [{ fr: "livre", en: "book" }, { fr: "livre", en: "pound" }], "fr")).toBeUndefined();
   });
 });

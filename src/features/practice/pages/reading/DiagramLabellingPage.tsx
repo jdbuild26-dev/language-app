@@ -330,7 +330,7 @@ function DiagramLabellingContent() {
       setShowTranslation(true);
       return;
     }
-    if (translatedQuestionFromData && translatedQuestionFromData !== sourceText) {
+    if (translatedQuestionFromData?.trim()) {
       setTranslatedQuestion(translatedQuestionFromData);
       setShowTranslation(true);
       return;
@@ -342,7 +342,7 @@ function DiagramLabellingContent() {
       const res = await fetch("/api/translate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: sourceText, target_lang: targetLang }),
+        body: JSON.stringify({ text: sourceText, source_lang: showQuestionInKnown ? knownLang : learningLang, target_lang: targetLang }),
       });
       if (!res.ok) throw new Error("Translation failed");
       const data = (await res.json()) as { translation?: string };
@@ -426,7 +426,7 @@ function DiagramLabellingContent() {
               <TranslateButton onClick={() => setShowPassageTranslation(value => !value)} aria-label={showPassageTranslation ? "Hide passage translation" : "Translate passage"} title={showPassageTranslation ? "Hide passage translation" : "Translate passage"} aria-expanded={showPassageTranslation} />
             )}
           </div>
-          <p className="practice-type-content whitespace-pre-line font-sans text-slate-700 dark:text-slate-200">
+          <p className="practice-passage-content practice-type-content whitespace-pre-line font-sans text-slate-700 dark:text-slate-200">
             {passageText}
           </p>
           {showFeedback && showPassageTranslation && translatedPassageText && (
@@ -436,7 +436,7 @@ function DiagramLabellingContent() {
                   {translatedPassageTitle}
                 </h2>
               )}
-              <p className="practice-type-content whitespace-pre-line font-sans text-slate-700 dark:text-slate-200">
+              <p className="practice-passage-content practice-type-content whitespace-pre-line font-sans text-slate-700 dark:text-slate-200">
                 {translatedPassageText}
               </p>
             </div>
@@ -451,7 +451,7 @@ function DiagramLabellingContent() {
                   <Image src={imageUrl} alt={passageTitle || "Diagram"} fill sizes="(min-width: 768px) 432px, 100vw" unoptimized={/^https?:\/\//.test(imageUrl)} className="object-cover" />
                 </button>
               </DialogTrigger>
-              <DialogContent className="w-fit max-h-[95dvh] max-w-[95vw] gap-0 border-0 bg-transparent p-0 shadow-none sm:rounded-none [&>button]:right-2 [&>button]:top-2 [&>button]:rounded-full [&>button]:bg-slate-900/75 [&>button]:p-2 [&>button]:text-white">
+              <DialogContent data-main-practice-scroll className="w-fit max-h-[95dvh] max-w-[95vw] gap-0 border-0 bg-transparent p-0 shadow-none sm:rounded-none [&>button]:right-2 [&>button]:top-2 [&>button]:rounded-full [&>button]:bg-slate-900/75 [&>button]:p-2 [&>button]:text-white">
                 <DialogTitle className="sr-only">{passageTitle || "Diagram"}</DialogTitle>
                 <img src={imageUrl} alt={passageTitle || "Diagram"} className="block max-h-[85dvh] max-w-[95vw] object-contain" />
               </DialogContent>

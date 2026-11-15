@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Loader2, Mic, RotateCcw, Square } from "lucide-react";
+import { Headphones, Loader2, Mic, RotateCcw, Square, Volume2 } from "lucide-react";
 import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
 import { TranslateButton } from "@/components/ui/TranslateButton";
 import { fetchRepeatSentenceData, fetchVocabulary } from "@/services/vocabularyApi";
@@ -10,6 +10,7 @@ import { calculateSimilarity } from "@/utils/textComparison";
 import { useTranslateText } from "@/hooks/useTranslateText";
 import { usePracticeRecording } from "@/hooks/usePracticeRecording";
 import useSpeechRecognition from "@/hooks/useSpeechRecognition";
+import { useTextToSpeech } from "@/hooks/useTextToSpeech";
 
 type Question = { id: string; french: string; english: string; limit: number };
 
@@ -24,8 +25,7 @@ export default function VocabularyRepeatPage({ mode }: { mode: "word" | "sentenc
   const [index, setIndex] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [finalTranscript, setFinalTranscript] = useState("");
-  const [feedback, setFeedback] = useState<"correct" | "incorrect" | null>(null);
+  const [feedback, setFeedback] = useState<"correct" | "incorrect" | "unscored" | null>(null);
   const [score, setScore] = useState(0);
   const [complete, setComplete] = useState(false);
   const [playing, setPlaying] = useState(false);
@@ -33,7 +33,9 @@ export default function VocabularyRepeatPage({ mode }: { mode: "word" | "sentenc
   const generation = useRef(0);
   const evaluated = useRef(false);
   const submitting = useRef(false);
+  const counted = useRef(false);
   const speech = useSpeechRecognition("fr");
+  const pronunciation = useTextToSpeech();
   const recording = usePracticeRecording(questions[index]?.limit || 60, speech.stopListening);
 
   useEffect(() => {
@@ -73,6 +75,7 @@ export default function VocabularyRepeatPage({ mode }: { mode: "word" | "sentenc
     submitting.current = false;
     speech.resetTranscript();
     recording.reset();
+    pronunciation.cancel();
     audio.current?.pause();
     setPlaying(false);
   };
@@ -81,7 +84,6 @@ export default function VocabularyRepeatPage({ mode }: { mode: "word" | "sentenc
     if (!question || recording.isStarting) return;
     discard();
     setError("");
-    setFinalTranscript("");
     setFeedback(null);
     translation.reset();
     const request = generation.current;
@@ -91,6 +93,7 @@ export default function VocabularyRepeatPage({ mode }: { mode: "word" | "sentenc
   const replay = async () => {
     if (!audio.current) return;
     if (playing) { audio.current.pause(); audio.current.currentTime = 0; setPlaying(false); return; }
+    pronunciation.cancel();
     audio.current.currentTime = 0;
     try { await audio.current.play(); setPlaying(true); }
     catch { setError("Unable to play this recording."); }
@@ -109,21 +112,39 @@ export default function VocabularyRepeatPage({ mode }: { mode: "word" | "sentenc
       const correct = similarity >= (mode === "word" ? 0.7 : 0.75);
       evaluated.current = true;
       setError("");
-      setFinalTranscript(capturedText);
       setFeedback(correct ? "correct" : "incorrect");
-      if (correct) setScore((value) => value + 1);
+      if (correct && !counted.current) {
+        counted.current = true;
+        setScore((value) => value + 1);
+      }
     } catch (cause) {
-      if (request === generation.current) setError(cause instanceof Error ? cause.message : "Speech evaluation failed. This recording has not been scored.");
+      if (request === generation.current) {
+        setError(cause instanceof Error ? cause.message : "Speech evaluation failed. This recording has not been scored.");
+        setFeedback("unscored");
+      }
     } finally { submitting.current = false; }
   };
   const next = () => {
     discard();
+    counted.current = false;
     setError("");
-    setFinalTranscript("");
     setFeedback(null);
     translation.reset();
     if (index + 1 < questions.length) setIndex((value) => value + 1);
     else setComplete(true);
+  };
+
+  const retry = () => {
+    if (counted.current) {
+      counted.current = false;
+      setScore((value) => Math.max(0, value - 1));
+    }
+    void start();
+  };
+  const playPronunciation = () => {
+    audio.current?.pause();
+    setPlaying(false);
+    pronunciation.speak(question.french, "fr-FR");
   };
 
   if (loading) return <div className="flex min-h-dvh items-center justify-center"><Loader2 className="h-8 w-8 animate-spin" /></div>;
@@ -141,33 +162,51 @@ export default function VocabularyRepeatPage({ mode }: { mode: "word" | "sentenc
     onExit={() => { discard(); router.push("/vocabulary/practice"); }}
     onNext={feedback ? next : submit}
     onRestart={() => window.location.reload()}
-    isSubmitEnabled={Boolean(recording.audioUrl) && !recording.isRecording}
+    isSubmitEnabled={Boolean(feedback) || (Boolean(recording.audioUrl) && !recording.isRecording)}
     submitLabel={feedback ? index + 1 === questions.length ? "Finish" : "Continue" : "Submit"}
     showFeedback={Boolean(feedback)}
-    preserveFooterHeightOnFeedback
     isCorrect={feedback === "correct"}
-    feedbackMessage={feedback === "correct" ? "Well done" : finalTranscript ? "Try again" : "Speech could not be evaluated"}
-    correctAnswer={feedback === "incorrect" ? question.french : null}
+    feedbackMessage={feedback === "correct" ? "Correct" : feedback === "incorrect" ? "Incorrect" : "Speech could not be evaluated"}
+    feedbackChildren={feedback === "unscored" ? <span>This recording was not scored. You can retry or continue.</span> : null}
+    feedbackInFlow
   >
     <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col items-center justify-center gap-8 px-4 py-8 text-center">
-      <div className="practice-type-content-large flex w-full justify-center px-14 font-medium text-slate-900 dark:text-slate-100">
-        <div className="min-w-0 max-w-full">
+      <div className="practice-type-content-large flex w-full items-center justify-center px-14 font-medium text-slate-900 dark:text-slate-100">
+        <div className="relative min-w-0 max-w-full">
+          {feedback && <TranslateButton className="absolute right-full top-1/2 mr-2 h-11 w-11 -translate-y-1/2 [&_svg]:h-6 [&_svg]:w-6" aria-label={translation.showTranslation ? "Show French" : "Show English"} aria-pressed={translation.showTranslation} isLoading={translation.isTranslating} onClick={translation.toggle} />}
           <span className="block break-words" lang={feedback && translation.showTranslation || mode === "sentence" && !feedback && question.english ? "en" : "fr"}>{feedback ? translation.displayText : mode === "sentence" && question.english ? question.english : question.french}</span>
         </div>
       </div>
-      <div className="grid grid-cols-[3.5rem_5rem_3.5rem] items-center gap-6">
-        {feedback && <TranslateButton className="col-start-1 h-11 w-11 justify-self-center [&_svg]:h-6 [&_svg]:w-6" aria-label={translation.showTranslation ? "Show French" : "Show English"} aria-pressed={translation.showTranslation} isLoading={translation.isTranslating} onClick={translation.toggle} />}
-        <button type="button" onClick={recording.isRecording ? () => void recording.stop() : start} disabled={recording.isStarting || Boolean(feedback)} aria-label={recording.isRecording ? "Stop recording" : "Start recording"} className="col-start-2 flex h-20 w-20 items-center justify-center rounded-full bg-indigo-600 text-white disabled:opacity-50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-indigo-300">
-          {recording.isStarting ? <Loader2 className="h-8 w-8 animate-spin" /> : recording.isRecording ? <Square className="h-8 w-8" fill="currentColor" /> : <Mic className="h-9 w-9" />}
-        </button>
-        <button type="button" onClick={replay} disabled={!recording.audioUrl || recording.isRecording} aria-label={playing ? "Stop replay" : "Replay your recording"} className="col-start-3 flex h-14 w-14 items-center justify-center rounded-full bg-rose-400 text-white disabled:bg-slate-300 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-rose-300">
-          {playing ? <Square className="h-6 w-6" fill="currentColor" /> : <RotateCcw className="h-7 w-7" />}
-        </button>
+      <div className="flex items-center justify-center gap-5">
+        {feedback ? (
+          <>
+            <button type="button" onClick={playPronunciation} aria-label="Play correct pronunciation" className="flex h-16 w-16 items-center justify-center rounded-full bg-indigo-600 text-white focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-indigo-300">
+              <Volume2 className="h-8 w-8" aria-hidden="true" />
+            </button>
+            <button type="button" onClick={replay} disabled={!recording.audioUrl} aria-label={playing ? "Stop replay" : "Play your recording"} className="flex h-16 w-16 items-center justify-center rounded-full bg-sky-100 text-sky-700 disabled:opacity-40 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-sky-300">
+              {playing ? <Square className="h-7 w-7" fill="currentColor" aria-hidden="true" /> : <Headphones className="h-8 w-8" aria-hidden="true" />}
+            </button>
+            <button type="button" onClick={retry} aria-label="Retry this question" className="flex h-14 w-14 items-center justify-center rounded-full bg-rose-400 text-white focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-rose-300">
+              <RotateCcw className="h-7 w-7" aria-hidden="true" />
+            </button>
+          </>
+        ) : (
+          <>
+            <button type="button" onClick={recording.isRecording ? () => void recording.stop() : start} disabled={recording.isStarting} aria-label={recording.isRecording ? "Stop recording" : "Start recording"} className="flex h-20 w-20 items-center justify-center rounded-full bg-indigo-600 text-white disabled:opacity-50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-indigo-300">
+              {recording.isStarting ? <Loader2 className="h-8 w-8 animate-spin" /> : recording.isRecording ? <Square className="h-8 w-8" fill="currentColor" /> : <Mic className="h-9 w-9" />}
+            </button>
+            <button type="button" onClick={replay} disabled={!recording.audioUrl || recording.isRecording} aria-label={playing ? "Stop replay" : "Replay your recording"} className="flex h-14 w-14 items-center justify-center rounded-full bg-rose-400 text-white disabled:bg-slate-300 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-rose-300">
+              {playing ? <Square className="h-6 w-6" fill="currentColor" /> : <RotateCcw className="h-7 w-7" />}
+            </button>
+          </>
+        )}
       </div>
       <div className="practice-type-feedback min-h-24 w-full space-y-2">
         {recording.isRecording && <p aria-live="polite" className="text-slate-600 dark:text-slate-300">Recording stops in {recording.remainingSeconds} seconds</p>}
-        {(error || recording.error) && <p role="alert" className="text-red-700">{error || recording.error}</p>}
-        {feedback && finalTranscript && <p className="text-slate-600 dark:text-slate-300">You said: {finalTranscript}</p>}
+        {!feedback && (error || recording.error) && <p role="alert" className="text-red-700">{error || recording.error}</p>}
+        {!feedback && recording.error && !recording.audioUrl && (
+          <button type="button" onClick={() => setFeedback("unscored")} className="rounded-lg px-4 py-2 font-medium text-sky-700 underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 dark:text-sky-300">Skip this question</button>
+        )}
         {feedback && translation.error && <p role="status" className="text-red-700 dark:text-red-400">{translation.error}</p>}
       </div>
       {recording.audioUrl && <audio ref={audio} src={recording.audioUrl} onEnded={() => setPlaying(false)} />}

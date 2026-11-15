@@ -1,17 +1,19 @@
 "use client";
 
-import { Turtle, Volume2 } from "lucide-react";
+import { Turtle, Volume2, Pause, Play } from "lucide-react";
 import { cn } from "@/lib/utils";
 import speakerStyles from "./AudioSpeaker.module.css";
 
 /** Shared slow/normal control used by Main Practice and Vocabulary listening. */
-export default function ListeningPlaybackButton({ mode, active, onClick, label, size = "default" }: {
+export default function ListeningPlaybackButton({ mode, active, onClick, label, size = "default", playbackState }: {
   mode: "slow" | "normal";
   active: boolean;
   onClick: () => void;
   label: string;
   size?: "default" | "large";
+  playbackState?: "playing" | "paused";
 }) {
+  const NormalIcon = playbackState === "playing" ? Pause : playbackState === "paused" ? Play : Volume2;
   return (
     <button
       type="button"
@@ -32,7 +34,7 @@ export default function ListeningPlaybackButton({ mode, active, onClick, label, 
     >
       {mode === "slow"
         ? <Turtle className={size === "large" ? "h-7 w-7" : "h-6 w-6"} aria-hidden="true" />
-        : <Volume2 className={cn(size === "large" ? "h-10 w-10" : "h-7 w-7", speakerStyles.speakerIcon)} aria-hidden="true" />}
+        : <NormalIcon className={cn(size === "large" ? "h-10 w-10" : "h-7 w-7", speakerStyles.speakerIcon)} aria-hidden="true" />}
     </button>
   );
 }
