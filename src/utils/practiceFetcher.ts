@@ -1,4 +1,5 @@
 import { loadMockCSV } from "@/utils/csvLoader";
+import { allowBundledPracticeCsv } from "@/utils/practiceDataSource";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
@@ -92,7 +93,7 @@ export async function fetchPracticeData(
     console.warn(`[practiceFetcher] Backend unavailable for "${slug}", falling back to CSV:`, error);
 
     const csvPath = SLUG_TO_CSV[slug];
-    if (csvPath) {
+    if (csvPath && allowBundledPracticeCsv(csvPath, process.env.NODE_ENV)) {
       return loadMockCSV(csvPath, options);
     }
 

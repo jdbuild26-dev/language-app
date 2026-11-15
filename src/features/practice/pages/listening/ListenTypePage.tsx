@@ -3,7 +3,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { usePracticeExit } from "@/hooks/usePracticeExit";
 import { useExerciseTimer } from "@/hooks/useExerciseTimer";
-import { Volume2, Turtle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
 import { getFeedbackMessage } from "@/utils/feedbackMessages";
@@ -12,13 +11,13 @@ import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { TranslateButton } from "@/components/ui/TranslateButton";
 import AudioWaveform from "@/components/ui/AudioWaveform";
-import speakerStyles from "@/components/ui/AudioSpeaker.module.css";
+import ListeningPlaybackButton from "@/components/ui/ListeningPlaybackButton";
 import { fetchPracticeData } from "@/utils/practiceFetcher";
 import { useSearchParams } from "next/navigation";
 import { Suspense } from "react";
 import styles from "./ListenTypePage.module.css";
-
-const ACCENT_KEYS = ["e", "è", "ê", "à", "ç", "â", "î", "ô", "û", "ë", "ï", "ü"];
+import { useLanguage } from "@/contexts/LanguageContext";
+import SpecialCharacterKeyboard from "../../components/SpecialCharacterKeyboard";
 
 type ListenTypeQuestion = {
   audioText: string;
@@ -26,6 +25,9 @@ type ListenTypeQuestion = {
   hint: string;
   timeLimitSeconds: number;
   level: string;
+  characterLimit?: number;
+  heading_fr?: string;
+  heading_en?: string;
 };
 
 export default function ListenTypePage() {
@@ -38,7 +40,8 @@ export default function ListenTypePage() {
 
 function ListenTypeContent() {
   const handleExit = usePracticeExit();
-  const { speak, isSpeaking } = useTextToSpeech();
+  const { learningLang = "fr" } = useLanguage();
+  const { speak, isSpeaking, cancel } = useTextToSpeech();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const searchParams = useSearchParams();
   const tag = searchParams?.get("tag") ?? undefined;
@@ -85,6 +88,9 @@ function ListenTypeContent() {
             hint:            c.hint             || item.hint            || "",
             timeLimitSeconds: Number(c.timeLimitSeconds || item.timeLimitSeconds || item.TimeLimitSeconds || 45),
             level:           item.Level         || item.level           || "A1",
+            characterLimit:  Number(c.characterLimit || item.characterLimit || item["Character Limit"] || 0),
+            heading_fr:      c.heading_fr || item.heading_fr || item.Heading_FR || item.instructionFr || "",
+            heading_en:      c.heading_en || item.heading_en || item.Heading_EN || item.instructionEn || "",
           };
         }).filter((q: any) => q.audioText);
         setQuestions(mapped);
@@ -97,26 +103,53 @@ function ListenTypeContent() {
     fetchQuestions();
   }, [tag]);
 
-  // Auto-play audio when question changes (Normal Speed)
+  // Reset each question; playback starts only from the audio controls.
   useEffect(() => {
     if (currentQuestion && !isCompleted) {
       setUserInput("");
       setHasPlayed(false);
       setShowTranslation(false);
       setPlaybackMode(null);
-      const timer = setTimeout(() => {
-        handlePlayNormal();
-      }, 500);
-      return () => clearTimeout(timer);
+      resetTimer();
     }
-  }, [currentIndex, currentQuestion, isCompleted]);
+  }, [currentIndex, currentQuestion, isCompleted, resetTimer]);
+
+  useEffect(() => {
+    if (isLoading || !currentQuestion || showFeedback || isCompleted) return;
+    textareaRef.current?.focus({ preventScroll: true });
+  }, [isLoading, currentQuestion, showFeedback, isCompleted]);
+
+  useEffect(() => {
+    if (isLoading || !currentQuestion || showFeedback || isCompleted) return;
+    const handleTyping = (event: KeyboardEvent) => {
+      const input = textareaRef.current;
+      const target = event.target instanceof Element ? event.target : null;
+      if (!input || event.defaultPrevented || event.isComposing || event.ctrlKey || event.metaKey || event.altKey
+        || event.key.length !== 1 || document.activeElement === input
+        || (event.key === " " && target?.closest('button, [role="button"]'))
+        || target?.closest('input, textarea, select, [contenteditable]:not([contenteditable="false"]), [role="textbox"], [role="dialog"], [role="alertdialog"]')
+        || document.querySelector('[aria-modal="true"], dialog[open]')) return;
+
+      event.preventDefault();
+      const start = input.selectionStart;
+      const end = input.selectionEnd;
+      const next = userInput.slice(0, start) + event.key + userInput.slice(end);
+      input.focus({ preventScroll: true });
+      const limit = Math.max(currentQuestion.audioText.length, currentQuestion.characterLimit || 100);
+      if (next.length > limit) return;
+      setUserInput(next);
+      requestAnimationFrame(() => input.setSelectionRange(start + event.key.length, start + event.key.length));
+    };
+    document.addEventListener("keydown", handleTyping);
+    return () => document.removeEventListener("keydown", handleTyping);
+  }, [isLoading, currentQuestion, showFeedback, isCompleted, userInput]);
 
   const handlePlayNormal = () => {
     if (currentQuestion) {
       speak(currentQuestion.audioText, "fr-FR", 0.9);
       setPlaybackMode("normal");
       setHasPlayed(true);
-      resetTimer();
+      if (!hasPlayed) resetTimer();
     }
   };
 
@@ -125,7 +158,7 @@ function ListenTypeContent() {
       speak(currentQuestion.audioText, "fr-FR", 0.75);
       setPlaybackMode("slow");
       setHasPlayed(true);
-      resetTimer();
+      if (!hasPlayed) resetTimer();
     }
   };
 
@@ -155,6 +188,7 @@ function ListenTypeContent() {
   };
 
   const handleContinue = () => {
+    cancel();
     setShowFeedback(false);
     setShowTranslation(false);
     setUserInput("");
@@ -189,7 +223,7 @@ function ListenTypeContent() {
 
   const progress =
     questions.length > 0 ? ((currentIndex + 1) / questions.length) * 100 : 0;
-  const characterLimit = Math.max(100, currentQuestion.audioText.length);
+  const characterLimit = Math.max(currentQuestion.audioText.length, currentQuestion.characterLimit || 100);
   const canTranslate = Boolean(currentQuestion.englishText.trim());
   const handleTranslate = () => {
     if (showFeedback && canTranslate) setShowTranslation(visible => !visible);
@@ -213,8 +247,8 @@ function ListenTypeContent() {
     <>
       <PracticeGameLayout
         questionType="Listen and Type the Sentence"
-        instructionFr="Écoutez attentivement et tapez la phrase complète"
-        instructionEn="Listen carefully and type the full sentence"
+        instructionFr={currentQuestion?.heading_fr || "Écoutez attentivement et tapez la phrase complète"}
+        instructionEn={currentQuestion?.heading_en || "Listen carefully and type the full sentence"}
         progress={progress}
         isGameOver={isCompleted}
         score={score}
@@ -237,55 +271,37 @@ function ListenTypeContent() {
       >
         <div className="mx-auto flex w-full max-w-[888px] flex-col px-4 pb-8 pt-8 sm:px-6 sm:pt-12">
           <div className={cn(styles.enter, "flex min-h-[76px] w-full max-w-[600px] items-center gap-3 self-center rounded-[22px] border border-slate-200 bg-white px-3 py-2.5 shadow-[0_2px_10px_rgba(15,23,42,0.04)] sm:min-h-[84px] sm:gap-4 sm:px-4 dark:border-slate-700 dark:bg-slate-900")}>
-            <button
-              type="button"
+            <ListeningPlaybackButton
+              mode="slow"
               onClick={handlePlaySlow}
-              aria-label="Play audio slowly"
-              aria-pressed={isSpeaking && playbackMode === "slow"}
-              title="Play audio slowly"
-              className={cn(
-                "flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-sky-500 text-white transition-[background-color,box-shadow,transform] duration-200 hover:bg-sky-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 motion-safe:hover:-translate-y-0.5 motion-safe:active:translate-y-0 motion-safe:active:scale-[0.96] motion-reduce:transition-none sm:h-[52px] sm:w-[52px] dark:focus-visible:ring-offset-slate-900",
-                isSpeaking && playbackMode === "slow" && "shadow-[0_0_0_4px_rgba(14,165,233,0.2)]",
-              )}
-            >
-              <Turtle className="h-6 w-6" aria-hidden="true" />
-            </button>
-            <button
-              type="button"
+              label="Play audio slowly"
+              active={isSpeaking && playbackMode === "slow"}
+            />
+            <ListeningPlaybackButton
+              mode="normal"
               onClick={handlePlayNormal}
-              aria-label={hasPlayed ? "Replay audio" : "Play audio"}
-              aria-pressed={isSpeaking && playbackMode === "normal"}
-              title={hasPlayed ? "Replay audio" : "Play audio"}
-              className={cn(
-                speakerStyles.speakerButton,
-                "flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-sky-100 text-sky-700 transition-[background-color,box-shadow,transform] duration-200 hover:bg-sky-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 motion-safe:active:scale-[0.96] motion-reduce:transition-none sm:h-[52px] sm:w-[52px] dark:bg-sky-900/40 dark:text-sky-300 dark:hover:bg-sky-900/60 dark:focus-visible:ring-offset-slate-900",
-                isSpeaking && playbackMode === "normal" && speakerStyles.playing,
-                isSpeaking && playbackMode === "normal" && "bg-sky-500 text-white shadow-[0_0_0_4px_rgba(14,165,233,0.16)] dark:bg-sky-600 dark:text-white",
-              )}
-            >
-              <Volume2 className={cn("h-7 w-7", speakerStyles.speakerIcon)} aria-hidden="true" />
-            </button>
+              label={hasPlayed ? "Replay audio at normal speed" : "Play audio at normal speed"}
+              active={isSpeaking && playbackMode === "normal"}
+            />
             <AudioWaveform isPlaying={isSpeaking} className="flex-1 pl-1" />
           </div>
 
-          <div className={cn(styles.enterKeys, "mt-10 flex flex-wrap justify-center gap-2.5 sm:mt-12")} aria-label="French accent keyboard">
-            {ACCENT_KEYS.map((char) => (
-              <button
-                key={char}
-                type="button"
-                disabled={showFeedback || userInput.length >= characterLimit}
-                onMouseDown={(event) => event.preventDefault()}
-                onClick={() => insertCharacter(char)}
-                aria-label={"Insert " + char}
-                className="flex h-[50px] w-[50px] items-center justify-center rounded-2xl border border-slate-200 bg-white text-base font-semibold text-slate-900 shadow-[0_1px_2px_rgba(15,23,42,0.03)] transition-[background-color,border-color,box-shadow,transform] duration-150 hover:border-sky-300 hover:bg-sky-50 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 motion-safe:active:scale-[0.94] motion-reduce:transition-none disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800"
-              >
-                {char}
-              </button>
-            ))}
-          </div>
+          {!showFeedback && (
+            <SpecialCharacterKeyboard
+              key={learningLang}
+              learningLanguage={learningLang}
+              onInsert={insertCharacter}
+              disabled={userInput.length >= characterLimit}
+              className={cn(styles.enterKeys, "mt-10 sm:mt-12")}
+            />
+          )}
 
           <div className={cn(styles.enterAnswer, "relative mt-8 w-full sm:mt-9")}>
             {showFeedback && (
+              <div className="relative mb-6 border-b border-slate-200 px-12 pb-6 dark:border-slate-700">
+                <p className="practice-type-content min-w-0 text-center font-medium text-green-800 dark:text-green-200" aria-label={showTranslation ? "English translation of the correct answer" : "Correct French answer"}>
+                  {showTranslation ? currentQuestion.englishText : currentQuestion.audioText}
+                </p>
               <TranslateButton
                 iconVariant="option"
                 iconSize="md"
@@ -294,16 +310,17 @@ function ListenTypeContent() {
                 aria-label={showTranslation ? "Show French sentence" : "Translate sentence to English"}
                 aria-pressed={showTranslation}
                 title={showTranslation ? "Show French" : "Translate to English"}
-                className="absolute left-4 top-4 z-10 h-10 w-10 rounded-none border-0 bg-transparent shadow-none hover:bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:[&_svg]:scale-125"
+                className="absolute right-0 top-0 h-10 w-10 shrink-0"
               />
+              </div>
             )}
             <label className="sr-only" htmlFor="listen-type-answer">
-              {showFeedback ? (showTranslation ? "English translation" : "Correct French sentence") : "Type the full sentence you hear"}
+              {showFeedback ? "Your submitted answer" : "Type the full sentence you hear"}
             </label>
             <textarea
               id="listen-type-answer"
               ref={textareaRef}
-              value={showFeedback ? (showTranslation ? currentQuestion.englishText : currentQuestion.audioText) : userInput}
+              value={userInput}
               onChange={(e) => {
                 if (!showFeedback) setUserInput(e.target.value);
               }}
@@ -324,7 +341,7 @@ function ListenTypeContent() {
               className={cn(
                 "block min-h-[200px] w-full resize-none rounded-[20px] border-2 border-slate-200 bg-white px-6 py-5 text-lg leading-relaxed text-slate-900 outline-none transition-[background-color,border-color,box-shadow] duration-200 motion-reduce:transition-none dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100",
                 !showFeedback && "focus:border-sky-500 focus:ring-4 focus:ring-sky-100 dark:focus:ring-sky-900/30",
-                showFeedback && "pl-20 font-medium",
+                showFeedback && "font-medium",
                 showFeedback && isCorrect && "border-green-500 bg-green-50 text-green-950 focus:border-green-500 dark:border-green-500 dark:bg-green-950/30 dark:text-green-100",
                 showFeedback && !isCorrect && "border-red-500 bg-red-50 text-red-950 focus:border-red-500 dark:border-red-500 dark:bg-red-950/30 dark:text-red-100",
               )}

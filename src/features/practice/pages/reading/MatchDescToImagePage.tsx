@@ -74,9 +74,9 @@ function MatchDescToImageContent() {
           return {
             description: c.description || item.description || "",
             images: parseImages(c.images ?? item.images),
-            instructionFr: item.instructionFr || item.instruction_fr || "",
-            instructionEn: item.instructionEn || item.instruction_en || "",
-            localizedInstruction: item.localizedInstruction || "",
+            instructionFr: c.heading_fr || item.heading_fr || item.instructionFr || item.instruction_fr || "",
+            instructionEn: c.heading_en || item.heading_en || item.instructionEn || item.instruction_en || "",
+            localizedInstruction: c.heading_fr || item.heading_fr || item.localizedInstruction || "",
           } as MatchQuestion;
         }).filter((q) => q.description || (q.images && q.images.length > 0));
 
@@ -171,8 +171,8 @@ function MatchDescToImageContent() {
         questionTypeFr="Associer la description à l'image"
         questionTypeEn="Match Description to Image"
         localizedInstruction={currentQuestion?.localizedInstruction}
-        instructionFr="Choisissez l'image qui correspond"
-        instructionEn="Choose the image that matches the description"
+        instructionFr={currentQuestion?.instructionFr || "Choisissez l'image qui correspond"}
+        instructionEn={currentQuestion?.instructionEn || "Choose the image that matches the description"}
         progress={progress}
         isGameOver={isCompleted}
         score={score}

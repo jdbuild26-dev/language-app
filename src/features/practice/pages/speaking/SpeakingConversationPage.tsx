@@ -3,6 +3,7 @@
 
 import React, { useState, useEffect, useRef, useCallback, Suspense } from "react";
 import { usePracticeExit } from "@/hooks/usePracticeExit";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { useExerciseTimer } from "@/hooks/useExerciseTimer";
 import { Languages, User, Mic, Volume2 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -13,6 +14,7 @@ import { fetchPracticeData } from "@/utils/practiceFetcher";
 import { useSearchParams } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { useTranslateText } from "@/hooks/useTranslateText";
+import { getStoredTranslation } from "@/features/practice/lib/storedTranslation";
 import { Button } from "@/components/ui/button";
 import WritingFeedbackResult from "@/components/WritingFeedbackResult";
 
@@ -26,6 +28,7 @@ export default function SpeakingConversationPage() {
 
 function SpeakingConversationContent() {
   const handleExit = usePracticeExit();
+  const { learningLang } = useLanguage();
   const { speak } = useTextToSpeech();
   const chatEndRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<any>(null);
@@ -57,9 +60,11 @@ function SpeakingConversationContent() {
   const totalConversations = allConversations.length;
 
   // Translate prompt per exchange
-  const { displayText: promptDisplayText, isTranslating: isTranslatingP, toggle: toggleTranslate, reset: resetTranslate } = useTranslateText(currentExchange?.prompt || "", "fr");
+  const promptSource = currentExchange?.prompt || "";
+  const storedPrompt = getStoredTranslation(promptSource, currentExchange);
+  const { displayText: promptDisplayText, isTranslating: isTranslatingP, toggle: toggleTranslate, reset: resetTranslate } = useTranslateText(promptSource, storedPrompt.sourceLang, storedPrompt.translation);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  React.useEffect(() => { resetTranslate(); }, [currentTurnIndex]);
+  React.useEffect(() => { resetTranslate(); }, [currentTurnIndex, convIndex]);
 
   const { timerString, resetTimer } = useExerciseTimer({
     duration: conversation?.timeLimitSeconds || 300,
@@ -143,6 +148,10 @@ function SpeakingConversationContent() {
             .filter((item: any) => Array.isArray(item.exchanges) && item.exchanges.length > 0)
             .map((item: any) => ({
               title: item.title || item.title_en || item.title_fr || "",
+              title_fr: item.passage_title_fr || item.title_fr || "",
+              title_en: item.passage_title_en || item.title_en || "",
+              heading_fr: item.heading_fr || item.Heading_FR || "",
+              heading_en: item.heading_en || item.Heading_EN || "",
               scenario: item.scenario || item.scenario_en || item.context_en || "",
               objectives: item.objectives || item.objectives_en || "",
               timeLimitSeconds: item.timeLimitSeconds || 300,
@@ -359,8 +368,8 @@ function SpeakingConversationContent() {
     <>
       <PracticeGameLayout
         questionType="Speaking Conversation"
-        instructionFr="Répondez à la conversation en parlant en français"
-        instructionEn="Respond to the conversation by speaking in French"
+        instructionFr={conversation?.heading_fr || "Répondez à la conversation en parlant en français"}
+        instructionEn={conversation?.heading_en || "Respond to the conversation by speaking in French"}
         progress={progress}
         isGameOver={isCompleted}
         score={score}
@@ -508,7 +517,7 @@ function SpeakingConversationContent() {
                 Context
               </p>
               <p className="text-sm leading-relaxed text-slate-700 dark:text-slate-300 break-words overflow-hidden">
-                {conversation?.scenario || conversation?.title}
+                {conversation?.scenario || (learningLang === "fr" ? conversation?.title_fr || conversation?.title : conversation?.title_en || conversation?.title)}
               </p>
             </div>
 

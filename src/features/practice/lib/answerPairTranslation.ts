@@ -4,6 +4,7 @@ export type AnswerPairInput = {
   wrongTranslation?: string;
   correctTranslation?: string;
   targetLang: string;
+  sourceLang?: string;
 };
 
 export type AnswerPairSnapshot = {
@@ -43,6 +44,11 @@ export function createAnswerPairTranslation(input: AnswerPairInput) {
         update({ wrong: input.wrong, correct: input.correct, translated: false, error: "" });
         return;
       }
+      const texts = [...new Set([input.wrong, input.correct].filter((text): text is string => Boolean(text)))];
+      if (texts.every(text => cache.has(text))) {
+        update({ wrong: input.wrong ? cache.get(input.wrong) : undefined, correct: cache.get(input.correct)!, translated: true, loading: false, error: "" });
+        return;
+      }
       const currentGeneration = ++generation;
       const controller = new AbortController();
       request = controller;
@@ -52,11 +58,11 @@ export function createAnswerPairTranslation(input: AnswerPairInput) {
       });
       update({ loading: true, error: "" });
       try {
-        await Promise.race([cancelled, Promise.all([...new Set([input.wrong, input.correct].filter((text): text is string => Boolean(text)))].map(async text => {
+        await Promise.race([cancelled, Promise.all(texts.map(async text => {
           if (cache.has(text)) return;
           const response = await fetch("/api/translate", {
             method: "POST", headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ text, source_lang: input.targetLang === "fr" ? "en" : "fr", target_lang: input.targetLang }),
+            body: JSON.stringify({ text, source_lang: input.sourceLang || (input.targetLang === "fr" ? "en" : "fr"), target_lang: input.targetLang }),
             signal: controller.signal,
           });
           if (!response.ok) throw new Error("Translation failed");
@@ -81,5 +87,8 @@ export function findBilingualAnswer(text: string | undefined, pairs: { fr?: stri
   if (!text) return undefined;
   const source = sourceLang === "fr" ? "fr" : "en";
   const target = source === "fr" ? "en" : "fr";
-  return pairs.find(pair => pair[source] === text)?.[target] || undefined;
+  const normalize = (value: string) => value.trim().normalize("NFC").toLocaleLowerCase();
+  const matches = pairs.filter(pair => pair[source] && normalize(pair[source]!) === normalize(text) && pair[target]?.trim());
+  const translations = new Set(matches.map(pair => normalize(pair[target]!)));
+  return translations.size === 1 ? matches[0][target]!.trim() : undefined;
 }

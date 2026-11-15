@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef, Suspense } from "react";
+import React, { useState, useEffect, Suspense } from "react";
 import { usePracticeExit } from "@/hooks/usePracticeExit";
 import { useExerciseTimer } from "@/hooks/useExerciseTimer";
 import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
@@ -11,22 +11,21 @@ import { TranslateButton } from "@/components/ui/TranslateButton";
 import { Dialog, DialogContent, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { useQuestionLanguage } from "@/hooks/useQuestionLanguage";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { readImageMcqLocales, type ImageMcqLocale } from "@/features/practice/lib/imageMcqLocalization";
 import { usePracticeComplete } from "@/hooks/usePracticeComplete";
 import { useSearchParams } from "next/navigation";
 
 type ImageMCQQuestion = {
   timeLimitSeconds?: number;
-  // New bilingual format
-  options_fr?: string[];
-  options_en?: string[];
+  sourceLang?: string;
+  localized?: Record<string, ImageMcqLocale>;
   // Legacy format
   options?: string[];
   englishOptions?: string[];
   imageUrl?: string;
   imageAlt?: string;
   question?: string;
-  question_fr?: string;
-  question_en?: string;
   level?: string;
   correctIndex: number;
 };
@@ -59,6 +58,7 @@ export default function ImageMCQPage() {
 
 function ImageMCQContent() {
   const handleExit = usePracticeExit();
+  const { learningLang: requestedLearningLang, knownLang: requestedKnownLang } = useLanguage();
   const searchParams = useSearchParams();
   const tag = searchParams?.get("tag") ?? undefined;
 
@@ -67,8 +67,11 @@ function ImageMCQContent() {
 
   useEffect(() => {
     const fetchQuestions = async () => {
+      setLoading(true);
       try {
-        const data = await loadMockCSV("practice/reading/image_mcq.csv", { tag });
+        const data = await loadMockCSV("practice/reading/image_mcq.csv", {
+          tag, learningLang: requestedLearningLang, knownLang: requestedKnownLang,
+        });
         const mapped = (Array.isArray(data) ? data : []).map((value: unknown) => {
           const item = asRecord(value);
           const c = item.content ? asRecord(item.content) : item;
@@ -77,11 +80,9 @@ function ImageMCQContent() {
 
           return {
             level:            item.Level || item.level || '',
-            question_fr:      c.question_fr || item.question_fr || '',
-            question_en:      c.question_en || item.question_en || item.question || '',
+            sourceLang:       String(item.learning_lang || item.LearningLang || requestedLearningLang).toLowerCase(),
+            localized:        readImageMcqLocales(item, c),
             question:         c.question_en || item.question_en || item.question || '',
-            options_fr:       parseArray(c.options_fr || item.options_fr),
-            options_en:       parseArray(c.options_en || item.options_en),
             // legacy fallback
             options:          parseArray(c.options || item.options),
             englishOptions:   parseArray(c.englishOptions || item.englishOptions),
@@ -91,7 +92,16 @@ function ImageMCQContent() {
             timeLimitSeconds: Number(cfg.timeLimitSeconds || item.timeLimitSeconds || 120),
           } as ImageMCQQuestion;
         });
-        setQuestions(mapped);
+        const selectedLanguage = requestedLearningLang.toLowerCase();
+        setQuestions(mapped.filter(question => {
+          const selectedOptions = question.localized?.[selectedLanguage]?.options;
+          return selectedOptions?.length || (question.sourceLang === selectedLanguage && question.options?.length);
+        }));
+        setCurrentIndex(0);
+        setSelectedOption(null);
+        setShowFeedback(false);
+        setIsCompleted(false);
+        setScore(0);
       } catch (error) {
         console.error("Error loading mock data:", error);
       } finally {
@@ -99,7 +109,7 @@ function ImageMCQContent() {
       }
     };
     fetchQuestions();
-  }, [tag]);
+  }, [tag, requestedLearningLang, requestedKnownLang]);
 
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedOption, setSelectedOption] = useState<number | null>(null);
@@ -110,33 +120,24 @@ function ImageMCQContent() {
   const [score, setScore] = useState(0);
   const [showTranslation, setShowTranslation] = useState(false);
   const [revealedOptionTranslations, setRevealedOptionTranslations] = useState<Record<number, boolean>>({});
-  const questionHeadingRef = useRef<HTMLDivElement>(null);
-  const [questionHeadingHeight, setQuestionHeadingHeight] = useState(0);
-
-  useEffect(() => {
-    if (loading || !questionHeadingRef.current) return;
-    const heading = questionHeadingRef.current;
-    const updateHeight = () => setQuestionHeadingHeight(heading.getBoundingClientRect().height);
-    updateHeight();
-    const observer = new ResizeObserver(updateHeight);
-    observer.observe(heading);
-    return () => observer.disconnect();
-  }, [loading]);
-
   const currentQuestion = questions[currentIndex];
-  const { pick, pickTranslation, showQuestionInKnown } = useQuestionLanguage(currentQuestion?.level);
+  const { pick, pickTranslation, learningLang, knownLang } = useQuestionLanguage(currentQuestion?.level);
   usePracticeComplete({ isGameOver: isCompleted, score, totalQuestions: questions.length, exerciseType: "image_mcq", level: currentQuestion?.level });
 
+  const learningLocale = currentQuestion?.localized?.[learningLang];
+  const knownLocale = currentQuestion?.localized?.[knownLang];
   // Question text: level-based language
-  const questionText = pick(currentQuestion?.question_fr, currentQuestion?.question_en) || currentQuestion?.question || "";
-  const questionTranslation = pickTranslation(currentQuestion?.question_fr, currentQuestion?.question_en) || "";
+  const questionText = pick(learningLocale?.question, knownLocale?.question) || currentQuestion?.question || "";
+  const questionTranslation = pickTranslation(learningLocale?.question, knownLocale?.question);
+  const learningHeading = learningLocale?.heading || "Choose the correct description";
+  const knownHeading = knownLocale?.heading || learningHeading;
 
   // Options stay in the learning language until a translation is requested.
-  const displayOptions = currentQuestion?.options_fr?.length
-    ? currentQuestion.options_fr
+  const displayOptions = learningLocale?.options.length
+    ? learningLocale.options
     : currentQuestion?.options ?? [];
-  const translationOptions = currentQuestion?.options_en?.length
-    ? currentQuestion.options_en
+  const translationOptions = knownLocale?.options.length
+    ? knownLocale.options
     : currentQuestion?.englishOptions ?? [];
 
   const timerDuration = currentQuestion?.timeLimitSeconds || 120;
@@ -194,6 +195,15 @@ function ImageMCQContent() {
     );
   }
 
+  if (!currentQuestion) {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-slate-50 dark:bg-slate-900">
+        <p className="text-xl text-slate-600 dark:text-slate-400">No content available.</p>
+        <button type="button" onClick={handleExit} className="rounded-lg border border-slate-300 px-4 py-2 text-slate-700 dark:border-slate-600 dark:text-slate-200">Back</button>
+      </div>
+    );
+  }
+
   const progress = questions.length > 0 ? ((currentIndex + 1) / questions.length) * 100 : 0;
 
   return (
@@ -201,9 +211,9 @@ function ImageMCQContent() {
       questionType="Match Image to Description"
       questionTypeFr="Faire correspondre l'image à la description"
       questionTypeEn="Match Image to Description"
-      instructionFr="Choisissez la description correcte"
-      instructionEn="Choose the correct description"
-      localizedInstruction={showQuestionInKnown ? "Choose the correct description" : "Choisissez la description correcte"}
+      instructionFr={learningHeading}
+      instructionEn={knownHeading}
+      localizedInstruction={pick(learningHeading, knownHeading)}
       progress={progress}
       isGameOver={isCompleted}
       score={score}
@@ -238,7 +248,7 @@ function ImageMCQContent() {
                     <img src={currentQuestion.imageUrl} alt={currentQuestion.imageAlt || "Image for this question"} className="block h-auto max-h-[60vh] w-full object-cover md:h-full md:max-h-full" />
                   </button>
                 </DialogTrigger>
-                <DialogContent className="max-h-[95dvh] max-w-[min(95vw,80rem)] overflow-auto p-3 sm:p-5">
+                <DialogContent data-main-practice-scroll className="max-h-[95dvh] max-w-[min(95vw,80rem)] overflow-auto p-3 sm:p-5">
                   <DialogTitle className="sr-only">Question image</DialogTitle>
                   <img src={currentQuestion.imageUrl} alt={currentQuestion.imageAlt || "Image for this question"} className="mx-auto max-h-[85dvh] max-w-full rounded-xl object-contain" />
                 </DialogContent>
@@ -252,7 +262,7 @@ function ImageMCQContent() {
           </section>
 
           <section className="practice-comprehension-scroll flex min-h-0 min-w-0 flex-col overflow-y-auto rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900 md:p-5" aria-label="Answer options">
-            <div ref={questionHeadingRef} className="w-full shrink-0 pb-4">
+            <div className="w-full shrink-0 pb-4">
               <div className="flex w-full items-start gap-2 border-b border-slate-200 pb-3 dark:border-slate-700">
                 {questionTranslation && questionTranslation !== questionText && (
                   <TranslateButton onClick={() => setShowTranslation(value => !value)} aria-label={showTranslation ? "Show original question" : "Translate question"} title={showTranslation ? "Show original question" : "Translate question"} aria-pressed={showTranslation} iconSize="md" className="h-10 w-10 shrink-0" />
@@ -262,7 +272,7 @@ function ImageMCQContent() {
                 </h2>
               </div>
             </div>
-            <div className="my-auto flex flex-col gap-3" role="group" aria-label="Answer options">
+            <div className="flex flex-col gap-3" role="group" aria-label="Answer options">
               {displayOptions.map((option, index) => {
                 const isSelected = selectedOption === index;
                 const isCorrectOption = showFeedback && index === currentQuestion?.correctIndex;
@@ -286,7 +296,7 @@ function ImageMCQContent() {
 
                 if (!showFeedback) {
                   return (
-                    <button key={index} type="button" aria-pressed={isSelected} onClick={() => handleOptionSelect(index)} className={cn(optionClasses, "cursor-pointer hover:border-blue-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500")}>
+                    <button key={index} data-practice-option type="button" aria-pressed={isSelected} onClick={() => handleOptionSelect(index)} className={cn(optionClasses, "cursor-pointer hover:border-blue-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500")}>
                       <span className={cn("h-5 w-5 shrink-0 rounded-full border-2", isSelected ? "border-blue-600 bg-blue-600 shadow-[inset_0_0_0_4px_white]" : "border-slate-300 dark:border-slate-500")} aria-hidden="true" />
                       <span className="min-w-0 flex-1">{optionText}</span>
                       <span className="h-10 w-10 shrink-0" aria-hidden="true" />
@@ -295,7 +305,7 @@ function ImageMCQContent() {
                 }
 
                 return (
-                  <div key={index} className={optionClasses}>
+                  <div key={index} data-practice-option data-option-selected={isSelected} className={optionClasses}>
                     {isCorrectOption ? <CheckCircle2 className="h-5 w-5 shrink-0" aria-hidden="true" /> : isWrongOption ? <XCircle className="h-5 w-5 shrink-0" aria-hidden="true" /> : <span className="h-5 w-5 shrink-0 rounded-full border-2 border-slate-300 dark:border-slate-500" aria-hidden="true" />}
                     <div className="min-w-0 flex-1">
                       {isCorrectOption && <span className="sr-only">Correct answer: </span>}
@@ -311,7 +321,6 @@ function ImageMCQContent() {
                 );
               })}
             </div>
-            <div aria-hidden="true" className="shrink-0" style={{ height: questionHeadingHeight }} />
           </section>
         </PracticeTwoPanel>
       </div>

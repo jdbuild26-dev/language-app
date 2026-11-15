@@ -3,6 +3,7 @@
 
 import React, { useState, useEffect, Suspense } from "react";
 import { usePracticeExit } from "@/hooks/usePracticeExit";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { useExerciseTimer } from "@/hooks/useExerciseTimer";
 import { Volume2, User, XCircle, Languages } from "lucide-react";
 import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
@@ -17,6 +18,7 @@ import { Button } from "@/components/ui/button";
 import AudioWaveform from "@/components/ui/AudioWaveform";
 import speakerStyles from "@/components/ui/AudioSpeaker.module.css";
 import { useTranslateText } from "@/hooks/useTranslateText";
+import { getStoredTranslation } from "@/features/practice/lib/storedTranslation";
 
 export default function ListeningConversationPage() {
   return (
@@ -113,6 +115,7 @@ const normalizeConversation = (rawConversation: any) => {
     })
     .sort((a, b) => a.order - b.order)
     .map((exchange) => ({
+      ...exchange,
       speakerText: exchange.speakerText,
       speakerAudio: exchange.speakerAudio,
       speaker: exchange.speaker,
@@ -125,6 +128,10 @@ const normalizeConversation = (rawConversation: any) => {
     ...rawConversation,
     ...source,
     title: source["Scenario Title_FR"] || source["Scenario Title_EN"] || source.title || rawConversation?.title || "",
+    title_fr: source.passage_title_fr || source["Passage Title_FR"] || source.title_fr || "",
+    title_en: source.passage_title_en || source["Passage Title_EN"] || source.title_en || "",
+    heading_fr: source.heading_fr || source["Heading_FR"] || rawConversation?.heading_fr || "",
+    heading_en: source.heading_en || source["Heading_EN"] || rawConversation?.heading_en || "",
     scenario: source["Context_FR"] || source["Context_EN"] || source.scenario || rawConversation?.scenario || "",
     objectives: source["Objectives_FR"] || source["Objectives_EN"] || "",
     exchanges,
@@ -133,6 +140,7 @@ const normalizeConversation = (rawConversation: any) => {
 
 function ListeningConversationContent() {
   const handleExit = usePracticeExit();
+  const { learningLang } = useLanguage();
   const { speak, isSpeaking } = useTextToSpeech();
   const searchParams = useSearchParams();
   const tag = searchParams?.get("tag") ?? undefined;
@@ -169,15 +177,16 @@ function ListeningConversationContent() {
   const [isCompleted, setIsCompleted] = useState(false);
 
   // Audio playback state
-  const [hasPlayedAudio, setHasPlayedAudio] = useState(false);
 
   const currentExchange = conversation?.exchanges?.[currentTurnIndex];
   const totalExchanges = conversation?.exchanges?.length || 0;
   const totalConversations = allConversations.length;
 
   // Translate question text per exchange
-  const { displayText: questionDisplayText, isTranslating: isTranslatingQ, toggle: toggleTranslate, reset: resetTranslate } = useTranslateText(currentExchange?.questionText || "", "fr");
-  useEffect(() => { resetTranslate(); }, [currentTurnIndex]); // eslint-disable-line react-hooks/exhaustive-deps
+  const questionSource = currentExchange?.questionText || "";
+  const storedQuestion = getStoredTranslation(questionSource, currentExchange);
+  const { displayText: questionDisplayText, isTranslating: isTranslatingQ, toggle: toggleTranslate, reset: resetTranslate } = useTranslateText(questionSource, storedQuestion.sourceLang, storedQuestion.translation);
+  useEffect(() => { resetTranslate(); }, [currentTurnIndex, convIndex]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const timerDuration = 45; // Increased for conversation context
 
@@ -212,28 +221,11 @@ function ListeningConversationContent() {
     fetchConversation();
   }, [tag]);
 
-  // Play audio when new turn starts
-  useEffect(() => {
-    if (currentExchange && !hasAnswered && !isCompleted && !hasPlayedAudio) {
-      // Play speaker's question audio
-      speak(currentExchange.speakerAudio, "fr-FR");
-      setHasPlayedAudio(true);
-    }
-  }, [
-    currentTurnIndex,
-    currentExchange,
-    hasAnswered,
-    isCompleted,
-    hasPlayedAudio,
-    speak,
-  ]);
-
   // Reset states when turn changes
   useEffect(() => {
     setSelectedOption(null);
     setHasAnswered(false);
     setShowFeedback(false);
-    setHasPlayedAudio(false);
     resetTimer();
   }, [currentTurnIndex, resetTimer]);
 
@@ -403,8 +395,8 @@ function ListeningConversationContent() {
     <>
       <PracticeGameLayout
         questionType="Listening Conversation"
-        instructionFr="Écoutez et choisissez la bonne réponse"
-        instructionEn="Listen to the audio and select the best response"
+        instructionFr={conversation?.heading_fr || "Écoutez et choisissez la bonne réponse"}
+        instructionEn={conversation?.heading_en || "Listen to the audio and select the best response"}
         progress={progress}
         isGameOver={isCompleted}
         score={score}
@@ -520,7 +512,7 @@ function ListeningConversationContent() {
                 Context
               </p>
               <p className="text-sm leading-relaxed text-slate-700 dark:text-slate-300">
-                {conversation?.scenario || conversation?.title}
+                {conversation?.scenario || (learningLang === "fr" ? conversation?.title_fr || conversation?.title : conversation?.title_en || conversation?.title)}
               </p>
               {conversation?.objectives && (
                 <p className="text-xs text-slate-400 dark:text-slate-500 mt-2 italic">{conversation.objectives}</p>

@@ -3,6 +3,7 @@
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { usePracticeExit } from "@/hooks/usePracticeExit";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { useExerciseTimer } from "@/hooks/useExerciseTimer";
 import { Languages, User, Volume2 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -12,11 +13,13 @@ import { useWritingEvaluation } from "@/hooks/useWritingEvaluation";
 import { fetchPracticeData } from "@/utils/practiceFetcher";
 import { Loader2 } from "lucide-react";
 import { useTranslateText } from "@/hooks/useTranslateText";
+import { getStoredTranslation } from "@/features/practice/lib/storedTranslation";
 import { Button } from "@/components/ui/button";
 import WritingFeedbackResult from "@/components/WritingFeedbackResult";
 
 export default function WritingConversationPage() {
   const handleExit = usePracticeExit();
+  const { learningLang } = useLanguage();
   const { speak } = useTextToSpeech();
   const chatEndRef = useRef<HTMLDivElement>(null);
   const speakRef = useRef(speak);
@@ -48,12 +51,14 @@ export default function WritingConversationPage() {
   const totalConversations = allConversations.length;
 
   // Translate the current prompt text on demand
+  const promptSource = currentExchange?.prompt || currentExchange?.speakerText || "";
+  const storedPrompt = getStoredTranslation(promptSource, currentExchange);
   const {
     displayText: promptDisplayText,
     isTranslating: isTranslatingP,
     toggle: toggleTranslate,
     reset: resetTranslate,
-  } = useTranslateText(currentExchange?.prompt || currentExchange?.speakerText || "", "fr");
+  } = useTranslateText(promptSource, storedPrompt.sourceLang, storedPrompt.translation);
 
   const { timerString, resetTimer } = useExerciseTimer({
     duration: conversation?.timeLimitSeconds || 300,
@@ -110,6 +115,10 @@ export default function WritingConversationPage() {
             .filter((item: any) => Array.isArray(item.exchanges) && item.exchanges.length > 0)
             .map((item: any) => ({
               title: item.title || item.title_en || item.title_fr || "",
+              title_fr: item.passage_title_fr || item.title_fr || "",
+              title_en: item.passage_title_en || item.title_en || "",
+              heading_fr: item.heading_fr || item.Heading_FR || "",
+              heading_en: item.heading_en || item.Heading_EN || "",
               scenario: item.scenario || item.scenario_en || item.context_en || "",
               objectives: item.objectives || item.objectives_en || "",
               timeLimitSeconds: item.timeLimitSeconds || (item.Time ? parseInt(item.Time) : 300),
@@ -317,8 +326,8 @@ export default function WritingConversationPage() {
     <>
       <PracticeGameLayout
         questionType="Writing Conversation"
-        instructionFr="Répondez à la conversation par écrit"
-        instructionEn="Respond to the conversation in writing"
+        instructionFr={conversation?.heading_fr || "Répondez à la conversation par écrit"}
+        instructionEn={conversation?.heading_en || "Respond to the conversation in writing"}
         progress={progress}
         isGameOver={isCompleted}
         score={score}
@@ -461,7 +470,7 @@ export default function WritingConversationPage() {
                 Context
               </p>
               <p className="text-sm leading-relaxed text-slate-700 dark:text-slate-300 break-words overflow-hidden">
-                {conversation?.scenario || conversation?.title}
+                {conversation?.scenario || (learningLang === "fr" ? conversation?.title_fr || conversation?.title : conversation?.title_en || conversation?.title)}
               </p>
             </div>
 
@@ -484,6 +493,8 @@ export default function WritingConversationPage() {
                   <div className="space-y-3">
                     {shuffledOptions.map((opt, i) => (
                       <button
+                        data-practice-option
+                        aria-pressed={userInput === opt.text}
                         key={i}
                         type="button"
                         onClick={() => setUserInput(opt.text)}
@@ -503,6 +514,7 @@ export default function WritingConversationPage() {
                   /* ── Free-text mode ── */
                   <form onSubmit={handleSubmit} className="space-y-3">
                     <textarea
+                      data-special-characters
                       value={userInput}
                       onChange={(e) => setUserInput(e.target.value)}
                       placeholder="|"

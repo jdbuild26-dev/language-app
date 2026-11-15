@@ -24,6 +24,8 @@ type ListenOrderQuestion = {
   correctOrder_en: string[];
   title_fr: string;
   title_en: string;
+  heading_fr: string;
+  heading_en: string;
   timeLimitSeconds: number;
   level: string;
 };
@@ -111,8 +113,10 @@ function mapListenOrderQuestion(raw: unknown, index: number): ListenOrderQuestio
     id: textValue(item.external_id, item.ExerciseID, item.id) || `listen-order-${index}`,
     correctOrder,
     correctOrder_en,
-    title_fr: textValue(content.title_fr, item.title_fr, content["Passage Title_FR"]),
-    title_en: textValue(content.title_en, item.title_en, content["Passage Title_EN"]),
+    title_fr: textValue(content.passage_title_fr, item.passage_title_fr, content.title_fr, item.title_fr, content["Passage Title_FR"], item["Passage Title_FR"], content["Context Title_FR"], item["Context Title_FR"]),
+    title_en: textValue(content.passage_title_en, item.passage_title_en, content.title_en, item.title_en, content["Passage Title_EN"], item["Passage Title_EN"], content["Context Title_EN"], item["Context Title_EN"]),
+    heading_fr: textValue(content.heading_fr, item.heading_fr, item.Heading_FR, item.instructionFr),
+    heading_en: textValue(content.heading_en, item.heading_en, item.Heading_EN, item.instructionEn),
     timeLimitSeconds: Number(config.timeLimitSeconds || content.timeLimitSeconds || item.timeLimitSeconds || item.Time || 90),
     level: textValue(item.Level, item.level) || "A1",
   };
@@ -128,7 +132,7 @@ export default function ListenOrderPage() {
 
 function ListenOrderContent() {
   const handleExit = usePracticeExit();
-  const { speak, isSpeaking } = useTextToSpeech();
+  const { speak, isSpeaking, cancel } = useTextToSpeech();
   const searchParams = useSearchParams();
   const tag = searchParams?.get("tag") ?? undefined;
 
@@ -143,10 +147,14 @@ function ListenOrderContent() {
   const [score, setScore] = useState(0);
   const [playedAudio, setPlayedAudio] = useState(false);
   const [playingItemId, setPlayingItemId] = useState<string | null>(null);
+  const [playingRate, setPlayingRate] = useState(0.9);
 
   const currentQuestion = questions[currentIndex];
   const { learningLang, pick } = useQuestionLanguage(currentQuestion?.level);
   const headingText = pick(currentQuestion?.title_fr, currentQuestion?.title_en);
+  const headingSourceLang = headingText === currentQuestion?.title_en ? "en" : "fr";
+  const headingCounterpart = headingSourceLang === "fr" ? currentQuestion?.title_en : currentQuestion?.title_fr;
+  const { displayText: headingDisplayText, toggle: toggleHeading, reset: resetHeading, isTranslating: isTranslatingHeading } = useTranslateText(headingText, headingSourceLang, headingCounterpart);
   const timerDuration = currentQuestion?.timeLimitSeconds || 90;
 
   usePracticeComplete({
@@ -189,6 +197,7 @@ function ListenOrderContent() {
         setCurrentIndex(0);
         setCurrentOrder(selectedQuestions.length > 0 ? createOrderItems(selectedQuestions[0]) : []);
         setShowFeedback(false);
+        resetHeading();
         setScore(0);
         setPlayedAudio(false);
       } catch (error) {
@@ -200,9 +209,12 @@ function ListenOrderContent() {
     };
     fetchQuestions();
     return () => { isCurrent = false; };
+  // resetHeading is intentionally excluded: the shared hook recreates it each render.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tag]);
 
   const playSentence = (text: string, itemId: string, rate: number) => {
+    setPlayingRate(rate);
     speak(text, "fr-FR", rate);
     setPlayingItemId(itemId);
     setPlayedAudio(true);
@@ -223,6 +235,8 @@ function ListenOrderContent() {
   };
 
   const handleContinue = () => {
+    cancel();
+    resetHeading();
     setShowFeedback(false);
     setPlayedAudio(false);
     if (currentIndex < questions.length - 1) {
@@ -254,9 +268,9 @@ function ListenOrderContent() {
       questionType="Reorder Sentences"
       questionTypeFr="Réorganisez les phrases"
       questionTypeEn="Reorder Sentences"
-      instructionFr="Écoutez les phrases et mettez-les dans le bon ordre"
-      instructionEn="Listen to the sentences and put them in the correct order"
-      localizedInstruction={learningLang === "fr" ? "Écoutez les phrases et mettez-les dans le bon ordre" : "Listen to the sentences and put them in the correct order"}
+      instructionFr={currentQuestion?.heading_fr || "Écoutez les phrases et mettez-les dans le bon ordre"}
+      instructionEn={currentQuestion?.heading_en || "Listen to the sentences and put them in the correct order"}
+      localizedInstruction={learningLang === "fr" ? currentQuestion?.heading_fr || "Écoutez les phrases et mettez-les dans le bon ordre" : currentQuestion?.heading_en || "Listen to the sentences and put them in the correct order"}
       progress={progress}
       isGameOver={isCompleted}
       score={score}
@@ -278,12 +292,15 @@ function ListenOrderContent() {
       feedbackInFlow
       timerValue={timerString}
     >
-      <div className="flex min-h-0 w-full flex-1 flex-col py-4 sm:py-6">
-        {headingText && <div className="mx-auto flex w-full max-w-4xl shrink-0 items-center justify-center border-b border-slate-200 px-3 pb-3 dark:border-slate-700 sm:px-4 sm:pb-4">
-          <h2 className="practice-type-content-heading text-center text-slate-900 dark:text-slate-100 !font-medium">{headingText}</h2>
+      <div className="mx-auto flex min-h-0 w-full max-w-[1200px] flex-1 flex-col py-4 sm:py-6">
+        {headingText && <div className="mx-3 flex shrink-0 items-start gap-2 border-b border-slate-200 pb-2 dark:border-slate-700 sm:mx-4">
+          <h2 className="practice-type-content-heading min-w-0 flex-1 text-center text-slate-900 dark:text-slate-100 !font-medium">{headingDisplayText}</h2>
+          <div className="h-8 w-8 shrink-0">
+            {showFeedback && <TranslateButton onClick={toggleHeading} isLoading={isTranslatingHeading} aria-label="Translate passage title" iconSize="md" />}
+          </div>
         </div>}
 
-        <div className={cn("min-h-0 w-full flex-1", headingText && "mt-4 sm:mt-6")}>
+        <div className={cn("min-h-0 w-full flex-1", headingText && "mt-3")}>
           <Reorder.Group
             axis="y"
             values={currentOrder}
@@ -309,6 +326,7 @@ function ListenOrderContent() {
                   isCorrectPosition={isCorrectPosition}
                   isWrongPosition={isWrongPosition}
                   isPlaying={isSpeaking && playingItemId === item.itemId}
+                  playingRate={playingRate}
                   onPlay={(rate) => playSentence(item.text, item.itemId, rate)}
                 />
               );
@@ -348,6 +366,7 @@ function ListenOrderRow({
   isCorrectPosition,
   isWrongPosition,
   isPlaying,
+  playingRate,
   onPlay,
 }: {
   item: OrderItem;
@@ -359,20 +378,27 @@ function ListenOrderRow({
   isCorrectPosition: boolean;
   isWrongPosition: boolean;
   isPlaying: boolean;
+  playingRate: number;
   onPlay: (rate: number) => void;
 }) {
-  const { displayText, isTranslating, showTranslation, toggle } = useTranslateText(item.text, learningLang);
+  const { displayText, isTranslating, showTranslation, toggle } = useTranslateText(item.text, "fr", englishTranslation);
   const [showProvidedTranslation, setShowProvidedTranslation] = useState(false);
 
   const isTranslationVisible = englishTranslation ? showProvidedTranslation : showTranslation;
   const sentenceText = isTranslationVisible && englishTranslation ? englishTranslation : displayText;
+  const playbackButtonClass = (rate: number) => cn(
+    "flex h-10 w-10 items-center justify-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2",
+    isPlaying && playingRate === rate
+      ? "bg-sky-500 text-white shadow-[0_0_0_3px_rgba(14,165,233,0.2)] hover:bg-sky-600 dark:bg-sky-600 dark:text-white"
+      : "bg-sky-100 text-sky-700 hover:bg-sky-200 dark:bg-sky-900/40 dark:text-sky-300 dark:hover:bg-sky-900/60",
+  );
 
   return (
     <Reorder.Item
       value={item}
       dragListener={!showFeedback}
       className={cn(
-        "mx-auto flex w-full max-w-4xl items-start gap-2 rounded-2xl border-2 bg-white p-3 transition-colors duration-200 select-none dark:bg-slate-800 sm:gap-3 sm:p-4",
+        "flex min-h-[80px] w-full items-center gap-2 rounded-2xl border-2 bg-white p-3 transition-colors duration-200 select-none dark:bg-slate-800 sm:gap-3 sm:p-4",
         !showFeedback && "cursor-grab active:cursor-grabbing hover:border-slate-300 dark:hover:border-slate-600",
         isCorrectPosition ? "border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20" :
           isWrongPosition ? "border-red-500 bg-red-50 dark:bg-red-900/20" : "border-slate-200 dark:border-slate-700",
@@ -380,43 +406,44 @@ function ListenOrderRow({
       whileDrag={!showFeedback ? { scale: 1.02, boxShadow: "0 10px 30px -10px rgba(0,0,0,0.15)", zIndex: 50 } : undefined}
       transition={{ type: "spring", stiffness: 400, damping: 25 }}
     >
-      {!showFeedback ? (
-        <>
+      <>
           <GripVertical className="mt-1 h-4 w-4 shrink-0 text-slate-400 dark:text-slate-500 sm:h-5 sm:w-5" aria-hidden="true" />
-          <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-sm font-bold text-slate-500 dark:bg-slate-700 dark:text-slate-400 sm:h-8 sm:w-8" aria-label={`Position ${positionIndex + 1}`}>
-            {positionIndex + 1}
+          <span
+            className={cn(
+              "mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center text-sm font-bold sm:h-8 sm:w-8",
+              showFeedback
+                ? cn("rounded-full text-white", isCorrectPosition ? "bg-emerald-500" : "bg-teal-500")
+                : "rounded-lg bg-slate-100 text-slate-500 dark:bg-slate-700 dark:text-slate-400",
+            )}
+            aria-label={showFeedback ? `Correct position ${correctIndex + 1}` : `Position ${positionIndex + 1}`}
+          >
+            {showFeedback ? correctIndex + 1 : positionIndex + 1}
           </span>
           <div className="flex min-w-0 flex-1 items-center gap-2 sm:gap-3">
             <div className="flex shrink-0 items-center gap-1 sm:gap-2">
-              <button type="button" onPointerDown={(event) => event.stopPropagation()} onClick={(event) => { event.stopPropagation(); onPlay(0.9); }} aria-label="Play sentence" title="Normal speed" className="flex h-10 w-10 items-center justify-center rounded-full text-slate-500 transition-colors hover:bg-sky-50 hover:text-sky-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 dark:text-slate-300 dark:hover:bg-sky-900/30">
-                <Volume2 className="h-5 w-5" aria-hidden="true" />
-              </button>
-              <button type="button" onPointerDown={(event) => event.stopPropagation()} onClick={(event) => { event.stopPropagation(); onPlay(0.55); }} aria-label="Play sentence slowly" title="Slow speed" className="flex h-10 w-10 items-center justify-center rounded-full text-slate-500 transition-colors hover:bg-sky-50 hover:text-sky-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 dark:text-slate-300 dark:hover:bg-sky-900/30">
+              <button type="button" onPointerDown={(event) => event.stopPropagation()} onClick={(event) => { event.stopPropagation(); onPlay(0.55); }} aria-label="Play sentence slowly" aria-pressed={isPlaying && playingRate === 0.55} title="Slow speed" className={playbackButtonClass(0.55)}>
                 <Turtle className="h-5 w-5" aria-hidden="true" />
               </button>
+              <button type="button" onPointerDown={(event) => event.stopPropagation()} onClick={(event) => { event.stopPropagation(); onPlay(0.9); }} aria-label="Play sentence at normal speed" aria-pressed={isPlaying && playingRate === 0.9} title="Normal speed" className={playbackButtonClass(0.9)}>
+                <Volume2 className="h-5 w-5" aria-hidden="true" />
+              </button>
             </div>
-            <AudioWaveform isPlaying={isPlaying} decorative className="flex-1" />
+            <div className={cn("relative grid min-w-0 flex-1", !showFeedback && "items-center")}>
+              <span aria-hidden="true" className="invisible col-start-1 row-start-1 practice-type-content break-words font-normal">{item.text}</span>
+              <span aria-hidden="true" className="invisible col-start-1 row-start-1 practice-type-content break-words font-normal">{englishTranslation}</span>
+              {showFeedback ? (
+                <span className="col-start-1 row-start-1 practice-type-content break-words font-normal text-slate-700 dark:text-slate-200">{sentenceText}</span>
+              ) : (
+                <AudioWaveform isPlaying={isPlaying} patternKey={item.itemId} decorative className="absolute inset-x-0" />
+              )}
+            </div>
+            <div className="h-8 w-8 shrink-0">
+              {showFeedback && learningLang === "fr" && (
+                <TranslateButton iconVariant="option" onClick={() => englishTranslation ? setShowProvidedTranslation(visible => !visible) : toggle()} onPointerDown={event => event.stopPropagation()} isLoading={!englishTranslation && isTranslating} aria-label={isTranslationVisible ? "Show original sentence" : "Translate sentence"} aria-pressed={isTranslationVisible} />
+              )}
+            </div>
           </div>
-        </>
-      ) : (
-        <>
-          {learningLang === "fr" && (englishTranslation || item.text) && (
-            <TranslateButton
-              iconVariant="option"
-              onClick={() => englishTranslation ? setShowProvidedTranslation((visible) => !visible) : toggle()}
-              onPointerDown={(event) => event.stopPropagation()}
-              isLoading={!englishTranslation && isTranslating}
-              aria-label={isTranslationVisible ? "Show original sentence" : "Translate sentence"}
-              title={isTranslationVisible ? "Show original sentence" : "Translate sentence"}
-              aria-pressed={isTranslationVisible}
-            />
-          )}
-          <span className={cn("flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-bold", isCorrectPosition ? "bg-emerald-500 text-white" : "bg-teal-500 text-white")} aria-label={`Correct position ${correctIndex + 1}`}>
-            {correctIndex + 1}
-          </span>
-          <span className="practice-type-content min-w-0 flex-1 break-words font-medium text-slate-700 dark:text-slate-200">{sentenceText}</span>
-        </>
-      )}
+      </>
     </Reorder.Item>
   );
 }

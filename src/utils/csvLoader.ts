@@ -1,4 +1,5 @@
 import Papa from "papaparse";
+import { allowBundledPracticeCsv } from "@/utils/practiceDataSource";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
@@ -138,6 +139,8 @@ export const loadMockCSV = async (
     }
   }
 
+  if (!allowBundledPracticeCsv(fileName, process.env.NODE_ENV)) return [];
+
   console.log(`[DATA_SOURCE] Fetching from local CSV: ${fileName}`);
 
   // Fallback to local CSV
@@ -156,6 +159,15 @@ export const loadMockCSV = async (
         complete: (results) => {
           const processedData = results.data.map((row) => {
             const newRow = { ...row };
+            for (const column of Object.keys(newRow)) {
+              const match = column.match(/^(Heading|Passage Title|Question)_([a-z]{2,3})$/i);
+              if (!match) continue;
+              const prefix = match[1].toLowerCase().replaceAll(" ", "_");
+              const field = `${prefix}_${match[2].toLowerCase()}`;
+              if (newRow[field] == null || newRow[field] === "") {
+                newRow[field] = newRow[column];
+              }
+            }
             for (const key in newRow) {
               const value = newRow[key];
               if (typeof value === "string") {
@@ -181,7 +193,11 @@ export const loadMockCSV = async (
             }
           });
           
-          resolve(processedData);
+          // Translate Typed must not show unrelated development rows for a selected tag.
+          const filteredData = fileName === "practice/writing/translate_typed.csv" && options.tag
+            ? processedData.filter(row => String(row["Exercise Tag"] || row.exercise_tag || "").trim().toLowerCase() === String(options.tag).trim().toLowerCase())
+            : processedData;
+          resolve(options.limit ? filteredData.slice(0, options.limit) : filteredData);
         },
         error: (error) => reject(error),
       });

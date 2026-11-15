@@ -8,17 +8,15 @@ import { usePracticeComplete } from "@/hooks/usePracticeComplete";
 import { cn } from "@/lib/utils";
 import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
 import PracticeTwoPanel from "@/features/practice/components/PracticeTwoPanel";
-import AudioWaveform from "@/components/ui/AudioWaveform";
-import { useTextToSpeech } from "@/hooks/useTextToSpeech";
+import SummariseAudioPlayer from "@/features/practice/components/SummariseAudioPlayer";
 import { imageCharacterLimit, insertImageAccent } from "@/features/practice/lib/writeImageInput";
 import { useWritingEvaluation } from "@/hooks/useWritingEvaluation";
 import WritingFeedbackResult from "@/components/WritingFeedbackResult";
 import { fetchPracticeData } from "@/utils/practiceFetcher";
-import { Loader2, Play, Pause, Volume2, RotateCcw, Turtle } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useSearchParams } from "next/navigation";
-
-const ACCENT_KEYS = ["é", "è", "ê", "à", "ç", "â", "î", "ô", "û", "ë", "ï", "ü"];
+import SpecialCharacterKeyboard from "@/features/practice/components/SpecialCharacterKeyboard";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -33,76 +31,6 @@ type SummariseQuestion = {
   charLimit: number;
   level: string;
 };
-
-// ─── Audio Player ─────────────────────────────────────────────────────────────
-
-function AudioPlayer({ text, lang, disabled = false }: { text: string; lang: string; disabled?: boolean }) {
-  const { speak, cancel, pause, resume, isSpeaking, isPaused } = useTextToSpeech();
-  const [progress, setProgress] = useState(0);
-  const [starting, setStarting] = useState(false);
-  const [rate, setRate] = useState(0.9);
-  const [playbackError, setPlaybackError] = useState("");
-  const isPlaying = !disabled && (starting || (isSpeaking && !isPaused));
-
-  useEffect(() => {
-    if (disabled) {
-      cancel();
-    }
-  }, [disabled, cancel]);
-
-  const startAudio = (speed = rate, position = progress) => {
-    if (disabled || !text) return;
-    if (!window.speechSynthesis) {
-      setPlaybackError("Audio playback is unavailable on this device.");
-      return;
-    }
-    const requested = Math.floor((Math.max(0, Math.min(100, position)) / 100) * text.length);
-    const insideWord = requested > 0 && /\S/.test(text[requested] || "") && /\S/.test(text[requested - 1]);
-    const nextSpace = insideWord ? text.slice(requested).search(/\s/) : 0;
-    const wordEnd = nextSpace < 0 ? text.length : requested + nextSpace;
-    const nextWord = text.slice(wordEnd).search(/\S/);
-    const offset = nextWord < 0 ? text.length : wordEnd + nextWord;
-    if (offset >= text.length) { setProgress(100); return; }
-    setProgress((offset / text.length) * 100);
-    setRate(speed);
-    setPlaybackError("");
-    setStarting(true);
-    speak(text.slice(offset), lang, speed, {
-      onStart: () => setStarting(false),
-      onProgress: (index, total) => setProgress(Math.min(99, ((offset + (index / Math.max(1, total)) * (text.length - offset)) / text.length) * 100)),
-      onEnd: () => { setStarting(false); setProgress(100); },
-      onError: () => { setStarting(false); setPlaybackError("Audio playback failed. Please try again."); },
-    });
-  };
-
-  const togglePlayback = () => {
-    if (starting) { cancel(); setStarting(false); }
-    else if (isPlaying) pause();
-    else if (isPaused) resume();
-    else startAudio(rate, progress >= 100 ? 0 : progress);
-  };
-  const smallButton = "flex h-12 w-12 items-center justify-center rounded-full bg-sky-50 text-sky-600 transition-colors hover:bg-sky-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-sky-900/30 dark:text-sky-300 dark:hover:bg-sky-900/50";
-
-  return (
-    <div className="flex w-full flex-col items-center gap-6">
-      <div className="flex items-center justify-center gap-5">
-        <button type="button" disabled={disabled || !text} onClick={() => startAudio(0.9, 0)} aria-label="Replay passage" title="Replay" className={smallButton}>
-          <RotateCcw className="h-5 w-5" aria-hidden="true" />
-        </button>
-        <button type="button" disabled={disabled || !text} onClick={togglePlayback} aria-label={isPlaying ? "Pause passage" : isPaused ? "Resume passage" : "Play passage"} title={isPlaying ? "Pause" : isPaused ? "Resume" : "Play"} className="flex h-24 w-24 items-center justify-center rounded-full bg-sky-500 text-white shadow-md transition-transform hover:scale-105 hover:bg-sky-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 motion-reduce:transition-none disabled:cursor-not-allowed disabled:opacity-50">
-          {isPlaying ? <Pause className="h-10 w-10" aria-hidden="true" /> : isPaused || progress > 0 ? <Play className="h-10 w-10" aria-hidden="true" /> : <Volume2 className="h-10 w-10" aria-hidden="true" />}
-        </button>
-        <button type="button" disabled={disabled || !text} onClick={() => startAudio(0.55, 0)} aria-label="Play passage slowly" title="Slow playback" className={smallButton}>
-          <Turtle className="h-6 w-6" aria-hidden="true" />
-        </button>
-      </div>
-      <div className="flex w-full items-center rounded-xl border-2 border-slate-200 bg-white px-5 py-4 dark:border-slate-700 dark:bg-slate-900">
-        <AudioWaveform tone="sky" progress={progress} isPlaying={isPlaying} className={cn("focus-within:!outline-sky-500", disabled && "pointer-events-none opacity-60")} onSeek={position => { if (disabled) return; cancel(); setStarting(false); setProgress(position); }} />
-      </div>
-      <p role="status" className="text-base text-slate-500 dark:text-slate-400">{playbackError || (isPlaying ? "Playing…" : isPaused ? "Paused" : progress >= 100 ? "Finished" : "Ready to listen")}</p>
-    </div>
-  );
-}
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 
@@ -255,9 +183,9 @@ export default function SummariseAudioPage() {
     <>
       <PracticeGameLayout
         questionType="Summarise What You Hear"
-        instructionFr="Résumez ce que vous entendez"
-        instructionEn="Summarise What You Hear"
-        localizedInstruction="Résumez ce que vous entendez"
+        instructionFr={currentQ.heading_fr || "Résumez ce que vous entendez"}
+        instructionEn={currentQ.heading_en || "Summarise What You Hear"}
+        localizedInstruction={currentQ.heading_fr || "Résumez ce que vous entendez"}
         progress={progress}
         isGameOver={isCompleted}
         score={score}
@@ -275,7 +203,7 @@ export default function SummariseAudioPage() {
         <PracticeTwoPanel className="flex-1 overflow-y-auto md:gap-4 md:overflow-hidden md:p-4">
           <section className="practice-comprehension-scroll flex min-h-[360px] min-w-0 flex-col items-center gap-10 overflow-y-auto rounded-2xl border border-slate-200 bg-white px-5 py-6 dark:border-slate-700 dark:bg-slate-900 md:min-h-0" aria-label="Listening passage">
             <h2 className="practice-type-passage-heading !font-medium text-center text-slate-900 dark:text-slate-100">{passageTitle}</h2>
-            <AudioPlayer key={currentIndex} text={audioText} lang={audioLang} disabled={isSubmitting || showFeedback || !!evaluation} />
+            <SummariseAudioPlayer key={currentIndex} text={audioText} lang={audioLang} disabled={isSubmitting || showFeedback || !!evaluation} />
           </section>
           <section className="flex min-h-[460px] min-w-0 flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-900 md:min-h-0" aria-label="Audio summary">
             <label className="sr-only" htmlFor="summarise-audio-answer">{instructionLabel}</label>
@@ -302,21 +230,7 @@ export default function SummariseAudioPage() {
             />
             <div className="flex shrink-0 flex-col gap-3">
               {!showFeedback && !evaluation && (
-                <div className="grid w-full grid-cols-6 gap-1 xl:grid-cols-12" aria-label="French accent keyboard">
-                  {ACCENT_KEYS.map(char => (
-                    <button
-                      key={char}
-                      type="button"
-                      disabled={isSubmitting || charCount >= charLimit}
-                      aria-label={`Insert ${char}`}
-                      onMouseDown={e => e.preventDefault()}
-                      onClick={() => insertAccent(char)}
-                      className="flex h-11 w-full min-w-0 items-center justify-center rounded-xl border border-slate-200 bg-white text-base font-semibold text-slate-900 shadow-[0_1px_2px_rgba(15,23,42,0.03)] transition-[background-color,border-color,box-shadow,transform] duration-150 hover:border-sky-300 hover:bg-sky-50 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 motion-safe:active:scale-[0.94] motion-reduce:transition-none disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800"
-                    >
-                      {char}
-                    </button>
-                  ))}
-                </div>
+                <SpecialCharacterKeyboard key={learningLang} learningLanguage={learningLang} onInsert={insertAccent} disabled={isSubmitting || charCount >= charLimit} />
               )}
               <span aria-label={`${charCount} of ${charLimit} characters`} className={cn("self-end text-base font-semibold tabular-nums", charCount >= charLimit * 0.9 ? "text-red-500" : "text-slate-500 dark:text-slate-400")}>{charCount}/{charLimit}</span>
             </div>

@@ -16,6 +16,9 @@ import { usePracticeComplete } from "@/hooks/usePracticeComplete";
 import { useSearchParams } from "next/navigation";
 import { getComprehensionQuestionView } from "@/features/practice/lib/comprehensionLanguage";
 
+import { cn } from "@/lib/utils";
+import styles from "./ComprehensionPage.module.css";
+
 type ComprehensionQuestion = {
   passage?: string;
   passage_fr?: string;
@@ -29,6 +32,7 @@ type ComprehensionQuestion = {
   options_fr?: string[];
   options_en?: string[];
   options?: string[];
+  localized?: Record<string, { question: string; options: string[] }>;
   correctIndex: number;
   localizedInstruction?: string;
   instructionFr?: string;
@@ -119,6 +123,30 @@ function ComprehensionContent() {
   const [allQuestions, setAllQuestions] = useState<ComprehensionQuestion[]>([]);
   const [passageIndex, setPassageIndex] = useState(0);
   const [isCompleted, setIsCompleted] = useState(false);
+  const [showExerciseFrame, setShowExerciseFrame] = useState(false);
+
+  useEffect(() => {
+    const updateFrame = () => {
+      // Desktop browsers expose viewport dimensions in zoomed CSS pixels.
+      // Estimate page zoom without depending on OS display scaling / pixel ratio.
+      // Allow for rounding at 90%; narrow screens and pinch zoom stay unframed.
+      const estimatedZoom = window.outerWidth / window.innerWidth;
+      setShowExerciseFrame(
+        window.innerWidth >= 1024
+        && estimatedZoom > 0
+        && estimatedZoom < 0.895
+        && Math.abs((window.visualViewport?.scale ?? 1) - 1) < 0.01,
+      );
+    };
+    updateFrame();
+    window.addEventListener("resize", updateFrame);
+    window.visualViewport?.addEventListener("resize", updateFrame);
+    return () => {
+      window.removeEventListener("resize", updateFrame);
+      window.visualViewport?.removeEventListener("resize", updateFrame);
+    };
+  }, []);
+
   const [isLoading, setIsLoading] = useState(true);
 
   // Per-question state for the current passage
@@ -145,6 +173,19 @@ function ComprehensionContent() {
           const c = item.content ? asRecord(item.content) : item;
           const e = item.evaluation ? asRecord(item.evaluation) : item;
           const cfg = item.config ? asRecord(item.config) : item;
+          const localizedSource = asRecord(c.localized);
+          const localized: Record<string, { question: string; options: string[] }> = {};
+          for (const code of new Set([learningLang.toLowerCase(), knownLang.toLowerCase()])) {
+            const source = asRecord(localizedSource[code]);
+            const suffix = code.toUpperCase();
+            const question = [source.question, c[`question_${code}`], item[`question_${code}`], item[`Question_${suffix}`]]
+              .find((value): value is string => typeof value === "string" && Boolean(value.trim())) || "";
+            const sourceOptions = parseArr(source.options);
+            localized[code] = {
+              question,
+              options: sourceOptions.length ? sourceOptions : parseArr(c[`options_${code}`] || item[`options_${code}`]),
+            };
+          }
           return {
             level:            item.Level || item.level || "",
             passage_fr:       c.passage_fr || item.passage_fr || item.passage || "",
@@ -157,10 +198,11 @@ function ComprehensionContent() {
             options_fr:       parseArr(c.options_fr || item.options_fr),
             options_en:       parseArr(c.options_en || item.options_en),
             options:          parseArr(c.options || item.options),
+            localized,
             correctIndex:     Number(e.correctIndex ?? item.correctIndex ?? item.eval_correctIndex ?? 0),
             timeLimitSeconds: Number(cfg.timeLimitSeconds || item.timeLimitSeconds || 60),
-            instructionFr:    item.instructionFr || item.instruction_fr || "",
-            instructionEn:    item.instructionEn || item.instruction_en || "",
+            instructionFr:    c.heading_fr || item.heading_fr || item.Heading_FR || item.instructionFr || item.instruction_fr || "",
+            instructionEn:    c.heading_en || item.heading_en || item.Heading_EN || item.instructionEn || item.instruction_en || "",
           } as ComprehensionQuestion;
         });
         const grouped = groupByPassage(mapped);
@@ -319,15 +361,15 @@ function ComprehensionContent() {
   const isLastPassage = passageIndex === passages.length - 1;
 
   return (
-    <>
+    <div className={cn(styles.exerciseViewport, showExerciseFrame && !isCompleted && styles.framedViewport)}>
       <PracticeGameLayout
         questionType="Reading Comprehension"
         questionTypeFr="Compréhension de lecture"
         questionTypeEn="Reading Comprehension"
         localizedInstruction={
           showQuestionInKnown
-            ? "Read the passage and answer all questions"
-            : "Lisez le passage et répondez à toutes les questions"
+            ? currentPassage?.instructionEn || "Read the passage and answer all questions"
+            : currentPassage?.instructionFr || "Lisez le passage et répondez à toutes les questions"
         }
         instructionFr={currentPassage?.instructionFr || "Lisez le passage et répondez à toutes les questions"}
         instructionEn={currentPassage?.instructionEn || "Read the passage and answer all questions"}
@@ -351,7 +393,8 @@ function ComprehensionContent() {
         showFeedback={showFeedback}
         isCorrect={isCorrect}
         feedbackMessage={feedbackMessage}
-        preserveFooterHeightOnFeedback
+        preserveFooterHeightOnFeedback={!showExerciseFrame}
+        feedbackInFlow={showExerciseFrame}
         animateFeedbackEntrance={false}
         feedbackTone={showFeedback ? (isCorrect ? "success" : "error") : "neutral"}
       >
@@ -366,7 +409,7 @@ function ComprehensionContent() {
                 <TranslateButton onClick={() => setShowPassageTranslation(value => !value)} aria-label={showPassageTranslation ? "Hide passage translation" : "Translate passage"} title={showPassageTranslation ? "Hide passage translation" : "Translate passage"} aria-expanded={showPassageTranslation} />
               )}
             </div>
-            <p className="practice-type-content whitespace-pre-line text-justify font-sans text-slate-700 dark:text-slate-200">
+            <p className="practice-passage-content practice-type-content whitespace-pre-line font-sans text-slate-700 dark:text-slate-200">
                 {passageText}
             </p>
             {submitted && showPassageTranslation && translatedPassageText && (
@@ -376,7 +419,7 @@ function ComprehensionContent() {
                     {translatedPassageTitle}
                   </h2>
                 )}
-                <p className="practice-type-content whitespace-pre-line text-justify font-sans text-slate-700 dark:text-slate-200">
+                <p className="practice-passage-content practice-type-content whitespace-pre-line font-sans text-slate-700 dark:text-slate-200">
                   {translatedPassageText}
                 </p>
               </div>
@@ -388,16 +431,18 @@ function ComprehensionContent() {
             {currentPassage?.questions.map((q, qIdx) => {
               const { question: shownQuestion, options: shownOptions, canTranslate, translated: isTranslated } = getComprehensionQuestionView(q, {
                 learningLang,
+                knownLang,
                 showQuestionInKnown,
                 submitted,
                 translated: Boolean(translatedQuestions[qIdx]),
+                lockBeforeSubmit: true,
               });
               const translateButton = canTranslate && (
                 <TranslateButton
                   iconVariant="option"
                   onClick={() => setTranslatedQuestions(previous => ({ ...previous, [qIdx]: !previous[qIdx] }))}
-                  aria-label={isTranslated ? submitted ? "Show original question and options" : "Show original question" : submitted ? "Translate question and options" : "Translate question"}
-                  title={isTranslated ? "Show original" : submitted ? "Translate question and options" : "Translate question"}
+                  aria-label={isTranslated ? "Show original question and options" : "Translate question and options"}
+                  title={isTranslated ? "Show original" : "Translate question and options"}
                   aria-pressed={isTranslated}
                   iconSize="md"
                 />
@@ -437,6 +482,6 @@ function ComprehensionContent() {
           </section>
         </PracticeTwoPanel>
       </PracticeGameLayout>
-    </>
+    </div>
   );
 }

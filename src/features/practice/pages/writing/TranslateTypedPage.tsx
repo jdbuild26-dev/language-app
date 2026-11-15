@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { Suspense, useState, useEffect, useRef } from "react";
 import { usePracticeExit } from "@/hooks/usePracticeExit";
 import { useExerciseTimer } from "@/hooks/useExerciseTimer";
 import { cn } from "@/lib/utils";
@@ -9,8 +9,9 @@ import { fetchPracticeData } from "@/utils/practiceFetcher";
 import { getFeedbackMessage } from "@/utils/feedbackMessages";
 import { Button } from "@/components/ui/button";
 import { TranslateButton } from "@/components/ui/TranslateButton";
-
-const ACCENT_KEYS = ["é", "è", "ê", "à", "ç", "â", "î", "ô", "û", "ë", "ï", "ü"];
+import { useLanguage } from "@/contexts/LanguageContext";
+import SpecialCharacterKeyboard from "@/features/practice/components/SpecialCharacterKeyboard";
+import { useSearchParams } from "next/navigation";
 
 /** Normalise a string for loose comparison: lowercase, trim, collapse spaces, strip punctuation */
 function normalise(s: string) {
@@ -48,7 +49,7 @@ function normaliseQuestion(raw: any) {
     "";
 
   // Resolve correct answer (French translation) — be explicit, never fall back to English fields
-  const correctAnswer =
+  const correctAnswerRaw =
     raw["Correct answer_FR"] ||
     raw["Correct answer_fr"] ||
     raw["correct answer_fr"] ||
@@ -59,6 +60,7 @@ function normaliseQuestion(raw: any) {
     (raw.correctAnswer && raw.correctAnswer !== sourceText ? raw.correctAnswer : "") ||
     (raw.CorrectAnswer && raw.CorrectAnswer !== sourceText ? raw.CorrectAnswer : "") ||
     "";
+  const correctAnswer = String(correctAnswerRaw).split("|")[0].trim();
 
   // Resolve acceptable answers array
   const acceptableAnswers: string[] = (() => {
@@ -72,28 +74,50 @@ function normaliseQuestion(raw: any) {
       raw["Correct answer_fr"] ||
       raw.AcceptableAnswers ||
       correctAnswer;
-    if (typeof raw_aa === "string" && raw_aa.includes("|"))
-      return raw_aa.split("|").map((s: string) => s.trim()).filter(Boolean);
-    return correctAnswer ? [correctAnswer] : [];
+    const numberedAnswers = Object.entries(raw)
+      .filter(([key, value]) => /^Acceptable Sentence[_ ]?\d+_FR$/i.test(key) && typeof value === "string")
+      .sort(([first], [second]) => Number(first.match(/\d+/)?.[0] || 0) - Number(second.match(/\d+/)?.[0] || 0))
+      .map(([, value]) => String(value).trim());
+    return [...new Set([correctAnswer, ...String(raw_aa).split("|"), ...numberedAnswers]
+      .map(answer => answer.trim()).filter(answer => answer && answer !== sourceText))];
   })();
 
-  const timeLimitSeconds =
+  const timeLimitSeconds = Number(
     raw.timeLimitSeconds ||
     raw.TimeLimitSeconds ||
+    raw.Time ||
     raw.config?.timeLimitSeconds ||
-    60;
+    60,
+  );
+  const characterLimit = Number(
+    raw.characterLimit || raw.CharacterLimit || raw["Character Limit"] || raw.config?.characterLimit || 0,
+  );
 
   return {
     ...raw,
+    heading_fr: raw.content?.heading_fr || raw.heading_fr || raw.Heading_FR || "",
+    heading_en: raw.content?.heading_en || raw.heading_en || raw.Heading_EN || "",
     sourceText,
     correctAnswer,
     acceptableAnswers,
     timeLimitSeconds,
+    characterLimit: Number.isFinite(characterLimit) && characterLimit > 0 ? characterLimit : undefined,
   };
 }
 
 export default function TranslateTypedPage() {
+  return (
+    <Suspense fallback={<div className="flex min-h-screen items-center justify-center"><div className="h-12 w-12 animate-spin rounded-full border-b-2 border-blue-500" /></div>}>
+      <TranslateTypedContent />
+    </Suspense>
+  );
+}
+
+function TranslateTypedContent() {
   const handleExit = usePracticeExit();
+  const { learningLang = "fr", knownLang = "en" } = useLanguage();
+  const searchParams = useSearchParams();
+  const tag = searchParams?.get("tag") ?? undefined;
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const [questions, setQuestions] = useState<any[]>([]);
@@ -102,7 +126,6 @@ export default function TranslateTypedPage() {
   const [isCompleted, setIsCompleted] = useState(false);
   const [showFeedback, setShowFeedback] = useState(false);
   const [showQuestionTranslation, setShowQuestionTranslation] = useState(false);
-  const [showAnswerTranslation, setShowAnswerTranslation] = useState(false);
   const [isCorrect, setIsCorrect] = useState(false);
   const [feedbackMessage, setFeedbackMessage] = useState("");
   const [score, setScore] = useState(0);
@@ -111,7 +134,7 @@ export default function TranslateTypedPage() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const data = await fetchPracticeData("translate_typed");
+        const data = await fetchPracticeData("translate_typed", { tag, learningLang, knownLang });
         setQuestions(data.map(normaliseQuestion));
       } catch (err) {
         console.error("[TranslateTypedPage] Failed to load exercises:", err);
@@ -120,7 +143,7 @@ export default function TranslateTypedPage() {
       }
     };
     fetchData();
-  }, []);
+  }, [tag, learningLang, knownLang]);
 
   const currentQuestion = questions[currentIndex];
   const timerDuration = currentQuestion?.timeLimitSeconds || 60;
@@ -142,7 +165,6 @@ export default function TranslateTypedPage() {
     if (currentQuestion && !isCompleted) {
       setUserInput("");
       setShowQuestionTranslation(false);
-      setShowAnswerTranslation(false);
       resetTimer();
     }
   }, [currentIndex, currentQuestion, isCompleted, resetTimer]);
@@ -160,7 +182,6 @@ export default function TranslateTypedPage() {
     setShowFeedback(false);
     setFeedbackMessage("");
     setShowQuestionTranslation(false);
-    setShowAnswerTranslation(false);
     if (currentIndex < questions.length - 1) {
       setCurrentIndex((prev) => prev + 1);
     } else {
@@ -194,7 +215,7 @@ export default function TranslateTypedPage() {
 
   const correctAnswer = currentQuestion?.correctAnswer || currentQuestion?.acceptableAnswers?.[0] || "";
   const characterLimit = Math.max(
-    100,
+    currentQuestion?.characterLimit || 100,
     correctAnswer.length,
     ...(currentQuestion?.acceptableAnswers || []).map((answer: string) => answer.length),
   );
@@ -218,8 +239,8 @@ export default function TranslateTypedPage() {
   return (
     <PracticeGameLayout
         questionType="Translate the Sentence"
-        instructionFr="Traduisez la phrase en français"
-        instructionEn="Translate the sentence into French"
+        instructionFr={currentQuestion?.heading_fr || "Traduisez la phrase en français"}
+        instructionEn={currentQuestion?.heading_en || "Translate the sentence into French"}
         progress={progress}
         isGameOver={isCompleted}
         score={score}
@@ -235,77 +256,71 @@ export default function TranslateTypedPage() {
         feedbackMessage={feedbackMessage}
         feedbackInFlow
         compactFeedback
-        onFeedbackTranslate={() => setShowAnswerTranslation((visible) => !visible)}
-        feedbackTranslationVisible={showAnswerTranslation}
+        onFeedbackTranslate={() => setShowQuestionTranslation((visible) => !visible)}
+        feedbackTranslationVisible={showQuestionTranslation}
         submitLabel={showFeedback ? (currentIndex + 1 === questions.length ? "Finish" : "Continue") : "Check"}
         timerValue={timerString}
       >
         <div className="mx-auto flex w-full max-w-[888px] flex-col px-4 pb-8 pt-8 sm:px-6 sm:pt-12">
-          <div className="flex min-h-[76px] w-full items-center justify-center self-center text-center sm:min-h-[84px]">
-            <p className="practice-type-content-large min-w-0 break-words font-medium text-slate-900 dark:text-slate-100">
-              {showFeedback && showQuestionTranslation ? correctAnswer : currentQuestion?.sourceText}
+          <div className={cn(
+            "w-full self-center text-center",
+            showFeedback
+              ? "relative mb-6 border-b border-slate-200 px-12 pb-6 dark:border-slate-700"
+              : "flex min-h-[76px] items-center justify-center sm:min-h-[84px]",
+          )}>
+            <p
+              className={cn(
+                "practice-type-content min-w-0 break-words text-center font-normal",
+                (!showFeedback || showQuestionTranslation) && "!text-[24px]",
+                showFeedback
+                  ? "text-green-800 dark:text-green-200"
+                  : "text-slate-900 dark:text-slate-100",
+              )}
+              aria-label={showFeedback ? (showQuestionTranslation ? "Original sentence" : "Correct answer") : "Sentence to translate"}
+            >
+              {showFeedback && !showQuestionTranslation ? correctAnswer : currentQuestion?.sourceText}
             </p>
-            {showFeedback && (
-              <TranslateButton
-                onClick={() => setShowQuestionTranslation((visible) => !visible)}
-                aria-label={showQuestionTranslation ? "Show English question" : "Translate question to French"}
-                aria-pressed={showQuestionTranslation}
-                title={showQuestionTranslation ? "Show English" : "Translate to French"}
-                className="ml-1 h-10 w-10"
-              />
-            )}
-          </div>
-
-          <div className="mt-10 flex flex-wrap justify-center gap-2.5 sm:mt-12" aria-label="French accent keyboard">
-            {ACCENT_KEYS.map((char) => (
-              <button
-                key={char}
-                type="button"
-                disabled={showFeedback || userInput.length >= characterLimit}
-                onMouseDown={(event) => event.preventDefault()}
-                onClick={() => insertCharacter(char)}
-                aria-label={`Insert ${char}`}
-                className="flex h-[50px] w-[50px] items-center justify-center rounded-2xl border border-slate-200 bg-white text-base font-semibold text-slate-900 shadow-[0_1px_2px_rgba(15,23,42,0.03)] transition-[background-color,border-color,box-shadow,transform] duration-150 hover:border-sky-300 hover:bg-sky-50 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 motion-safe:active:scale-[0.94] motion-reduce:transition-none disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800"
-              >
-                {char}
-              </button>
-            ))}
-          </div>
-
-          <div className="relative mt-8 w-full sm:mt-9">
             {showFeedback && (
               <TranslateButton
                 iconVariant="option"
                 iconSize="md"
-                onClick={() => setShowAnswerTranslation((visible) => !visible)}
-                aria-label={showAnswerTranslation ? "Show correct French sentence" : "Translate answer to English"}
-                aria-pressed={showAnswerTranslation}
-                title={showAnswerTranslation ? "Show French" : "Translate to English"}
-                className="absolute left-4 top-4 z-10 h-10 w-10 rounded-none border-0 bg-transparent shadow-none hover:bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:[&_svg]:scale-125"
+                onClick={() => setShowQuestionTranslation((visible) => !visible)}
+                aria-label={showQuestionTranslation ? "Show correct answer" : "Show original sentence"}
+                aria-pressed={showQuestionTranslation}
+                title={showQuestionTranslation ? "Show correct answer" : "Show original sentence"}
+                className="absolute right-0 top-0 h-10 w-10 shrink-0"
               />
             )}
+          </div>
+
+          {!showFeedback && <SpecialCharacterKeyboard key={learningLang} learningLanguage={learningLang} onInsert={insertCharacter} disabled={userInput.length >= characterLimit} className="mt-10 sm:mt-12" />}
+
+          <div className={cn("relative w-full", showFeedback ? "mt-2" : "mt-8 sm:mt-9")}>
+            {showFeedback && !userInput.trim() ? (
+              <p className="rounded-xl border border-slate-200 bg-white px-5 py-4 text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">No answer entered.</p>
+            ) : (<>
             <label className="sr-only" htmlFor="translate-typed-answer">
-              {showFeedback ? (showAnswerTranslation ? "English translation" : "Correct French sentence") : "Type your French translation"}
+              {showFeedback ? "Your submitted answer" : "Type your French translation"}
             </label>
             <textarea
               id="translate-typed-answer"
               ref={textareaRef}
-              value={showFeedback ? (showAnswerTranslation ? currentQuestion.sourceText : correctAnswer) : userInput}
+              value={userInput}
               onChange={(e) => setUserInput(e.target.value)}
               onKeyDown={handleKeyDown}
               readOnly={showFeedback}
               maxLength={characterLimit}
-              placeholder="Type your translation here..."
+              placeholder="|"
               rows={5}
               autoFocus
               className={cn(
-                "block min-h-[200px] w-full resize-none rounded-[20px] border-2 border-slate-200 bg-white px-6 py-5 text-lg font-normal leading-relaxed text-slate-900 outline-none transition-[background-color,border-color,box-shadow] duration-200 motion-reduce:transition-none placeholder:text-slate-400 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100",
+                "practice-type-content block min-h-[200px] w-full resize-none rounded-[20px] border-2 border-slate-200 bg-white px-6 py-5 font-normal !leading-relaxed text-slate-900 outline-none transition-[background-color,border-color,box-shadow] duration-200 motion-reduce:transition-none placeholder:text-slate-400 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100",
                 !showFeedback && "focus:border-sky-500 focus:ring-4 focus:ring-sky-100 dark:focus:ring-sky-900/30",
-                showFeedback && "pl-20 font-medium",
                 showFeedback && isCorrect && "border-green-500 bg-green-50 text-green-950 focus:border-green-500 dark:border-green-500 dark:bg-green-950/30 dark:text-green-100",
                 showFeedback && !isCorrect && "border-red-500 bg-red-50 text-red-950 focus:border-red-500 dark:border-red-500 dark:bg-red-950/30 dark:text-red-100",
               )}
             />
+            </>)}
           </div>
           {!showFeedback && (
             <div className="mt-3 w-full text-right text-sm tabular-nums text-slate-500 dark:text-slate-400">
