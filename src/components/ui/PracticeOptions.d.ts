@@ -8,6 +8,7 @@ export interface PracticeOptionsProps {
   correctIndices?: number[];
   showFeedback?: boolean;
   onSelect?: (index: number) => void;
+  onSubmittedPlay?: (index: number) => void;
   className?: string;
   itemClassName?: string;
   showCheckIcon?: boolean;

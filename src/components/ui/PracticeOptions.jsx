@@ -39,6 +39,7 @@ export default function PracticeOptions({
   correctIndices,
   showFeedback,
   onSelect,
+  onSubmittedPlay,
   className = "",
   itemClassName = "",
   showCheckIcon = false,
@@ -74,6 +75,9 @@ export default function PracticeOptions({
             correct={isCorrectIndex}
             submitted={showFeedback}
             onSelect={() => onSelect?.(index)}
+            onSubmittedPlay={onSubmittedPlay ? () => onSubmittedPlay(index) : undefined}
+            submittedPlayLabel={onSubmittedPlay ? `Play ${option}${isCorrect ? ", correct" : isWrong ? ", incorrect" : ""}` : undefined}
+            playOnContextMenu={Boolean(onSubmittedPlay)}
             className={itemClassName}
             action={renderAction?.(option, index)}
           >

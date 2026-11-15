@@ -9,3 +9,5 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 <!-- END:nextjs-agent-rules -->
 
 When changing Main Practice exercises, read `src/features/practice/pages/RULES.md` before editing. It covers exercise identity, screenshot requirements, translation states, character limits, and verification.
+
+For every exercise feedback footer with an explanation, show the explanation text directly below the result message. Keep the correct option marked in the exercise content; the footer should have no duplicate correct-answer row, "Explanation" heading, or separate explanation card. When explanation data is absent, retain useful answer guidance.

@@ -12,6 +12,7 @@ function replayButton(audioUrl: string | null, isRecording = false, isStarting =
   const tree = SpeakingRecordingControls({
     recording: { audioUrl, isRecording, isStarting, soundLevel: 0, frequencyBands: [0, 0, 0, 0, 0], remainingSeconds: 60, error: null } as any,
     startListening: vi.fn(),
+    stopListening: vi.fn(),
     resetTranscript: vi.fn(),
     disabled,
   });

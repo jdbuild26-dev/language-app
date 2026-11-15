@@ -22,6 +22,15 @@ describe("Running Conversation content", () => {
     expect(conversation.objective).toEqual({ text: "Comparer les options", translation: "", language: "fr" });
   });
 
+  it("separates run-together objective phrases in both languages", () => {
+    const { objective } = readRunningConversation({
+      objectives_fr: "Expliquer le problèmeDécrire le produitParler des options possiblesRéagir aux conditions proposéesConclure la discussion",
+      objectives_en: "Explain the issueDescribe the product",
+    }, "fr", "en");
+    expect(objective.text).toBe("Expliquer le problème, Décrire le produit, Parler des options possibles, Réagir aux conditions proposées, Conclure la discussion");
+    expect(objective.translation).toBe("Explain the issue, Describe the product");
+  });
+
   it("tracks the actual language of legacy context and dialogue", () => {
     const conversation = readRunningConversation({
       scenario: "You meet a friend", Exchange_1_FR: "Salut", Exchange_1_Speaker: "Camille",

@@ -77,7 +77,14 @@ export function readRunningConversation(value: unknown, learning: string, known:
       };
     }).filter(turn => turn.speaker.text || turn.question.text || turn.options.length);
   const title = textFields(content, ["passage_title", "title", "Passage Title", "Scenario Title"], firstText(content.title), "en");
-  const objective = textFields(content, ["objectives"], firstText(content.objectives));
+  const rawObjective = textFields(content, ["objectives", "objective"], firstText(content.objectives, content.objective));
+  // Older records sometimes contain adjacent objective phrases without separators.
+  const separateObjectives = (value: string) => value.replace(/(\p{Ll})(\p{Lu}\p{Ll})/gu, "$1, $2");
+  const objective = {
+    ...rawObjective,
+    text: separateObjectives(rawObjective.text),
+    translation: separateObjectives(rawObjective.translation),
+  };
   const context = textFields(content, ["context"], firstText(content.scenario), "en");
   return {
     title, objective: objective.text ? objective : context, turns,

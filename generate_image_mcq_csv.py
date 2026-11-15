@@ -7,15 +7,16 @@ Options are shuffled per row; correctIndex is tracked after shuffle.
 Run from workspace root:
   python language-app/generate_image_mcq_csv.py
 """
-import csv, os, random
+import csv, json, os, random, re
 
 INPUT  = os.path.join(os.path.dirname(__file__), '..', 'image to description.csv')
 OUTPUT = os.path.join(os.path.dirname(__file__), 'public', 'mock-data', 'practice', 'reading', 'image_mcq.csv')
 
 OUT_HEADER = [
     'ExerciseID', 'Instruction_EN', 'Instruction_FR', 'Level', 'LearningLang', 'KnownLang',
-    'question_en', 'question_fr',
+    'heading_en', 'heading_fr', 'question_en', 'question_fr',
     'options_fr', 'options_en',
+    'localized',
     'correctIndex',
     'imageUrl', 'imageAlt',
     'timeLimitSeconds', 'difficulty', 'exercise_tag',
@@ -54,14 +55,14 @@ def main():
             heading_fr = (row.get('Heading_FR') or '').strip()
             question_en = (row.get('Question_EN') or '').strip()
             question_fr = (row.get('Question_FR') or '').strip()
-            correct_en  = (row.get('Correct answer_EN') or '').strip()
-            correct_fr  = (row.get('Correct answer_FR') or '').strip()
-            wrong1_en   = (row.get('Wrong answer_1_EN') or '').strip()
-            wrong1_fr   = (row.get('Wrong answer_1_FR') or '').strip()
-            wrong2_en   = (row.get('Wrong answer_2_EN') or '').strip()
-            wrong2_fr   = (row.get('Wrong answer_2_FR') or '').strip()
-            wrong3_en   = (row.get('Wrong answer_3_EN') or '').strip()
-            wrong3_fr   = (row.get('Wrong answer_3_FR') or '').strip()
+            learning_lang = (row.get('LearningLang') or 'fr').strip().lower()
+            known_lang = (row.get('KnownLang') or 'en').strip().lower()
+            languages = {learning_lang, known_lang}
+            pattern = re.compile(r'^(?:Heading|Question|Correct answer|Wrong answer_\d+)_([a-z]{2,3})$', re.IGNORECASE)
+            for column in row:
+                match = pattern.match(column.strip())
+                if match:
+                    languages.add(match.group(1).lower())
             image_url   = (row.get('Image link from Cloudinary') or '').strip()
             time_lim    = (row.get('Time') or '120').strip()
             difficulty  = (row.get('Difficulty') or '').strip()
@@ -69,46 +70,55 @@ def main():
             level       = (row.get('Level') or 'B1').strip()
             shuffle     = (row.get('Shuffle Options') or 'Yes').strip().lower() == 'yes'
 
-            if not correct_en and not correct_fr:
+            correct = {
+                code: (row.get(f'Correct answer_{code.upper()}') or '').strip()
+                for code in languages
+            }
+            if not correct.get(learning_lang):
                 continue
 
-            # Build paired options list: [(fr, en), ...]
-            pairs = [
-                (correct_fr, correct_en),
-                (wrong1_fr, wrong1_en),
-                (wrong2_fr, wrong2_en),
-                (wrong3_fr, wrong3_en),
-            ]
-            # Filter out empty pairs
-            pairs = [(f, e) for f, e in pairs if f or e]
+            # Shuffle option positions together so the correct index stays aligned.
+            pairs = [(True, correct)]
+            for number in range(1, 11):
+                wrong = {
+                    code: (row.get(f'Wrong answer_{number}_{code.upper()}') or '').strip()
+                    for code in languages
+                }
+                if wrong.get(learning_lang):
+                    pairs.append((False, wrong))
 
             if shuffle:
                 random.shuffle(pairs)
 
-            # Find correct index after shuffle
-            correct_idx = next(
-                (i for i, (f, e) in enumerate(pairs) if f == correct_fr and e == correct_en),
-                0
-            )
-
-            import json
-            options_fr = json.dumps([f for f, e in pairs], ensure_ascii=False)
-            options_en = json.dumps([e for f, e in pairs], ensure_ascii=False)
+            correct_idx = next(i for i, (is_correct, _) in enumerate(pairs) if is_correct)
+            localized = {
+                code: {
+                    'heading': (row.get(f'Heading_{code.upper()}') or row.get(f'Instruction_{code.upper()}') or '').strip(),
+                    'question': (row.get(f'Question_{code.upper()}') or '').strip(),
+                    'options': [values.get(code, '') for _, values in pairs],
+                }
+                for code in languages
+            }
+            options_fr = json.dumps(localized.get('fr', {}).get('options', []), ensure_ascii=False)
+            options_en = json.dumps(localized.get('en', {}).get('options', []), ensure_ascii=False)
 
             rows_out.append({
                 'ExerciseID':      eid,
                 'Instruction_EN':  heading_en,
                 'Instruction_FR':  heading_fr,
                 'Level':           level,
-                'LearningLang':    'fr',
-                'KnownLang':       'en',
+                'LearningLang':    learning_lang,
+                'KnownLang':       known_lang,
+                'heading_en':      heading_en,
+                'heading_fr':      heading_fr,
                 'question_en':     question_en,
                 'question_fr':     question_fr,
                 'options_fr':      options_fr,
                 'options_en':      options_en,
+                'localized':       json.dumps(localized, ensure_ascii=False),
                 'correctIndex':    correct_idx,
                 'imageUrl':        image_url,
-                'imageAlt':        heading_en,
+                'imageAlt':        localized.get(known_lang, {}).get('heading', ''),
                 'timeLimitSeconds': time_lim,
                 'difficulty':      difficulty,
                 'exercise_tag':    ex_tag,

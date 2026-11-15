@@ -13,8 +13,9 @@ import { getFeedbackMessage } from "@/utils/feedbackMessages";
 import { fuzzyIncludes, matchSpeechToAnswer } from "@/utils/textComparison";
 
 import { loadMockCSV } from "@/utils/csvLoader";
+import { fetchWhatDoYouSeeData } from "@/services/vocabularyApi";
 
-export default function WhatDoYouSeePage() {
+export default function WhatDoYouSeePage({ apiOnly = false }: { apiOnly?: boolean } = {}) {
   const router = useRouter();
 
   // Game State
@@ -72,7 +73,9 @@ export default function WhatDoYouSeePage() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const data = await loadMockCSV("practice/speaking/what_do_you_see.csv");
+        const data = apiOnly
+          ? await fetchWhatDoYouSeeData()
+          : await loadMockCSV("practice/speaking/what_do_you_see.csv");
         // Shuffle or just use as is
         const shuffled = data.sort(() => 0.5 - Math.random());
         setQuestions(shuffled);
@@ -84,7 +87,7 @@ export default function WhatDoYouSeePage() {
     };
 
     fetchData();
-  }, []);
+  }, [apiOnly]);
 
   // Timer
   useEffect(() => {
