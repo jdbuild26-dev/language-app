@@ -35,7 +35,7 @@ export default function RollingMatchPage({ mode = "words", pairLimit = 30 }: { m
 
   useEffect(() => {
     let active = true;
-    fetchMatchPairsData(undefined)
+    fetchMatchPairsData(undefined, { apiOnly: true })
       .then((data: Pair[]) => {
         if (!active) return;
         setBoard(createMatchBoard(data, { visibleCount, pairLimit }));

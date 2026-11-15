@@ -183,67 +183,23 @@ export default function SrsSpellingActivityPage() {
     try {
       setLoading(true);
 
-      // Using mock data as requested
-      const mockData = [
-        {
-          id: 1,
-          correctAnswer: "chocolat",
-          instructionEn: "Spell the word",
-          wordMeaningEn: "Chocolate",
-          imageUrl:
-            "https://images.unsplash.com/photo-1549007994-cb92caebd54b?q=80&w=400&auto=format&fit=crop",
-          timeLimit: 120,
-        },
-        {
-          id: 2,
-          correctAnswer: "bibliothèque",
-          instructionEn: "Spell the word",
-          wordMeaningEn: "Library",
-          imageUrl:
-            "https://images.unsplash.com/photo-1507842217343-583bb7270b66?q=80&w=400&auto=format&fit=crop",
-          timeLimit: 120,
-        },
-        {
-          id: 3,
-          correctAnswer: "ordinateur",
-          instructionEn: "Spell the word",
-          wordMeaningEn: "Computer",
-          imageUrl:
-            "https://images.unsplash.com/photo-1517336714731-48968ffd1cb0?q=80&w=400&auto=format&fit=crop",
-          timeLimit: 120,
-        },
-        {
-          id: 4,
-          correctAnswer: "restaurant",
-          instructionEn: "Spell the word",
-          wordMeaningEn: "Restaurant",
-          imageUrl:
-            "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?q=80&w=400&auto=format&fit=crop",
-          timeLimit: 120,
-        },
-        {
-          id: 5,
-          correctAnswer: "boulangerie",
-          instructionEn: "Spell the word",
-          wordMeaningEn: "Bakery",
-          imageUrl:
-            "https://images.unsplash.com/photo-1509440159596-0249088772ff?q=80&w=400&auto=format&fit=crop",
-          timeLimit: 120,
-        },
-      ];
+      const response = await fetchPracticeQuestions("spell_word", { apiOnly: true });
 
-      const response = { data: mockData };
-
-      if (response && response.data && response.data.length > 0) {
-        const normalized: Question[] = response.data.map((item) => ({
-          id: item.id,
-          correctAnswer: item.correctAnswer,
-          instructionFr: "Épelez le mot",
-          instructionEn: item.instructionEn,
-          timeLimit: item.timeLimit,
-          wordMeaningEn: item.wordMeaningEn,
-          imageUrl: item.imageUrl,
-        }));
+      if (Array.isArray(response.data) && response.data.length > 0) {
+        const normalized: Question[] = response.data.map((item, index) => {
+          const content = item.content || item;
+          const evaluation = item.evaluation || item;
+          return {
+            id: index,
+            correctAnswer: String(evaluation.correctAnswer || evaluation.CorrectAnswer ||
+              evaluation.Answer || evaluation.correct || content.correctAnswer || content.CorrectAnswer || ""),
+            instructionFr: item.instructionFr || item.Instruction_FR || "Épelez le mot",
+            instructionEn: item.instructionEn || item.Instruction_EN || "Spell the word",
+            timeLimit: Number(item.config?.timeLimitSeconds || item.timeLimit || item.TimeLimitSeconds) || 120,
+            wordMeaningEn: content.wordMeaningEn || content.Meaning_EN || content.meaning || "",
+            imageUrl: content.imageUrl || content.ImageUrl || content.Image || "",
+          };
+        });
 
         // Filter out items without a valid answer
         const validQuestions = normalized.filter(

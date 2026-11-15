@@ -47,10 +47,24 @@ function choiceAnswers(value: unknown): string[] {
   return text.split("|").map(answer => answer.trim()).filter(Boolean);
 }
 
+function LoadingQuestions() {
+  return (
+    <div className="flex flex-col items-center justify-center min-h-screen" role="status">
+      <Loader2 className="w-8 h-8 animate-spin text-blue-500 mb-4" aria-hidden="true" />
+      <p className="text-gray-500">Loading...</p>
+    </div>
+  );
+}
+
 export default function ChooseOptionGamePage() {
+  const { languagesReady, learningLang, knownLang } = useLanguage();
+  if (!languagesReady) return <LoadingQuestions />;
+  return <ChooseOptionRound key={JSON.stringify([learningLang, knownLang])} learningLang={learningLang} knownLang={knownLang} />;
+}
+
+function ChooseOptionRound({ learningLang, knownLang }: { learningLang: string; knownLang: string }) {
   const router = useRouter();
   const { speak } = useTextToSpeech();
-  const { learningLang, knownLang } = useLanguage();
   const [questions, setQuestions] = useState<ChoiceQuestion[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedOptions, setSelectedOptions] = useState<ChoiceOption[]>([]);
@@ -74,16 +88,18 @@ export default function ChooseOptionGamePage() {
   };
 
   useEffect(() => {
+    let active = true;
     const loadGameData = async () => {
       try {
         setLoading(true);
         console.log(
           `[ChooseOption] 📡 Fetching data from backend (slug: choose_options)...`,
         );
-        const response = await fetchPracticeQuestions("choose_options", {
+        const response = await fetchPracticeQuestions("choose_options", { apiOnly: true,
           learningLang,
           knownLang,
         });
+        if (!active) return;
         const practiceData = (response.data || []) as RawChoiceRow[];
         console.log(
           `[ChooseOption] ✅ Loaded ${practiceData.length} questions`,
@@ -111,6 +127,7 @@ export default function ChooseOptionGamePage() {
           } finally { clearTimeout(timeout); }
         }
 
+        if (!active) return;
         const generatedQuestions = gameQuestionsRaw.map((item): ChoiceQuestion | null => {
           const content = item.content && typeof item.content === "object" && !Array.isArray(item.content)
             ? item.content as RawChoiceRow : item;
@@ -149,6 +166,15 @@ export default function ChooseOptionGamePage() {
           const completeSentence = String(content["Complete sentence"] || content.CompleteSentence ||
             content.completeSentence || item["Complete sentence"] || item.CompleteSentence || item.completeSentence ||
             question.replace(/_{2,}/g, () => correctAnswers[blankIndex++] || correctAnswers[0] || ""));
+          const instructionFr = String(item.Instruction_FR || item.instruction_fr || item.instructionFr ||
+            content.Instruction_FR || content.instruction_fr || content.instructionFr || "Complétez la phrase avec le mot correct");
+          const instructionEn = String(item.Instruction_EN || item.instruction_en || item.instructionEn ||
+            content.Instruction_EN || content.instruction_en || content.instructionEn || "Complete the sentence with the correct word");
+          const learningCode = learningLang.toLowerCase();
+          const localizedInstruction = learningCode === "fr" ? instructionFr : learningCode === "en" ? instructionEn :
+            String(content[`instruction_${learningCode}`] || item[`instruction_${learningCode}`] ||
+              content[`Instruction_${learningCode.toUpperCase()}`] || item[`Instruction_${learningCode.toUpperCase()}`] ||
+              item.localizedInstruction || instructionEn);
           return {
             id: String(item.ExerciseID || item.external_id || Math.random().toString()),
             question,
@@ -160,18 +186,9 @@ export default function ChooseOptionGamePage() {
             questionType: String(
               content.TypeName || content.QuestionType || item.TypeName || item.QuestionType || "Choose from Options",
             ),
-            instructionFr: String(
-              item.Instruction_FR || item.instruction_fr || item.instructionFr ||
-              "Complétez la phrase avec le mot correct",
-            ),
-            instructionEn: String(
-              item.Instruction_EN || item.instruction_en || item.instructionEn ||
-              "Complete the sentence with the correct word",
-            ),
-            localizedInstruction: String(
-              item.localizedInstruction || item.Instruction_EN || item.instruction_en ||
-              "Complete the sentence with the correct word",
-            ),
+            instructionFr,
+            instructionEn,
+            localizedInstruction,
             image: String(content.ImageURL || content.imageUrl || item.ImageURL || item.imageUrl || ""),
           };
         }).filter((question): question is ChoiceQuestion => question !== null);
@@ -179,6 +196,7 @@ export default function ChooseOptionGamePage() {
         setQuestions(generatedQuestions);
         setLoading(false);
       } catch (err) {
+        if (!active) return;
         console.error("Failed to load game data:", err);
         setError("Failed to load questions. Please check data source.");
         setLoading(false);
@@ -186,6 +204,7 @@ export default function ChooseOptionGamePage() {
     };
 
     loadGameData();
+    return () => { active = false; };
   }, [learningLang, knownLang]);
 
   const currentQuestion = questions[currentIndex];
@@ -231,9 +250,11 @@ export default function ChooseOptionGamePage() {
   const progress =
     questions.length > 0 ? ((currentIndex + 1) / questions.length) * 100 : 0;
 
+  const playOption = (option: ChoiceOption) => speak(option.text, learningLang);
+
   const handleOptionClick = (option: ChoiceOption) => {
     if (showFeedback) return;
-    speak(option.text, "fr-FR");
+    playOption(option);
     setSelectedOptions((current) => selectChoice(current, option, currentQuestion.correctAnswers.length));
   };
 
@@ -308,14 +329,7 @@ export default function ChooseOptionGamePage() {
     }
   };
 
-  if (loading) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-screen">
-        <Loader2 className="w-8 h-8 animate-spin text-blue-500 mb-4" />
-        <p className="text-gray-500">Loading...</p>
-      </div>
-    );
-  }
+  if (loading) return <LoadingQuestions />;
 
   if (!error && questions.length === 0) {
     return (
@@ -431,6 +445,7 @@ export default function ChooseOptionGamePage() {
               correctIndices={correctOptionIndices}
               showFeedback={showFeedback}
               onSelect={(index) => handleOptionClick(currentQuestion.options[index])}
+              onSubmittedPlay={(index) => playOption(currentQuestion.options[index])}
               className="grid grid-cols-1 gap-3 sm:grid-cols-2"
               itemClassName="min-h-20 pr-14"
               showCheckIcon

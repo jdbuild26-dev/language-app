@@ -32,7 +32,7 @@ export default function IsThisFrenchWordPage() {
     try {
       setLoading(true);
 
-      const response = await fetchPracticeQuestions("is_french_word");
+      const response = await fetchPracticeQuestions("is_french_word", { apiOnly: true });
       if (response && response.data) {
         const normalized = response.data.map((item) => {
           // Handle new structure from vocabularyApi transformer

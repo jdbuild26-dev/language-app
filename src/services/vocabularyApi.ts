@@ -2491,10 +2491,12 @@ export async function deleteRelationship(relationshipId, token) {
 export async function fetchPracticeQuestions(
   sheetName: string,
   {
+    apiOnly = false,
     limit,
     learningLang,
     knownLang,
   }: {
+    apiOnly?: boolean;
     limit?: string | number;
     learningLang?: string;
     knownLang?: string;
@@ -2509,7 +2511,7 @@ export async function fetchPracticeQuestions(
   const transformer = CSV_TRANSFORMERS[normalizedSheetName];
 
   // If CSV override is enabled, try loading from CSV straight away
-  if (USE_MOCK_CSV_DATA && transformer) {
+  if (!apiOnly && USE_MOCK_CSV_DATA && transformer) {
     console.log(
       `[vocabularyApi] 🧪 Mock CSV Mode active. Bypassing API for ${sheetName}`,
     );
@@ -2570,7 +2572,7 @@ export async function fetchPracticeQuestions(
 
   const response = await fetch(url);
 
-  if (response.status === 404) {
+  if (!apiOnly && response.status === 404) {
     if (transformer) {
       console.warn(
         `[vocabularyApi] API 404 for ${sheetName}, falling back to CSV: ${normalizedSheetName}.csv`,
@@ -2638,7 +2640,7 @@ export async function fetchPracticeQuestions(
 /**
  * Fetch specialized Match Pairs data
  */
-export async function fetchMatchPairsData(level?: string): Promise<Array<{ id: string; french: string; english: string; image?: string | null; level?: string }>> {
+export async function fetchMatchPairsData(level?: string, { apiOnly = false } = {}): Promise<Array<{ id: string; french: string; english: string; image?: string | null; level?: string }>> {
   const url = `${API_BASE_URL}/api/practice/match-pairs${level ? `?level=${level}` : ""}`;
   try {
     const response = await fetch(url);
@@ -2649,8 +2651,11 @@ export async function fetchMatchPairsData(level?: string): Promise<Array<{ id: s
       }
     }
   } catch (err) {
+    if (apiOnly) throw err;
     console.warn("[vocabularyApi] Match-pairs API unavailable; using local CSV", err);
   }
+
+  if (apiOnly) return [];
 
   try {
     const Papa = await import("papaparse");

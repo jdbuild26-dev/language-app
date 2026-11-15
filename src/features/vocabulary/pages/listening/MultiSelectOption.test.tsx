@@ -18,7 +18,7 @@ beforeEach(() => { state.showTranslation = false; state.toggle.mockReset(); });
 it("shows translation only after submission and keeps the card playable", () => {
   const onSelect = vi.fn();
   const onPlay = vi.fn();
-  const props = { option: { text: "Oiseau" }, selected: true, correct: true, onSelect, onPlay };
+  const props = { option: { text: "Oiseau", en: "Bird" }, selected: true, correct: true, onSelect, onPlay };
   const before = MultiSelectOption({ ...props, submitted: false });
   expect(before.props.action).toBe(false);
 
@@ -37,5 +37,17 @@ it("shows translation only after submission and keeps the card playable", () => 
 
   state.showTranslation = true;
   const translated = MultiSelectOption({ ...props, submitted: true });
-  expect(translated.props.children[1].props.children).toBe("Bird");
+  expect(translated.props.children.props.children).toBe("Bird");
+  expect(translated.props.action.props.isLoading).toBeUndefined();
+});
+
+it("does not request a translation when an option has no saved counterpart", () => {
+  const card = MultiSelectOption({
+    option: { text: "Dax" }, selected: false, correct: false, submitted: true,
+    onSelect: vi.fn(), onPlay: vi.fn(),
+  });
+  expect(card.props.action.props.disabled).toBe(true);
+  card.props.action.props.onClick();
+  expect(state.toggle).not.toHaveBeenCalled();
+  expect(card.props.children.props.children).toBe("Dax");
 });

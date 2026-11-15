@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useExerciseTimer } from "@/hooks/useExerciseTimer";
 import { useTextToSpeech } from "@/hooks/useTextToSpeech";
 import { fetchPracticeQuestions } from "@/services/vocabularyApi";
@@ -39,6 +39,32 @@ export default function AudioFillBlankPage() {
   const inputsRef = useRef<Array<HTMLInputElement | null>>([]);
   const activeInputIndex = useRef(0);
 
+  const currentQ = questions[currentIndex];
+  const sentence = choiceSentence(currentQ?.displaySentence || "", currentQ?.answers || [],
+    (currentQ?.answers || []).map((text, index) => ({ text, en: currentQ?.hints?.[index] })));
+  useEffect(() => {
+    if (!currentQ) return;
+    const stored = choiceSentence(currentQ.displaySentence, currentQ.answers,
+      currentQ.answers.map((text, index) => ({ text, en: currentQ.hints?.[index] }))).hints;
+    if (stored.every(Boolean)) return;
+    const controller = new AbortController();
+    let active = true;
+    const timeout = setTimeout(() => controller.abort(), 10000);
+    void Promise.all(stored.map(async (hint, index) => {
+      if (hint) return hint;
+      const result = await translateText(currentQ.answers[index], "en", controller.signal);
+      if (!result.translation?.trim()) throw new Error("Clue unavailable");
+      return result.translation.trim();
+    })).then(values => {
+      if (active) setClues({ question: currentQ, values, error: false });
+    }).catch(() => {
+      if (active) setClues({ question: currentQ, values: stored, error: true });
+    }).finally(() => clearTimeout(timeout));
+    return () => { active = false; clearTimeout(timeout); controller.abort(); };
+  }, [currentQ]);
+  const currentClues = clues?.question === currentQ ? clues : null;
+  const waitingForClues = !!currentQ && sentence.hints.some(hint => !hint) && !currentClues;
+
   // Timer Hook
   const { timerString, resetTimer } = useExerciseTimer({
     duration: 60,
@@ -48,7 +74,7 @@ export default function AudioFillBlankPage() {
         handleSubmit();
       }
     },
-    isPaused: loading || isCompleted || showFeedback,
+    isPaused: loading || waitingForClues || !questions.length || isCompleted || showFeedback,
   });
 
   useEffect(() => {
@@ -69,7 +95,7 @@ export default function AudioFillBlankPage() {
 
   // Audio Auto-play
   useEffect(() => {
-    if (!loading && !isCompleted && questions.length > 0) {
+    if (!loading && !waitingForClues && !isCompleted && questions.length > 0) {
       const currentQ = questions[currentIndex];
       if (currentQ?.fullSentence) {
         const t = setTimeout(() => {
@@ -80,51 +106,49 @@ export default function AudioFillBlankPage() {
     }
     // Replay only when the question changes, not when the speech engine loads voices.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentIndex, loading, isCompleted, questions]);
-
-  const loadData = useCallback(async () => {
-    try {
-      setLoading(true);
-
-      const response = await fetchPracticeQuestions("B5_Fill blanks_Audio");
-      if (response && response.data) {
-        const transformed = response.data.map((item) => {
-          // Handle both nested structure (from vocabularyApi transformer) and flat structure
-          const content = item.content || item;
-          const answer = item.evaluation?.correctAnswer || content["CorrectAnswer"] || "";
-          const answers = Array.isArray(answer) ? answer.map(String) : String(answer).split("|").map(word => word.trim());
-
-          return {
-            id: item.external_id || item["ExerciseID"],
-            fullSentence: content["CompleteSentence"] || content["Audio"],
-            fullSentenceEnglish: content["CompleteSentence_EN"] || content["Sentence_EN"] || "",
-            displaySentence: content["SentenceWithBlank"],
-            answer: answers.join(", "),
-            answers,
-            hints: Array.isArray(content.hints) ? content.hints.map(String) : typeof content.hints === "string" ? content.hints.split("|") : answers.map(answer => {
-              const optionIndex = [1, 2, 3, 4].find(index => content[`Option${index}`] === answer);
-              return optionIndex ? String(content[`Option${optionIndex}_EN`] || "") : "";
-            }),
-            instruction:
-              item.instruction_en ||
-              item["Instruction_EN"] ||
-              "Listen and complete the sentence",
-          };
-        });
-        setQuestions(transformed);
-      }
-    } catch (err) {
-      console.error(`[AudioFillBlank] ❌ Failed to load:`, err);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  }, [currentIndex, loading, waitingForClues, isCompleted, questions]);
 
   useEffect(() => {
-    // Fetch the questions when this exercise mounts.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
+    let active = true;
+    const loadData = async () => {
+      try {
+
+        const response = await fetchPracticeQuestions("B5_Fill blanks_Audio", { apiOnly: true });
+        if (Array.isArray(response?.data)) {
+          const transformed = response.data.map((item) => {
+            // Handle both nested structure (from vocabularyApi transformer) and flat structure
+            const content = item.content || item;
+            const answer = item.evaluation?.correctAnswer || content["CorrectAnswer"] || "";
+            const answers = Array.isArray(answer) ? answer.map(String) : String(answer).split("|").map(word => word.trim());
+
+            return {
+              id: item.external_id || item["ExerciseID"],
+              fullSentence: content["CompleteSentence"] || content["Audio"],
+              fullSentenceEnglish: content["CompleteSentence_EN"] || content["Sentence_EN"] || "",
+              displaySentence: content["SentenceWithBlank"],
+              answer: answers.join(", "),
+              answers,
+              hints: Array.isArray(content.hints) ? content.hints.map(String) : typeof content.hints === "string" ? content.hints.split("|") : answers.map(answer => {
+                const optionIndex = [1, 2, 3, 4].find(index => content[`Option${index}`] === answer);
+                return optionIndex ? String(content[`Option${optionIndex}_EN`] || "") : "";
+              }),
+              instruction:
+                item.instruction_en ||
+                item["Instruction_EN"] ||
+                "Listen and complete the sentence",
+            };
+          });
+          if (active) setQuestions(transformed.filter(question => question.displaySentence && question.fullSentence && question.answers.every(Boolean)));
+        }
+      } catch (err) {
+        console.error(`[AudioFillBlank] ❌ Failed to load:`, err);
+      } finally {
+        if (active) setLoading(false);
+      }
+    };
     void loadData();
-  }, [loadData]);
+    return () => { active = false; };
+  }, []);
 
   const handleInputChange = (index, value) => {
     if (showFeedback) return;
@@ -193,39 +217,23 @@ export default function AudioFillBlankPage() {
     }
   };
 
-  const currentQ = questions[currentIndex];
-  const sentence = choiceSentence(currentQ?.displaySentence || "", currentQ?.answers || [],
-    (currentQ?.answers || []).map((text, index) => ({ text, en: currentQ?.hints?.[index] })));
-  useEffect(() => {
-    if (!currentQ) return;
-    const stored = choiceSentence(currentQ.displaySentence, currentQ.answers,
-      currentQ.answers.map((text, index) => ({ text, en: currentQ.hints?.[index] }))).hints;
-    const controller = new AbortController();
-    let active = true;
-    const timeout = setTimeout(() => controller.abort(), 10000);
-    void Promise.all(stored.map(async (hint, index) => {
-      if (hint) return hint;
-      const result = await translateText(currentQ.answers[index], "en", controller.signal);
-      if (!result.translation?.trim()) throw new Error("Clue unavailable");
-      return result.translation.trim();
-    })).then(values => {
-      if (active) setClues({ question: currentQ, values, error: false });
-    }).catch(() => {
-      if (active) setClues({ question: currentQ, values: stored, error: true });
-    }).finally(() => clearTimeout(timeout));
-    return () => { active = false; clearTimeout(timeout); controller.abort(); };
-  }, [currentQ]);
-  const currentClues = clues?.question === currentQ ? clues : null;
   const answerTranslation = useTranslateText(currentQ?.fullSentence || "", "fr", currentQ?.fullSentenceEnglish);
   const progress =
     questions.length > 0 ? ((currentIndex + 1) / questions.length) * 100 : 0;
 
-  if (loading)
+  if (loading || waitingForClues)
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Loader2 className="animate-spin text-blue-500 w-8 h-8" />
       </div>
     );
+
+  if (!currentQ) {
+    return <div className="grid min-h-screen place-content-center gap-4 text-center">
+      <p>No listening questions available.</p>
+      <button type="button" className="underline" onClick={() => router.push("/vocabulary/practice")}>Back to Practice</button>
+    </div>;
+  }
 
   return (
     <>

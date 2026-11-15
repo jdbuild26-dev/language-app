@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import Papa from "papaparse";
 import { useExerciseTimer } from "@/hooks/useExerciseTimer";
 import { Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -25,10 +26,23 @@ type HighlightQuestion = {
   Instruction_EN?: string;
 };
 
+function LoadingHighlightWord() {
+  return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="animate-spin text-blue-500 w-8 h-8" />
+      </div>
+    );
+}
+
 export default function HighlightWordGamePage() {
+  const { languagesReady, learningLang, knownLang } = useLanguage();
+  if (!languagesReady) return <LoadingHighlightWord />;
+  return <HighlightWordRound key={JSON.stringify([learningLang, knownLang])} learningLang={learningLang} knownLang={knownLang} />;
+}
+
+function HighlightWordRound({ learningLang, knownLang }: { learningLang: string; knownLang: string }) {
   const router = useRouter();
   const { speak } = useTextToSpeech();
-  const { learningLang, knownLang } = useLanguage();
   const [questions, setQuestions] = useState<HighlightQuestion[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
 
@@ -46,7 +60,8 @@ export default function HighlightWordGamePage() {
     let active = true;
     const loadQuestions = async () => {
       try {
-        const response = await fetchPracticeQuestions("highlight_word");
+        setLoading(true);
+        const response = await fetchPracticeQuestions("highlight_word", { apiOnly: true, learningLang, knownLang });
         if (response && response.data && response.data.length > 0) {
           const formattedQuestions = response.data
             .filter(
@@ -81,10 +96,32 @@ export default function HighlightWordGamePage() {
                   q.Question_EN ||
                   ""
                 )?.trim(),
-                promptTranslation: q.question_fr || q.Question_FR || q.prompt_fr || "",
-                sentenceTranslation: q.passage_en || q.Passage_EN || q.sentence_en || q.Sentence_EN || "",
+                promptTranslation: String(q.question_fr || q.Question_FR || q.prompt_fr || q.content?.question_fr || ""),
+                sentenceTranslation: String(q.passage_en || q.Passage_EN || q.sentence_en || q.Sentence_EN || q.content?.passage_en || q.content?.sentence_en || ""),
               };
             });
+          if (learningLang === "fr" && knownLang === "en" &&
+              formattedQuestions.some(question => !question.promptTranslation || !question.sentenceTranslation)) {
+            try {
+              const stored = await fetch("/mock-data/csv/highlight_word.csv");
+              if (stored.ok) {
+                const rows = Papa.parse<{
+                  passage: string; question: string; passage_en: string; question_fr: string;
+                }>(await stored.text(), { header: true, skipEmptyLines: true }).data;
+                const normalize = (value: string) => value.trim().normalize("NFC").replace(/’/g, "'");
+                for (const question of formattedQuestions) {
+                  const match = rows.find(row => row.passage && normalize(row.passage) === normalize(question.sentence)
+                    && row.question && normalize(row.question) === normalize(question.prompt));
+                  if (match) {
+                    question.promptTranslation ||= match.question_fr || "";
+                    question.sentenceTranslation ||= match.passage_en || "";
+                  }
+                }
+              }
+            } catch {
+              // The exercise remains playable if the bundled translations cannot be loaded.
+            }
+          }
           if (active) setQuestions(formattedQuestions);
         } else {
           console.error("[HighlightWord] ❌ No valid questions received");
@@ -99,7 +136,7 @@ export default function HighlightWordGamePage() {
     };
     void loadQuestions();
     return () => { active = false; };
-  }, []);
+  }, [learningLang, knownLang]);
 
   const { timerString, resetTimer } = useExerciseTimer({
     duration: 30,
@@ -187,13 +224,7 @@ export default function HighlightWordGamePage() {
 
   const correctAnswerDisplay = !isCorrect ? currentItem?.correctWords.join(" • ") : null;
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="animate-spin text-blue-500 w-8 h-8" />
-      </div>
-    );
-  }
+  if (loading) return <LoadingHighlightWord />;
 
   if (questions.length === 0) {
     return (
@@ -210,6 +241,8 @@ export default function HighlightWordGamePage() {
     );
   }
 
+  const hasPromptTranslation = Boolean(currentItem.promptTranslation.trim());
+  const hasSentenceTranslation = Boolean(currentItem.sentenceTranslation.trim());
   const correctIndices = gradeHighlightSelection(words, currentItem.correctWords, selectedWordIndices).correctIndices;
 
   return (
@@ -240,7 +273,9 @@ export default function HighlightWordGamePage() {
         timerValue={timerString}
         showFeedback={showFeedback}
         isCorrect={isCorrect}
-        correctAnswer={correctAnswerDisplay}
+        correctAnswer={correctAnswerDisplay && <span className="text-lg font-semibold leading-relaxed md:text-xl">{correctAnswerDisplay}</span>}
+        onFeedbackTranslate={hasSentenceTranslation ? () => { void sentenceTranslation.toggle(); } : undefined}
+        feedbackTranslationVisible={sentenceTranslation.showTranslation}
         feedbackMessage={feedbackMessage}
       >
         <div className="mx-auto flex w-full max-w-5xl flex-1 flex-col items-center justify-start gap-8 px-4 pb-6 pt-14 sm:gap-12 sm:pt-20 lg:gap-14 lg:pt-24">
@@ -249,8 +284,9 @@ export default function HighlightWordGamePage() {
               <TranslateButton
                 aria-label={promptTranslation.showTranslation ? "Show original question" : "Translate question"}
                 aria-pressed={promptTranslation.showTranslation}
-                isLoading={promptTranslation.isTranslating}
-                onClick={() => { void promptTranslation.toggle(); }}
+                disabled={!hasPromptTranslation}
+                title={hasPromptTranslation ? undefined : "Saved translation unavailable"}
+                onClick={() => { if (hasPromptTranslation) void promptTranslation.toggle(); }}
               />
               <h3 lang={promptTranslation.showTranslation ? learningLang.toLowerCase() : knownLang.toLowerCase()} className="mb-2 text-xl font-bold text-gray-800 dark:text-gray-100 md:text-2xl">
                 {promptTranslation.displayText}
@@ -265,8 +301,9 @@ export default function HighlightWordGamePage() {
                 className="absolute left-0 top-0"
                 aria-label={sentenceTranslation.showTranslation ? "Hide sentence translation" : "Translate sentence"}
                 aria-pressed={sentenceTranslation.showTranslation}
-                isLoading={sentenceTranslation.isTranslating}
-                onClick={() => { void sentenceTranslation.toggle(); }}
+                disabled={!hasSentenceTranslation}
+                title={hasSentenceTranslation ? undefined : "Saved translation unavailable"}
+                onClick={() => { if (hasSentenceTranslation) void sentenceTranslation.toggle(); }}
               />
             )}
             <div className={`mx-auto flex flex-wrap justify-center gap-3 text-lg font-medium leading-relaxed md:text-xl ${showFeedback ? "px-9" : ""}`} role="group" aria-label="Sentence words" lang={learningLang.toLowerCase()}>
@@ -279,8 +316,8 @@ export default function HighlightWordGamePage() {
                   styles = isTarget
                     ? "bg-green-100 text-green-800 ring-2 ring-green-400 rounded-lg px-2 py-1 shadow-sm"
                     : wasSelected
-                      ? "bg-red-100 text-red-800 ring-2 ring-red-400 rounded-lg px-2 py-1 opacity-80"
-                      : "text-gray-400 dark:text-gray-600 rounded-lg px-2 py-1 opacity-50";
+                      ? "bg-red-100 text-red-800 ring-2 ring-red-400 rounded-lg px-2 py-1"
+                      : "text-slate-700 dark:text-slate-200 rounded-lg px-2 py-1";
                 } else if (wasSelected) {
                   styles = "bg-blue-100 text-blue-800 ring-2 ring-blue-300 rounded-lg px-2 py-1 shadow-sm";
                 }
@@ -302,7 +339,7 @@ export default function HighlightWordGamePage() {
               })}
             </div>
             {showFeedback && sentenceTranslation.showTranslation && (
-              <p lang={knownLang.toLowerCase()} className="mt-5 text-center text-lg text-slate-700 dark:text-slate-200">
+              <p lang={knownLang.toLowerCase()} className="mt-5 text-center text-lg font-medium leading-relaxed text-slate-800 dark:text-slate-100 md:text-xl">
                 {sentenceTranslation.displayText}
               </p>
             )}

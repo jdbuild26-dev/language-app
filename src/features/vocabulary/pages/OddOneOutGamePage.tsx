@@ -91,7 +91,7 @@ export default function OddOneOutGamePage() {
       console.log(
         `[OddOneOut] 📡 Fetching data from backend (slug: odd_one_out)...`,
       );
-      const response = await fetchPracticeQuestions("odd_one_out", {
+      const response = await fetchPracticeQuestions("odd_one_out", { apiOnly: true,
         learningLang,
         knownLang,
       });

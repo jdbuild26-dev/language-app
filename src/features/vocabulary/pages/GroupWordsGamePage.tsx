@@ -68,7 +68,7 @@ export default function GroupWordsGamePage() {
 
   useEffect(() => {
     let active = true;
-    fetchPracticeQuestions("group_words", { learningLang, knownLang })
+    fetchPracticeQuestions("group_words", { apiOnly: true, learningLang, knownLang })
       .then(async (response) => {
         const localRows = learningLang.toLowerCase() === "fr" && knownLang.toLowerCase() === "en"
           ? await loadGroupTranslationRows().catch(() => [])
