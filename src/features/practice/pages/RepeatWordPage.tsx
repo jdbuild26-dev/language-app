@@ -1,5 +1,6 @@
 "use client";
 
+import { getSpeechRecognitionAPI, type SpeechRecognitionInstance } from "@/hooks/useSpeechRecognition";
 import React, { useState, useEffect, useRef } from "react";
 import { useExerciseTimer } from "@/hooks/useExerciseTimer";
 import { Mic, Loader2, Volume2 } from "lucide-react";
@@ -15,7 +16,7 @@ export default function RepeatWordPage() {
   const router = useRouter();
 
   // Game State
-  const [questions, setQuestions] = useState([]);
+  const [questions, setQuestions] = useState<{ correctAnswer: string; instructionFr?: string; instructionEn?: string; instruction?: string; instruction_en?: string; sentenceWithBlank?: string; Sentence?: string }[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [score, setScore] = useState(0);
   const [isGameOver, setIsGameOver] = useState(false);
@@ -24,33 +25,33 @@ export default function RepeatWordPage() {
   // Interaction State
   const [isListening, setIsListening] = useState(false);
   const [spokenText, setSpokenText] = useState("");
-  const [feedback, setFeedback] = useState(null); // 'correct', 'incorrect'
+  const [feedback, setFeedback] = useState<"correct" | "incorrect" | null>(null); // 'correct', 'incorrect'
   const [displaySentence, setDisplaySentence] = useState("");
 
-  const recognitionRef = useRef(null);
+  const recognitionRef = useRef<SpeechRecognitionInstance | null>(null);
 
   // Initialize Speech Recognition
   useEffect(() => {
-    if (window.SpeechRecognition || window.webkitSpeechRecognition) {
-      const SpeechRecognition =
-        window.SpeechRecognition || window.webkitSpeechRecognition;
-      recognitionRef.current = new SpeechRecognition();
-      recognitionRef.current.continuous = false;
-      recognitionRef.current.lang = "fr-FR";
-      recognitionRef.current.interimResults = true;
+    const SpeechRecognition = getSpeechRecognitionAPI();
+    if (SpeechRecognition) {
+      const recognition = new SpeechRecognition();
+      recognitionRef.current = recognition;
+      recognition.continuous = false;
+      recognition.lang = "fr-FR";
+      recognition.interimResults = true;
 
-      recognitionRef.current.onresult = (event) => {
+      recognition.onresult = (event) => {
         const transcript = Array.from(event.results)
           .map((result) => result[0].transcript)
           .join("");
         setSpokenText(transcript);
       };
 
-      recognitionRef.current.onend = () => {
+      recognition.onend = () => {
         setIsListening(false);
       };
 
-      recognitionRef.current.onerror = (event) => {
+      recognition.onerror = (event) => {
         console.error("Speech recognition error", event.error);
         setIsListening(false);
       };
@@ -171,7 +172,6 @@ export default function RepeatWordPage() {
 
   return (
     <PracticeGameLayout
-      title="Repeat Word"
       questionType="Fill in the blank by speaking the missing word"
       instructionFr={
         currentQuestion.instructionFr || currentQuestion.instruction

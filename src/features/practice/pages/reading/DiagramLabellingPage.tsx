@@ -8,7 +8,8 @@ import PracticeTwoPanel from "@/features/practice/components/PracticeTwoPanel";
 import CustomSelect from "@/components/ui/CustomSelect";
 import { Loader2, ImageOff } from "lucide-react";
 import { ReadingAnswerFeedback } from "@/features/practice/components/ReadingAnswerFeedback";
-import { findBilingualAnswer } from "@/features/practice/lib/answerPairTranslation";
+import { buildPracticeDropdownOptions } from "@/features/practice/lib/practiceDropdownOptions";
+import { diagramAnswer, diagramAnswerTranslation, readDiagramLocales, type DiagramLocale } from "@/features/practice/lib/diagramLocalization";
 import { getReadingFeedbackTone } from "@/features/practice/lib/readingFeedback";
 import { TranslateButton } from "@/components/ui/TranslateButton";
 import { cn } from "@/lib/utils";
@@ -16,6 +17,7 @@ import { Dialog, DialogContent, DialogTitle, DialogTrigger } from "@/components/
 import { loadMockCSV } from "@/utils/csvLoader";
 import { Button } from "@/components/ui/button";
 import { useQuestionLanguage } from "@/hooks/useQuestionLanguage";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { usePracticeComplete } from "@/hooks/usePracticeComplete";
 import { useSearchParams } from "next/navigation";
 import Image from "next/image";
@@ -23,8 +25,9 @@ import Image from "next/image";
 
 type DiagramQuestion = {
   id: number | string;
-  correct_fr: string;
-  correct_en: string;
+  correct_fr?: string;
+  correct_en?: string;
+  correct_by_lang?: Record<string, string>;
   explanation_fr?: string;
   explanation_en?: string;
   // legacy single-lang
@@ -34,21 +37,11 @@ type DiagramQuestion = {
 type DiagramExercise = {
   external_id?: string;
   level?: string;
-  // bilingual
-  title_fr?: string;
-  title_en?: string;
-  passage_fr?: string;
-  passage_en?: string;
-  question_fr?: string;
-  question_en?: string;
+  localized?: Record<string, DiagramLocale>;
   // legacy single-lang
   title?: string;
   paragraphs?: string[];
   // options pool
-  answers_fr?: string[];
-  answers_en?: string[];
-  distractors_fr?: string[];
-  distractors_en?: string[];
   // legacy flat options
   options?: string[];
   // questions
@@ -84,20 +77,6 @@ function asRecord(value: unknown): Record<string, unknown> {
     : {};
 }
 
-/** Build per-question option list: 1 correct + (optionsPerDropdown-1) random wrong ones */
-function buildDropdownOptions(
-  correctWord: string,
-  allWrong: string[],
-  optionsPerDropdown: number,
-): string[] {
-  const wrong = allWrong.filter(w => w && w !== correctWord);
-  // shuffle wrong pool
-  const shuffled = [...wrong].sort(() => Math.random() - 0.5);
-  const picked = shuffled.slice(0, optionsPerDropdown - 1);
-  const pool = [correctWord, ...picked].sort(() => Math.random() - 0.5);
-  return pool;
-}
-
 // ── Main component ────────────────────────────────────────────────────────────
 
 export default function DiagramLabellingPage() {
@@ -114,6 +93,7 @@ export default function DiagramLabellingPage() {
 
 function DiagramLabellingContent() {
   const handleExit = usePracticeExit();
+  const { learningLang: requestedLearningLang, knownLang: requestedKnownLang } = useLanguage();
   const searchParams = useSearchParams();
   const tag = searchParams?.get("tag") ?? undefined;
   const previewImage = searchParams?.get("previewImage") === "1";
@@ -144,7 +124,9 @@ function DiagramLabellingContent() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const data = await loadMockCSV("practice/reading/diagram_labelling.csv", { tag });
+        const data = await loadMockCSV("practice/reading/diagram_labelling.csv", {
+          tag, learningLang: requestedLearningLang, knownLang: requestedKnownLang,
+        });
         const mapped = (Array.isArray(data) ? data : []).map((value: unknown) => {
           const item = asRecord(value);
           const c = item.content ? asRecord(item.content) : item;
@@ -152,29 +134,22 @@ function DiagramLabellingContent() {
           return {
             external_id:    item.external_id || item.ExerciseID,
             level:          item.Level || item.level || '',
-            title_fr:       c.title_fr || item.title_fr || '',
-            title_en:       c.title_en || item.title_en || item.title || '',
-            passage_fr:     c.passage_fr || item.passage_fr || '',
-            passage_en:     c.passage_en || item.passage_en || '',
+            localized:      readDiagramLocales(item, c),
+            title:          c.title || item.title || '',
             paragraphs:     parseArr(c.paragraphs || item.paragraphs),
-            question_fr:    c.question_fr || item.question_fr || '',
-            question_en:    c.question_en || item.question_en || '',
-            answers_fr:     parseArr(c.answers_fr || item.answers_fr),
-            answers_en:     parseArr(c.answers_en || item.answers_en),
-            distractors_fr: parseArr(c.distractors_fr || item.distractors_fr),
-            distractors_en: parseArr(c.distractors_en || item.distractors_en),
             options:        parseArr(c.options || item.options),
             questions:      parseQuestions(c.questions || item.questions || item.questions_json),
             imageUrl:       c.imageUrl || item.imageUrl || item.imagePath || '',
             timeLimitSeconds: Number(cfg.timeLimitSeconds || item.timeLimitSeconds || 120),
           } as DiagramExercise;
         });
-        // Only keep exercises that have the new bilingual structure (passage_en or answers_fr)
-        const filtered = mapped.filter(e =>
-          (e.passage_en && e.passage_en.length > 0) ||
-          (e.answers_fr && e.answers_fr.length > 0)
-        );
-        setExercises(filtered.length > 0 ? filtered : mapped);
+        // Do not show a different language when the selected learning language is absent.
+        const selectedLanguage = requestedLearningLang.toLowerCase();
+        const filtered = mapped.filter(e => {
+          const locale = e.localized?.[selectedLanguage];
+          return locale && (locale.passage || locale.answers.length > 0);
+        });
+        setExercises(filtered);
       } catch (e) {
         console.error("Error loading diagram labelling data:", e);
       } finally {
@@ -182,7 +157,7 @@ function DiagramLabellingContent() {
       }
     };
     fetchData();
-  }, [tag]);
+  }, [tag, requestedLearningLang, requestedKnownLang]);
 
   const ex = exercises[currentIndex];
   const totalLabels = exercises.reduce((count, exercise) => count + (exercise.questions?.length || 0), 0);
@@ -191,38 +166,30 @@ function DiagramLabellingContent() {
   usePracticeComplete({ isGameOver: isCompleted, score: totalScore, totalQuestions: totalLabels, exerciseType: "diagram_mapping", level: ex?.level });
 
   // ── Derive display values ──────────────────────────────────────────────────
-  const passageTitle = pick(ex?.title_fr, ex?.title_en) || ex?.title || "";
-  const passageText  = learningLang === "fr"
-    ? ex?.passage_fr || ex?.passage_en || (ex?.paragraphs || []).join("\n\n")
-    : ex?.passage_en || ex?.passage_fr || (ex?.paragraphs || []).join("\n\n");
-  const translatedPassageText = learningLang === "fr" ? ex?.passage_en || "" : ex?.passage_fr || "";
-  const translatedPassageTitle = (learningLang === "fr" ? ex?.title_en : ex?.title_fr) || "Passage";
-  const questionText = pick(ex?.question_fr, ex?.question_en) || "Match each number with the correct answer.";
-  const translatedQuestionFromData = pickTranslation(ex?.question_fr, ex?.question_en);
+  const learningLocale = ex?.localized?.[learningLang];
+  const knownLocale = ex?.localized?.[knownLang];
+  const passageTitle = learningLocale?.title || knownLocale?.title || ex?.title || "";
+  const headingText = pick(learningLocale?.heading, knownLocale?.heading) || "Label the diagram";
+  const passageText = learningLocale?.passage || knownLocale?.passage || (ex?.paragraphs || []).join("\n\n");
+  const translatedPassageText = knownLocale?.passage || "";
+  const translatedPassageTitle = knownLocale?.title || "Passage";
+  const questionText = pick(learningLocale?.question, knownLocale?.question) || "Match each number with the correct answer.";
+  const translatedQuestionFromData = pickTranslation(learningLocale?.question, knownLocale?.question);
   const imageUrl     = previewImage && currentIndex === 0 ? "/images/diagram-layout-preview.png" : ex?.imageUrl || "";
 
   // Questions array — normalise legacy {id, correct} format
   const questions: DiagramQuestion[] = useMemo(() => {
     if (!ex) return [];
     const qs = ex.questions || [];
-    return qs.map(q => ({
-      ...q,
-      correct_fr: q.correct_fr || q.correct || "",
-      correct_en: q.correct_en || q.correct || "",
-    }));
+    return qs;
   }, [ex]);
 
-  // Build the "wrong" pool for dropdowns (all answers except the correct one + distractors)
-  // Use the current learning language for options.
-  const allAnswersFr = ex?.answers_fr || questions.map(q => q.correct_fr);
-  const distractorsFr = ex?.distractors_fr || [];
-  const wrongPoolFr = [...allAnswersFr, ...distractorsFr];
-
-  const allAnswersEn = ex?.answers_en || questions.map(q => q.correct_en);
-  const distractorsEn = ex?.distractors_en || [];
-  const wrongPoolEn = [...allAnswersEn, ...distractorsEn];
-
-  // Legacy flat options fallback
+  // Some imported records have questions but an empty answers array.
+  const optionPool = [
+    ...questions.map(q => diagramAnswer(q, learningLang)),
+    ...(learningLocale?.answers || []),
+    ...(learningLocale?.distractors || []),
+  ];
   const legacyOptions = ex?.options || [];
 
   const OPTIONS_PER_DROPDOWN = 5;
@@ -232,15 +199,8 @@ function DiagramLabellingContent() {
     if (!ex || questions.length === 0) return;
     const opts: Record<string | number, string[]> = {};
     questions.forEach(q => {
-      if (legacyOptions.length > 0) {
-        // Legacy: use flat options list sorted
-        opts[q.id] = [...legacyOptions].sort();
-      } else {
-        // New: build per-question shuffled pool in learning language
-        const correctWord = learningLang === "fr" ? q.correct_fr : q.correct_en;
-        const wrongPool   = learningLang === "fr" ? wrongPoolFr : wrongPoolEn;
-        opts[q.id] = buildDropdownOptions(correctWord, wrongPool, OPTIONS_PER_DROPDOWN);
-      }
+      const correctWord = diagramAnswer(q, learningLang);
+      opts[q.id] = buildPracticeDropdownOptions(correctWord, [...optionPool, ...legacyOptions], OPTIONS_PER_DROPDOWN);
     });
     setDropdownOptions(opts);
     setAnswers({});
@@ -277,7 +237,7 @@ function DiagramLabellingContent() {
     if (showFeedback) return;
     let correctCount = 0;
     questions.forEach(q => {
-      const correctWord = learningLang === "fr" ? q.correct_fr : q.correct_en;
+      const correctWord = diagramAnswer(q, learningLang);
       if (answers[q.id] === correctWord) correctCount++;
     });
 
@@ -385,9 +345,9 @@ function DiagramLabellingContent() {
       questionType="Diagram Labelling"
       questionTypeFr="Étiquetage du diagramme"
       questionTypeEn="Diagram Labelling"
-      instructionFr={showQuestionInKnown ? "Label the diagram" : "Étiquetez le diagramme"}
-      instructionEn="Label the diagram"
-      localizedInstruction={showQuestionInKnown ? "Label the diagram" : "Étiquetez le diagramme"}
+      instructionFr={learningLocale?.heading || headingText}
+      instructionEn={knownLocale?.heading || headingText}
+      localizedInstruction={headingText}
       progress={progress}
       isGameOver={isCompleted}
       score={totalScore}
@@ -480,8 +440,7 @@ function DiagramLabellingContent() {
 
           <div className="grid grid-cols-1 gap-3">
             {questions.map(q => {
-              const correctWord = learningLang === "fr" ? q.correct_fr : q.correct_en;
-              const answerPairs = (ex.questions || []).map(question => ({ fr: question.correct_fr, en: question.correct_en }));
+              const correctWord = diagramAnswer(q, learningLang);
               const hasSelection = Boolean(answers[q.id]);
               const isWrong = showFeedback && hasSelection && answers[q.id] !== correctWord;
               const isRight = showFeedback && hasSelection && answers[q.id] === correctWord;
@@ -510,9 +469,10 @@ function DiagramLabellingContent() {
                         isCorrect={isRight}
                         wrong={isWrong ? answers[q.id] : undefined}
                         correct={correctWord}
-                        wrongTranslation={findBilingualAnswer(answers[q.id], answerPairs, learningLang)}
-                        correctTranslation={findBilingualAnswer(correctWord, answerPairs, learningLang)}
-                        targetLang={learningLang === "fr" ? "en" : "fr"}
+                        wrongTranslation={diagramAnswerTranslation(answers[q.id], questions, learningLang, knownLang, ex.localized)}
+                        correctTranslation={diagramAnswerTranslation(correctWord, questions, learningLang, knownLang)}
+                        sourceLang={learningLang}
+                        targetLang={knownLang}
                       />
                     ) : (
                       <CustomSelect

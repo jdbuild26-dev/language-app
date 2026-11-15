@@ -41,6 +41,8 @@ type ListenBubbleQuestion = {
   wordBubbles: string[];
   timeLimitSeconds: number;
   level: string;
+  heading_fr?: string;
+  heading_en?: string;
 };
 
 export default function ListenBubblePage() {
@@ -136,6 +138,8 @@ function ListenBubbleContent() {
             wordBubbles: [...wordBubbles, ...distractors],
             timeLimitSeconds: Number(c.timeLimitSeconds || item.timeLimitSeconds || item.TimeLimitSeconds || item["Time Limit"] || 60),
             level: firstText(item.Level, item.level) || "A1",
+            heading_fr: firstText(c.heading_fr, item.heading_fr, item.Heading_FR, item.instructionFr),
+            heading_en: firstText(c.heading_en, item.heading_en, item.Heading_EN, item.instructionEn),
           };
         }).filter((q: ListenBubbleQuestion) => q.sentence && q.wordBubbles.length > 0);
         setQuestions(mapped);
@@ -264,8 +268,8 @@ function ListenBubbleContent() {
     <>
       <PracticeGameLayout
         questionType="What do you hear?"
-        instructionFr="Écoutez et construisez la phrase"
-        instructionEn="Listen and build the sentence"
+        instructionFr={currentQuestion?.heading_fr || "Écoutez et construisez la phrase"}
+        instructionEn={currentQuestion?.heading_en || "Listen and build the sentence"}
         progress={progress}
         isGameOver={isCompleted}
         score={score}
@@ -309,7 +313,7 @@ function ListenBubbleContent() {
             <button
               type="button"
               onClick={() => handlePlayAudio("normal")}
-              aria-label={isSpeaking ? "Replay the spoken sentence" : "Play the spoken sentence"}
+              aria-label={isSpeaking && playbackMode === "normal" ? "Replay the spoken sentence" : "Play the spoken sentence"}
               aria-pressed={isSpeaking && playbackMode === "normal"}
               className="group rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2"
             >
@@ -317,7 +321,7 @@ function ListenBubbleContent() {
                 <Volume2 className={`h-7 w-7 ${speakerStyles.speakerIcon}`} aria-hidden="true" />
               </span>
             </button>
-              <AudioWaveform isPlaying={isSpeaking} decorative className="min-w-0 flex-1" />
+              <AudioWaveform isPlaying={isSpeaking && playbackMode !== null} decorative className="min-w-0 flex-1" />
             </div>
           </div>
 

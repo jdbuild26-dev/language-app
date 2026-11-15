@@ -25,7 +25,7 @@ export default function DictationImagePage() {
   const router = useRouter();
 
   // State
-  const [questions, setQuestions] = useState([]);
+  const [questions, setQuestions] = useState<{ correctAnswer: string; question?: string; instructionFr?: string; instructionEn?: string; imageUrl?: string }[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [score, setScore] = useState(0);
   const [isGameOver, setIsGameOver] = useState(false);
@@ -33,10 +33,10 @@ export default function DictationImagePage() {
   const [timer, setTimer] = useState(0);
 
   // User Answer State (array of chars)
-  const [userInputs, setUserInputs] = useState([]);
-  const [feedback, setFeedback] = useState(null);
+  const [userInputs, setUserInputs] = useState<string[]>([]);
+  const [feedback, setFeedback] = useState<"correct" | "incorrect" | null>(null);
 
-  const inputRefs = useRef([]);
+  const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   // Fetch Data
   useEffect(() => {
@@ -184,7 +184,6 @@ export default function DictationImagePage() {
   return (
     <>
       <PracticeGameLayout
-        title="Dictation (Image)"
         questionType={currentQuestion.question}
         instructionFr={currentQuestion.instructionFr}
         instructionEn={currentQuestion.instructionEn}
@@ -240,7 +239,7 @@ export default function DictationImagePage() {
                 return (
                   <input
                     key={index}
-                    ref={(el) => (inputRefs.current[index] = el)}
+                    ref={(el) => { inputRefs.current[index] = el; }}
                     type="text"
                     maxLength={1}
                     value={char}

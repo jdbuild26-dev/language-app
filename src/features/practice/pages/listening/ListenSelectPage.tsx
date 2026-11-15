@@ -25,6 +25,8 @@ type ListenSelectQuestion = {
   audioOptions: Array<{ french: string; english: string }>;
   correctIndex: number;
   timeLimitSeconds: number;
+  heading_fr?: string;
+  heading_en?: string;
 };
 
 export default function ListenSelectPage() {
@@ -112,6 +114,8 @@ function ListenSelectContent() {
 
           // ── Question prompt (shown to user in EN) ─────────────────────────
           const questionText: string =
+            item.question_fr ||
+            item["Question_FR"] ||
             item.question ||
             item["Question_EN"] ||
             item["question"] ||
@@ -189,6 +193,8 @@ function ListenSelectContent() {
             questionText,
             audioOptions,
             correctIndex: correctIdx,
+            heading_fr: item.heading_fr || item["Heading_FR"] || item.instructionFr || "",
+            heading_en: item.heading_en || item["Heading_EN"] || item.instructionEn || "",
             timeLimitSeconds: item.timeLimitSeconds || item.TimeLimitSeconds || 30,
           };
         }).filter(item => item.audioOptions.length >= 2);
@@ -283,8 +289,8 @@ function ListenSelectContent() {
     <>
       <PracticeGameLayout
         questionType="Listen and Select"
-        instructionFr="Lisez et sélectionnez l'audio correspondant"
-        instructionEn="Read the sentence and select the matching audio"
+        instructionFr={currentQuestion?.heading_fr || "Lisez et sélectionnez l'audio correspondant"}
+        instructionEn={currentQuestion?.heading_en || "Read the sentence and select the matching audio"}
         progress={progress}
         isGameOver={isCompleted}
         score={score}

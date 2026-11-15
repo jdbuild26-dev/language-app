@@ -32,6 +32,7 @@ type ComprehensionQuestion = {
   options_fr?: string[];
   options_en?: string[];
   options?: string[];
+  localized?: Record<string, { question: string; options: string[] }>;
   correctIndex: number;
   localizedInstruction?: string;
   instructionFr?: string;
@@ -172,6 +173,19 @@ function ComprehensionContent() {
           const c = item.content ? asRecord(item.content) : item;
           const e = item.evaluation ? asRecord(item.evaluation) : item;
           const cfg = item.config ? asRecord(item.config) : item;
+          const localizedSource = asRecord(c.localized);
+          const localized: Record<string, { question: string; options: string[] }> = {};
+          for (const code of new Set([learningLang.toLowerCase(), knownLang.toLowerCase()])) {
+            const source = asRecord(localizedSource[code]);
+            const suffix = code.toUpperCase();
+            const question = [source.question, c[`question_${code}`], item[`question_${code}`], item[`Question_${suffix}`]]
+              .find((value): value is string => typeof value === "string" && Boolean(value.trim())) || "";
+            const sourceOptions = parseArr(source.options);
+            localized[code] = {
+              question,
+              options: sourceOptions.length ? sourceOptions : parseArr(c[`options_${code}`] || item[`options_${code}`]),
+            };
+          }
           return {
             level:            item.Level || item.level || "",
             passage_fr:       c.passage_fr || item.passage_fr || item.passage || "",
@@ -184,10 +198,11 @@ function ComprehensionContent() {
             options_fr:       parseArr(c.options_fr || item.options_fr),
             options_en:       parseArr(c.options_en || item.options_en),
             options:          parseArr(c.options || item.options),
+            localized,
             correctIndex:     Number(e.correctIndex ?? item.correctIndex ?? item.eval_correctIndex ?? 0),
             timeLimitSeconds: Number(cfg.timeLimitSeconds || item.timeLimitSeconds || 60),
-            instructionFr:    item.instructionFr || item.instruction_fr || "",
-            instructionEn:    item.instructionEn || item.instruction_en || "",
+            instructionFr:    c.heading_fr || item.heading_fr || item.Heading_FR || item.instructionFr || item.instruction_fr || "",
+            instructionEn:    c.heading_en || item.heading_en || item.Heading_EN || item.instructionEn || item.instruction_en || "",
           } as ComprehensionQuestion;
         });
         const grouped = groupByPassage(mapped);
@@ -353,8 +368,8 @@ function ComprehensionContent() {
         questionTypeEn="Reading Comprehension"
         localizedInstruction={
           showQuestionInKnown
-            ? "Read the passage and answer all questions"
-            : "Lisez le passage et répondez à toutes les questions"
+            ? currentPassage?.instructionEn || "Read the passage and answer all questions"
+            : currentPassage?.instructionFr || "Lisez le passage et répondez à toutes les questions"
         }
         instructionFr={currentPassage?.instructionFr || "Lisez le passage et répondez à toutes les questions"}
         instructionEn={currentPassage?.instructionEn || "Read the passage and answer all questions"}
@@ -416,16 +431,18 @@ function ComprehensionContent() {
             {currentPassage?.questions.map((q, qIdx) => {
               const { question: shownQuestion, options: shownOptions, canTranslate, translated: isTranslated } = getComprehensionQuestionView(q, {
                 learningLang,
+                knownLang,
                 showQuestionInKnown,
                 submitted,
                 translated: Boolean(translatedQuestions[qIdx]),
+                lockBeforeSubmit: true,
               });
               const translateButton = canTranslate && (
                 <TranslateButton
                   iconVariant="option"
                   onClick={() => setTranslatedQuestions(previous => ({ ...previous, [qIdx]: !previous[qIdx] }))}
-                  aria-label={isTranslated ? submitted ? "Show original question and options" : "Show original question" : submitted ? "Translate question and options" : "Translate question"}
-                  title={isTranslated ? "Show original" : submitted ? "Translate question and options" : "Translate question"}
+                  aria-label={isTranslated ? "Show original question and options" : "Translate question and options"}
+                  title={isTranslated ? "Show original" : "Translate question and options"}
                   aria-pressed={isTranslated}
                   iconSize="md"
                 />

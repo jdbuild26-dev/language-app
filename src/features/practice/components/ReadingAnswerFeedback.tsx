@@ -15,11 +15,11 @@ type ReadingAnswerFeedbackProps = AnswerPairInput & {
 
 /** The two coloured answers share a single translation state and translate action. */
 export function ReadingAnswerFeedback({
-  wrong, correct, wrongTranslation, correctTranslation, targetLang,
+  wrong, correct, wrongTranslation, correctTranslation, sourceLang, targetLang,
   answerNumber, answerClassName, isCorrect, showUnanswered = false,
 }: ReadingAnswerFeedbackProps) {
-  const pair = useMemo(() => createAnswerPairTranslation({ wrong, correct, wrongTranslation, correctTranslation, targetLang }),
-    [wrong, correct, wrongTranslation, correctTranslation, targetLang]);
+  const pair = useMemo(() => createAnswerPairTranslation({ wrong, correct, wrongTranslation, correctTranslation, sourceLang, targetLang }),
+    [wrong, correct, wrongTranslation, correctTranslation, sourceLang, targetLang]);
   const state = useSyncExternalStore(pair.subscribe, pair.getSnapshot, pair.getSnapshot);
   useEffect(() => () => pair.cancel(), [pair]);
 

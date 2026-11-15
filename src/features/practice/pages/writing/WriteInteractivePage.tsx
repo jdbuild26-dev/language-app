@@ -3,6 +3,7 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { usePracticeExit } from "@/hooks/usePracticeExit";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { useExerciseTimer } from "@/hooks/useExerciseTimer";
 import { Languages, User, Volume2 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -27,6 +28,10 @@ type InteractiveExchange = {
 
 type InteractiveConversation = {
   title: string;
+  title_fr?: string;
+  title_en?: string;
+  heading_fr?: string;
+  heading_en?: string;
   scenario: string;
   timeLimitSeconds: number;
   TimeLimitSeconds?: number;
@@ -84,6 +89,7 @@ function normalizeExchanges(raw: any[]): InteractiveExchange[] {
 
 export default function WriteInteractivePage() {
   const handleExit = usePracticeExit();
+  const { learningLang } = useLanguage();
   const { speak } = useTextToSpeech();
   const chatEndRef = useRef<HTMLDivElement>(null);
 
@@ -221,6 +227,10 @@ export default function WriteInteractivePage() {
             .filter((item: any) => Array.isArray(item.exchanges) && item.exchanges.length > 0)
             .map((item: any) => ({
               title: item.title || item.scenario_title || item.title_en || item.title_fr || "",
+              title_fr: item.passage_title_fr || item.title_fr || "",
+              title_en: item.passage_title_en || item.title_en || "",
+              heading_fr: item.heading_fr || item.Heading_FR || "",
+              heading_en: item.heading_en || item.Heading_EN || "",
               scenario: item.scenario || item.scenario_en || item.context_en || "",
               timeLimitSeconds: item.timeLimitSeconds || item.TimeLimitSeconds || 300,
               exchanges: normalizeExchanges(item.exchanges),
@@ -466,8 +476,8 @@ export default function WriteInteractivePage() {
     <>
       <PracticeGameLayout
         questionType="Interactive Writing"
-        instructionFr="Répondez à la conversation par écrit"
-        instructionEn="Respond to the conversation in writing"
+        instructionFr={conversation?.heading_fr || "Répondez à la conversation par écrit"}
+        instructionEn={conversation?.heading_en || "Respond to the conversation in writing"}
         progress={progress}
         isGameOver={isCompleted}
         score={score}
@@ -508,7 +518,7 @@ export default function WriteInteractivePage() {
                           {turn.speakerText}
                         </span>
                         <button
-                          onClick={() => speak(turn.speakerText, "fr-FR")}
+                          onClick={() => { if (turn.speakerText) speak(turn.speakerText, "fr-FR"); }}
                           className="absolute top-2 right-2 p-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-full transition-colors text-emerald-500"
                           title="Replay audio"
                           type="button"
@@ -526,7 +536,7 @@ export default function WriteInteractivePage() {
                           {turn.userText}
                         </p>
                         <button
-                          onClick={() => speak(turn.userText, "fr-FR")}
+                          onClick={() => { if (turn.userText) speak(turn.userText, "fr-FR"); }}
                           className="absolute top-2 right-2 p-1.5 hover:bg-white/20 rounded-full transition-colors text-white/90"
                           title="Replay audio"
                           type="button"
@@ -601,7 +611,7 @@ export default function WriteInteractivePage() {
                 Context
               </p>
               <p className="text-sm leading-relaxed text-slate-700 dark:text-slate-300 font-medium break-words overflow-hidden">
-                {conversation?.scenario || conversation?.title}
+                {conversation?.scenario || (learningLang === "fr" ? conversation?.title_fr || conversation?.title : conversation?.title_en || conversation?.title)}
               </p>
             </div>
 
@@ -620,6 +630,7 @@ export default function WriteInteractivePage() {
                 <div className="px-4 pb-6 animate-in fade-in slide-in-from-bottom-4 duration-500 space-y-4">
                   <form onSubmit={handleSubmit} className="space-y-3">
                     <textarea
+                      data-special-characters
                       value={userInput}
                       onChange={(e) => setUserInput(e.target.value)}
                       placeholder="|"

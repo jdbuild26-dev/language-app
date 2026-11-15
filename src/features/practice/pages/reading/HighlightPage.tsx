@@ -169,7 +169,9 @@ export default function HighlightPage() {
         questionType="Highlight the Sentence"
         questionTypeFr="Surligner la phrase"
         questionTypeEn="Highlight the Sentence"
-        localizedInstruction={currentQuestion?.content?.[`box_instructions_${lLang}`]}
+        instructionFr={currentQuestion?.content?.heading_fr || currentQuestion?.instructionFr || ""}
+        instructionEn={currentQuestion?.content?.heading_en || currentQuestion?.instructionEn || ""}
+        localizedInstruction={currentQuestion?.content?.[`heading_${lLang}`] || currentQuestion?.content?.[`box_instructions_${lLang}`]}
         progress={progress}
         isGameOver={isCompleted}
         score={score}
@@ -211,7 +213,7 @@ export default function HighlightPage() {
              </div>
              
              <h3 className="practice-type-content-heading mb-4 text-slate-900 dark:text-white border-b pb-2 !font-medium">
-                {currentQuestion?.content?.[`title_${lLang}`] || "Passage"}
+                {currentQuestion?.content?.[`passage_title_${lLang}`] || currentQuestion?.content?.[`title_${lLang}`] || "Passage"}
              </h3>
 
              <div 

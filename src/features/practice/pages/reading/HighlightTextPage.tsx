@@ -15,6 +15,7 @@ import { useQuestionLanguage } from "@/hooks/useQuestionLanguage";
 import { usePracticeComplete } from "@/hooks/usePracticeComplete";
 import { useSearchParams } from "next/navigation";
 type HighlightTextQuestion = {
+  level?: string;
   title?: string;
   title_fr?: string;
   title_en?: string;
@@ -66,8 +67,8 @@ function HighlightTextContent() {
           const cfg = item.config || item;
           return {
             external_id: item.external_id,
-            instruction_en: item.instruction_en || item.instructionEn || "",
-            instruction_fr: item.instruction_fr || item.instructionFr || "",
+            instructionEn: c.heading_en || item.heading_en || item.Heading_EN || item.instructionEn || item.instruction_en || "",
+            instructionFr: c.heading_fr || item.heading_fr || item.Heading_FR || item.instructionFr || item.instruction_fr || "",
             level: item.level || "",
             title:    c.title_en || c.title || "",
             title_fr: c.title_fr || "",
@@ -281,7 +282,7 @@ function HighlightTextContent() {
         questionTypeFr="Surligner le texte"
         questionTypeEn="Highlight Text"
         localizedInstruction={
-          currentQuestion.localizedInstruction ||
+          pick(currentQuestion.instructionFr, currentQuestion.instructionEn) ||
           "Surlignez le texte dans le passage"
         }
         instructionFr={

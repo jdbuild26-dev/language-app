@@ -4,6 +4,7 @@ export type AnswerPairInput = {
   wrongTranslation?: string;
   correctTranslation?: string;
   targetLang: string;
+  sourceLang?: string;
 };
 
 export type AnswerPairSnapshot = {
@@ -61,7 +62,7 @@ export function createAnswerPairTranslation(input: AnswerPairInput) {
           if (cache.has(text)) return;
           const response = await fetch("/api/translate", {
             method: "POST", headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ text, source_lang: input.targetLang === "fr" ? "en" : "fr", target_lang: input.targetLang }),
+            body: JSON.stringify({ text, source_lang: input.sourceLang || (input.targetLang === "fr" ? "en" : "fr"), target_lang: input.targetLang }),
             signal: controller.signal,
           });
           if (!response.ok) throw new Error("Translation failed");

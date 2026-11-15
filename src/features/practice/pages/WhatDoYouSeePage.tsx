@@ -1,5 +1,6 @@
 "use client";
 
+import { getSpeechRecognitionAPI, type SpeechRecognitionInstance } from "@/hooks/useSpeechRecognition";
 import React, { useState, useEffect, useRef } from "react";
 import { Mic, Loader2, Image as ImageIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -17,7 +18,7 @@ export default function WhatDoYouSeePage() {
   const router = useRouter();
 
   // Game State
-  const [questions, setQuestions] = useState([]);
+  const [questions, setQuestions] = useState<{ correctAnswer: string; question?: string; instructionFr?: string; instructionEn?: string; imageUrl?: string }[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [score, setScore] = useState(0);
   const [isGameOver, setIsGameOver] = useState(false);
@@ -31,30 +32,30 @@ export default function WhatDoYouSeePage() {
   const [isCorrect, setIsCorrect] = useState(false);
   const [feedbackMessage, setFeedbackMessage] = useState("");
 
-  const recognitionRef = useRef(null);
+  const recognitionRef = useRef<SpeechRecognitionInstance | null>(null);
 
   // Initialize Speech Recognition
   useEffect(() => {
-    if (window.SpeechRecognition || window.webkitSpeechRecognition) {
-      const SpeechRecognition =
-        window.SpeechRecognition || window.webkitSpeechRecognition;
-      recognitionRef.current = new SpeechRecognition();
-      recognitionRef.current.continuous = false;
-      recognitionRef.current.lang = "fr-FR";
-      recognitionRef.current.interimResults = true;
+    const SpeechRecognition = getSpeechRecognitionAPI();
+    if (SpeechRecognition) {
+      const recognition = new SpeechRecognition();
+      recognitionRef.current = recognition;
+      recognition.continuous = false;
+      recognition.lang = "fr-FR";
+      recognition.interimResults = true;
 
-      recognitionRef.current.onresult = (event) => {
+      recognition.onresult = (event) => {
         const transcript = Array.from(event.results)
           .map((result) => result[0].transcript)
           .join("");
         setSpokenText(transcript);
       };
 
-      recognitionRef.current.onend = () => {
+      recognition.onend = () => {
         setIsListening(false);
       };
 
-      recognitionRef.current.onerror = (event) => {
+      recognition.onerror = (event) => {
         console.error("Speech recognition error", event.error);
         setIsListening(false);
       };
@@ -194,7 +195,6 @@ export default function WhatDoYouSeePage() {
   return (
     <>
       <PracticeGameLayout
-        title="What do you see?"
         questionType={currentQuestion.question}
         instructionFr={currentQuestion.instructionFr}
         instructionEn={currentQuestion.instructionEn}

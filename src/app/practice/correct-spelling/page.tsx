@@ -12,12 +12,12 @@ import { getFeedbackMessage } from "@/utils/feedbackMessages";
 
 export default function CorrectSpellingGamePage() {
   const router = useRouter();
-  const [questions, setQuestions] = useState([]);
+  const [questions, setQuestions] = useState<{ correctAnswer: string; misspelledWord: string; instructionFr: string; instructionEn: string; meaning?: string; wordMeaningEn?: string; timeLimit: string | number }[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState<string | null>(null);
 
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [userInputs, setUserInputs] = useState([]);
+  const [userInputs, setUserInputs] = useState<string[]>([]);
   const [isCompleted, setIsCompleted] = useState(false);
   // feedbackState is less useful now with standard banner, but keeping for input coloring consistency if needed
   // actually standard banner pattern uses isCorrect/showFeedback
@@ -29,17 +29,17 @@ export default function CorrectSpellingGamePage() {
 
   // Timer Hook
   const currentQuestion = questions[currentIndex];
-  const timerDuration = parseInt(currentQuestion?.timeLimit) || 60;
+  const timerDuration = parseInt(String(currentQuestion?.timeLimit ?? "")) || 60;
 
   // Ref for input fields
-  const inputsRef = useRef([]);
+  const inputsRef = useRef<(HTMLInputElement | null)[]>([]);
 
   // Load questions on mount
   useEffect(() => {
     loadQuestions();
   }, []);
 
-  const { timerString, resetTimer, isPaused } = useExerciseTimer({
+  const { timerString, resetTimer } = useExerciseTimer({
     duration: timerDuration,
     mode: "timer",
     onExpire: () => {

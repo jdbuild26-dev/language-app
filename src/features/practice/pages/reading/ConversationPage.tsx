@@ -29,6 +29,8 @@ type ConversationExchange = {
 };
 type ConversationData = {
   title?: string;
+  heading_fr?: string;
+  heading_en?: string;
   scenario?: string;
   exchanges: ConversationExchange[];
 };
@@ -164,9 +166,11 @@ function ConversationContent() {
             };
           });
           return {
-            title: learningLang === 'fr' ? (c.title_fr || item.title_fr || '') : (c.title_en || item.title_en || ''),
-            title_fr: c.title_fr || item.title_fr || '',
-            title_en: c.title_en || item.title_en || '',
+            title: learningLang === 'fr' ? (c.passage_title_fr || item.passage_title_fr || c.title_fr || item.title_fr || '') : (c.passage_title_en || item.passage_title_en || c.title_en || item.title_en || ''),
+            title_fr: c.passage_title_fr || item.passage_title_fr || c.title_fr || item.title_fr || '',
+            title_en: c.passage_title_en || item.passage_title_en || c.title_en || item.title_en || '',
+            heading_fr: c.heading_fr || item.heading_fr || item.Heading_FR || '',
+            heading_en: c.heading_en || item.heading_en || item.Heading_EN || '',
             scenario: learningLang === 'fr' ? (c.context_fr || item.context_fr || '') : (c.context_en || item.context_en || ''),
             objectives: learningLang === 'fr' ? (c.objectives_fr || item.objectives_fr || '') : (c.objectives_en || item.objectives_en || ''),
             level: item.Level || item.level || 'B1',
@@ -330,9 +334,9 @@ function ConversationContent() {
       questionType="Running Conversation"
       questionTypeFr="Conversation continue"
       questionTypeEn="Running Conversation"
-      instructionFr="Participez à la conversation"
-      instructionEn="Choose the best response to continue the conversation"
-      localizedInstruction={conversation?.title || conversation?.scenario || "Running Conversation"}
+      instructionFr={conversation?.heading_fr || "Participez à la conversation"}
+      instructionEn={conversation?.heading_en || "Choose the best response to continue the conversation"}
+      localizedInstruction={(learningLang === "fr" ? conversation?.heading_fr : conversation?.heading_en) || conversation?.title || conversation?.scenario || "Running Conversation"}
       progress={progress}
       isGameOver={isCompleted}
       score={score}

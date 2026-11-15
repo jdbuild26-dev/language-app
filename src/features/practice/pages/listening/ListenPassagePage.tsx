@@ -39,6 +39,8 @@ type ListenPassageGroup = {
   passageTranslation: string;
   translatedTitle: string;
   title: string;
+  heading_fr: string;
+  heading_en: string;
   level: string;
   timeLimitSeconds: number;
   questions: ListenQuestion[];
@@ -88,8 +90,10 @@ function groupByPassage(exercises: any[]): ListenPassageGroup[] {
       groups.push({
         passageText: key,
         passageTranslation: c.passage_en || c.passageText_en || "",
-        translatedTitle: c.title_en || c.passage_title_en || "Passage",
-        title: c.title_fr || c.title_en || c.passage_title_fr || "",
+        translatedTitle: c.passage_title_en || c.title_en || "Passage",
+        title: c.passage_title_fr || c.title_fr || c.passage_title_en || c.title_en || "",
+        heading_fr: c.heading_fr || item.heading_fr || item.Heading_FR || item.instructionFr || "",
+        heading_en: c.heading_en || item.heading_en || item.Heading_EN || item.instructionEn || "",
         level: item.Level || item.level || "A1",
         timeLimitSeconds: Number(c.timeLimitSeconds || item.timeLimitSeconds || 120),
         questions: itemQuestions.map(question => shuffleQuestionOptions(question)),
@@ -153,7 +157,7 @@ function ListenPassageContent() {
   const [isCompleted, setIsCompleted] = useState(false);
 
   const currentPassage = passages[passageIndex];
-  const { showQuestionInKnown } = useQuestionLanguage(currentPassage?.level);
+  const { showQuestionInKnown, knownLang } = useQuestionLanguage(currentPassage?.level);
 
   useEffect(() => {
     if (!isAudioPlaying || !currentPassage?.passageText) return;
@@ -355,8 +359,8 @@ function ListenPassageContent() {
     <>
       <PracticeGameLayout
         questionType="Passage Questions"
-        instructionFr="Écoutez le passage et répondez aux questions"
-        instructionEn="Listen to the passage and answer all questions"
+        instructionFr={currentPassage?.heading_fr || "Écoutez le passage et répondez aux questions"}
+        instructionEn={currentPassage?.heading_en || "Listen to the passage and answer all questions"}
         progress={progress}
         isGameOver={isCompleted}
         score={score}
@@ -430,9 +434,12 @@ function ListenPassageContent() {
               {currentPassage.questions.map((q, qIdx) => {
                 const { question: shownQuestion, options: shownOptions, canTranslate, translated: isTranslated } = getComprehensionQuestionView(q, {
                   learningLang,
+                  knownLang,
                   showQuestionInKnown,
                   submitted: isSubmitted,
                   translated: Boolean(translatedQuestions[qIdx]),
+                  lockBeforeSubmit: true,
+                  questionOnlyBeforeSubmit: true,
                 });
 
                 return (
