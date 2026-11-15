@@ -14,6 +14,7 @@ import { useQuestionLanguage } from "@/hooks/useQuestionLanguage";
 import { usePracticeComplete } from "@/hooks/usePracticeComplete";
 import { useSearchParams } from "next/navigation";
 import { useTranslateText } from "@/hooks/useTranslateText";
+import { readReorderTitles } from "@/features/practice/lib/reorderTitles";
 import { TranslateButton } from "@/components/ui/TranslateButton";
 
 type ReorderQuestion = {
@@ -115,13 +116,11 @@ function ReorderContent() {
           return {
             id:               item.external_id || item.ExerciseID || `reorder-${idx}`,
             level:            item.Level || item.level || '',
-            title_fr:         c.passage_title_fr || item.passage_title_fr || c.title_fr || item.title_fr || c.ContextTitle || item.ContextTitle || '',
-            title_en:         c.passage_title_en || item.passage_title_en || c.title_en || item.title_en || c.title || item.title || c.ContextTitle || item.ContextTitle || '',
+            ...readReorderTitles(item),
             heading_fr:       c.heading_fr || item.heading_fr || item.Heading_FR || item.instructionFr || '',
             heading_en:       c.heading_en || item.heading_en || item.Heading_EN || item.instructionEn || '',
             question_fr:      c.question_fr || item.question_fr || item.Question_FR || '',
             question_en:      c.question_en || item.question_en || item.Question_EN || '',
-            title:            c.title_en || item.title_en || c.passage_title_en || item.passage_title_en || c.title || item.title || c.ContextTitle || item.ContextTitle || '',
             correctOrder_fr:  fr.length > 0 ? fr : correctOrder,
             correctOrder_en:  en,
             correctOrder,
@@ -149,13 +148,13 @@ function ReorderContent() {
   };
 
   const currentQuestion = questions[currentIndex];
-  const { pick, pickTranslation, showQuestionInKnown, learningLang } = useQuestionLanguage(currentQuestion?.level);
+  const { pick, showQuestionInKnown, learningLang } = useQuestionLanguage(currentQuestion?.level);
   usePracticeComplete({ isGameOver: isCompleted, score, totalQuestions: questions.length, exerciseType: "reorder_sentences", level: currentQuestion?.level });
   const headingText = pick(currentQuestion?.title_fr, currentQuestion?.title_en)
-    || currentQuestion?.title || "Passage";
+    || currentQuestion?.title || "";
   const questionText = pick(currentQuestion?.question_fr, currentQuestion?.question_en);
 
-  const headingTranslation = pickTranslation(currentQuestion?.title_fr, currentQuestion?.title_en);
+  const headingTranslation = headingText === currentQuestion?.title_fr ? currentQuestion?.title_en : currentQuestion?.title_fr;
   const headingSourceLang = headingText === currentQuestion?.title_fr ? "fr"
     : headingText === currentQuestion?.title_en ? "en" : showQuestionInKnown ? "en" : "fr";
   const { displayText: headingDisplayText, isTranslating: isTranslatingH, toggle: toggleTranslate, reset: resetTranslate } = useTranslateText(headingText, headingSourceLang, headingTranslation);
@@ -267,12 +266,14 @@ function ReorderContent() {
               <h2 className="practice-type-content-heading min-w-0 flex-1 text-center text-slate-900 dark:text-slate-100 !font-medium">
                 {headingDisplayText}
               </h2>
-              <TranslateButton
-                onClick={toggleTranslate}
-                isLoading={isTranslatingH}
-                aria-label="Translate passage title"
-                iconSize="md"
-              />
+              {headingTranslation && (
+                <TranslateButton
+                  onClick={toggleTranslate}
+                  isLoading={isTranslatingH}
+                  aria-label="Translate passage title"
+                  iconSize="md"
+                />
+              )}
             </div>
           )}
           {questionText && (

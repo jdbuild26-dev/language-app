@@ -13,6 +13,7 @@ type PracticeOptionCardProps = {
   onSelect?: () => void;
   onSubmittedPlay?: () => void;
   submittedPlayLabel?: string;
+  playOnContextMenu?: boolean;
   className?: string;
   leading?: ReactNode;
   suffix?: ReactNode;
@@ -22,7 +23,7 @@ type PracticeOptionCardProps = {
 /** Shared presentation only; exercises own selection, audio and translation state. */
 export default function PracticeOptionCard({
   children, variant = "word", selected = false, correct = false,
-  submitted = false, onSelect, onSubmittedPlay, submittedPlayLabel, className, leading, suffix, action,
+  submitted = false, onSelect, onSubmittedPlay, submittedPlayLabel, playOnContextMenu = false, className, leading, suffix, action,
 }: PracticeOptionCardProps) {
   const state = submitted ? correct ? "correct" : selected ? "incorrect" : "muted" : selected ? "selected" : "idle";
   const stateClasses = {
@@ -41,6 +42,10 @@ export default function PracticeOptionCard({
       aria-label={submitted && onSubmittedPlay ? submittedPlayLabel : undefined}
       disabled={submitted && !onSubmittedPlay}
       onClick={() => { if (submitted) onSubmittedPlay?.(); else onSelect?.(); }}
+      onContextMenu={submitted && onSubmittedPlay && playOnContextMenu ? event => {
+        event.preventDefault();
+        onSubmittedPlay();
+      } : undefined}
       whileHover={!submitted && !selected ? { scale: 1.01 } : {}}
       whileTap={!submitted ? { scale: 0.985 } : {}}
       transition={{ duration: 0.22 }}

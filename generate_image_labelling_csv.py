@@ -14,16 +14,17 @@ positions are provided.
 Run from workspace root:
   python language-app/generate_image_labelling_csv.py
 """
-import csv, os, json
+import csv, os, json, re
 
 INPUT  = os.path.join(os.path.dirname(__file__), '..', 'image-labelling.csv')
 OUTPUT = os.path.join(os.path.dirname(__file__), 'public', 'mock-data', 'practice', 'reading', 'image_labelling.csv')
 
 OUT_HEADER = [
     'ExerciseID', 'Instruction_EN', 'Instruction_FR', 'Level', 'LearningLang', 'KnownLang',
-    'title_en', 'title_fr',
+    'heading_en', 'heading_fr', 'title_en', 'title_fr',
     'question_en', 'question_fr',
     'image',
+    'items', 'localized',
     'items_fr',   # JSON: [{id,name_fr,name_en,x,y}, ...]
     'items_en',   # same but name_en as primary
     'word_bank_fr',  # JSON: all 8 correct_fr + 2 distractors_fr (shuffled)
@@ -61,6 +62,8 @@ def main():
 
             heading_en  = (row.get('Heading_EN') or '').strip()
             heading_fr  = (row.get('Heading_FR') or '').strip()
+            title_en    = (row.get('Passage Title_EN') or '').strip()
+            title_fr    = (row.get('Passage Title_FR') or '').strip()
             question_en = (row.get('Question_EN') or '').strip()
             question_fr = (row.get('Question_FR') or '').strip()
             image_url   = (row.get('Image link from Cloudinary') or '').strip()
@@ -68,6 +71,27 @@ def main():
             time_lim    = (row.get('Time') or '120').strip()
             difficulty  = (row.get('Difficulty') or '').strip()
             ex_tag      = (row.get('Exercise Tag') or '').strip()
+
+            learning_lang = (row.get('LearningLang') or 'fr').strip().lower()
+            known_lang = (row.get('KnownLang') or 'en').strip().lower()
+            languages = {learning_lang, known_lang}
+            pattern = re.compile(r'^(?:Heading|Passage Title|Question|Correct Answer \d+|Distractor \d+)_([a-z]{2,3})$', re.IGNORECASE)
+            for column in row:
+                match = pattern.match(column.strip())
+                if match:
+                    languages.add(match.group(1).lower())
+            localized = {}
+            for code in languages:
+                suffix = code.upper()
+                answers = [(row.get(f'Correct Answer {i}_{suffix}') or '').strip() for i in range(1, 9)]
+                distractors = [(row.get(f'Distractor {i}_{suffix}') or '').strip() for i in range(1, 3)]
+                localized[code] = {
+                    'heading': (row.get(f'Heading_{suffix}') or '').strip(),
+                    'title': (row.get(f'Passage Title_{suffix}') or '').strip(),
+                    'question': (row.get(f'Question_{suffix}') or '').strip(),
+                    'answers': answers,
+                    'word_bank': [value for value in [*answers, *distractors] if value],
+                }
 
             # 8 correct answers
             answers_fr = [(row.get(f'Correct Answer {i}_FR') or '').strip() for i in range(1, 9)]
@@ -81,19 +105,24 @@ def main():
             dist_fr = [d for d in dist_fr if d]
             dist_en = [d for d in dist_en if d]
 
-            if not answers_fr:
+            learning_answers = localized[learning_lang]['answers']
+            if not any(learning_answers):
                 continue
 
-            n = min(len(answers_fr), len(answers_en), len(PLACEHOLDER_COORDS))
+            n = min(len(learning_answers), len(PLACEHOLDER_COORDS))
 
             # Build items array with placeholder coordinates
             items = []
             for i in range(n):
+                if not learning_answers[i]:
+                    continue
                 x, y = PLACEHOLDER_COORDS[i]
+                names = {code: values['answers'][i] for code, values in localized.items()}
                 items.append({
                     'id':      i + 1,
-                    'name_fr': answers_fr[i],
-                    'name_en': answers_en[i] if i < len(answers_en) else answers_fr[i],
+                    'name_fr': names.get('fr', ''),
+                    'name_en': names.get('en', ''),
+                    'name_by_lang': names,
                     'x':       x,
                     'y':       y,
                 })
@@ -113,13 +142,17 @@ def main():
                 'Instruction_EN':  heading_en,
                 'Instruction_FR':  heading_fr,
                 'Level':           level,
-                'LearningLang':    'fr',
-                'KnownLang':       'en',
-                'title_en':        heading_en,
-                'title_fr':        heading_fr,
+                'LearningLang':    learning_lang,
+                'KnownLang':       known_lang,
+                'heading_en':      heading_en,
+                'heading_fr':      heading_fr,
+                'title_en':        title_en,
+                'title_fr':        title_fr,
                 'question_en':     question_en,
                 'question_fr':     question_fr,
                 'image':           image_url,
+                'items':           json.dumps(items, ensure_ascii=False),
+                'localized':       json.dumps(localized, ensure_ascii=False),
                 'items_fr':        json.dumps(items, ensure_ascii=False),
                 'items_en':        json.dumps(items, ensure_ascii=False),
                 'word_bank_fr':    json.dumps(wb_fr, ensure_ascii=False),

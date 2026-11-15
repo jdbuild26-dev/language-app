@@ -282,6 +282,7 @@ function ImageLabellingContent() {
                         correctTranslation={translatedCorrect}
                         sourceLang={learningLang}
                         targetLang={knownLang}
+                        storedOnly
                       />
                     ) : (
                       <CustomSelect

@@ -20,8 +20,9 @@ const normalizeText = (text) => {
 import FeedbackBanner from "@/components/ui/FeedbackBanner";
 
 import { loadMockCSV } from "@/utils/csvLoader";
+import { fetchDictationImageData } from "@/services/vocabularyApi";
 
-export default function DictationImagePage() {
+export default function DictationImagePage({ apiOnly = false }: { apiOnly?: boolean } = {}) {
   const router = useRouter();
 
   // State
@@ -42,7 +43,9 @@ export default function DictationImagePage() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const data = await loadMockCSV("practice/writing/dictation_image.csv");
+        const data = apiOnly
+          ? await fetchDictationImageData()
+          : await loadMockCSV("practice/writing/dictation_image.csv");
 
         // Shuffle
         const shuffled = data.sort(() => 0.5 - Math.random());
@@ -54,7 +57,7 @@ export default function DictationImagePage() {
       }
     };
     fetchData();
-  }, []);
+  }, [apiOnly]);
 
   // Timer
   useEffect(() => {

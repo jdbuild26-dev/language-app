@@ -13,19 +13,19 @@ Structure per exercise:
 Run from workspace root:
   python language-app/generate_diagram_labelling_csv.py
 """
-import csv, os, json
+import csv, os, json, re
 
 INPUT  = os.path.join(os.path.dirname(__file__), '..', 'diagram-labelling.csv')
 OUTPUT = os.path.join(os.path.dirname(__file__), 'public', 'mock-data', 'practice', 'reading', 'diagram_labelling.csv')
 
 OUT_HEADER = [
     'ExerciseID', 'Instruction_EN', 'Instruction_FR', 'Level', 'LearningLang', 'KnownLang',
-    'title_en', 'title_fr',
+    'heading_en', 'heading_fr', 'title_en', 'title_fr',
     'passage_en', 'passage_fr',
     'question_en', 'question_fr',
     'answers_fr', 'answers_en',
     'distractors_fr', 'distractors_en',
-    'questions_json',
+    'questions_json', 'localized',
     'timeLimitSeconds', 'difficulty', 'exercise_tag',
 ]
 
@@ -63,6 +63,31 @@ def main():
             difficulty   = (row.get('Difficulty') or '').strip()
             ex_tag       = (row.get('Exercise Tag') or '').strip()
 
+            learning_lang = (row.get('LearningLang') or 'fr').strip().lower()
+            known_lang = (row.get('KnownLang') or 'en').strip().lower()
+            languages = {learning_lang, known_lang}
+            field_pattern = re.compile(
+                r'^(?:Heading|Passage Title|Complete Paragraph|Question|Answer \d+|Distractor \d+)_([a-z]{2,3})$',
+                re.IGNORECASE,
+            )
+            for column in row:
+                match = field_pattern.match(column.strip())
+                if match:
+                    languages.add(match.group(1).lower())
+            localized = {}
+            for code in languages:
+                suffix = code.upper()
+                localized[code] = {
+                    'heading': (row.get(f'Heading_{suffix}') or '').strip(),
+                    'title': (row.get(f'Passage Title_{suffix}') or '').strip(),
+                    'passage': (row.get(f'Complete Paragraph_{suffix}') or '').strip(),
+                    'question': (row.get(f'Question_{suffix}') or '').strip(),
+                    'answers': [value for i in range(1, 11)
+                                if (value := (row.get(f'Answer {i}_{suffix}') or '').strip())],
+                    'distractors': [value for i in range(1, 11)
+                                    if (value := (row.get(f'Distractor {i}_{suffix}') or '').strip())],
+                }
+
             # 6 correct answers
             answers_fr = [
                 (row.get(f'Answer {i}_FR') or '').strip()
@@ -84,9 +109,17 @@ def main():
 
             # Build questions array: [{id, correct_fr, correct_en}, ...]
             questions = [
-                {'id': i + 1, 'correct_fr': answers_fr[i], 'correct_en': answers_en[i]}
-                for i in range(6)
-                if answers_fr[i] or answers_en[i]
+                {
+                    'id': i + 1,
+                    'correct_fr': answers_fr[i] if i < len(answers_fr) else '',
+                    'correct_en': answers_en[i] if i < len(answers_en) else '',
+                    'correct_by_lang': {
+                        code: values['answers'][i]
+                        for code, values in localized.items()
+                        if i < len(values['answers'])
+                    },
+                }
+                for i in range(len(localized[learning_lang]['answers']))
             ]
 
             if not questions:
@@ -97,8 +130,10 @@ def main():
                 'Instruction_EN':  heading_en,
                 'Instruction_FR':  heading_fr,
                 'Level':           level,
-                'LearningLang':    'fr',
-                'KnownLang':       'en',
+                'LearningLang':    learning_lang,
+                'KnownLang':       known_lang,
+                'heading_en':      heading_en,
+                'heading_fr':      heading_fr,
                 'title_en':        title_en,
                 'title_fr':        title_fr,
                 'passage_en':      passage_en,
@@ -110,6 +145,7 @@ def main():
                 'distractors_fr':  json.dumps(distractors_fr, ensure_ascii=False),
                 'distractors_en':  json.dumps(distractors_en, ensure_ascii=False),
                 'questions_json':  json.dumps(questions, ensure_ascii=False),
+                'localized':       json.dumps(localized, ensure_ascii=False),
                 'timeLimitSeconds': time_lim,
                 'difficulty':      difficulty,
                 'exercise_tag':    ex_tag,

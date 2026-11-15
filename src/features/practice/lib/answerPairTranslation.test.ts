@@ -17,6 +17,17 @@ describe("answer pair translation", () => {
     await pair.toggle();
     expect(pair.getSnapshot()).toMatchObject({ wrong: "orange", correct: "carotte", translated: false, loading: false });
   });
+  it("does not start loading when a stored-only row is missing a translation", async () => {
+    const fetch = vi.fn();
+    vi.stubGlobal("fetch", fetch);
+    const pair = createAnswerPairTranslation({
+      wrong: "lampe", correct: "bac", correctTranslation: "bin", targetLang: "en", storedOnly: true,
+    });
+    expect(pair.canTranslate).toBe(false);
+    await pair.toggle();
+    expect(pair.getSnapshot()).toMatchObject({ wrong: "lampe", correct: "bac", translated: false, loading: false });
+    expect(fetch).not.toHaveBeenCalled();
+  });
   it("toggles supplied wrong and correct translations together and restores originals", async () => {
     const pair = createAnswerPairTranslation({
       wrong: "lampe", correct: "bac", wrongTranslation: "lamp", correctTranslation: "bin", targetLang: "en",
