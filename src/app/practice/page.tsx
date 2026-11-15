@@ -261,18 +261,6 @@ const practiceActivities = [
     isLive: true,
   },
   {
-    id: "E7",
-    name: "Interactive Listening",
-    typeSlug: "listen_interactive",
-    icon: MessageSquare,
-    desc: "Follow audio conversations",
-    path: "/practice/listening/interactive",
-    category: "listening",
-    color: "from-pink-400 to-rose-500",
-    shadow: "shadow-pink-200 dark:shadow-pink-900/20",
-    isLive: true,
-  },
-  {
     id: "E9",
     name: "Running Conversation",
     typeSlug: "listening_conversation",
@@ -360,30 +348,6 @@ const practiceActivities = [
     isLive: true,
   },
   {
-    id: "F8",
-    name: "Interactive Writing",
-    typeSlug: "write_interactive",
-    icon: Bot,
-    desc: "AI-assisted writing practice",
-    path: "/practice/writing/interactive",
-    category: "writing",
-    color: "from-pink-400 to-rose-500",
-    shadow: "shadow-pink-200 dark:shadow-pink-900/20",
-    isLive: true,
-  },
-  {
-    id: "F9",
-    name: "Writing Conversation",
-    typeSlug: "writing_conversation",
-    icon: MessageSquare,
-    desc: "Respond to a running conversation in writing",
-    path: "/practice/writing/conversation",
-    category: "writing",
-    color: "from-teal-400 to-emerald-500",
-    shadow: "shadow-teal-200 dark:shadow-teal-900/20",
-    isLive: true,
-  },
-  {
     id: "F10",
     name: "Write About Data",
     typeSlug: "write_analysis",
@@ -443,28 +407,6 @@ const practiceActivities = [
     color: "from-purple-400 to-violet-500",
     shadow: "shadow-purple-200 dark:shadow-purple-900/20",
   },
-  {
-    id: "H4",
-    name: "Interactive Speaking",
-    typeSlug: "speak_interactive",
-    icon: Bot,
-    desc: "AI conversation practice",
-    path: "/practice/speaking/interactive",
-    category: "speaking",
-    color: "from-orange-400 to-amber-500",
-    shadow: "shadow-orange-200 dark:shadow-orange-900/20",
-  },
-  {
-    id: "H5",
-    name: "Speaking Conversation",
-    typeSlug: "speaking_conversation",
-    icon: MessageSquare,
-    desc: "Respond to a running conversation by speaking",
-    path: "/practice/speaking/conversation",
-    category: "speaking",
-    color: "from-violet-400 to-purple-500",
-    shadow: "shadow-violet-200 dark:shadow-violet-900/20",
-  },
 ];
 
 export default function PracticePage() {
@@ -481,13 +423,13 @@ function PracticeContent() {
   const searchParams = useSearchParams();
 
   // Derive active tab from URL or default to "all"
-  const tabFromUrl = searchParams.get("tab");
+  const tabFromUrl = searchParams?.get("tab");
   const activeTab =
     tabFromUrl && tabs.some((t) => t.id === tabFromUrl) ? tabFromUrl : "all";
 
   // Level filter state + backend-driven slug availability
   const [activeLevel, setActiveLevel] = useState("all");
-  const [availableSlugs, setAvailableSlugs] = useState(null); // null = show all
+  const [availableSlugs, setAvailableSlugs] = useState<string[] | null>(null); // null = show all
   const [loadingSlugs, setLoadingSlugs] = useState(false);
   const { learningLang } = useLanguage();
 

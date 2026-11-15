@@ -22,6 +22,10 @@ type CompletePassageQuestion = {
   passage_after_en?: string;
   passage_title_fr?: string;
   passage_title_en?: string;
+  heading_fr?: string;
+  heading_en?: string;
+  question_fr?: string;
+  question_en?: string;
   options_fr?: string[];
   options_en?: string[];
   // legacy single-lang
@@ -106,8 +110,12 @@ function CompletePassageContent() {
           const cfg = item.config ? asRecord(item.config) : item;
           return {
             level:             item.Level || item.level || '',
-            passage_title_fr:  c.passage_title_fr || item.passage_title_fr || '',
-            passage_title_en:  c.passage_title_en || item.passage_title_en || '',
+            passage_title_fr:  c.passage_title_fr || item.passage_title_fr || item['Passage Title_FR'] || '',
+            passage_title_en:  c.passage_title_en || item.passage_title_en || item['Passage Title_EN'] || '',
+            heading_fr:        c.heading_fr || item.heading_fr || item.Heading_FR || '',
+            heading_en:        c.heading_en || item.heading_en || item.Heading_EN || '',
+            question_fr:       c.question_fr || item.question_fr || item.Question_FR || '',
+            question_en:       c.question_en || item.question_en || item.Question_EN || '',
             passage_before_fr: c.passage_before_fr || item.passage_before_fr || '',
             passage_before_en: c.passage_before_en || item.passage_before_en || item.passageBefore || '',
             passage_after_fr:  c.passage_after_fr  || item.passage_after_fr  || '',
@@ -166,11 +174,11 @@ function CompletePassageContent() {
 
   // Heading: level-based language
   const selectHeading = showQuestionInKnown
-    ? "Select the best sentence to complete the passage"
-    : "Choisissez la meilleure phrase pour compléter le passage";
+    ? currentQuestion?.question_en || "Select the best sentence to complete the passage"
+    : currentQuestion?.question_fr || "Choisissez la meilleure phrase pour compléter le passage";
   const translatedHeading = showQuestionInKnown
-    ? "Choisissez la meilleure phrase pour compléter le passage"
-    : "Select the best sentence to complete the passage";
+    ? currentQuestion?.question_fr || "Choisissez la meilleure phrase pour compléter le passage"
+    : currentQuestion?.question_en || "Select the best sentence to complete the passage";
 
   const timerDuration = useMemo(() => currentQuestion?.timeLimitSeconds || 360, [currentQuestion]);
 
@@ -259,9 +267,9 @@ function CompletePassageContent() {
       questionType="Complete the passage"
       questionTypeFr="Complétez le passage"
       questionTypeEn="Complete the passage"
-      localizedInstruction={showQuestionInKnown ? "Select the best sentence to complete the passage" : "Choisissez la meilleure phrase"}
-      instructionFr={currentQuestion.instructionFr || "Choisissez la meilleure phrase"}
-      instructionEn={currentQuestion.instructionEn || "Select the best sentence to complete the passage"}
+      localizedInstruction={showQuestionInKnown ? currentQuestion.heading_en || currentQuestion.instructionEn || "Select the best sentence to complete the passage" : currentQuestion.heading_fr || currentQuestion.instructionFr || "Choisissez la meilleure phrase"}
+      instructionFr={currentQuestion.heading_fr || currentQuestion.instructionFr || "Choisissez la meilleure phrase"}
+      instructionEn={currentQuestion.heading_en || currentQuestion.instructionEn || "Select the best sentence to complete the passage"}
       progress={progress}
       isGameOver={isCompleted}
       score={score}
@@ -329,7 +337,6 @@ function CompletePassageContent() {
               const isSelected = selectedOption === index;
               const isOptionCorrect = showFeedback && index === currentQuestion.correctIndex;
               const isOptionWrong = showFeedback && isSelected && !isOptionCorrect;
-              const isOptionMuted = showFeedback && !isSelected && !isOptionCorrect;
               const translatedOption = translationOptions[index];
               const canTranslateOption = Boolean(translatedOption && translatedOption !== option);
               const optionClasses = cn(
@@ -348,7 +355,6 @@ function CompletePassageContent() {
                     isSelected && !showFeedback && "border-blue-500 bg-blue-500",
                     isOptionCorrect && "border-emerald-500 bg-emerald-500",
                     isOptionWrong && "border-red-400 bg-red-400",
-                    isOptionMuted && "opacity-40",
                   )} aria-hidden="true">
                     {(isSelected || isOptionCorrect || isOptionWrong) && (
                       <span className={cn(
@@ -360,7 +366,6 @@ function CompletePassageContent() {
                   <span className={cn(
                     BODY_TEXT_CLASS,
                     "min-w-0 flex-1 break-words",
-                    isOptionMuted && "opacity-40",
                     isOptionCorrect ? "text-emerald-700 dark:text-emerald-300" :
                       isOptionWrong ? "text-red-600 dark:text-red-300" :
                         "text-slate-700 dark:text-slate-200",
@@ -368,7 +373,10 @@ function CompletePassageContent() {
                     {showFeedback && revealedOptionTranslations[index] && canTranslateOption ? translatedOption : option}
                   </span>
                   {showFeedback && canTranslateOption && (
-                    <TranslateButton iconVariant="option" className="!text-sky-700 hover:!text-sky-800 dark:!text-sky-400 dark:hover:!text-sky-300" onClick={() => setRevealedOptionTranslations(previous => ({ ...previous, [index]: !previous[index] }))} aria-label={`${revealedOptionTranslations[index] ? "Show original" : "Translate"} option ${index + 1}`} title={revealedOptionTranslations[index] ? "Show original option" : "Translate option"} aria-pressed={Boolean(revealedOptionTranslations[index])} />
+                    <TranslateButton iconVariant="option" className={cn(
+                      isOptionCorrect && "!text-emerald-700 hover:!text-emerald-800 dark:!text-emerald-300 dark:hover:!text-emerald-200",
+                      isOptionWrong && "!text-red-600 hover:!text-red-700 dark:!text-red-300 dark:hover:!text-red-200",
+                    )} onClick={() => setRevealedOptionTranslations(previous => ({ ...previous, [index]: !previous[index] }))} aria-label={`${revealedOptionTranslations[index] ? "Show original" : "Translate"} option ${index + 1}`} title={revealedOptionTranslations[index] ? "Show original option" : "Translate option"} aria-pressed={Boolean(revealedOptionTranslations[index])} />
                   )}
                 </>
               );

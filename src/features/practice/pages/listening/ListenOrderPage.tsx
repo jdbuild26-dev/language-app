@@ -24,6 +24,8 @@ type ListenOrderQuestion = {
   correctOrder_en: string[];
   title_fr: string;
   title_en: string;
+  heading_fr: string;
+  heading_en: string;
   timeLimitSeconds: number;
   level: string;
 };
@@ -111,8 +113,10 @@ function mapListenOrderQuestion(raw: unknown, index: number): ListenOrderQuestio
     id: textValue(item.external_id, item.ExerciseID, item.id) || `listen-order-${index}`,
     correctOrder,
     correctOrder_en,
-    title_fr: textValue(content.title_fr, item.title_fr, content.passage_title_fr, item.passage_title_fr, content["Passage Title_FR"], item["Passage Title_FR"], content["Context Title_FR"], item["Context Title_FR"]),
-    title_en: textValue(content.title_en, item.title_en, content.passage_title_en, item.passage_title_en, content["Passage Title_EN"], item["Passage Title_EN"], content["Context Title_EN"], item["Context Title_EN"]),
+    title_fr: textValue(content.passage_title_fr, item.passage_title_fr, content.title_fr, item.title_fr, content["Passage Title_FR"], item["Passage Title_FR"], content["Context Title_FR"], item["Context Title_FR"]),
+    title_en: textValue(content.passage_title_en, item.passage_title_en, content.title_en, item.title_en, content["Passage Title_EN"], item["Passage Title_EN"], content["Context Title_EN"], item["Context Title_EN"]),
+    heading_fr: textValue(content.heading_fr, item.heading_fr, item.Heading_FR, item.instructionFr),
+    heading_en: textValue(content.heading_en, item.heading_en, item.Heading_EN, item.instructionEn),
     timeLimitSeconds: Number(config.timeLimitSeconds || content.timeLimitSeconds || item.timeLimitSeconds || item.Time || 90),
     level: textValue(item.Level, item.level) || "A1",
   };
@@ -147,7 +151,7 @@ function ListenOrderContent() {
 
   const currentQuestion = questions[currentIndex];
   const { learningLang, pick } = useQuestionLanguage(currentQuestion?.level);
-  const headingText = pick(currentQuestion?.title_fr, currentQuestion?.title_en) || "Passage";
+  const headingText = pick(currentQuestion?.title_fr, currentQuestion?.title_en);
   const headingSourceLang = headingText === currentQuestion?.title_en ? "en" : "fr";
   const headingCounterpart = headingSourceLang === "fr" ? currentQuestion?.title_en : currentQuestion?.title_fr;
   const { displayText: headingDisplayText, toggle: toggleHeading, reset: resetHeading, isTranslating: isTranslatingHeading } = useTranslateText(headingText, headingSourceLang, headingCounterpart);
@@ -264,9 +268,9 @@ function ListenOrderContent() {
       questionType="Reorder Sentences"
       questionTypeFr="Réorganisez les phrases"
       questionTypeEn="Reorder Sentences"
-      instructionFr="Écoutez les phrases et mettez-les dans le bon ordre"
-      instructionEn="Listen to the sentences and put them in the correct order"
-      localizedInstruction={learningLang === "fr" ? "Écoutez les phrases et mettez-les dans le bon ordre" : "Listen to the sentences and put them in the correct order"}
+      instructionFr={currentQuestion?.heading_fr || "Écoutez les phrases et mettez-les dans le bon ordre"}
+      instructionEn={currentQuestion?.heading_en || "Listen to the sentences and put them in the correct order"}
+      localizedInstruction={learningLang === "fr" ? currentQuestion?.heading_fr || "Écoutez les phrases et mettez-les dans le bon ordre" : currentQuestion?.heading_en || "Listen to the sentences and put them in the correct order"}
       progress={progress}
       isGameOver={isCompleted}
       score={score}
@@ -289,14 +293,14 @@ function ListenOrderContent() {
       timerValue={timerString}
     >
       <div className="mx-auto flex min-h-0 w-full max-w-[1200px] flex-1 flex-col py-4 sm:py-6">
-        {headingText && <div className="mx-3 flex shrink-0 items-start gap-2 border-b border-slate-200 pb-3 dark:border-slate-700 sm:mx-4 sm:pb-4">
+        {headingText && <div className="mx-3 flex shrink-0 items-start gap-2 border-b border-slate-200 pb-2 dark:border-slate-700 sm:mx-4">
           <h2 className="practice-type-content-heading min-w-0 flex-1 text-center text-slate-900 dark:text-slate-100 !font-medium">{headingDisplayText}</h2>
           <div className="h-8 w-8 shrink-0">
             {showFeedback && <TranslateButton onClick={toggleHeading} isLoading={isTranslatingHeading} aria-label="Translate passage title" iconSize="md" />}
           </div>
         </div>}
 
-        <div className={cn("min-h-0 w-full flex-1", headingText && "mt-4 sm:mt-6")}>
+        <div className={cn("min-h-0 w-full flex-1", headingText && "mt-3")}>
           <Reorder.Group
             axis="y"
             values={currentOrder}
@@ -394,7 +398,7 @@ function ListenOrderRow({
       value={item}
       dragListener={!showFeedback}
       className={cn(
-        "flex w-full min-h-[80px] items-center gap-2 rounded-2xl border-2 bg-white p-3 transition-colors duration-200 select-none dark:bg-slate-800 sm:gap-3 sm:p-4",
+        "flex min-h-[80px] w-full items-center gap-2 rounded-2xl border-2 bg-white p-3 transition-colors duration-200 select-none dark:bg-slate-800 sm:gap-3 sm:p-4",
         !showFeedback && "cursor-grab active:cursor-grabbing hover:border-slate-300 dark:hover:border-slate-600",
         isCorrectPosition ? "border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20" :
           isWrongPosition ? "border-red-500 bg-red-50 dark:bg-red-900/20" : "border-slate-200 dark:border-slate-700",
@@ -404,7 +408,15 @@ function ListenOrderRow({
     >
       <>
           <GripVertical className="mt-1 h-4 w-4 shrink-0 text-slate-400 dark:text-slate-500 sm:h-5 sm:w-5" aria-hidden="true" />
-          <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-sm font-bold text-slate-500 dark:bg-slate-700 dark:text-slate-400 sm:h-8 sm:w-8" aria-label={showFeedback ? `Correct position ${correctIndex + 1}` : `Position ${positionIndex + 1}`}>
+          <span
+            className={cn(
+              "mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center text-sm font-bold sm:h-8 sm:w-8",
+              showFeedback
+                ? cn("rounded-full text-white", isCorrectPosition ? "bg-emerald-500" : "bg-teal-500")
+                : "rounded-lg bg-slate-100 text-slate-500 dark:bg-slate-700 dark:text-slate-400",
+            )}
+            aria-label={showFeedback ? `Correct position ${correctIndex + 1}` : `Position ${positionIndex + 1}`}
+          >
             {showFeedback ? correctIndex + 1 : positionIndex + 1}
           </span>
           <div className="flex min-w-0 flex-1 items-center gap-2 sm:gap-3">
@@ -416,13 +428,13 @@ function ListenOrderRow({
                 <Volume2 className="h-5 w-5" aria-hidden="true" />
               </button>
             </div>
-            <div className="relative grid min-w-0 flex-1 items-center">
+            <div className={cn("relative grid min-w-0 flex-1", !showFeedback && "items-center")}>
               <span aria-hidden="true" className="invisible col-start-1 row-start-1 practice-type-content break-words font-normal">{item.text}</span>
               <span aria-hidden="true" className="invisible col-start-1 row-start-1 practice-type-content break-words font-normal">{englishTranslation}</span>
               {showFeedback ? (
                 <span className="col-start-1 row-start-1 practice-type-content break-words font-normal text-slate-700 dark:text-slate-200">{sentenceText}</span>
               ) : (
-                <AudioWaveform isPlaying={isPlaying} decorative className="absolute inset-x-0" />
+                <AudioWaveform isPlaying={isPlaying} patternKey={item.itemId} decorative className="absolute inset-x-0" />
               )}
             </div>
             <div className="h-8 w-8 shrink-0">

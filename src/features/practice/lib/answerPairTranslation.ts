@@ -4,6 +4,8 @@ export type AnswerPairInput = {
   wrongTranslation?: string;
   correctTranslation?: string;
   targetLang: string;
+  sourceLang?: string;
+  storedOnly?: boolean;
 };
 
 export type AnswerPairSnapshot = {
@@ -23,6 +25,9 @@ export function createAnswerPairTranslation(input: AnswerPairInput) {
   const cache = new Map<string, string>();
   if (input.wrong && input.wrongTranslation?.trim()) cache.set(input.wrong, input.wrongTranslation.trim());
   if (input.correctTranslation?.trim()) cache.set(input.correct, input.correctTranslation.trim());
+  const texts = [...new Set([input.wrong, input.correct].filter((text): text is string => Boolean(text)))];
+  const hasStoredTranslations = texts.every(text => cache.has(text));
+  const canTranslate = !input.storedOnly || hasStoredTranslations;
   let generation = 0;
   let request: AbortController | undefined;
   const update = (next: Partial<AnswerPairSnapshot>) => {
@@ -32,18 +37,18 @@ export function createAnswerPairTranslation(input: AnswerPairInput) {
   return {
     subscribe(listener: () => void) { listeners.add(listener); return () => { listeners.delete(listener); }; },
     getSnapshot: () => state,
+    canTranslate,
     cancel() {
       generation++;
       request?.abort();
       update({ wrong: input.wrong, correct: input.correct, translated: false, loading: false, error: "" });
     },
     async toggle() {
-      if (state.loading) return;
+      if (state.loading || !canTranslate) return;
       if (state.translated) {
         update({ wrong: input.wrong, correct: input.correct, translated: false, error: "" });
         return;
       }
-      const texts = [...new Set([input.wrong, input.correct].filter((text): text is string => Boolean(text)))];
       if (texts.every(text => cache.has(text))) {
         update({ wrong: input.wrong ? cache.get(input.wrong) : undefined, correct: cache.get(input.correct)!, translated: true, loading: false, error: "" });
         return;
@@ -61,7 +66,7 @@ export function createAnswerPairTranslation(input: AnswerPairInput) {
           if (cache.has(text)) return;
           const response = await fetch("/api/translate", {
             method: "POST", headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ text, source_lang: input.targetLang === "fr" ? "en" : "fr", target_lang: input.targetLang }),
+            body: JSON.stringify({ text, source_lang: input.sourceLang || (input.targetLang === "fr" ? "en" : "fr"), target_lang: input.targetLang }),
             signal: controller.signal,
           });
           if (!response.ok) throw new Error("Translation failed");

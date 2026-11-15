@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef, Suspense } from "react";
 import { usePracticeExit } from "@/hooks/usePracticeExit";
 import { useExerciseTimer } from "@/hooks/useExerciseTimer";
-import { Volume2, User, Languages, Loader2, Play, Pause } from "lucide-react";
+import { Volume2, User, Languages, Loader2, Pause } from "lucide-react";
 import { cn } from "@/lib/utils";
 import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
 import FeedbackBanner from "@/components/ui/FeedbackBanner";
@@ -33,6 +33,8 @@ type ConversationData = {
   title?: string;
   title_fr?: string;
   title_en?: string;
+  heading_fr?: string;
+  heading_en?: string;
   scenario?: string;
   context?: string;
   objectives?: string;
@@ -54,7 +56,7 @@ export default function ListenInteractivePage() {
 function ListenInteractiveContent() {
   const handleExit = usePracticeExit();
   const { learningLang = "fr" } = useLanguage();
-  const { speak, isSpeaking, pause, resume, isPaused } = useTextToSpeech();
+  const { speak, isSpeaking } = useTextToSpeech();
   const chatEndRef = useRef<HTMLDivElement>(null);
   const searchParams = useSearchParams();
   const tag = searchParams?.get("tag") ?? undefined;
@@ -94,6 +96,10 @@ function ListenInteractiveContent() {
           }
           return {
             ...c,
+            title_fr: c.passage_title_fr || c.title_fr || "",
+            title_en: c.passage_title_en || c.title_en || "",
+            heading_fr: c.heading_fr || item.heading_fr || item.Heading_FR || "",
+            heading_en: c.heading_en || item.heading_en || item.Heading_EN || "",
             level: item.Level || item.level || "B1",
             exchanges: exchanges.map((ex: any) => ({
               ...ex,
@@ -114,17 +120,6 @@ function ListenInteractiveContent() {
       }
     })();
   }, [tag, learningLang]);
-
-  // Handle Auto-play of speaker line
-  useEffect(() => {
-    if (currentExchange && !showFeedback && !isCompleted && !isLoading) {
-      // Small delay to let UI settle
-      const timer = setTimeout(() => {
-        speak(currentExchange.speakerText, "fr-FR");
-      }, 500);
-      return () => clearTimeout(timer);
-    }
-  }, [currentTurnIndex, convIndex, isLoading]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Scroll to bottom
   useEffect(() => {
@@ -214,8 +209,8 @@ function ListenInteractiveContent() {
     <>
       <PracticeGameLayout
         questionType="Listening Conversation"
-        instructionFr="Écoutez et choisissez la bonne réponse"
-        instructionEn="Listen to the audio and select the best response"
+        instructionFr={currentConv?.heading_fr || "Écoutez et choisissez la bonne réponse"}
+        instructionEn={currentConv?.heading_en || "Listen to the audio and select the best response"}
         progress={progress}
         isGameOver={isCompleted}
         score={score}
@@ -269,9 +264,9 @@ function ListenInteractiveContent() {
               {/* Current speaker message (if not answered) */}
               {!showFeedback && currentExchange && (
                 <div className="flex items-start gap-3 animate-in fade-in slide-in-from-left-4 duration-500">
-                  <div className="w-10 h-10 rounded-full bg-indigo-600 flex items-center justify-center shrink-0 mt-1 shadow-lg shadow-indigo-200 dark:shadow-none">
+                  <button type="button" onClick={() => speak(currentExchange.speakerText, "fr-FR")} aria-label="Play current audio" className="w-10 h-10 rounded-full bg-indigo-600 flex items-center justify-center shrink-0 mt-1 shadow-lg shadow-indigo-200 dark:shadow-none">
                     {isSpeaking ? <Pause className="w-5 h-5 text-white" /> : <Volume2 className="w-5 h-5 text-white" />}
-                  </div>
+                  </button>
                   <div className="bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-100 dark:border-indigo-800/50 px-6 py-4 rounded-2xl rounded-tl-sm shadow-sm max-w-[85%]">
                     <div className="flex flex-col gap-2">
                        <div className="flex items-center gap-2">

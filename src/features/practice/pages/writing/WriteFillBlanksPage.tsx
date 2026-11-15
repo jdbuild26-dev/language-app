@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils";
 import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
 import { getFeedbackMessage } from "@/utils/feedbackMessages";
 import { fetchPracticeData } from "@/utils/practiceFetcher";
-import AccentKeyboard from "@/components/ui/AccentKeyboard";
+import SpecialCharacterKeyboard from "@/features/practice/components/SpecialCharacterKeyboard";
 import { TranslateButton } from "@/components/ui/TranslateButton";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -409,9 +409,9 @@ export default function WriteFillBlanksPage() {
   return (
     <PracticeGameLayout
         questionType="Fill in the Blanks"
-        instructionFr="Complétez le texte"
-        instructionEn="Fill in the Blanks"
-        localizedInstruction="Complétez le texte"
+        instructionFr={currentQ.heading_fr || "Complétez le texte"}
+        instructionEn={currentQ.heading_en || "Fill in the Blanks"}
+        localizedInstruction={currentQ.heading_fr || "Complétez le texte"}
         progress={progress}
         isGameOver={isCompleted}
         score={score}
@@ -484,10 +484,12 @@ export default function WriteFillBlanksPage() {
 
           {/* Accent keyboard */}
           {!showFeedback && (
-            <AccentKeyboard
+            <SpecialCharacterKeyboard
+              key={learningLang}
+              learningLanguage={learningLang}
               disabled={showFeedback}
               className="shrink-0 gap-1.5 border-t border-slate-200 py-6 dark:border-slate-700"
-              onAccentClick={(char) => {
+              onInsert={(char) => {
                 if (!focusedKey) return;
                 const [bidStr, siStr] = focusedKey.split("_");
                 handleCharInput(parseInt(bidStr), parseInt(siStr), char);

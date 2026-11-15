@@ -14,6 +14,7 @@ import { useQuestionLanguage } from "@/hooks/useQuestionLanguage";
 import { usePracticeComplete } from "@/hooks/usePracticeComplete";
 import { useSearchParams } from "next/navigation";
 import { useTranslateText } from "@/hooks/useTranslateText";
+import { readReorderTitles } from "@/features/practice/lib/reorderTitles";
 import { TranslateButton } from "@/components/ui/TranslateButton";
 
 type ReorderQuestion = {
@@ -21,6 +22,10 @@ type ReorderQuestion = {
   title?: string;
   title_fr?: string;
   title_en?: string;
+  heading_fr?: string;
+  heading_en?: string;
+  question_fr?: string;
+  question_en?: string;
   level?: string;
   // new bilingual
   correctOrder_fr?: string[];
@@ -111,9 +116,11 @@ function ReorderContent() {
           return {
             id:               item.external_id || item.ExerciseID || `reorder-${idx}`,
             level:            item.Level || item.level || '',
-            title_fr:         c.title_fr || item.title_fr || c.passage_title_fr || item.passage_title_fr || c.ContextTitle || item.ContextTitle || '',
-            title_en:         c.title_en || item.title_en || c.passage_title_en || item.passage_title_en || c.title || item.title || c.ContextTitle || item.ContextTitle || '',
-            title:            c.title_en || item.title_en || c.passage_title_en || item.passage_title_en || c.title || item.title || c.ContextTitle || item.ContextTitle || '',
+            ...readReorderTitles(item),
+            heading_fr:       c.heading_fr || item.heading_fr || item.Heading_FR || item.instructionFr || '',
+            heading_en:       c.heading_en || item.heading_en || item.Heading_EN || item.instructionEn || '',
+            question_fr:      c.question_fr || item.question_fr || item.Question_FR || '',
+            question_en:      c.question_en || item.question_en || item.Question_EN || '',
             correctOrder_fr:  fr.length > 0 ? fr : correctOrder,
             correctOrder_en:  en,
             correctOrder,
@@ -141,12 +148,13 @@ function ReorderContent() {
   };
 
   const currentQuestion = questions[currentIndex];
-  const { pick, pickTranslation, showQuestionInKnown, learningLang } = useQuestionLanguage(currentQuestion?.level);
+  const { pick, showQuestionInKnown, learningLang } = useQuestionLanguage(currentQuestion?.level);
   usePracticeComplete({ isGameOver: isCompleted, score, totalQuestions: questions.length, exerciseType: "reorder_sentences", level: currentQuestion?.level });
   const headingText = pick(currentQuestion?.title_fr, currentQuestion?.title_en)
-    || currentQuestion?.title || "Passage";
+    || currentQuestion?.title || "";
+  const questionText = pick(currentQuestion?.question_fr, currentQuestion?.question_en);
 
-  const headingTranslation = pickTranslation(currentQuestion?.title_fr, currentQuestion?.title_en);
+  const headingTranslation = headingText === currentQuestion?.title_fr ? currentQuestion?.title_en : currentQuestion?.title_fr;
   const headingSourceLang = headingText === currentQuestion?.title_fr ? "fr"
     : headingText === currentQuestion?.title_en ? "en" : showQuestionInKnown ? "en" : "fr";
   const { displayText: headingDisplayText, isTranslating: isTranslatingH, toggle: toggleTranslate, reset: resetTranslate } = useTranslateText(headingText, headingSourceLang, headingTranslation);
@@ -227,9 +235,9 @@ function ReorderContent() {
         questionType="Reorder Sentences"
         questionTypeFr="Réorganisez les phrases"
         questionTypeEn="Reorder Sentences"
-        instructionFr="Mettez les phrases dans le bon ordre"
-        instructionEn="Put the sentences in the correct order"
-        localizedInstruction="Mettez les phrases dans le bon ordre"
+        instructionFr={currentQuestion?.heading_fr || "Mettez les phrases dans le bon ordre"}
+        instructionEn={currentQuestion?.heading_en || "Put the sentences in the correct order"}
+        localizedInstruction={pick(currentQuestion?.heading_fr || "Mettez les phrases dans le bon ordre", currentQuestion?.heading_en || "Put the sentences in the correct order")}
         progress={progress}
         isGameOver={isCompleted}
         score={score}
@@ -254,20 +262,27 @@ function ReorderContent() {
       >
         <div className="mx-auto flex w-full max-w-[1200px] min-h-0 flex-1 flex-col py-4 sm:py-6">
           {headingText && (
-            <div className="mx-3 flex shrink-0 items-start gap-2 border-b border-slate-200 pb-3 dark:border-slate-700 sm:mx-4 sm:pb-4">
+            <div className="mx-3 flex shrink-0 items-start gap-2 border-b border-slate-200 pb-2 dark:border-slate-700 sm:mx-4">
               <h2 className="practice-type-content-heading min-w-0 flex-1 text-center text-slate-900 dark:text-slate-100 !font-medium">
                 {headingDisplayText}
               </h2>
-              <TranslateButton
-                onClick={toggleTranslate}
-                isLoading={isTranslatingH}
-                aria-label="Translate passage title"
-                iconSize="md"
-              />
+              {headingTranslation && (
+                <TranslateButton
+                  onClick={toggleTranslate}
+                  isLoading={isTranslatingH}
+                  aria-label="Translate passage title"
+                  iconSize="md"
+                />
+              )}
             </div>
           )}
+          {questionText && (
+            <p className="practice-type-content mx-3 mt-3 text-slate-700 dark:text-slate-200 sm:mx-4">
+              {questionText}
+            </p>
+          )}
 
-          <div className={cn("w-full min-h-0 flex-1", headingText && "mt-4 sm:mt-6")}>
+          <div className={cn("w-full min-h-0 flex-1", headingText && "mt-3")}>
             <Reorder.Group
               axis="y"
               values={currentOrder}

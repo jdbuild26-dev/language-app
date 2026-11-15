@@ -177,8 +177,8 @@ function BubbleSelectionPageContent() {
             const cfg = objectValue(item.config) || item;
             return {
               level:              textValue(item.Level, item.level),
-              instructionEn:      textValue(item.instructionEn, item.Instruction_EN) || 'Translate the sentence',
-              instructionFr:      textValue(item.instructionFr, item.Instruction_FR) || 'Traduire la phrase',
+              instructionEn:      textValue(c.heading_en, item.heading_en, item.instructionEn, item.Instruction_EN) || 'Translate the sentence',
+              instructionFr:      textValue(c.heading_fr, item.heading_fr, item.instructionFr, item.Instruction_FR) || 'Traduire la phrase',
               // Source (EN) — what learner reads
               source_sentence:    textValue(c.source_sentence, item.source_sentence, item.SourceSentence, item.sourceText),
               // Target (FR) — correct answer
@@ -203,8 +203,8 @@ function BubbleSelectionPageContent() {
           const raw = Array.isArray(fallback) ? fallback : [];
           data = raw.map((item: Record<string, unknown>) => ({
             level:           textValue(item.Level, item.level),
-            instructionEn:   textValue(item.Instruction_EN) || 'Translate the sentence',
-            instructionFr:   textValue(item.Instruction_FR) || 'Traduire la phrase',
+            instructionEn:   textValue(item.heading_en, item.Instruction_EN) || 'Translate the sentence',
+            instructionFr:   textValue(item.heading_fr, item.Instruction_FR) || 'Traduire la phrase',
             source_sentence: textValue(item.SourceSentence, item.source_sentence, item.SourceText),
             target_sentence: textValue(item.TargetSentence, item.target_sentence, item.CorrectAnswer),
             correctAnswer:   textValue(item.CorrectAnswer, item.correctAnswer, item.TargetSentence),
@@ -378,7 +378,7 @@ function BubbleSelectionPageContent() {
         showFeedback={showFeedback}
         isCorrect={isCorrect}
         feedbackMessage={feedbackMessage}
-        correctAnswer={!isCorrect ? correctSentence : null}
+        correctAnswer={!isCorrect && !currentQuestion?.explanation ? correctSentence : null}
         correctAnswerLabel={labels.correct_answer}
         feedbackChildren={currentQuestion?.explanation || null}
         compactFeedback

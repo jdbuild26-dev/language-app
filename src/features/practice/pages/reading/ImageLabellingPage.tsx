@@ -10,64 +10,16 @@ import { Button } from "@/components/ui/button";
 import { fetchPracticeData } from "@/utils/practiceFetcher";
 import { ImageOff, Loader2 } from "lucide-react";
 import { ReadingAnswerFeedback } from "@/features/practice/components/ReadingAnswerFeedback";
-import { findBilingualAnswer } from "@/features/practice/lib/answerPairTranslation";
+import { findImageLabelTranslation, getImageLabellingQuestionView, readImageLabellingExercise, type ImageLabellingExercise } from "@/features/practice/lib/imageLabellingData";
 import { getReadingFeedbackTone } from "@/features/practice/lib/readingFeedback";
 import { TranslateButton } from "@/components/ui/TranslateButton";
 import { useQuestionLanguage } from "@/hooks/useQuestionLanguage";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { usePracticeComplete } from "@/hooks/usePracticeComplete";
 import { useSearchParams } from "next/navigation";
 import Image from "next/image";
 import { Dialog, DialogContent, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import CustomSelect from "@/components/ui/CustomSelect";
-// ── Types ─────────────────────────────────────────────────────────────────────
-
-type LabelItem = {
-  id: number;
-  name: string;      // correct name (learning lang)
-  name_fr: string;
-  name_en: string;
-  options?: string[]; // list of strings (learning lang)
-};
-
-type ImageLabellingExercise = {
-  external_id?: string;
-  level?: string;
-  sourceLang?: string;
-  title?: string;
-  title_fr?: string;
-  title_en?: string;
-  question_fr?: string;
-  question_en?: string;
-  instructionFr?: string;
-  instructionEn?: string;
-  image?: string;
-  items: LabelItem[];
-  timeLimitSeconds?: number;
-};
-
-// ── Helpers ───────────────────────────────────────────────────────────────────
-
-function parseArr<T>(v: unknown): T[] {
-  if (Array.isArray(v)) return v as T[];
-  if (typeof v === "string" && v) {
-    try {
-      const parsed: unknown = JSON.parse(v);
-      return Array.isArray(parsed) ? parsed as T[] : [];
-    } catch { return []; }
-  }
-  return [];
-}
-
-function asRecord(value: unknown): Record<string, unknown> {
-  return value && typeof value === "object" && !Array.isArray(value)
-    ? value as Record<string, unknown>
-    : {};
-}
-
-function firstText(...values: unknown[]): string {
-  return values.find((value): value is string => typeof value === "string" && Boolean(value.trim())) || "";
-}
-
 // ── Page wrapper ──────────────────────────────────────────────────────────────
 
 export default function ImageLabellingPage() {
@@ -84,6 +36,7 @@ export default function ImageLabellingPage() {
 
 function ImageLabellingContent() {
   const handleExit = usePracticeExit();
+  const { learningLang: requestedLearningLang, knownLang: requestedKnownLang } = useLanguage();
   const searchParams = useSearchParams();
   const tag = searchParams?.get("tag") ?? undefined;
 
@@ -103,47 +56,20 @@ function ImageLabellingContent() {
   // ── Load data ──────────────────────────────────────────────────────────────
   useEffect(() => {
     const fetchData = async () => {
+      setIsLoading(true);
       try {
-        const data = await fetchPracticeData("image_labelling", { tag });
-        const mapped = (Array.isArray(data) ? data : []).map((value: unknown) => {
-          const item = asRecord(value);
-          const c = item.content ? asRecord(item.content) : item;
-          const cfg = item.config ? asRecord(item.config) : item;
-          const exerciseLearningLang = firstText(item.learning_lang) || "fr";
-
-          const rawItems = parseArr<unknown>(c.items || item.items);
-          const mappedItems = rawItems.map((rawItem) => {
-            const it = asRecord(rawItem);
-            const opts = exerciseLearningLang === 'fr'
-              ? parseArr<string>(it.options_fr) 
-              : parseArr<string>(it.options_en);
-
-            return {
-              id: Number(it.id),
-              name: exerciseLearningLang === 'fr' ? firstText(it.name_fr, it.name) : firstText(it.name_en, it.name),
-              name_fr: firstText(it.name_fr, exerciseLearningLang === "fr" ? it.name : undefined),
-              name_en: firstText(it.name_en, exerciseLearningLang === "en" ? it.name : undefined),
-              options: opts.length > 0 ? opts : []
-            } as LabelItem;
-          });
-
-          return {
-            external_id:  firstText(item.external_id, item.ExerciseID),
-            level:        firstText(item.Level, item.level),
-            sourceLang:   exerciseLearningLang,
-            title:        firstText(c.title_en, item.title_en, item.title),
-            title_fr:     firstText(c.title_fr, item.title_fr),
-            title_en:     firstText(c.title_en, item.title_en, item.title),
-            question_fr:  firstText(c.question_fr, item.question_fr),
-            question_en:  firstText(c.question_en, item.question_en),
-            instructionFr: firstText(item.instructionFr, item.instruction_fr),
-            instructionEn: firstText(item.instructionEn, item.instruction_en),
-            image:        firstText(c.image, item.image, item.imageUrl),
-            items:        mappedItems,
-            timeLimitSeconds: Number(cfg.timeLimitSeconds || item.timeLimitSeconds || 120),
-          } as ImageLabellingExercise;
+        const data = await fetchPracticeData("image_labelling", {
+          tag, learningLang: requestedLearningLang, knownLang: requestedKnownLang,
         });
+        const mapped = (Array.isArray(data) ? data : [])
+          .map((value: unknown) => readImageLabellingExercise(value, requestedLearningLang, requestedKnownLang))
+          .filter(exercise => exercise.items.length > 0);
         setExercises(mapped);
+        setCurrentIndex(0);
+        setUserAnswers({});
+        setShowFeedback(false);
+        setIsCompleted(false);
+        setTotalScore(0);
       } catch (e) {
         console.error("Error loading image labelling data:", e);
       } finally {
@@ -151,19 +77,22 @@ function ImageLabellingContent() {
       }
     };
     fetchData();
-  }, [tag]);
+  }, [tag, requestedLearningLang, requestedKnownLang]);
 
   const ex = exercises[currentIndex];
-  const { pick, pickTranslation, learningLang } = useQuestionLanguage(ex?.level);
-  const sourceLang = ex?.sourceLang || learningLang;
+  const { pick, learningLang, knownLang, showQuestionInKnown } = useQuestionLanguage(ex?.level);
   usePracticeComplete({ isGameOver: isCompleted, score: totalScore, totalQuestions: exercises.length, exerciseType: "image_labelling", level: ex?.level });
 
-  const titleText    = pick(ex?.title_fr, ex?.title_en) || ex?.title || "Image Labelling";
-  const instructionText = pick("Étiquetez l'image", "Label the image");
-  const questionFr = firstText(ex?.question_fr, "Associez chaque numéro à la bonne étiquette.");
-  const questionEn = firstText(ex?.question_en, "Match each number with the correct label.");
-  const questionText = pick(questionFr, questionEn);
-  const questionTranslation = pickTranslation(questionFr, questionEn);
+  const learningLocale = ex?.localized[learningLang];
+  const knownLocale = ex?.localized[knownLang];
+  const titleText = learningLocale?.title || knownLocale?.title || "Image Labelling";
+  const learningHeading = learningLocale?.heading || "Label the image";
+  const knownHeading = knownLocale?.heading || learningHeading;
+  const instructionText = pick(learningHeading, knownHeading);
+  const questionView = getImageLabellingQuestionView(
+    Object.fromEntries(Object.entries(ex?.localized || {}).map(([code, locale]) => [code, locale.question])),
+    learningLang, knownLang, showQuestionInKnown, showQuestionTranslation,
+  );
 
   // ── Reset per exercise ─────────────────────────────────────────────────────
   const resetGame = () => {
@@ -261,8 +190,8 @@ function ImageLabellingContent() {
   return (
     <PracticeGameLayout
       questionType={titleText}
-      instructionFr="Étiquetez l'image"
-      instructionEn="Label the image"
+      instructionFr={learningHeading}
+      instructionEn={knownHeading}
       localizedInstruction={instructionText}
       progress={progress}
       onExit={handleExit}
@@ -293,8 +222,8 @@ function ImageLabellingContent() {
           {ex.image ? (
             <Dialog>
               <DialogTrigger asChild>
-                <button type="button" className="relative h-full min-h-0 w-full overflow-hidden rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500" aria-label="Enlarge image">
-                  <Image src={ex.image} alt="Image to label" fill unoptimized sizes="(min-width: 768px) 70vw, 100vw" className="object-contain" />
+                <button type="button" className="relative h-full min-h-0 w-full overflow-hidden rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500" aria-label="Enlarge image">
+                  <Image src={ex.image} alt="Image to label" fill unoptimized sizes="(min-width: 768px) 60vw, 100vw" className="object-cover" />
                 </button>
               </DialogTrigger>
               <DialogContent data-main-practice-scroll className="h-[85dvh] w-[95vw] max-w-[95vw] gap-0 border-0 bg-transparent p-0 shadow-none sm:rounded-none [&>button]:right-2 [&>button]:top-2 [&>button]:rounded-full [&>button]:bg-slate-900/75 [&>button]:p-2 [&>button]:text-white">
@@ -312,9 +241,11 @@ function ImageLabellingContent() {
 
         <section className="practice-dark-panel min-h-0 min-w-0 overflow-y-auto rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900 md:p-5 custom-scrollbar" aria-label="Image labels">
           <div className="mb-4 flex items-start gap-2 border-b border-slate-200 pb-3 dark:border-slate-700">
-            <TranslateButton onClick={() => setShowQuestionTranslation(value => !value)} aria-label={showQuestionTranslation ? "Show original question" : "Translate question"} title={showQuestionTranslation ? "Show original question" : "Translate question"} aria-pressed={showQuestionTranslation} iconSize="md" className="h-10 w-10 shrink-0" />
+            {questionView.canTranslate && (
+              <TranslateButton onClick={() => setShowQuestionTranslation(value => !value)} aria-label={questionView.translated ? "Show original question" : "Translate question"} title={questionView.translated ? "Show original question" : "Translate question"} aria-pressed={questionView.translated} iconSize="md" className="h-10 w-10 shrink-0" />
+            )}
             <h2 className="practice-type-question-heading min-w-0 text-slate-900 dark:text-slate-100">
-              {showQuestionTranslation && questionTranslation ? questionTranslation : questionText}
+              {questionView.question}
             </h2>
           </div>
           <div className="grid grid-cols-1 gap-3">
@@ -323,7 +254,7 @@ function ImageLabellingContent() {
               const hasSelection = Boolean(answer);
               const isWrong = showFeedback && hasSelection && answer !== item.name;
               const isRight = showFeedback && hasSelection && answer === item.name;
-              const translatedCorrect = sourceLang === "fr" ? item.name_en : item.name_fr;
+              const translatedCorrect = item.names[knownLang];
 
               return (
                 <div key={item.id} className="flex min-w-0 items-start gap-2">
@@ -341,15 +272,17 @@ function ImageLabellingContent() {
                   <div className="min-w-0 flex-1">
                     {showFeedback ? (
                       <ReadingAnswerFeedback
-                        key={`${tag}:${currentIndex}:${item.id}:${sourceLang}`}
+                        key={`${tag}:${currentIndex}:${item.id}:${learningLang}`}
                         answerNumber={idx + 1}
                         answerClassName="image-feedback-answer"
                         isCorrect={isRight}
                         wrong={isWrong ? answer : undefined}
                         correct={item.name}
-                        wrongTranslation={findBilingualAnswer(answer, ex.items.map(label => ({ fr: label.name_fr, en: label.name_en })), sourceLang)}
+                        wrongTranslation={findImageLabelTranslation(answer, ex.items, learningLang, knownLang, item)}
                         correctTranslation={translatedCorrect}
-                        targetLang={sourceLang === "fr" ? "en" : "fr"}
+                        sourceLang={learningLang}
+                        targetLang={knownLang}
+                        storedOnly
                       />
                     ) : (
                       <CustomSelect

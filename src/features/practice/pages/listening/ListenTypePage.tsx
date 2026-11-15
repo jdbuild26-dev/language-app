@@ -16,8 +16,8 @@ import { fetchPracticeData } from "@/utils/practiceFetcher";
 import { useSearchParams } from "next/navigation";
 import { Suspense } from "react";
 import styles from "./ListenTypePage.module.css";
-
-const ACCENT_KEYS = ["e", "è", "ê", "à", "ç", "â", "î", "ô", "û", "ë", "ï", "ü"];
+import { useLanguage } from "@/contexts/LanguageContext";
+import SpecialCharacterKeyboard from "../../components/SpecialCharacterKeyboard";
 
 type ListenTypeQuestion = {
   audioText: string;
@@ -25,6 +25,9 @@ type ListenTypeQuestion = {
   hint: string;
   timeLimitSeconds: number;
   level: string;
+  characterLimit?: number;
+  heading_fr?: string;
+  heading_en?: string;
 };
 
 export default function ListenTypePage() {
@@ -37,6 +40,7 @@ export default function ListenTypePage() {
 
 function ListenTypeContent() {
   const handleExit = usePracticeExit();
+  const { learningLang = "fr" } = useLanguage();
   const { speak, isSpeaking, cancel } = useTextToSpeech();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const searchParams = useSearchParams();
@@ -84,6 +88,9 @@ function ListenTypeContent() {
             hint:            c.hint             || item.hint            || "",
             timeLimitSeconds: Number(c.timeLimitSeconds || item.timeLimitSeconds || item.TimeLimitSeconds || 45),
             level:           item.Level         || item.level           || "A1",
+            characterLimit:  Number(c.characterLimit || item.characterLimit || item["Character Limit"] || 0),
+            heading_fr:      c.heading_fr || item.heading_fr || item.Heading_FR || item.instructionFr || "",
+            heading_en:      c.heading_en || item.heading_en || item.Heading_EN || item.instructionEn || "",
           };
         }).filter((q: any) => q.audioText);
         setQuestions(mapped);
@@ -128,7 +135,8 @@ function ListenTypeContent() {
       const end = input.selectionEnd;
       const next = userInput.slice(0, start) + event.key + userInput.slice(end);
       input.focus({ preventScroll: true });
-      if (next.length > Math.max(100, currentQuestion.audioText.length)) return;
+      const limit = Math.max(currentQuestion.audioText.length, currentQuestion.characterLimit || 100);
+      if (next.length > limit) return;
       setUserInput(next);
       requestAnimationFrame(() => input.setSelectionRange(start + event.key.length, start + event.key.length));
     };
@@ -215,7 +223,7 @@ function ListenTypeContent() {
 
   const progress =
     questions.length > 0 ? ((currentIndex + 1) / questions.length) * 100 : 0;
-  const characterLimit = Math.max(100, currentQuestion.audioText.length);
+  const characterLimit = Math.max(currentQuestion.audioText.length, currentQuestion.characterLimit || 100);
   const canTranslate = Boolean(currentQuestion.englishText.trim());
   const handleTranslate = () => {
     if (showFeedback && canTranslate) setShowTranslation(visible => !visible);
@@ -239,8 +247,8 @@ function ListenTypeContent() {
     <>
       <PracticeGameLayout
         questionType="Listen and Type the Sentence"
-        instructionFr="Écoutez attentivement et tapez la phrase complète"
-        instructionEn="Listen carefully and type the full sentence"
+        instructionFr={currentQuestion?.heading_fr || "Écoutez attentivement et tapez la phrase complète"}
+        instructionEn={currentQuestion?.heading_en || "Listen carefully and type the full sentence"}
         progress={progress}
         isGameOver={isCompleted}
         score={score}
@@ -278,21 +286,15 @@ function ListenTypeContent() {
             <AudioWaveform isPlaying={isSpeaking} className="flex-1 pl-1" />
           </div>
 
-          <div className={cn(styles.enterKeys, "mt-10 flex flex-wrap justify-center gap-2.5 sm:mt-12")} aria-label="French accent keyboard">
-            {ACCENT_KEYS.map((char) => (
-              <button
-                key={char}
-                type="button"
-                disabled={showFeedback || userInput.length >= characterLimit}
-                onMouseDown={(event) => event.preventDefault()}
-                onClick={() => insertCharacter(char)}
-                aria-label={"Insert " + char}
-                className="flex h-[50px] w-[50px] items-center justify-center rounded-2xl border border-slate-200 bg-white text-base font-semibold text-slate-900 shadow-[0_1px_2px_rgba(15,23,42,0.03)] transition-[background-color,border-color,box-shadow,transform] duration-150 hover:border-sky-300 hover:bg-sky-50 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 motion-safe:active:scale-[0.94] motion-reduce:transition-none disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800"
-              >
-                {char}
-              </button>
-            ))}
-          </div>
+          {!showFeedback && (
+            <SpecialCharacterKeyboard
+              key={learningLang}
+              learningLanguage={learningLang}
+              onInsert={insertCharacter}
+              disabled={userInput.length >= characterLimit}
+              className={cn(styles.enterKeys, "mt-10 sm:mt-12")}
+            />
+          )}
 
           <div className={cn(styles.enterAnswer, "relative mt-8 w-full sm:mt-9")}>
             {showFeedback && (

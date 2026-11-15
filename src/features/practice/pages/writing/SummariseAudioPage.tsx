@@ -16,8 +16,7 @@ import { fetchPracticeData } from "@/utils/practiceFetcher";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useSearchParams } from "next/navigation";
-
-const ACCENT_KEYS = ["é", "è", "ê", "à", "ç", "â", "î", "ô", "û", "ë", "ï", "ü"];
+import SpecialCharacterKeyboard from "@/features/practice/components/SpecialCharacterKeyboard";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -184,9 +183,9 @@ export default function SummariseAudioPage() {
     <>
       <PracticeGameLayout
         questionType="Summarise What You Hear"
-        instructionFr="Résumez ce que vous entendez"
-        instructionEn="Summarise What You Hear"
-        localizedInstruction="Résumez ce que vous entendez"
+        instructionFr={currentQ.heading_fr || "Résumez ce que vous entendez"}
+        instructionEn={currentQ.heading_en || "Summarise What You Hear"}
+        localizedInstruction={currentQ.heading_fr || "Résumez ce que vous entendez"}
         progress={progress}
         isGameOver={isCompleted}
         score={score}
@@ -231,21 +230,7 @@ export default function SummariseAudioPage() {
             />
             <div className="flex shrink-0 flex-col gap-3">
               {!showFeedback && !evaluation && (
-                <div className="grid w-full grid-cols-6 gap-1 xl:grid-cols-12" aria-label="French accent keyboard">
-                  {ACCENT_KEYS.map(char => (
-                    <button
-                      key={char}
-                      type="button"
-                      disabled={isSubmitting || charCount >= charLimit}
-                      aria-label={`Insert ${char}`}
-                      onMouseDown={e => e.preventDefault()}
-                      onClick={() => insertAccent(char)}
-                      className="flex h-11 w-full min-w-0 items-center justify-center rounded-xl border border-slate-200 bg-white text-base font-semibold text-slate-900 shadow-[0_1px_2px_rgba(15,23,42,0.03)] transition-[background-color,border-color,box-shadow,transform] duration-150 hover:border-sky-300 hover:bg-sky-50 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 motion-safe:active:scale-[0.94] motion-reduce:transition-none disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800"
-                    >
-                      {char}
-                    </button>
-                  ))}
-                </div>
+                <SpecialCharacterKeyboard key={learningLang} learningLanguage={learningLang} onInsert={insertAccent} disabled={isSubmitting || charCount >= charLimit} />
               )}
               <span aria-label={`${charCount} of ${charLimit} characters`} className={cn("self-end text-base font-semibold tabular-nums", charCount >= charLimit * 0.9 ? "text-red-500" : "text-slate-500 dark:text-slate-400")}>{charCount}/{charLimit}</span>
             </div>

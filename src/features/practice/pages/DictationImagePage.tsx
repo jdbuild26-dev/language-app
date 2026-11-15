@@ -20,12 +20,13 @@ const normalizeText = (text) => {
 import FeedbackBanner from "@/components/ui/FeedbackBanner";
 
 import { loadMockCSV } from "@/utils/csvLoader";
+import { fetchDictationImageData } from "@/services/vocabularyApi";
 
-export default function DictationImagePage() {
+export default function DictationImagePage({ apiOnly = false }: { apiOnly?: boolean } = {}) {
   const router = useRouter();
 
   // State
-  const [questions, setQuestions] = useState([]);
+  const [questions, setQuestions] = useState<{ correctAnswer: string; question?: string; instructionFr?: string; instructionEn?: string; imageUrl?: string }[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [score, setScore] = useState(0);
   const [isGameOver, setIsGameOver] = useState(false);
@@ -33,16 +34,18 @@ export default function DictationImagePage() {
   const [timer, setTimer] = useState(0);
 
   // User Answer State (array of chars)
-  const [userInputs, setUserInputs] = useState([]);
-  const [feedback, setFeedback] = useState(null);
+  const [userInputs, setUserInputs] = useState<string[]>([]);
+  const [feedback, setFeedback] = useState<"correct" | "incorrect" | null>(null);
 
-  const inputRefs = useRef([]);
+  const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   // Fetch Data
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const data = await loadMockCSV("practice/writing/dictation_image.csv");
+        const data = apiOnly
+          ? await fetchDictationImageData()
+          : await loadMockCSV("practice/writing/dictation_image.csv");
 
         // Shuffle
         const shuffled = data.sort(() => 0.5 - Math.random());
@@ -54,7 +57,7 @@ export default function DictationImagePage() {
       }
     };
     fetchData();
-  }, []);
+  }, [apiOnly]);
 
   // Timer
   useEffect(() => {
@@ -184,7 +187,6 @@ export default function DictationImagePage() {
   return (
     <>
       <PracticeGameLayout
-        title="Dictation (Image)"
         questionType={currentQuestion.question}
         instructionFr={currentQuestion.instructionFr}
         instructionEn={currentQuestion.instructionEn}
@@ -240,7 +242,7 @@ export default function DictationImagePage() {
                 return (
                   <input
                     key={index}
-                    ref={(el) => (inputRefs.current[index] = el)}
+                    ref={(el) => { inputRefs.current[index] = el; }}
                     type="text"
                     maxLength={1}
                     value={char}

@@ -68,3 +68,68 @@ test("missing question translations fall back to a complete single-language bund
     question: question.question_en, options: question.options_en, canTranslate: false, translated: false,
   });
 });
+
+test("Reading Comprehension starts in the learning language even for a beginner", () => {
+  const state = {
+    learningLang: "fr", knownLang: "en", showQuestionInKnown: true,
+    submitted: false, translated: false, lockBeforeSubmit: true,
+  };
+  expect(getComprehensionQuestionView(question, state)).toMatchObject({
+    question: question.question_fr, options: question.options_fr,
+    canTranslate: false, translated: false,
+  });
+  expect(getComprehensionQuestionView(question, { ...state, submitted: true })).toMatchObject({
+    question: question.question_fr, options: question.options_fr,
+    canTranslate: true, translated: false,
+  });
+  expect(getComprehensionQuestionView(question, { ...state, submitted: true, translated: true })).toMatchObject({
+    question: question.question_en, options: question.options_en,
+    canTranslate: true, translated: true,
+  });
+});
+
+test("Listening Passage translates only the question before submission and the full bundle afterward", () => {
+  const state = {
+    learningLang: "fr", knownLang: "en", showQuestionInKnown: true,
+    submitted: false, translated: false, lockBeforeSubmit: true,
+    questionOnlyBeforeSubmit: true,
+  };
+  expect(getComprehensionQuestionView(question, state)).toMatchObject({
+    question: question.question_fr, options: question.options_fr, canTranslate: true,
+  });
+  expect(getComprehensionQuestionView(question, { ...state, translated: true })).toMatchObject({
+    question: question.question_en, options: question.options_fr, translated: true,
+  });
+  expect(getComprehensionQuestionView(question, { ...state, submitted: true, translated: true })).toMatchObject({
+    question: question.question_en, options: question.options_en, translated: true,
+  });
+});
+
+test("Reading Comprehension never mixes an incomplete question with another language's options", () => {
+  const state = {
+    learningLang: "fr", knownLang: "en", showQuestionInKnown: true,
+    submitted: false, translated: false, lockBeforeSubmit: true,
+  };
+  expect(getComprehensionQuestionView({ ...question, options_en: [] }, state)).toMatchObject({
+    question: question.question_fr, options: question.options_fr, canTranslate: false,
+  });
+});
+
+test("Reading Comprehension accepts a future language pair as complete bundles", () => {
+  const data = {
+    localized: {
+      de: { question: "Was ist der Vorteil?", options: ["Schneller", "Klarer"] },
+      es: { question: "¿Cuál es la ventaja?", options: ["Más rápido", "Más claro"] },
+    },
+  };
+  const state = {
+    learningLang: "de", knownLang: "es", showQuestionInKnown: false,
+    submitted: false, translated: false, lockBeforeSubmit: true,
+  };
+  expect(getComprehensionQuestionView(data, state)).toMatchObject({
+    question: data.localized.de.question, options: data.localized.de.options, canTranslate: false,
+  });
+  expect(getComprehensionQuestionView(data, { ...state, submitted: true, translated: true })).toMatchObject({
+    question: data.localized.es.question, options: data.localized.es.options, translated: true,
+  });
+});

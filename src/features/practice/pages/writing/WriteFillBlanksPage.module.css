@@ -18,17 +18,17 @@
 .cell {
   position: relative;
   display: inline-flex;
-  flex: 0 0 24px;
+  flex: 0 0 21px;
   align-items: center;
   justify-content: center;
-  height: 30px;
+  height: 28px;
   background: #fff;
-  font-size: 17px;
+  font-size: 15px;
   line-height: 1;
 }
 
 .shortWord .cell {
-  flex-basis: 26px;
+  flex-basis: 23px;
 }
 
 .cell + .cell {
@@ -36,7 +36,7 @@
 }
 
 .supplied {
-  background: rgb(248 250 252 / 70%);
+  background: #e2e8f0;
   color: #0f172a;
   font-weight: 500;
   user-select: none;
@@ -58,6 +58,7 @@
   font: inherit;
   font-weight: 600;
   text-align: center;
+  text-align-last: center;
   opacity: 1;
 }
 

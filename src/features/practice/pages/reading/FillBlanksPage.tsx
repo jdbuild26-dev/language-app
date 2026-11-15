@@ -5,6 +5,7 @@ import { usePracticeExit } from "@/hooks/usePracticeExit";
 import { useExerciseTimer } from "@/hooks/useExerciseTimer";
 import { XCircle, Loader2 } from "lucide-react";
 import { ReadingAnswerFeedback } from "@/features/practice/components/ReadingAnswerFeedback";
+import { readFillBlanksPassageTitle } from "@/features/practice/lib/fillBlanksTitle";
 import { findBilingualAnswer } from "@/features/practice/lib/answerPairTranslation";
 import { getReadingFeedbackTone } from "@/features/practice/lib/readingFeedback";
 import { getCorrectedPassageParts } from "@/features/practice/lib/correctedPassage";
@@ -37,6 +38,10 @@ type FillBlanksExercise = {
   passage_en?: string;
   passage_title_fr?: string;
   passage_title_en?: string;
+  heading_fr?: string;
+  heading_en?: string;
+  question_fr?: string;
+  question_en?: string;
   passageSegments: PassageSegment[];
   blanksData: Record<string, BlankEntry>;
   timeLimitSeconds?: number;
@@ -175,8 +180,12 @@ function FillBlanksContent() {
             level:            item.Level || item.level || '',
             passage_fr:       passageFr,
             passage_en:       passageEn,
-            passage_title_fr: c.passage_title_fr || item.passage_title_fr || c.title_fr || item.title_fr || '',
-            passage_title_en: c.passage_title_en || item.passage_title_en || c.title_en || item.title_en || '',
+            passage_title_fr: readFillBlanksPassageTitle(item, c, 'fr'),
+            passage_title_en: readFillBlanksPassageTitle(item, c, 'en'),
+            heading_fr:       c.heading_fr || item.heading_fr || item.Heading_FR || '',
+            heading_en:       c.heading_en || item.heading_en || item.Heading_EN || '',
+            question_fr:      c.question_fr || item.question_fr || item.Question_FR || '',
+            question_en:      c.question_en || item.question_en || item.Question_EN || '',
             passageSegments:  derivedSegments,
             blanksData,
             timeLimitSeconds: Number(cfg.timeLimitSeconds || item.timeLimitSeconds || 480),
@@ -211,7 +220,8 @@ function FillBlanksContent() {
 
   const ex = exercises[currentIndex];
   const { showQuestionInKnown } = useQuestionLanguage(ex?.level);
-  usePracticeComplete({ isGameOver: isCompleted, score: totalScore, totalQuestions: exercises.length, exerciseType: "fill_blanks", level: ex?.level });
+  const totalAnswerSlots = exercises.reduce((count, exercise) => count + Object.keys(exercise.blanksData).length, 0);
+  usePracticeComplete({ isGameOver: isCompleted, score: totalScore, totalQuestions: totalAnswerSlots, exerciseType: "fill_blanks", level: ex?.level });
 
   // Reset answers when exercise changes
   useEffect(() => {
@@ -316,8 +326,11 @@ function FillBlanksContent() {
 
   // Heading: level-based language
   const selectHeading = showQuestionInKnown
-    ? "Select the best option for each missing word"
-    : "Choisissez le meilleur mot pour chaque espace";
+    ? ex.question_en || "Select the best option for each missing word"
+    : ex.question_fr || "Choisissez le meilleur mot pour chaque espace";
+  const translatedHeading = showQuestionInKnown
+    ? ex.question_fr || "Choisissez le meilleur mot pour chaque espace"
+    : ex.question_en || "Select the best option for each missing word";
 
   // ── Render ─────────────────────────────────────────────────────────────────
   return (
@@ -326,13 +339,14 @@ function FillBlanksContent() {
       questionType="Fill in the blanks"
       questionTypeFr="Complétez le passage"
       questionTypeEn="Fill in the blanks"
-      localizedInstruction={showQuestionInKnown ? "Select the best option for each missing word" : "Choisissez le meilleur mot pour chaque espace"}
-      instructionFr={ex.instructionFr || "Choisissez le meilleur mot pour chaque espace"}
-      instructionEn={ex.instructionEn || "Select the best option for each missing word"}
+      localizedInstruction={showQuestionInKnown ? ex.heading_en || ex.instructionEn || "Select the best option for each missing word" : ex.heading_fr || ex.instructionFr || "Choisissez le meilleur mot pour chaque espace"}
+      instructionFr={ex.heading_fr || ex.instructionFr || "Choisissez le meilleur mot pour chaque espace"}
+      instructionEn={ex.heading_en || ex.instructionEn || "Select the best option for each missing word"}
       progress={progress}
       isGameOver={isCompleted}
       score={totalScore}
-      totalQuestions={exercises.length * totalBlanks}
+      totalQuestions={totalAnswerSlots}
+      headerTotalQuestions={exercises.length}
       currentQuestionIndex={currentIndex}
       questionCounterValue={currentIndex + 1}
       feedbackTone={feedbackTone}
@@ -431,11 +445,7 @@ function FillBlanksContent() {
                 className="h-10 w-10"
               />
               <h2 className="practice-reading-heading min-w-0 flex-1 !font-medium">
-                {showTranslation
-                  ? showQuestionInKnown
-                    ? "Choisissez le meilleur mot pour chaque espace"
-                    : "Select the best option for each missing word"
-                  : selectHeading}
+                {showTranslation ? translatedHeading : selectHeading}
               </h2>
             </div>
 
@@ -447,7 +457,10 @@ function FillBlanksContent() {
                 const userAnswer = answers[key];
                 const isCorrectAnswer = showFeedback && userAnswer === blank.correct;
                 const isWrongAnswer = showFeedback && userAnswer !== blank.correct;
-                const answerPairs = Object.values(ex.blanksData).map(entry => ({ fr: entry.correct_fr, en: entry.correct_en }));
+                const answerPairs = Object.values(ex.blanksData).flatMap(entry => [
+                  { fr: entry.correct_fr, en: entry.correct_en },
+                  ...entry.options.map((fr, index) => ({ fr, en: entry.options_en?.[index] })),
+                ]);
 
                 return (
                   <div key={key} className="flex min-w-0 items-start gap-2">

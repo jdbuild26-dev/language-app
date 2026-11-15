@@ -15,11 +15,11 @@ type ReadingAnswerFeedbackProps = AnswerPairInput & {
 
 /** The two coloured answers share a single translation state and translate action. */
 export function ReadingAnswerFeedback({
-  wrong, correct, wrongTranslation, correctTranslation, targetLang,
+  wrong, correct, wrongTranslation, correctTranslation, sourceLang, targetLang, storedOnly,
   answerNumber, answerClassName, isCorrect, showUnanswered = false,
 }: ReadingAnswerFeedbackProps) {
-  const pair = useMemo(() => createAnswerPairTranslation({ wrong, correct, wrongTranslation, correctTranslation, targetLang }),
-    [wrong, correct, wrongTranslation, correctTranslation, targetLang]);
+  const pair = useMemo(() => createAnswerPairTranslation({ wrong, correct, wrongTranslation, correctTranslation, sourceLang, targetLang, storedOnly }),
+    [wrong, correct, wrongTranslation, correctTranslation, sourceLang, targetLang, storedOnly]);
   const state = useSyncExternalStore(pair.subscribe, pair.getSnapshot, pair.getSnapshot);
   useEffect(() => () => pair.cancel(), [pair]);
 
@@ -45,8 +45,8 @@ export function ReadingAnswerFeedback({
           </div>
         </div>
         <TranslateButton iconVariant="option" onClick={() => void pair.toggle()} isLoading={state.loading}
-          aria-label={`${action} answer ${answerNumber}`} title={`${action} answer ${answerNumber}`}
-          aria-pressed={state.translated} />
+          aria-label={`${action} answer ${answerNumber}`} title={pair.canTranslate ? `${action} answer ${answerNumber}` : "Saved translation unavailable"}
+          aria-pressed={state.translated} disabled={!pair.canTranslate} />
       </div>
       {state.error && <p role="alert" className="mt-1 text-sm text-red-700 dark:text-red-300">{state.error}</p>}
     </div>

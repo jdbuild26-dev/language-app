@@ -12,7 +12,7 @@ import { getFeedbackMessage } from "@/utils/feedbackMessages";
 import { fetchPracticeData } from "@/utils/practiceFetcher";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import AccentKeyboard from "@/components/ui/AccentKeyboard";
+import SpecialCharacterKeyboard from "@/features/practice/components/SpecialCharacterKeyboard";
 import { TranslateButton } from "@/components/ui/TranslateButton";
 import { useSearchParams } from "next/navigation";
 
@@ -287,9 +287,9 @@ export default function SpellingPage() {
   return (
       <PracticeGameLayout
         questionType="Fix the Spelling"
-        instructionFr="Corrigez l'orthographe"
-        instructionEn="Fix the Spelling"
-        localizedInstruction="Corrigez l'orthographe"
+        instructionFr={currentQuestion?.heading_fr || "Corrigez l'orthographe"}
+        instructionEn={currentQuestion?.heading_en || "Fix the Spelling"}
+        localizedInstruction={currentQuestion?.heading_fr || "Corrigez l'orthographe"}
         progress={progress}
         isGameOver={isCompleted}
         score={score}
@@ -429,9 +429,11 @@ export default function SpellingPage() {
                 </div>
 
                 {/* Accent keyboard */}
-                <AccentKeyboard
+                <SpecialCharacterKeyboard
+                  key={learningLang}
+                  learningLanguage={learningLang}
                   disabled={showFeedback || userInput.length >= characterLimit}
-                  onAccentClick={(char) => {
+                  onInsert={(char) => {
                     const el = textareaRef.current;
                     if (!el) return;
                     const start = el.selectionStart;
