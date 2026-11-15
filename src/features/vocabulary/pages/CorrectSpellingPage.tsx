@@ -132,7 +132,7 @@ export default function CorrectSpellingPage() {
       <div className="mx-auto flex w-full max-w-4xl flex-1 flex-col items-center justify-center gap-8 px-4 py-10 text-center sm:gap-10">
         <div className="flex flex-col items-center gap-3">
           <div className="flex max-w-full items-start justify-center gap-1">
-            <p lang={showFrenchPrompt ? "fr" : "en"} className="text-xl font-medium text-slate-800 dark:text-slate-100">
+            <p lang={showFrenchPrompt ? "fr" : "en"} className="practice-type-content font-medium text-slate-800 dark:text-slate-100">
               {showFrenchPrompt ? currentWord.exampleTarget : meaning}
             </p>
             {hasPromptTranslation && (
@@ -155,13 +155,13 @@ export default function CorrectSpellingPage() {
           )}
         </div>
 
-        <p className="text-2xl text-slate-900 line-through dark:text-white">{displayWrong}</p>
+        <p className="practice-type-content font-normal text-slate-900 line-through dark:text-white">{displayWrong}</p>
 
         {hasSubmitted ? (
           <div
             role="status"
             aria-label={status === "correct" ? `Correct spelling: ${userInput.trim()}` : `Your spelling: ${userInput.trim()}. Correct spelling: ${correctSpelling}`}
-            className="flex min-h-16 w-full max-w-md flex-wrap items-stretch justify-center gap-2 rounded-xl border-2 border-slate-200 bg-slate-50 p-2 text-2xl font-medium dark:border-slate-700 dark:bg-slate-800"
+            className="flex min-h-16 w-full max-w-md flex-wrap items-stretch justify-center gap-2 rounded-xl border-2 border-slate-200 bg-slate-50 p-2 practice-type-content font-normal dark:border-slate-700 dark:bg-slate-800"
           >
             <span className={cn(
               "flex min-h-12 min-w-28 flex-1 items-center justify-center rounded-lg border px-3 py-1",
@@ -184,7 +184,7 @@ export default function CorrectSpellingPage() {
             onKeyDown={(event) => { if (event.key === "Enter") handleSubmit(); }}
             aria-label="Correct spelling"
             placeholder="|"
-            className="h-16 w-full max-w-80 rounded-xl border-2 border-slate-200 bg-slate-50 px-4 text-center text-2xl text-slate-900 outline-none focus:border-indigo-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+            className="h-16 w-full max-w-80 rounded-xl border-2 border-slate-200 bg-slate-50 px-4 text-center practice-type-content font-normal text-slate-900 outline-none focus:border-indigo-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
           />
         )}
 

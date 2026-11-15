@@ -54,7 +54,7 @@ export default function AudioMatchingPage() {
     try {
       setLoading(true);
 
-      const response = await fetchPracticeQuestions("A1.Match the pairs");
+      const response = await fetchPracticeQuestions("A1.Match the pairs", { apiOnly: true });
       if (response && response.data) {
         generateQuestions(response.data);
       }

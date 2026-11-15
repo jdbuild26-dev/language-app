@@ -61,7 +61,7 @@ beforeEach(() => {
   harness.states = [false, [{
     id: "FITB1", fullSentence: "La fille mange une pomme rouge.",
     fullSentenceEnglish: "The girl eats a red apple.",
-    displaySentence: "La fille mange une ___ rouge.", answer: "pomme", answers: ["pomme"], instruction: "Fill the blank",
+    displaySentence: "La fille mange une ___ rouge.", answer: "pomme", answers: ["pomme"], hints: ["apple"], instruction: "Fill the blank",
   }], 0, ["pomme"], [], false, false, "", 0, false];
   harness.refs = [];
   vi.stubGlobal("requestAnimationFrame", (callback: FrameRequestCallback) => { callback(0); return 1; });
@@ -109,4 +109,16 @@ it("moves inline clues into the input without leaving underscores in the sentenc
   const tree = render();
   expect(find(tree, node => node.type === "input")?.props?.placeholder).toBe("apple");
   expect(find(tree, node => node.type === "span" && node.props?.children === " rouge.")).toBeDefined();
+});
+
+it("waits for missing clues before displaying the question", () => {
+  const question = (harness.states[1] as Array<Record<string, unknown>>)[0];
+  delete question.hints;
+  harness.states[3] = [""];
+  expect(find(render(), node => node.type === "input")).toBeUndefined();
+  expect(find(render(), node => node.type === AudioPlayer)).toBeUndefined();
+
+  harness.states[10] = { question, values: ["apple"], error: false };
+  expect(find(render(), node => node.type === "input")?.props?.placeholder).toBe("apple");
+  expect(find(render(), node => node.type === AudioPlayer)).toBeDefined();
 });

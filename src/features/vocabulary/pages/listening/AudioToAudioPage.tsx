@@ -53,7 +53,7 @@ export default function AudioToAudioPage() {
     try {
       setLoading(true);
 
-      const response = await fetchPracticeQuestions("audio_to_audio");
+      const response = await fetchPracticeQuestions("audio_to_audio", { apiOnly: true });
       if (response && response.data && response.data.length > 0) {
         const transformed = response.data.map((q) => {
           const content = q.content || {};

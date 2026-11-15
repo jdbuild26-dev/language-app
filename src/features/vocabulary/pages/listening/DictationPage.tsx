@@ -49,7 +49,7 @@ export default function DictationPage() {
     try {
       setLoading(true);
 
-      const response = await fetchPracticeQuestions("listen_type");
+      const response = await fetchPracticeQuestions("listen_type", { apiOnly: true });
       if (response && response.data) {
         const transformed = response.data.map((item) => ({
           id: item["ExerciseID"] || item["id"],

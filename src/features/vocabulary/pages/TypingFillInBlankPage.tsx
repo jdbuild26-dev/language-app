@@ -38,7 +38,7 @@ export default function TypingFillInBlankPage() {
       try {
         setLoading(true);
 
-        const response = await fetchPracticeQuestions("vocab_typing_blanks");
+        const response = await fetchPracticeQuestions("vocab_typing_blanks", { apiOnly: true });
         const practiceData = response.data || [];
 
         if (!practiceData || practiceData.length === 0) {

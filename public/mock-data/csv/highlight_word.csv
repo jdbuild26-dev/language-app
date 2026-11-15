@@ -1,15 +1,15 @@
-ExerciseID,Instruction_EN,Instruction_FR,Level,LearningLang,KnownLang,passage,question,eval_correctWord
-1,Find the word that matches the meaning,Trouvez le mot correspondant,A1,FR,EN,Le chat noir dort sur le canapé confortable. Il rêve de souris.,Find the word that means 'black'.,noir
-2,Find the word that matches the meaning,Trouvez le mot correspondant,A1,FR,EN,Marie va à la boulangerie pour acheter du pain frais chaque matin.,Find the word that means 'bakery'.,boulangerie
-3,Find the word that matches the meaning,Trouvez le mot correspondant,A1,FR,EN,Les enfants jouent dans le jardin ensoleillé pendant l'après-midi.,Find the word that means 'sunny'.,ensoleillé
-4,Find the word that matches the meaning,Trouvez le mot correspondant,A1,FR,EN,Mon frère travaille dans un grand hôpital au centre de la ville.,Find the word that means 'hospital'.,hôpital
-5,Find the word that matches the meaning,Trouvez le mot correspondant,A1,FR,EN,Elle prépare un délicieux gâteau au chocolat pour l'anniversaire.,Find the word that means 'delicious'.,délicieux
-HW001,Highlight the correct word,Soulignez le mot correct,A1,FR,EN,,,chien
-HW002,Highlight the correct word,Soulignez le mot correct,A1,FR,EN,,,parlent
-HW003,Highlight the correct word,Soulignez le mot correct,A2,FR,EN,,,rapide
-HW004,Highlight the correct word,Soulignez le mot correct,A2,FR,EN,,,bibliothèque
-HW001,Highlight the correct word,Soulignez le mot correct,A1,FR,EN,"Le matin, je vais au parc avec mes amis. Nous parlons tranquillement sous les arbres. Un chien court près de nous et joue avec une balle.",Another word for Dog,chien
-HW002,Highlight the correct word,Soulignez le mot correct,A1,FR,EN,"Le soir, ils parlent doucement dans la maison pendant que les enfants dorment.",Word meaning "they speak",parlent
-HW003,Highlight the correct word,Soulignez le mot correct,A2,FR,EN,Le train rapide arrive à la gare très tôt le matin.,Word meaning "fast",rapide
-HW004,Highlight the correct word,Soulignez le mot correct,A2,FR,EN,"Après l'école, elle va à la bibliothèque pour étudier calmement.",Word meaning "library",bibliothèque
-HW005,Highlight all the animals,Surlignez tous les animaux,A1,FR,EN,"Dans le jardin, le chat, le chien, l'oiseau et le lapin jouent tranquillement sous le soleil.",Which one of these are animals?,chat|chien|l'oiseau|lapin
+ExerciseID,Instruction_EN,Instruction_FR,Level,LearningLang,KnownLang,passage,question,eval_correctWord,question_fr,passage_en
+1,Find the word that matches the meaning,Trouvez le mot correspondant,A1,FR,EN,Le chat noir dort sur le canapé confortable. Il rêve de souris.,Find the word that means 'black'.,noir,Trouvez le mot qui signifie « black ».,The black cat is sleeping on the comfortable couch. He is dreaming about mice.
+2,Find the word that matches the meaning,Trouvez le mot correspondant,A1,FR,EN,Marie va à la boulangerie pour acheter du pain frais chaque matin.,Find the word that means 'bakery'.,boulangerie,Trouvez le mot qui signifie « bakery ».,Marie goes to the bakery to buy fresh bread every morning.
+3,Find the word that matches the meaning,Trouvez le mot correspondant,A1,FR,EN,Les enfants jouent dans le jardin ensoleillé pendant l'après-midi.,Find the word that means 'sunny'.,ensoleillé,Trouvez le mot qui signifie « sunny ».,The children play in the sunny garden in the afternoon.
+4,Find the word that matches the meaning,Trouvez le mot correspondant,A1,FR,EN,Mon frère travaille dans un grand hôpital au centre de la ville.,Find the word that means 'hospital'.,hôpital,Trouvez le mot qui signifie « hospital ».,My brother works at a large hospital in the city centre.
+5,Find the word that matches the meaning,Trouvez le mot correspondant,A1,FR,EN,Elle prépare un délicieux gâteau au chocolat pour l'anniversaire.,Find the word that means 'delicious'.,délicieux,Trouvez le mot qui signifie « delicious ».,She is making a delicious chocolate cake for the birthday.
+HW001,Highlight the correct word,Soulignez le mot correct,A1,FR,EN,,,chien,,
+HW002,Highlight the correct word,Soulignez le mot correct,A1,FR,EN,,,parlent,,
+HW003,Highlight the correct word,Soulignez le mot correct,A2,FR,EN,,,rapide,,
+HW004,Highlight the correct word,Soulignez le mot correct,A2,FR,EN,,,bibliothèque,,
+HW001,Highlight the correct word,Soulignez le mot correct,A1,FR,EN,"Le matin, je vais au parc avec mes amis. Nous parlons tranquillement sous les arbres. Un chien court près de nous et joue avec une balle.",Another word for Dog,chien,Trouvez le mot qui signifie « dog ».,"In the morning, I go to the park with my friends. We talk quietly under the trees. A dog runs near us and plays with a ball."
+HW002,Highlight the correct word,Soulignez le mot correct,A1,FR,EN,"Le soir, ils parlent doucement dans la maison pendant que les enfants dorment.","Word meaning ""they speak""",parlent,Trouvez le mot qui signifie « they speak ».,"In the evening, they speak quietly in the house while the children sleep."
+HW003,Highlight the correct word,Soulignez le mot correct,A2,FR,EN,Le train rapide arrive à la gare très tôt le matin.,"Word meaning ""fast""",rapide,Trouvez le mot qui signifie « fast ».,The fast train arrives at the station very early in the morning.
+HW004,Highlight the correct word,Soulignez le mot correct,A2,FR,EN,"Après l'école, elle va à la bibliothèque pour étudier calmement.","Word meaning ""library""",bibliothèque,Trouvez le mot qui signifie « library ».,"After school, she goes to the library to study quietly."
+HW005,Highlight all the animals,Surlignez tous les animaux,A1,FR,EN,"Dans le jardin, le chat, le chien, l'oiseau et le lapin jouent tranquillement sous le soleil.",Which one of these are animals?,chat|chien|l'oiseau|lapin,Lesquels de ces mots désignent des animaux ?,"In the garden, the cat, the dog, the bird and the rabbit play peacefully in the sunshine."

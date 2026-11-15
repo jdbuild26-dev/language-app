@@ -13,3 +13,20 @@ it.each(["B5_Fill blanks_Audio", "b5_fill_blanks_audio"])("keeps the CSV fallbac
   expect(fetchMock.mock.calls[1][0]).toBe("/mock-data/csv/b5_fill_blanks_audio.csv");
   expect(response.data[0]).toMatchObject({ CompleteSentence: "Le chat dort.", SentenceWithBlank: "Le ____ dort.", CorrectAnswer: "chat" });
 });
+
+it("returns backend questions directly in API-only mode", async () => {
+  const data = [{ CompleteSentence: "Il fait beau." }];
+  const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ data }) });
+  vi.stubGlobal("fetch", fetchMock);
+
+  await expect(fetchPracticeQuestions("B5_Fill blanks_Audio", { apiOnly: true })).resolves.toEqual({ data });
+  expect(fetchMock).toHaveBeenCalledTimes(1);
+});
+
+it("does not load bundled questions on a missing API-only exercise", async () => {
+  const fetchMock = vi.fn().mockResolvedValue({ ok: false, status: 404 });
+  vi.stubGlobal("fetch", fetchMock);
+
+  await expect(fetchPracticeQuestions("B5_Fill blanks_Audio", { apiOnly: true })).rejects.toThrow("Failed to fetch practice questions");
+  expect(fetchMock).toHaveBeenCalledTimes(1);
+});

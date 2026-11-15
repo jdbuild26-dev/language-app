@@ -56,7 +56,7 @@ beforeEach(() => {
     id: "PH1", prompt: "oiseau", instruction: "Choose from Options",
     explanation: "Oiseau is the word you heard.",
     options: [{ text: "Oiseau", en: "Bird" }, { text: "Chat", en: "Cat" }], correctIndex: 0,
-  }], 0, null, [], {}, [], [], false, false, "", false, 0];
+  }], 0, null, [], false, false, "", false, 0];
   harness.refs = [];
 });
 
@@ -70,15 +70,29 @@ it("uses the Read and Select options and allows changing a silent selection", ()
 
   const layout = find(render(), node => typeof node.type === "function" && node.props?.instructionEn === "Choose from Options");
   (layout?.props?.onNext as () => void)();
-  expect(harness.states[8]).toBe(true);
-  expect(harness.states[9]).toBe(true);
+  expect(harness.states[5]).toBe(true);
+  expect(harness.states[6]).toBe(true);
   expect(find(render(), node => node.type === PracticeOptions)?.props?.showFeedback).toBe(true);
 });
 
 it("keeps the normal and slow audio player available during feedback", () => {
-  harness.states[8] = true;
+  harness.states[5] = true;
   const tree = render();
   expect(find(tree, node => node.type === AudioPlayer)?.props?.text).toBe("oiseau");
   expect(find(tree, node => node.type === AudioPlayer)?.props?.pausable).toBe(true);
   expect(find(tree, node => node.type === PracticeOptions)?.props?.correctIndex).toBe(0);
+});
+
+it("replaces the submitted option with its saved translation and restores it on the next click", () => {
+  harness.states[5] = true;
+  const currentOptions = () => find(render(), node => node.type === PracticeOptions)?.props;
+  const option = (name: string, index: number) =>
+    (currentOptions()?.renderLabel as (text: string, index: number) => TestNode)(name, index);
+  const action = () => (currentOptions()?.renderAction as (text: string, index: number) => TestNode)("Oiseau", 0);
+  expect(option("Oiseau", 0).props?.children).toBe("Oiseau");
+  (action().props?.onClick as () => void)();
+  expect(option("Oiseau", 0).props?.children).toBe("Bird");
+  expect(action().props?.isLoading).toBeUndefined();
+  (action().props?.onClick as () => void)();
+  expect(option("Oiseau", 0).props?.children).toBe("Oiseau");
 });

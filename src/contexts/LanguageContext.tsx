@@ -4,6 +4,7 @@ import React, { createContext, useContext, useState, useEffect } from "react";
 import { useProfile } from "@/contexts/ProfileContext";
 
 interface LanguageContextType {
+    languagesReady: boolean;
     learningLang: string;
     setLearningLang: (lang: string) => void;
     knownLang: string;
@@ -34,7 +35,9 @@ function languageCode(value: unknown, fallback: string): string {
 }
 
 export const LanguageProvider = ({ children }: { children: React.ReactNode }) => {
-    const { activeProfile } = useProfile();
+    const { activeProfile, isLoading: profileLoading } = useProfile();
+    const [hasHydrated, setHasHydrated] = useState(false);
+    const [appliedProfile, setAppliedProfile] = useState<unknown>(null);
 
     // Default values
     const [learningLang, setLearningLang] = useState("fr");
@@ -46,12 +49,16 @@ export const LanguageProvider = ({ children }: { children: React.ReactNode }) =>
         if (stored) setLearningLang(stored);
         const storedKnown = localStorage.getItem("known_lang");
         if (storedKnown) setKnownLang(storedKnown);
+        setHasHydrated(true);
     }, []);
 
     // The active profile is authoritative. Older profiles may not have a
     // support-language field, so English remains the compatibility default.
     useEffect(() => {
-        if (!activeProfile) return;
+        if (!activeProfile) {
+            setAppliedProfile(null);
+            return;
+        }
 
         const profile = activeProfile as Record<string, any>;
         const questionnaire = profile.questionnaireResponses || {};
@@ -65,15 +72,20 @@ export const LanguageProvider = ({ children }: { children: React.ReactNode }) =>
 
         setLearningLang(languageCode(savedLearningLanguage, "fr"));
         setKnownLang(languageCode(savedSupportLanguage, "en"));
+        setAppliedProfile(activeProfile);
     }, [activeProfile]);
+
+    const languagesReady = hasHydrated && !profileLoading && appliedProfile === activeProfile;
 
     // Persistent storage
     useEffect(() => {
+        if (!languagesReady) return;
         localStorage.setItem("learning_lang", learningLang);
         localStorage.setItem("known_lang", knownLang);
-    }, [learningLang, knownLang]);
+    }, [languagesReady, learningLang, knownLang]);
 
     const value = {
+        languagesReady,
         learningLang,
         setLearningLang,
         knownLang,

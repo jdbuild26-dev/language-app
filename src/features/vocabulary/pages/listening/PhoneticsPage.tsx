@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useExerciseTimer } from "@/hooks/useExerciseTimer";
 import { fetchPracticeQuestions } from "@/services/vocabularyApi";
 import { Loader2 } from "lucide-react";
@@ -8,10 +8,16 @@ import AudioPlayer from "@/features/vocabulary/components/shared/AudioPlayer";
 import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
 import PracticeOptions from "@/components/ui/PracticeOptions";
 import { TranslateButton } from "@/components/ui/TranslateButton";
-import { translateText } from "@/services/aiPracticeApi";
 import { getFeedbackMessage } from "@/utils/feedbackMessages";
 
 type Question = { id: string; prompt: string; instruction: string; explanation?: string; options: Array<{ text: string; en?: string }>; correctIndex: number };
+
+const bundledTranslations = new Map(Object.entries({
+  le: "The", la: "The", les: "The", bon: "Good", bonne: "Good",
+  banc: "Bench", bancs: "Benches", lait: "Milk", chat: "Cat",
+  chien: "Dog", cheval: "Horse", hibou: "Owl", oiseau: "Bird",
+  vache: "Cow", lion: "Lion",
+}));
 
 export default function PhoneticsPage() {
   // State
@@ -20,10 +26,6 @@ export default function PhoneticsPage() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedOptionIndex, setSelectedOptionIndex] = useState(null);
   const [translatedOptions, setTranslatedOptions] = useState<number[]>([]);
-  const [optionTranslations, setOptionTranslations] = useState<Record<number, string>>({});
-  const [translatingOptions, setTranslatingOptions] = useState<number[]>([]);
-  const [translationErrors, setTranslationErrors] = useState<number[]>([]);
-  const translationGeneration = useRef(0);
   const [showFeedback, setShowFeedback] = useState(false);
   const [isCorrect, setIsCorrect] = useState(false);
   const [feedbackMessage, setFeedbackMessage] = useState("");
@@ -52,7 +54,7 @@ export default function PhoneticsPage() {
     try {
       setLoading(true);
 
-      const response = await fetchPracticeQuestions("listen_phonetics");
+      const response = await fetchPracticeQuestions("listen_phonetics", { apiOnly: true });
       if (response && response.data) {
         const gameQuestions = response.data.map((item) => ({
           id: item["ExerciseID"] || Math.random().toString(),
@@ -76,7 +78,10 @@ export default function PhoneticsPage() {
               text: item["Option4"],
               en: item["Option4_EN"] || item["Option4_Translation"],
             },
-          ].filter((opt) => opt.text),
+          ].filter((opt) => opt.text).map(option => ({
+            ...option,
+            en: option.en?.trim() || bundledTranslations.get(option.text.trim().toLowerCase()),
+          })),
           correctIndex: parseInt(item["CorrectOptionIndex"]) - 1,
         }));
         setQuestions(gameQuestions);
@@ -114,13 +119,9 @@ export default function PhoneticsPage() {
   };
 
   const handleContinue = () => {
-    translationGeneration.current += 1;
     setShowFeedback(false);
     setSelectedOptionIndex(null);
     setTranslatedOptions([]);
-    setOptionTranslations({});
-    setTranslatingOptions([]);
-    setTranslationErrors([]);
 
     if (currentIndex < questions.length - 1) {
       setCurrentIndex((prev) => prev + 1);
@@ -129,29 +130,9 @@ export default function PhoneticsPage() {
     }
   };
 
-  const toggleOptionTranslation = async (index: number, option: { text: string; en?: string }) => {
-    if (translatedOptions.includes(index)) {
-      setTranslatedOptions((previous) => previous.filter((item) => item !== index));
-      return;
-    }
-    if (option.en || optionTranslations[index]) {
-      setTranslatedOptions((previous) => [...previous, index]);
-      return;
-    }
-    if (translatingOptions.includes(index)) return;
-    setTranslatingOptions((previous) => [...previous, index]);
-    setTranslationErrors((previous) => previous.filter((item) => item !== index));
-    const generation = translationGeneration.current;
-    try {
-      const result = await translateText(option.text, "en");
-      if (generation !== translationGeneration.current) return;
-      setOptionTranslations((previous) => ({ ...previous, [index]: result.translation }));
-      setTranslatedOptions((previous) => [...previous, index]);
-    } catch {
-      if (generation === translationGeneration.current) setTranslationErrors((previous) => [...previous, index]);
-    } finally {
-      if (generation === translationGeneration.current) setTranslatingOptions((previous) => previous.filter((item) => item !== index));
-    }
+  const toggleOptionTranslation = (index: number) => {
+    setTranslatedOptions(previous => previous.includes(index)
+      ? previous.filter(item => item !== index) : [...previous, index]);
   };
 
   const currentQ = questions[currentIndex];
@@ -210,26 +191,23 @@ export default function PhoneticsPage() {
             onSelect={handleOptionClick}
             className="grid w-full max-w-4xl grid-cols-1 gap-3 sm:grid-cols-2"
             itemClassName="min-h-16"
-            renderLabel={(text, index) => (
-              <>
-                <span>{text}</span>
-                {showFeedback && translatedOptions.includes(index) && (currentQ.options[index].en || optionTranslations[index]) && (
-                  <span lang="en" className="text-sm font-normal">
-                    {currentQ.options[index].en || optionTranslations[index]}
-                  </span>
-                )}
-              </>
-            )}
-            renderAction={(_, index) => showFeedback && (
-              <TranslateButton
+            renderLabel={(text, index) => {
+              const translated = showFeedback && translatedOptions.includes(index);
+              return <span lang={translated ? "en" : "fr"}>{translated ? currentQ.options[index].en || text : text}</span>;
+            }}
+            renderAction={(_, index) => {
+              if (!showFeedback) return null;
+              const option = currentQ.options[index];
+              const translated = translatedOptions.includes(index);
+              return <TranslateButton
                 iconVariant="option"
-                aria-label={translatedOptions.includes(index) ? `Hide translation for ${currentQ.options[index].text}` : `Translate ${currentQ.options[index].text}`}
-                aria-pressed={translatedOptions.includes(index)}
-                isLoading={translatingOptions.includes(index)}
-                title={translationErrors.includes(index) ? "Translation unavailable. Try again." : "Toggle translation"}
-                onClick={() => void toggleOptionTranslation(index, currentQ.options[index])}
-              />
-            )}
+                aria-label={translated ? `Show original ${option.text}` : `Translate ${option.text}`}
+                aria-pressed={translated}
+                disabled={!option.en}
+                title={option.en ? "Toggle translation" : "Saved translation unavailable"}
+                onClick={() => toggleOptionTranslation(index)}
+              />;
+            }}
           />
         </div>
       </PracticeGameLayout>

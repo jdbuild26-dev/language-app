@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
+import Papa from "papaparse";
 import { useExerciseTimer } from "@/hooks/useExerciseTimer";
 import { fetchPracticeQuestions } from "@/services/vocabularyApi";
 import { Loader2 } from "lucide-react";
@@ -32,7 +33,7 @@ function SubmittedSentence({
   sentenceEn: string;
   submitted: boolean;
 }) {
-  const { displayText, isTranslating, showTranslation, error, toggle } =
+  const { displayText, showTranslation, toggle } =
     useTranslateText(sentenceFr, "fr", sentenceEn);
 
   return (
@@ -59,20 +60,15 @@ function SubmittedSentence({
           <span className="col-start-1 row-start-1">{displayText}</span>
         </span>
         <TranslateButton
-          disabled={!submitted}
-          isLoading={isTranslating}
+          disabled={!submitted || !sentenceEn.trim()}
+          title={sentenceEn.trim() ? undefined : "Saved translation unavailable"}
           aria-label={
             showTranslation ? "Show French sentence" : "Show English sentence"
           }
           aria-pressed={showTranslation}
-          onClick={toggle}
+          onClick={() => { if (submitted && sentenceEn.trim()) void toggle(); }}
         />
       </div>
-      {submitted && error && (
-        <p role="status" className="mt-1 text-sm text-slate-500">
-          {error}
-        </p>
-      )}
     </div>
   );
 }
@@ -106,8 +102,7 @@ export default function MultiSelectPage() {
   const loadData = useCallback(async () => {
     try {
       const response = await fetchPracticeQuestions(
-        "phonetics__what_do_you_hear",
-      );
+        "phonetics__what_do_you_hear", { apiOnly: true });
       if (response && response.data && response.data.length > 0) {
         const transformed = response.data.map((q) => ({
           id: q.ExerciseID || Math.random(),
@@ -135,6 +130,27 @@ export default function MultiSelectPage() {
           ),
           audioText: q.Question || q.Audio || q.Prompt || "",
         }));
+        if (transformed.some(question => !question.sentenceEn || question.options.some(option => !option.en))) {
+          try {
+            const response = await fetch("/mock-data/csv/phonetics__what_do_you_hear.csv");
+            if (response.ok) {
+              const rows = Papa.parse<Record<string, string>>(await response.text(), { header: true, skipEmptyLines: true }).data;
+              const normalize = (value: string) => value.trim().normalize("NFC").replace(/’/g, "'").toLowerCase();
+              for (const question of transformed) {
+                const row = rows.find(item => item.Question && normalize(item.Question) === normalize(question.sentenceFr));
+                if (!row) continue;
+                question.sentenceEn ||= row.CompleteSentence_EN || "";
+                for (const option of question.options) {
+                  const position = [1, 2, 3, 4, 5, 6].find(index =>
+                    row[`Option${index}`] && normalize(row[`Option${index}`]) === normalize(option.text));
+                  if (position) option.en ||= row[`Option${position}_EN`] || "";
+                }
+              }
+            }
+          } catch {
+            // Keep the exercise playable when the bundled bilingual data is unavailable.
+          }
+        }
         setQuestions(transformed);
       } else {
         console.error("[MultiSelect] ❌ API returned empty data");

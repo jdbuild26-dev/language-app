@@ -21,7 +21,8 @@ export default function MultiSelectOption({
   onSelect: () => void;
   onPlay: () => void;
 }) {
-  const translation = useTranslateText(option.text, "fr", option.en, "en");
+  const savedTranslation = option.en?.trim();
+  const translation = useTranslateText(option.text, "fr", savedTranslation, "en");
 
   return (
     <PracticeOptionCard
@@ -35,20 +36,15 @@ export default function MultiSelectOption({
       action={submitted && (
         <TranslateButton
           iconVariant="option"
-          aria-label={translation.showTranslation ? `Hide translation for ${option.text}` : `Translate ${option.text}`}
+          aria-label={translation.showTranslation ? `Show original ${option.text}` : `Translate ${option.text}`}
           aria-pressed={translation.showTranslation}
-          isLoading={translation.isTranslating}
-          onClick={() => { void translation.toggle(); }}
+          disabled={!savedTranslation}
+          title={savedTranslation ? undefined : "Saved translation unavailable"}
+          onClick={() => { if (savedTranslation) void translation.toggle(); }}
         />
       )}
     >
-      <span>{option.text}</span>
-      {submitted && translation.showTranslation && (
-        <span lang="en" className="mt-1 text-sm font-normal opacity-80">{translation.displayText}</span>
-      )}
-      {submitted && translation.error && (
-        <span role="status" className="mt-1 text-sm font-normal">{translation.error}</span>
-      )}
+      <span lang={submitted && translation.showTranslation ? "en" : "fr"}>{submitted && translation.showTranslation ? translation.displayText : option.text}</span>
     </PracticeOptionCard>
   );
 }
