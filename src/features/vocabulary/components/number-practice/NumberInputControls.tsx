@@ -35,10 +35,10 @@ export default function NumberInputControls({
         event.preventDefault();
         if (settings.mode === "range" && !disabled) onRandomize();
       }}
-      className="rounded-2xl border border-slate-200 bg-white p-2.5 shadow-sm dark:border-slate-700 dark:bg-slate-900 xl:rounded-full"
+      className="rounded-2xl border border-slate-200 bg-white p-2.5 shadow-sm [container-type:inline-size] dark:border-slate-700 dark:bg-slate-900 2xl:rounded-full"
     >
-      <fieldset disabled={disabled} className="flex min-w-0 flex-wrap items-center gap-2 xl:flex-nowrap">
-        <div role="group" aria-label="Number mode" className="flex shrink-0 gap-1 rounded-full bg-slate-100 p-1 dark:bg-slate-800">
+      <fieldset disabled={disabled} className="flex min-w-0 flex-col gap-2 [@container(min-width:35rem)]:flex-row [@container(min-width:35rem)]:items-center">
+        <div role="group" aria-label="Number mode" className="flex shrink-0 gap-1 self-start rounded-full bg-slate-100 p-1 dark:bg-slate-800 [@container(min-width:35rem)]:self-center">
           {([{ mode: "range", label: "Range" }, { mode: "exact", label: "Exact" }] as const).map(({ mode, label }) => (
             <button
               key={mode}
@@ -56,15 +56,15 @@ export default function NumberInputControls({
         </div>
 
         {settings.mode === "range" ? (
-          <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2 sm:flex-nowrap">
+          <div className="grid min-w-0 flex-1 grid-cols-2 items-end gap-2 [@container(min-width:21rem)]:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] [@container(min-width:26rem)]:items-center">
             {([{ field: "from", label: "From", placeholder: "0" }, { field: "to", label: "To", placeholder: "9999" }] as const).map(({ field, label, placeholder }) => (
-              <label key={field} className="flex min-w-0 flex-1 items-center gap-2 text-sm font-semibold text-slate-600 dark:text-slate-300">
+              <label key={field} className="flex min-w-0 flex-col gap-1 text-sm font-semibold text-slate-600 dark:text-slate-300 [@container(min-width:26rem)]:flex-row [@container(min-width:26rem)]:items-center [@container(min-width:26rem)]:gap-2">
                 {label}
                 <Input inputMode="numeric" value={settings[field]} placeholder={placeholder}
                   onChange={(event) => onChange({ [field]: numberInput(event.target.value) })} className={inputClass} />
               </label>
             ))}
-            <Button type="submit" className="h-9 shrink-0 rounded-full bg-sky-600 px-4 font-bold text-white hover:bg-sky-700 2xl:px-6">
+            <Button type="submit" className="col-span-2 h-9 rounded-full bg-sky-600 px-4 font-bold text-white hover:bg-sky-700 [@container(min-width:21rem)]:col-span-1 2xl:px-6">
               Randomize
             </Button>
           </div>
