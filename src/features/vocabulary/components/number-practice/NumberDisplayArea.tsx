@@ -1,22 +1,13 @@
-import React from "react";
-
-export default function NumberDisplayArea({ number }) {
-  if (number === null || number === undefined || isNaN(number)) {
-    return (
-      <div className="text-slate-300 dark:text-slate-600 text-xl font-medium text-center max-w-xs">
-        Enter an exact number or press Randomize to begin
-      </div>
-    );
-  }
-
-  // Format with spaces for readability (French style)
-  const formattedNumber = number
-    .toString()
-    .replace(/\B(?=(\d{3})+(?!\d))/g, " ");
-
+export default function NumberDisplayArea({ number }: { number: number | null }) {
   return (
-    <div className="text-6xl sm:text-7xl md:text-8xl lg:text-9xl font-black text-slate-800 dark:text-slate-100 tracking-tighter text-center break-words leading-none">
-      {formattedNumber}
+    <div className="mx-auto grid min-h-[4.5rem] min-w-[9rem] max-w-full place-items-center rounded-lg border border-slate-200 bg-white px-5 py-2 text-center dark:border-slate-700 dark:bg-slate-900 sm:min-w-[14.5rem]">
+      {number === null ? (
+        <span className="text-sm font-medium text-slate-600 dark:text-slate-300">Enter a number to begin</span>
+      ) : (
+        <span className="text-[clamp(1.75rem,3.5vw,3rem)] font-black leading-tight tracking-tight text-slate-800 dark:text-slate-100">
+          {String(number).replace(/\B(?=(\d{3})+(?!\d))/g, "\u202f")}
+        </span>
+      )}
     </div>
   );
 }

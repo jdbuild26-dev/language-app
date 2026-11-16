@@ -1,119 +1,81 @@
 "use client";
 
-import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { MAX_PRACTICE_NUMBER } from "@/features/vocabulary/utils/numberToFrench";
+import { cn } from "@/lib/utils";
 
-export default function NumberInputControls({ onNumberChange }) {
-  const [mode, setMode] = useState("random"); // 'random' or 'exact'
-  const [exactVal, setExactVal] = useState("");
-  const [fromVal, setFromVal] = useState("");
-  const [toVal, setToVal] = useState("");
+export type NumberSettings = {
+  mode: "range" | "exact";
+  from: string;
+  to: string;
+  exact: string;
+};
 
-  const sanitizeInput = (val) => {
-    // Only digits, remove commas/dots/alphabets
-    let sanitized = val.replace(/[^0-9]/g, "");
-    if (sanitized !== "") {
-      // restrict to max 99999999
-      const num = parseInt(sanitized, 10);
-      if (num > 99999999) sanitized = "99999999";
-    }
-    return sanitized;
-  };
+function numberInput(value: string): string {
+  return value.replace(/[^0-9]/g, "").slice(0, String(MAX_PRACTICE_NUMBER).length);
+}
 
-  const handleExactChange = (e) => {
-    const val = sanitizeInput(e.target.value);
-    setExactVal(val);
-    if (val !== "") {
-      onNumberChange(parseInt(val, 10));
-    } else {
-      onNumberChange(null);
-    }
-  };
-
-  const handleRandomize = () => {
-    let min = parseInt(fromVal, 10);
-    let max = parseInt(toVal, 10);
-
-    // Default values if empty
-    if (isNaN(min)) min = 0;
-    if (isNaN(max)) max = 9999;
-
-    if (min > max) {
-      const temp = min;
-      min = max;
-      max = temp;
-    }
-
-    // Generate random number
-    const randomNum = Math.floor(Math.random() * (max - min + 1)) + min;
-    onNumberChange(randomNum);
-  };
+export default function NumberInputControls({
+  settings,
+  onChange,
+  onRandomize,
+  disabled,
+}: {
+  settings: NumberSettings;
+  onChange: (update: Partial<NumberSettings>) => void;
+  onRandomize: () => void;
+  disabled: boolean;
+}) {
+  const inputClass = "h-9 min-w-0 text-center tabular-nums focus-visible:ring-sky-500";
 
   return (
-    <div className="bg-white dark:bg-slate-800 p-2 sm:p-3 rounded-2xl sm:rounded-full border-2 dark:border-slate-700 shadow-sm flex flex-col sm:flex-row gap-3 sm:gap-4 items-center w-full md:w-auto">
-      <div className="flex gap-1 bg-slate-100 dark:bg-slate-900 p-1 rounded-xl sm:rounded-full w-full sm:w-auto overflow-hidden">
-        <button
-          onClick={() => setMode("random")}
-          className={`flex-1 sm:flex-none px-4 py-1.5 text-sm font-bold rounded-lg sm:rounded-full transition-all duration-200 ${mode === "random" ? "bg-white dark:bg-slate-800 shadow-sm text-sky-600 dark:text-sky-400" : "text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"}`}
-        >
-          Range
-        </button>
-        <button
-          onClick={() => setMode("exact")}
-          className={`flex-1 sm:flex-none px-4 py-1.5 text-sm font-bold rounded-lg sm:rounded-full transition-all duration-200 ${mode === "exact" ? "bg-white dark:bg-slate-800 shadow-sm text-sky-600 dark:text-sky-400" : "text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"}`}
-        >
-          Exact
-        </button>
-      </div>
+    <form
+      onSubmit={(event) => {
+        event.preventDefault();
+        if (settings.mode === "range" && !disabled) onRandomize();
+      }}
+      className="rounded-2xl border border-slate-200 bg-white p-2.5 shadow-sm dark:border-slate-700 dark:bg-slate-900 xl:rounded-full"
+    >
+      <fieldset disabled={disabled} className="flex min-w-0 flex-wrap items-center gap-2 xl:flex-nowrap">
+        <div role="group" aria-label="Number mode" className="flex shrink-0 gap-1 rounded-full bg-slate-100 p-1 dark:bg-slate-800">
+          {([{ mode: "range", label: "Range" }, { mode: "exact", label: "Exact" }] as const).map(({ mode, label }) => (
+            <button
+              key={mode}
+              type="button"
+              aria-pressed={settings.mode === mode}
+              onClick={() => onChange({ mode })}
+              className={cn(
+                "rounded-full px-3 py-1 text-sm font-bold text-slate-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-sky-500 dark:text-slate-300",
+                settings.mode === mode && "bg-white !text-sky-700 shadow-sm dark:bg-slate-900 dark:!text-sky-300",
+              )}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
 
-      {mode === "random" ? (
-        <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto">
-          <div className="flex items-center gap-2 flex-1 sm:flex-none">
-            <span className="text-sm font-bold text-slate-400 dark:text-slate-500 hidden sm:inline">
-              From
-            </span>
-            <Input
-              value={fromVal}
-              onChange={(e) => setFromVal(sanitizeInput(e.target.value))}
-              placeholder="|"
-              className="w-full sm:w-20 md:w-24 h-9 font-mono text-center border-slate-200 focus-visible:ring-sky-500"
-              maxLength={8}
-            />
+        {settings.mode === "range" ? (
+          <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2 sm:flex-nowrap">
+            {([{ field: "from", label: "From", placeholder: "0" }, { field: "to", label: "To", placeholder: "9999" }] as const).map(({ field, label, placeholder }) => (
+              <label key={field} className="flex min-w-0 flex-1 items-center gap-2 text-sm font-semibold text-slate-600 dark:text-slate-300">
+                {label}
+                <Input inputMode="numeric" value={settings[field]} placeholder={placeholder}
+                  onChange={(event) => onChange({ [field]: numberInput(event.target.value) })} className={inputClass} />
+              </label>
+            ))}
+            <Button type="submit" className="h-9 shrink-0 rounded-full bg-sky-600 px-4 font-bold text-white hover:bg-sky-700 2xl:px-6">
+              Randomize
+            </Button>
           </div>
-          <div className="flex items-center gap-2 flex-1 sm:flex-none">
-            <span className="text-sm font-bold text-slate-400 dark:text-slate-500 hidden sm:inline">
-              To
-            </span>
-            <Input
-              value={toVal}
-              onChange={(e) => setToVal(sanitizeInput(e.target.value))}
-              placeholder="|"
-              className="w-full sm:w-20 md:w-24 h-9 font-mono text-center border-slate-200 focus-visible:ring-sky-500"
-              maxLength={8}
-            />
-          </div>
-          <Button
-            onClick={handleRandomize}
-            className="h-9 w-full sm:w-auto bg-sky-500 hover:bg-sky-600 text-white font-bold rounded-xl sm:rounded-full px-6 shadow-sm hover:shadow active:scale-95 transition-all"
-          >
-            Randomize
-          </Button>
-        </div>
-      ) : (
-        <div className="flex items-center gap-3 w-full sm:w-auto">
-          <span className="text-sm font-bold text-slate-400 dark:text-slate-500 hidden sm:inline">
+        ) : (
+          <label className="flex min-w-0 flex-1 items-center gap-2 text-sm font-semibold text-slate-600 dark:text-slate-300">
             Number
-          </span>
-          <Input
-            value={exactVal}
-            onChange={handleExactChange}
-            placeholder="|"
-            className="w-full sm:w-48 h-9 font-mono border-slate-200 focus-visible:ring-sky-500"
-            maxLength={8}
-          />
-        </div>
-      )}
-    </div>
+            <Input inputMode="numeric" value={settings.exact} placeholder="Enter a number"
+              onChange={(event) => onChange({ exact: numberInput(event.target.value) })} className={inputClass} />
+          </label>
+        )}
+      </fieldset>
+    </form>
   );
 }

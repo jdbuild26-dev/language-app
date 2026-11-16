@@ -1,56 +1,31 @@
 "use client";
 
-import React from "react";
+import { NUMBER_WORD_GROUPS } from "@/features/vocabulary/utils/numberToFrench";
 
-const NUMBER_WORDS = [
-  "zéro",
-  "un",
-  "deux",
-  "trois",
-  "quatre",
-  "cinq",
-  "six",
-  "sept",
-  "huit",
-  "neuf",
-  "dix",
-  "onze",
-  "douze",
-  "treize",
-  "quatorze",
-  "quinze",
-  "seize",
-  "vingt",
-  "trente",
-  "quarante",
-  "cinquante",
-  "soixante",
-  "quatre-vingt",
-  "cent",
-  "mille",
-  "million",
-  "et",
-  "-",
-];
-
-export default function WordBankArea({ onWordSelect }) {
+export default function WordBankArea({ onWordSelect, disabled }: {
+  onWordSelect: (word: string) => void;
+  disabled: boolean;
+}) {
   return (
-    <div className="flex flex-col h-full max-h-[800px]">
-      <h3 className="text-sm font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-4 shrink-0">
-        Word Bank
-      </h3>
-
-      <div className="flex flex-wrap gap-2 overflow-y-auto pr-2 pb-2 scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-700 content-start flex-1">
-        {NUMBER_WORDS.map((word, index) => (
-          <button
-            key={`${word}-${index}`}
-            onClick={() => onWordSelect(word)}
-            className="bg-white dark:bg-slate-800 border-2 border-slate-200 outline-none dark:border-slate-700 hover:border-sky-400 dark:hover:border-sky-500 hover:text-sky-600 dark:hover:text-sky-400 text-slate-700 dark:text-slate-200 font-bold px-4 py-2.5 rounded-2xl shadow-sm hover:shadow-md transition-all duration-200 active:scale-95 touch-manipulation text-lg sm:text-xl"
-          >
-            {word}
-          </button>
+    <section aria-label="French number word bank" lang="fr" className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900 md:p-6 lg:min-h-[32.5rem]">
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-5">
+        {NUMBER_WORD_GROUPS.map((words) => (
+          <div key={words[0]} className="flex content-start flex-wrap items-start gap-1.5 rounded-xl bg-slate-100/80 p-2 dark:bg-slate-800/70 xl:min-h-[22.5rem]">
+            {words.map((word) => (
+              <button
+                key={word}
+                type="button"
+                disabled={disabled}
+                aria-label={word === "-" ? "Trait d’union" : undefined}
+                onClick={() => onWordSelect(word)}
+                className="min-h-9 rounded-xl border border-slate-200 bg-white px-2.5 text-sm font-bold text-slate-800 shadow-sm hover:border-sky-500 hover:text-sky-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-sky-500 active:scale-95 disabled:cursor-default disabled:opacity-65 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
+              >
+                {word}
+              </button>
+            ))}
+          </div>
         ))}
       </div>
-    </div>
+    </section>
   );
 }

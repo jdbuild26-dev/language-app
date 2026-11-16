@@ -1,122 +1,148 @@
 "use client";
 
-import React, { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft } from "lucide-react";
-import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import NumberInputControls from "@/features/vocabulary/components/number-practice/NumberInputControls";
+import PracticeGameLayout from "@/components/layout/PracticeGameLayout";
+import { useExerciseTimer } from "@/hooks/useExerciseTimer";
+import NumberInputControls, { type NumberSettings } from "@/features/vocabulary/components/number-practice/NumberInputControls";
 import NumberDisplayArea from "@/features/vocabulary/components/number-practice/NumberDisplayArea";
 import ConstructedAnswerArea from "@/features/vocabulary/components/number-practice/ConstructedAnswerArea";
 import WordBankArea from "@/features/vocabulary/components/number-practice/WordBankArea";
-import { numberToFrenchTokens, numberToFrench } from "@/features/vocabulary/utils/numberToFrench";
+import { numberToFrench, numberToFrenchTokens } from "@/features/vocabulary/utils/numberToFrench";
+
+const roundLength = 10;
+const defaultMax = 9999;
+const initialSettings: NumberSettings = { mode: "range", from: "0", to: String(defaultMax), exact: "" };
+
+function randomInRange(settings: NumberSettings, previous: number | null = null): number {
+  const from = settings.from === "" ? 0 : Number(settings.from);
+  const to = settings.to === "" ? defaultMax : Number(settings.to);
+  const min = Math.min(from, to);
+  const max = Math.max(from, to);
+
+  if (previous !== null && previous >= min && previous <= max && min < max) {
+    const draw = min + Math.floor(Math.random() * (max - min));
+    return draw >= previous ? draw + 1 : draw;
+  }
+
+  return min + Math.floor(Math.random() * (max - min + 1));
+}
 
 export default function NumberPracticePage() {
   const router = useRouter();
-  const [currentNumber, setCurrentNumber] = useState<number | null>(null);
-  const [constructedAnswer, setConstructedAnswer] = useState<string[]>([]);
+  const [settings, setSettings] = useState(initialSettings);
+  const [rangeNumber, setRangeNumber] = useState<number | null>(null);
+  const [selectedWords, setSelectedWords] = useState<string[]>([]);
+  const [result, setResult] = useState<boolean | null>(null);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [score, setScore] = useState(0);
 
-  // Feedback state
-  const [showFeedback, setShowFeedback] = useState(false);
-  const [isCorrect, setIsCorrect] = useState(false);
-  const [correctAnswer, setCorrectAnswer] = useState("");
+  const currentNumber = settings.mode === "range"
+    ? rangeNumber
+    : settings.exact === "" ? null : Number(settings.exact);
+  const expected = currentNumber === null ? [] : numberToFrenchTokens(currentNumber);
+  const isGameOver = currentIndex === roundLength;
+  const { timerString, resetTimer } = useExerciseTimer({
+    mode: "stopwatch",
+    isPaused: currentNumber === null || result !== null || isGameOver,
+  });
 
-  const handleWordSelect = (word) => {
-    setConstructedAnswer((prev) => [...prev, word]);
-  };
+  useEffect(() => {
+    const id = setTimeout(() => {
+      const firstNumber = randomInRange(initialSettings);
+      setRangeNumber((previous) => previous ?? firstNumber);
+    }, 0);
+    return () => clearTimeout(id);
+  }, []);
 
-  const handleWordRemove = (index) => {
-    setConstructedAnswer((prev) => prev.filter((_, i) => i !== index));
-    setShowFeedback(false);
-  };
+  function changeSettings(update: Partial<NumberSettings>) {
+    setSettings((previous) => ({ ...previous, ...update }));
+    if (update.exact !== undefined || (update.mode !== undefined && update.mode !== settings.mode)) {
+      setSelectedWords([]);
+    }
+  }
 
-  const handleClear = () => {
-    setConstructedAnswer([]);
-    setShowFeedback(false);
-  };
+  function drawRangeNumber() {
+    setRangeNumber(randomInRange(settings, rangeNumber));
+  }
 
-  const checkAnswer = () => {
-    if (currentNumber === null || currentNumber === undefined) {
-      alert("Please enter or generate a number first.");
+  function handleNext() {
+    if (result !== null) {
+      if (settings.mode === "range" && currentIndex + 1 < roundLength) drawRangeNumber();
+      setSelectedWords([]);
+      setResult(null);
+      setCurrentIndex(currentIndex + 1);
       return;
     }
 
-    const correctTokens = numberToFrenchTokens(currentNumber);
-    const userTokens = constructedAnswer;
+    if (!expected.length || !selectedWords.length) return;
+    const correct = expected.length === selectedWords.length &&
+      expected.every((word, index) => word === selectedWords[index]);
 
-    // Compare token arrays
-    const correct =
-      correctTokens.length === userTokens.length &&
-      correctTokens.every((t, i) => t === userTokens[i]);
+    setResult(correct);
+    if (correct) setScore((previous) => previous + 1);
+  }
 
-    setIsCorrect(correct);
-    setCorrectAnswer(numberToFrench(currentNumber));
-    setShowFeedback(true);
-  };
+  function restart() {
+    if (settings.mode === "range") drawRangeNumber();
+    setSelectedWords([]);
+    setResult(null);
+    setCurrentIndex(0);
+    setScore(0);
+    resetTimer();
+  }
 
-  const handleNext = () => {
-    // Reset and maybe auto-randomize depending on settings
-    setConstructedAnswer([]);
-    setShowFeedback(false);
-    // Optional: setCurrentNumber(generateNewRandomNumber());
-  };
+  let submitLabel = "Check Answer";
+  if (result !== null) submitLabel = currentIndex + 1 === roundLength ? "Finish" : "Continue";
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 flex flex-col">
-      <div className="flex-1 max-w-5xl w-full mx-auto p-4 md:p-6 flex flex-col gap-6">
-        <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div className="flex items-center gap-4">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => router.back()}
-              className="rounded-full"
-            >
-              <ArrowLeft className="w-5 h-5" />
-            </Button>
-            <h1 className="text-2xl font-bold dark:text-white">
-              Number Practice
-            </h1>
-          </div>
+    <PracticeGameLayout
+      questionType="Number Practice"
+      instructionFr="Construisez le nombre en sélectionnant les mots corrects"
+      instructionEn="Build the number by selecting the correct words"
+      currentQuestionIndex={currentIndex}
+      totalQuestions={roundLength}
+      timerValue={timerString}
+      isGameOver={isGameOver}
+      score={score}
+      onExit={() => router.push("/vocabulary/lessons/activities")}
+      onRestart={restart}
+      onNext={handleNext}
+      isSubmitEnabled={expected.length > 0 && selectedWords.length > 0}
+      submitLabel={submitLabel}
+      showFeedback={result !== null}
+      isCorrect={result === true}
+      feedbackMessage={result === true ? "Correct!" : "Not quite."}
+      feedbackAppearance="soft"
+      feedbackInFlow
+      compactFeedback
+      correctAnswer={result === false && currentNumber !== null ? numberToFrench(currentNumber) : undefined}
+    >
+      <div className="mx-auto grid w-full max-w-[100rem] items-start gap-6 px-4 py-5 sm:px-6 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] xl:gap-10 xl:py-7">
+        <div className="flex min-w-0 flex-col gap-7">
           <NumberInputControls
-            onNumberChange={(num) => {
-              setCurrentNumber(num);
-              setConstructedAnswer([]);
-              setShowFeedback(false);
+            settings={settings}
+            onChange={changeSettings}
+            onRandomize={() => {
+              drawRangeNumber();
+              setSelectedWords([]);
             }}
+            disabled={result !== null}
           />
-        </header>
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 flex-1">
-          <div className="lg:col-span-2 flex flex-col gap-6 h-full">
-            <Card className="p-8 flex flex-col items-center justify-center min-h-[200px] border-2 shadow-sm rounded-2xl bg-white dark:bg-slate-800">
-              <NumberDisplayArea number={currentNumber} />
-            </Card>
-
-            <Card className="p-6 flex-1 shadow-sm rounded-2xl bg-white dark:bg-slate-800">
-              <ConstructedAnswerArea
-                selectedWords={constructedAnswer}
-                onRemoveWord={handleWordRemove}
-                onClear={handleClear}
-                onSubmit={checkAnswer}
-                feedback={{ show: showFeedback, isCorrect, correctAnswer }}
-                onNext={handleNext}
-              />
-            </Card>
-          </div>
-
-          <div className="lg:col-span-1 h-full">
-            <Card className="p-6 shadow-sm h-full rounded-2xl bg-slate-100/50 dark:bg-slate-800/50 border-2">
-              <WordBankArea
-                onWordSelect={(w) => {
-                  handleWordSelect(w);
-                  setShowFeedback(false);
-                }}
-              />
-            </Card>
+          <NumberDisplayArea number={currentNumber} />
+          <div className="lg:mt-6 lg:px-3">
+            <ConstructedAnswerArea
+              selectedWords={selectedWords}
+              expectedLength={expected.length}
+              onRemoveWord={(index) => setSelectedWords((previous) => previous.filter((_, position) => position !== index))}
+              onClear={() => setSelectedWords([])}
+              result={result}
+            />
           </div>
         </div>
+
+        <WordBankArea disabled={!expected.length || result !== null} onWordSelect={(word) => setSelectedWords((previous) => [...previous, word])} />
       </div>
-    </div>
+    </PracticeGameLayout>
   );
 }
