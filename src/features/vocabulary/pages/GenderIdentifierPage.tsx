@@ -1,68 +1,79 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { ArrowLeft, Loader2 } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { fetchVocabulary } from "@/services/vocabularyApi";
-import GenderIdentifierGame from "@/features/vocabulary/components/gender-identifier/GenderIdentifierGame";
+import GenderIdentifierGame, { type GenderCard } from "@/features/vocabulary/components/gender-identifier/GenderIdentifierGame";
+
+type VocabularyEntry = {
+  image?: string;
+  english?: string;
+  forms?: { word?: string; gender?: string }[];
+};
+
+const roundSize = 10;
 
 export default function GenderIdentifierPage() {
   const router = useRouter();
-  const [words, setWords] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [cards, setCards] = useState<GenderCard[]>([]);
+  const [round, setRound] = useState(0);
+  const [loadedRound, setLoadedRound] = useState<number | null>(null);
 
   useEffect(() => {
-    async function loadWords() {
-      setIsLoading(true);
-      try {
-        const data = await fetchVocabulary({});
-        let loadedWords = data?.words || data || [];
+    let active = true;
 
-        // Filter out words that have a clear gender in forms
-        loadedWords = loadedWords.filter((w) => {
-          return (
-            w.forms &&
-            w.forms.some(
-              (f) =>
-                f.gender &&
-                (f.gender.toLowerCase().includes("masculine") ||
-                  f.gender.toLowerCase().includes("feminine")),
-            )
-          );
+    async function loadWords() {
+      try {
+        const data = await fetchVocabulary();
+        const entries = data?.words ?? data;
+        const words: VocabularyEntry[] = Array.isArray(entries) ? entries : [];
+        const available = words.flatMap((entry) => {
+          const translation = entry.english?.trim();
+          if (!translation) return [];
+
+          return (entry.forms ?? []).flatMap(({ word, gender }) => {
+            const text = word?.trim();
+            const label = gender?.trim().toLowerCase().split(/\s+/)[0];
+            if (!text || (label !== "masculine" && label !== "feminine")) return [];
+            const card: GenderCard = { word: text, translation, gender: label, image: entry.image };
+            return [card];
+          });
         });
 
-        // Randomize and take up to 20 words
-        loadedWords = loadedWords.sort(() => 0.5 - Math.random()).slice(0, 20);
-        setWords(loadedWords);
+        if (active) {
+          setCards(available.map((card) => ({ card, order: Math.random() }))
+            .sort((a, b) => a.order - b.order)
+            .slice(0, roundSize)
+            .map(({ card }) => card));
+        }
       } catch (error) {
         console.error("Failed to load vocabulary for Gender Identifier", error);
+        if (active) setCards([]);
       } finally {
-        setIsLoading(false);
+        if (active) setLoadedRound(round);
       }
     }
-    loadWords();
-  }, []);
+
+    void loadWords();
+    return () => { active = false; };
+  }, [round]);
 
   const handleBack = () => router.push("/vocabulary/lessons/activities");
 
-  if (isLoading) {
+  if (loadedRound !== round) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-900">
-        <Loader2 className="w-12 h-12 text-sky-500 animate-spin" />
+      <div role="status" aria-label="Loading vocabulary" className="flex min-h-dvh items-center justify-center bg-slate-50 dark:bg-slate-900">
+        <Loader2 className="h-12 w-12 animate-spin text-sky-500" aria-hidden="true" />
       </div>
     );
   }
 
-  if (words.length === 0) {
+  if (!cards.length) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 dark:bg-slate-900">
-        <p className="text-xl text-slate-500 mb-4">
-          No gender-specific words found for this activity.
-        </p>
-        <button
-          onClick={handleBack}
-          className="px-6 py-2 bg-sky-500 font-bold shadow-sm hover:scale-105 transition-transform text-white rounded-xl"
-        >
+      <div className="flex min-h-dvh flex-col items-center justify-center gap-4 bg-slate-50 px-4 text-center dark:bg-slate-900">
+        <p className="text-xl text-slate-600 dark:text-slate-300">No bilingual gender-specific words are available.</p>
+        <button type="button" onClick={handleBack} className="rounded-xl bg-blue-600 px-6 py-2 font-bold text-white">
           Go Back
         </button>
       </div>
@@ -70,25 +81,11 @@ export default function GenderIdentifierPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 flex flex-col">
-      {/* Header */}
-      <div className="px-6 py-6 flex items-center justify-between max-w-5xl mx-auto w-full">
-        <button
-          onClick={handleBack}
-          className="flex items-center gap-2 text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white transition-colors font-medium"
-        >
-          <ArrowLeft className="w-5 h-5" />
-          Back
-        </button>
-        <h1 className="text-xl font-bold text-slate-800 dark:text-white hidden sm:block">
-          Gender Identifier
-        </h1>
-        <div className="w-20"></div> {/* Spacer for centering */}
-      </div>
-
-      <div className="flex-1 flex flex-col items-center py-4 px-4 w-full h-full">
-        <GenderIdentifierGame initialWords={words} onComplete={() => {}} />
-      </div>
-    </div>
+    <GenderIdentifierGame
+      key={round}
+      cards={cards}
+      onExit={handleBack}
+      onRestart={() => setRound((value) => value + 1)}
+    />
   );
 }

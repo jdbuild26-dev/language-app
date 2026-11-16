@@ -1,64 +1,9 @@
 import React from "react";
-import {
-  Layers,
-  Puzzle,
-  Keyboard,
-  HelpCircle,
-  Hash,
-  Clock,
-  Sparkles,
-  Image as ImageIcon,
-  Mic,
-} from "lucide-react";
+import { HelpCircle, Hash, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 
 const activities = [
-  {
-    id: "flashcards",
-    title: "Flashcards",
-    description: "Master vocabulary with interactive flashcards",
-    icon: Layers,
-    color: "from-cyan-400 to-blue-500",
-    shadow: "shadow-cyan-200 dark:shadow-cyan-900/20",
-    path: "/vocabulary/lessons/activities/flashcards",
-  },
-  {
-    id: "match-words",
-    title: "Match Words",
-    description: "Match English words to French",
-    icon: Puzzle,
-    color: "from-orange-400 to-amber-500",
-    shadow: "shadow-orange-200 dark:shadow-orange-900/20",
-    path: "/vocabulary/lessons/activities/match-words",
-  },
-  {
-    id: "match-images",
-    title: "Match Images",
-    description: "Match images to French words",
-    icon: ImageIcon,
-    color: "from-pink-400 to-rose-500",
-    shadow: "shadow-pink-200 dark:shadow-pink-900/20",
-    path: "/vocabulary/lessons/activities/match-images",
-  },
-  {
-    id: "spelling",
-    title: "Spelling Practice",
-    description: "Improve your spelling accuracy",
-    icon: Keyboard,
-    color: "from-emerald-400 to-teal-500",
-    shadow: "shadow-emerald-200 dark:shadow-emerald-900/20",
-    path: "/vocabulary/lessons/activities/correct-spelling",
-  },
-  {
-    id: "srs-spelling",
-    title: "Targeted Spelling (SRS)",
-    description: "Progressive spelling practice tailored to your level",
-    icon: Keyboard,
-    color: "from-violet-400 to-purple-500",
-    shadow: "shadow-violet-200 dark:shadow-violet-900/20",
-    path: "/vocabulary/practice/srs-spelling",
-  },
   {
     id: "gender",
     title: "Gender Identifier",
@@ -76,24 +21,6 @@ const activities = [
     color: "from-rose-400 to-red-500",
     shadow: "shadow-rose-200 dark:shadow-rose-900/20",
     path: "/vocabulary/practice/numbers",
-  },
-  {
-    id: "clock",
-    title: "Clock Practice",
-    description: "Tell time in French",
-    icon: Clock,
-    color: "from-sky-400 to-indigo-500",
-    shadow: "shadow-sky-200 dark:shadow-sky-900/20",
-    path: "#",
-  },
-  {
-    id: "pronunciation",
-    title: "Pronunciation Practice",
-    description: "Practice your speaking and pronunciation",
-    icon: Mic,
-    color: "from-fuchsia-400 to-purple-500",
-    shadow: "shadow-fuchsia-200 dark:shadow-fuchsia-900/20",
-    path: "/vocabulary/lessons/activities/pronunciation",
   },
 ];
 
